@@ -5,14 +5,22 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password"),
+  name: text("name"),
+  email: text("email").notNull().unique(),
   streamingServices: text("streaming_services").array(),
+  authProvider: text("auth_provider").default("local"),
+  providerId: text("provider_id"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  name: true,
+  email: true,
   streamingServices: true,
+  authProvider: true,
+  providerId: true,
 });
 
 // Define the film schema types

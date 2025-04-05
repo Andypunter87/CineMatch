@@ -10,7 +10,10 @@ import connectPg from "connect-pg-simple";
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByProviderId(providerId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserStreamingServices(userId: number, streamingServices: string[]): Promise<User>;
   getRecommendations(preferences: RecommendationRequest): Promise<Film[]>;
   sessionStore: any; // Using any for session store to avoid type issues
 }
@@ -56,6 +59,26 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.email, email));
+      return user;
+    } catch (error) {
+      console.error("Error retrieving user by email:", error);
+      return undefined;
+    }
+  }
+
+  async getUserByProviderId(providerId: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.providerId, providerId));
+      return user;
+    } catch (error) {
+      console.error("Error retrieving user by provider ID:", error);
+      return undefined;
+    }
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     try {
       const [user] = await db
@@ -66,6 +89,21 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error creating user:", error);
       throw new Error("Failed to create user");
+    }
+  }
+
+  async updateUserStreamingServices(userId: number, streamingServices: string[]): Promise<User> {
+    try {
+      const [updatedUser] = await db
+        .update(users)
+        .set({ streamingServices })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      return updatedUser;
+    } catch (error) {
+      console.error("Error updating user streaming services:", error);
+      throw new Error("Failed to update user streaming services");
     }
   }
 

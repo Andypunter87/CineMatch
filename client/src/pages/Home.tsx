@@ -1,13 +1,13 @@
 import { useState } from "react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import Questionnaire from "@/components/Questionnaire";
 import Recommendations from "@/components/Recommendations";
 import { type RecommendationRequest, type Film } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Home() {
+  const { user } = useAuth();
   const [showQuestionnaire, setShowQuestionnaire] = useState(true);
   const [preferences, setPreferences] = useState<RecommendationRequest | null>(null);
   
@@ -17,7 +17,13 @@ export default function Home() {
     staleTime: Infinity,
     queryFn: async () => {
       if (!preferences) return [];
-      const response = await apiRequest('POST', '/api/recommendations', preferences);
+      
+      // If user is logged in, add their streaming services to preferences
+      const preferencesWithUserServices = user?.streamingServices?.length 
+        ? { ...preferences, streamingServices: user.streamingServices }
+        : preferences;
+        
+      const response = await apiRequest('POST', '/api/recommendations', preferencesWithUserServices);
       return response.json();
     }
   });
@@ -33,9 +39,17 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 text-gray-800 flex flex-col">
-      <Header />
-      <main className="flex-grow">
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-center mb-2 bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
+          Find Your Perfect Movie Match
+        </h1>
+        <p className="text-center text-gray-600 max-w-2xl mx-auto">
+          Tell us about your mood and preferences, and we'll recommend the perfect films for you to watch.
+        </p>
+      </div>
+      
+      <div className="max-w-4xl mx-auto">
         {showQuestionnaire ? (
           <Questionnaire onSubmit={handleSubmitQuestionnaire} />
         ) : (
@@ -46,8 +60,7 @@ export default function Home() {
             onReset={handleReset} 
           />
         )}
-      </main>
-      <Footer />
+      </div>
     </div>
   );
 }

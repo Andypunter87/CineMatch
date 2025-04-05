@@ -5,7 +5,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
+import { User, User as SelectUser } from "@shared/schema";
 
 declare global {
   namespace Express {
@@ -21,7 +21,8 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
-async function comparePasswords(supplied: string, stored: string) {
+async function comparePasswords(supplied: string, stored: string | null) {
+  if (!stored) return false;
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
@@ -71,7 +72,7 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { username, password, streamingServices } = req.body;
+      const { username, password, name, email, streamingServices } = req.body;
       
       // Check if username already exists
       const existingUser = await storage.getUserByUsername(username);
@@ -79,12 +80,23 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ error: "Username already exists" });
       }
 
+      // Check if email already exists
+      const existingEmail = await storage.getUserByEmail(email);
+      if (existingEmail) {
+        return res.status(400).json({ error: "Email already exists" });
+      }
+
       // Create the user with hashed password
-      const user = await storage.createUser({
+      const userToCreate = {
         username,
+        email,
+        name,
         password: await hashPassword(password),
-        streamingServices: streamingServices || []
-      });
+        streamingServices: streamingServices || [],
+        authProvider: "local"
+      };
+      
+      const user = await storage.createUser(userToCreate);
 
       // Log the user in
       req.login(user, (err) => {
@@ -128,13 +140,23 @@ export function setupAuth(app: Express) {
     res.json(userWithoutPassword);
   });
 
-  app.put("/api/user/streaming", (req, res, next) => {
+  app.put("/api/user/streaming", async (req, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: "Not authenticated" });
     }
     
-    // Update user's streaming services
-    // This would need to be implemented in the storage interface
-    res.status(501).json({ error: "Not implemented" });
+    try {
+      const { streamingServices } = req.body;
+      const userId = (req.user as SelectUser).id;
+      
+      // Update user's streaming services
+      const updatedUser = await storage.updateUserStreamingServices(userId, streamingServices);
+      
+      // Return user without password
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.status(200).json(userWithoutPassword);
+    } catch (error) {
+      next(error);
+    }
   });
 }
