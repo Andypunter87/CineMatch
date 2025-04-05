@@ -38,6 +38,7 @@ export type Film = {
   posterUrl: string;
   matchPercentage?: number;
   matchReason?: string;
+  availableOn?: string[]; // Streaming services where this film is available in the user's country
 };
 
 // Define recommendation request schema

@@ -113,12 +113,30 @@ export default function FilmCard({ film }: FilmCardProps) {
           ))}
         </div>
         
-        <div className="mt-auto pt-3 border-t border-gray-100">
+        <div className="mt-auto pt-3 border-t border-gray-100 space-y-2">
           <p className="text-sm text-gray-700 leading-snug">
             <Award className="inline-block w-4 h-4 mr-1 text-primary" />
             <span className="text-primary font-medium">Why it matches:</span> {' '}
             <span className="text-gray-600">{film.matchReason || 'Matches your preferences'}</span>
           </p>
+          
+          {/* Streaming services availability */}
+          {film.availableOn && film.availableOn.length > 0 ? (
+            <div className="text-sm">
+              <span className="text-primary font-medium">Available on:</span> {' '}
+              <div className="flex flex-wrap gap-1 mt-1">
+                {film.availableOn.map((service, index) => (
+                  <Badge key={index} variant="secondary" className="bg-green-100 text-green-800 border-green-200">
+                    {service}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 italic">
+              Not available on your streaming services
+            </p>
+          )}
         </div>
       </div>
     </Card>

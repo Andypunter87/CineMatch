@@ -25,18 +25,27 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
     const streamingServicesString = preferences.streamingServices && preferences.streamingServices.length > 0
       ? `Available on these streaming platforms: ${preferences.streamingServices.join(", ")}.`
       : "Streaming platform availability not specified.";
+      
+    // Create country string if available
+    const countryString = preferences.country
+      ? `The user is in ${preferences.country}. Only recommend films available on streaming platforms in this country.`
+      : "Country not specified.";
 
-    // Create the system prompt - simplified for faster response
-    const systemPrompt = `You are a film recommendation expert. Provide personalized movie recommendations based on the user's preferences.
+    // Create the system prompt - enhanced for streaming service filtering by country
+    const systemPrompt = `You are a film recommendation expert with deep knowledge of global streaming platform libraries. 
+Provide personalized movie recommendations based on the user's preferences.
+When recommending films, consider which streaming platforms actually have the film available in the user's country.
 Return exactly 4 films that match the criteria.
-Format your response as a JSON object with a 'recommendations' array.`;
+Format your response as a JSON object with a 'recommendations' array.
+For each film, specify which streaming platforms from the user's list actually have the film available in their country.`;
 
-    // Create the user query - simplified for faster response
+    // Create the user query - enhanced for streaming service filtering by country
     const userQuery = `I'm looking for movie recommendations with these preferences:
 - Setting: ${preferences.location}
 - Time: ${timeOfDayString}
 - Mood: ${preferences.mood}
 - ${streamingServicesString}
+- ${countryString}
 
 Each recommendation must include:
 - id (number)
@@ -49,6 +58,7 @@ Each recommendation must include:
 - type ("mainstream" or "indie" only)
 - matchPercentage (number between 80-98)
 - matchReason (string, 10-15 words)
+- availableOn (array of strings listing which streaming services from the user's list actually have this film in their country - empty array if not available on any)
 
 DO NOT include a posterUrl field in your response. I will generate those separately based on the movie title.`;
 
@@ -112,7 +122,8 @@ DO NOT include a posterUrl field in your response. I will generate those separat
         type: (film.type === "mainstream" || film.type === "indie") ? film.type : "mainstream",
         posterUrl: posterUrl,
         matchPercentage: typeof film.matchPercentage === 'number' ? film.matchPercentage : 85,
-        matchReason: film.matchReason || `Great match for ${preferences.mood} mood`
+        matchReason: film.matchReason || `Great match for ${preferences.mood} mood`,
+        availableOn: Array.isArray(film.availableOn) ? film.availableOn : []
       };
     });
   } catch (error) {

@@ -18,12 +18,16 @@ export default function Home() {
     queryFn: async () => {
       if (!preferences) return [];
       
-      // If user is logged in, add their streaming services to preferences
-      const preferencesWithUserServices = user?.streamingServices?.length 
-        ? { ...preferences, streamingServices: user.streamingServices }
-        : preferences;
+      // If user is logged in, add their streaming services and country to preferences
+      const preferencesWithUserInfo = {
+        ...preferences,
+        // Add streaming services if user has selected them
+        ...(user?.streamingServices?.length && { streamingServices: user.streamingServices }),
+        // Add country if user has specified one
+        ...(user?.country && { country: user.country })
+      };
         
-      const response = await apiRequest('POST', '/api/recommendations', preferencesWithUserServices);
+      const response = await apiRequest('POST', '/api/recommendations', preferencesWithUserInfo);
       return response.json();
     }
   });
@@ -47,6 +51,12 @@ export default function Home() {
         <p className="text-center text-gray-600 max-w-2xl mx-auto">
           Tell us about your mood and preferences, and we'll recommend the perfect films for you to watch.
         </p>
+        {user && user.streamingServices && user.streamingServices.length > 0 && (
+          <div className="mt-2 text-center text-sm bg-blue-50 border border-blue-100 rounded-lg p-3 max-w-2xl mx-auto">
+            <span className="font-medium text-blue-700">Streaming match:</span> We'll search for films available on your preferred platforms 
+            ({user.streamingServices.join(", ")}) in {user.country || "your country"}.
+          </div>
+        )}
       </div>
       
       <div className="max-w-4xl mx-auto">

@@ -17,15 +17,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API endpoint for film recommendations
   app.post('/api/recommendations', async (req, res) => {
     try {
-      // Extract user streaming services if logged in
+      // Extract user information if logged in
       const streamingServices = req.isAuthenticated() && req.user 
         ? req.user.streamingServices 
         : undefined;
+        
+      // Extract user country if logged in and not provided in request
+      const country = req.body.country || (req.isAuthenticated() && req.user 
+        ? req.user.country 
+        : undefined);
       
       // Validate input
       const preferences = recommendationRequestSchema.parse({
         ...req.body,
-        streamingServices
+        streamingServices,
+        country
       });
       
       // Get recommendations based on user preferences
@@ -34,6 +40,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(recommendations);
     } catch (error) {
       if (error instanceof ZodError) {
+        console.error('ZodError:', error.errors);
         res.status(400).json({ 
           message: 'Invalid request data', 
           errors: error.errors 
@@ -51,23 +58,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract query parameters - handle timeOfDay as array
       const { location, mood } = req.query;
       let timeOfDay = req.query.timeOfDay;
+      let country = req.query.country as string | undefined;
       
       // Convert timeOfDay to array if it's a string
       if (typeof timeOfDay === 'string') {
         timeOfDay = [timeOfDay];
       }
       
-      // Extract user streaming services if logged in
+      // Extract user information if logged in
       const streamingServices = req.isAuthenticated() && req.user 
         ? req.user.streamingServices 
         : undefined;
+        
+      // Use user's country if not provided and user is logged in
+      if (!country && req.isAuthenticated() && req.user && req.user.country) {
+        country = req.user.country;
+      }
       
       // Validate input
       const preferences = recommendationRequestSchema.parse({
         location,
         timeOfDay, 
         mood,
-        streamingServices
+        streamingServices,
+        country
       });
       
       // Get recommendations
@@ -76,6 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(recommendations);
     } catch (error) {
       if (error instanceof ZodError) {
+        console.error('ZodError:', error.errors);
         res.status(400).json({ 
           message: 'Invalid request data', 
           errors: error.errors 

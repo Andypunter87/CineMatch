@@ -70,6 +70,12 @@ export default function Recommendations({
               <span className="text-primary font-medium">{getLocationText(preferences.location)}</span>, {" "}
               <span className="text-primary font-medium">{getTimeText(preferences.timeOfDay)}</span>, {" "}
               <span className="text-primary font-medium">{getMoodText(preferences.mood)}</span>
+              {preferences.country && (
+                <>, {" "}<span className="text-primary font-medium">in {preferences.country}</span></>
+              )}
+              {preferences.streamingServices && preferences.streamingServices.length > 0 && (
+                <> {" "}on <span className="text-primary font-medium">{preferences.streamingServices.join(", ")}</span></>
+              )}
             </p>
           </div>
           <div className="mt-4 md:mt-0">
