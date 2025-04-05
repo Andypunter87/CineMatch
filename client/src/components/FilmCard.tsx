@@ -28,15 +28,29 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
         filmType: film.type,
         filmGenres: film.genres,
         filmPosterUrl: film.posterUrl,
-        recommendationContext
+        recommendationContext,
+        // Default to unwatched when adding to watchlist
+        watched: false
       });
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (watchlistItem) => {
       queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
       toast({
         title: "Added to Watchlist",
-        description: `${film.title} has been added to your watchlist`,
+        description: `${film.title} has been added to your watchlist as "To Watch"`,
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => {
+              // Open dialog or redirect to watchlist page
+              window.location.href = "/watchlist";
+            }}
+          >
+            View Watchlist
+          </Button>
+        )
       });
     },
     onError: (error: Error) => {

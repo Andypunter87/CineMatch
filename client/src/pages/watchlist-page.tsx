@@ -1,7 +1,24 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
-import type { WatchlistItem } from "@/lib/types";
+import { Link } from "wouter";
+type WatchlistItem = {
+  id: number;
+  userId: number;
+  filmId: number;
+  filmTitle: string;
+  filmYear?: number;
+  filmDirector?: string;
+  filmType?: string;
+  filmGenres?: string[];
+  filmPosterUrl?: string;
+  recommendationContext?: any;
+  dateAdded: string;
+  watched: boolean;
+  dateWatched?: string;
+  userRating?: number;
+  userNotes?: string;
+};
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, BookmarkCheck, Star, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
@@ -103,10 +120,23 @@ export default function WatchlistPage() {
 
   // Handler for toggling watched status
   const toggleWatched = (id: number, currentStatus: boolean) => {
-    updateMutation.mutate({
-      id,
-      updates: { watched: !currentStatus },
-    });
+    // If toggling to watched, prompt for rating
+    if (!currentStatus) {
+      // Get the item to pre-fill dialog
+      const item = watchlistItems?.find(item => item.id === id);
+      if (item) {
+        setEditingItemId(item.id);
+        setRating(0); // Start with no rating
+        setNotes(item.userNotes || "");
+        // Update to watched status is handled in the rating dialog
+      }
+    } else {
+      // If toggling to unwatched, just update directly
+      updateMutation.mutate({
+        id,
+        updates: { watched: false },
+      });
+    }
   };
 
   // Handler for opening the rating/notes dialog
@@ -119,9 +149,15 @@ export default function WatchlistPage() {
   // Handler for saving rating/notes
   const saveRatingAndNotes = () => {
     if (editingItemId) {
+      // Find the current item to check its watched status
+      const currentItem = watchlistItems?.find(item => item.id === editingItemId);
+      const wasAlreadyWatched = currentItem?.watched;
+      
       updateMutation.mutate({
         id: editingItemId,
         updates: {
+          // Always mark as watched when saving from the rating dialog
+          watched: true,
           userRating: rating || undefined,
           userNotes: notes.trim() || undefined,
         },
@@ -246,9 +282,9 @@ export default function WatchlistPage() {
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Rate & Review</DialogTitle>
+              <DialogTitle>Mark as Watched & Rate</DialogTitle>
               <DialogDescription>
-                Add a rating and your thoughts about this film
+                This film will be marked as watched. Add a rating and your thoughts about it.
               </DialogDescription>
             </DialogHeader>
 
@@ -322,9 +358,13 @@ export default function WatchlistPage() {
           <p className="text-slate-500 mb-4">
             When you find movies you want to watch later, save them here
           </p>
-          <Button className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500">
-            Find Movies to Watch
-          </Button>
+          <Link href="/">
+            <Button 
+              className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
+            >
+              Find Movies to Watch
+            </Button>
+          </Link>
         </div>
       )}
     </div>
@@ -384,7 +424,7 @@ function WatchlistGrid({
             </CardTitle>
             <CardDescription>
               {item.filmDirector && <span>Directed by {item.filmDirector}</span>}
-              {item.userRating > 0 && (
+              {item.userRating && item.userRating > 0 && (
                 <div className="mt-1">
                   <StarRating value={item.userRating} readOnly />
                 </div>
