@@ -122,7 +122,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     />
                     <label 
                       htmlFor="location-travel" 
-                      className={`flex flex-col items-center p-4 border-2 ${location === "travel" ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      className={`flex flex-col items-center p-4 border-2 ${location === "travel" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => setLocation("travel")}
                     >
                       <Globe className="w-8 h-8 mb-2 text-gray-300" />
@@ -142,7 +142,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     />
                     <label 
                       htmlFor="location-date" 
-                      className={`flex flex-col items-center p-4 border-2 ${location === "date" ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      className={`flex flex-col items-center p-4 border-2 ${location === "date" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => setLocation("date")}
                     >
                       <Heart className="w-8 h-8 mb-2 text-gray-300" />
@@ -162,7 +162,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     />
                     <label 
                       htmlFor="location-friends" 
-                      className={`flex flex-col items-center p-4 border-2 ${location === "friends" ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      className={`flex flex-col items-center p-4 border-2 ${location === "friends" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => setLocation("friends")}
                     >
                       <Users className="w-8 h-8 mb-2 text-gray-300" />
@@ -175,7 +175,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   <Button 
                     onClick={goToPrevStep} 
                     variant="outline"
-                    className="px-6 py-2 border border-gray-600 rounded-lg hover:bg-gray-800 transition-colors"
+                    className="px-6 py-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
                   >
                     Back
                   </Button>
@@ -213,7 +213,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     />
                     <label 
                       htmlFor="time-weekday" 
-                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("weekday") ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("weekday") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => {
                         if (timeOfDay.includes("weekday")) {
                           setTimeOfDay(timeOfDay.filter(t => t !== "weekday"));
@@ -222,7 +222,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                         }
                       }}
                     >
-                      <Calendar className="w-8 h-8 mb-2 text-gray-300" />
+                      <Calendar className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Weekday Evening</span>
                     </label>
                   </div>
@@ -245,7 +245,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     />
                     <label 
                       htmlFor="time-weekend" 
-                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("weekend") ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("weekend") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => {
                         if (timeOfDay.includes("weekend")) {
                           setTimeOfDay(timeOfDay.filter(t => t !== "weekend"));
@@ -254,7 +254,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                         }
                       }}
                     >
-                      <Calendar className="w-8 h-8 mb-2 text-gray-300" />
+                      <Calendar className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Weekend</span>
                     </label>
                   </div>
@@ -277,7 +277,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     />
                     <label 
                       htmlFor="time-late" 
-                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("late") ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("late") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => {
                         if (timeOfDay.includes("late")) {
                           setTimeOfDay(timeOfDay.filter(t => t !== "late"));
@@ -286,7 +286,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                         }
                       }}
                     >
-                      <Moon className="w-8 h-8 mb-2 text-gray-300" />
+                      <Moon className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Late Night</span>
                     </label>
                   </div>
@@ -309,7 +309,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     />
                     <label 
                       htmlFor="time-morning" 
-                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("morning") ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("morning") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => {
                         if (timeOfDay.includes("morning")) {
                           setTimeOfDay(timeOfDay.filter(t => t !== "morning"));
@@ -318,7 +318,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                         }
                       }}
                     >
-                      <Sun className="w-8 h-8 mb-2 text-gray-300" />
+                      <Sun className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Morning/Daytime</span>
                     </label>
                   </div>
@@ -328,7 +328,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   <Button 
                     onClick={goToPrevStep} 
                     variant="outline"
-                    className="px-6 py-2 border border-gray-600 rounded-lg hover:bg-gray-800 transition-colors"
+                    className="px-6 py-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
                   >
                     Back
                   </Button>
@@ -360,7 +360,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     />
                     <label 
                       htmlFor="mood-laugh" 
-                      className={`flex flex-col items-center p-4 border-2 ${mood === "laugh" ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      className={`flex flex-col items-center p-4 border-2 ${mood === "laugh" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => setMood("laugh")}
                     >
                       <span className="text-2xl mb-2">😂</span>
@@ -380,7 +380,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     />
                     <label 
                       htmlFor="mood-think" 
-                      className={`flex flex-col items-center p-4 border-2 ${mood === "think" ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      className={`flex flex-col items-center p-4 border-2 ${mood === "think" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => setMood("think")}
                     >
                       <span className="text-2xl mb-2">🤔</span>
@@ -400,7 +400,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     />
                     <label 
                       htmlFor="mood-cry" 
-                      className={`flex flex-col items-center p-4 border-2 ${mood === "cry" ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      className={`flex flex-col items-center p-4 border-2 ${mood === "cry" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => setMood("cry")}
                     >
                       <span className="text-2xl mb-2">😢</span>
@@ -420,7 +420,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     />
                     <label 
                       htmlFor="mood-thrill" 
-                      className={`flex flex-col items-center p-4 border-2 ${mood === "thrill" ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      className={`flex flex-col items-center p-4 border-2 ${mood === "thrill" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => setMood("thrill")}
                     >
                       <span className="text-2xl mb-2">😱</span>
@@ -440,7 +440,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     />
                     <label 
                       htmlFor="mood-escape" 
-                      className={`flex flex-col items-center p-4 border-2 ${mood === "escape" ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      className={`flex flex-col items-center p-4 border-2 ${mood === "escape" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => setMood("escape")}
                     >
                       <span className="text-2xl mb-2">✨</span>
@@ -460,7 +460,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     />
                     <label 
                       htmlFor="mood-inspire" 
-                      className={`flex flex-col items-center p-4 border-2 ${mood === "inspire" ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      className={`flex flex-col items-center p-4 border-2 ${mood === "inspire" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => setMood("inspire")}
                     >
                       <span className="text-2xl mb-2">💫</span>
@@ -473,7 +473,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   <Button 
                     onClick={goToPrevStep} 
                     variant="outline"
-                    className="px-6 py-2 border border-gray-600 rounded-lg hover:bg-gray-800 transition-colors"
+                    className="px-6 py-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
                   >
                     Back
                   </Button>
