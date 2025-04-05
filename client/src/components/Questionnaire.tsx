@@ -333,6 +333,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     <label 
                       htmlFor="mood-laugh" 
                       className={`flex flex-col items-center p-4 border-2 ${mood === "laugh" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
+                      onClick={() => setMood("laugh")}
                     >
                       <span className="text-2xl mb-2">😂</span>
                       <span>Laugh</span>
@@ -347,12 +348,12 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="think" 
                       className="hidden" 
                       checked={mood === "think"}
-                     
+                      onChange={() => setMood("think")}
                     />
                     <label 
                       htmlFor="mood-think" 
                       className={`flex flex-col items-center p-4 border-2 ${mood === "think" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                     
+                      onClick={() => setMood("think")}
                     >
                       <span className="text-2xl mb-2">🤔</span>
                       <span>Think</span>
@@ -367,12 +368,12 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="cry" 
                       className="hidden" 
                       checked={mood === "cry"}
-                     
+                      onChange={() => setMood("cry")}
                     />
                     <label 
                       htmlFor="mood-cry" 
                       className={`flex flex-col items-center p-4 border-2 ${mood === "cry" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                     
+                      onClick={() => setMood("cry")}
                     >
                       <span className="text-2xl mb-2">😢</span>
                       <span>Cry</span>
@@ -387,12 +388,12 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="thrill" 
                       className="hidden" 
                       checked={mood === "thrill"}
-                     
+                      onChange={() => setMood("thrill")}
                     />
                     <label 
                       htmlFor="mood-thrill" 
                       className={`flex flex-col items-center p-4 border-2 ${mood === "thrill" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                     
+                      onClick={() => setMood("thrill")}
                     >
                       <span className="text-2xl mb-2">😱</span>
                       <span>Thrill</span>
@@ -407,12 +408,12 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="escape" 
                       className="hidden" 
                       checked={mood === "escape"}
-                     
+                      onChange={() => setMood("escape")}
                     />
                     <label 
                       htmlFor="mood-escape" 
                       className={`flex flex-col items-center p-4 border-2 ${mood === "escape" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                     
+                      onClick={() => setMood("escape")}
                     >
                       <span className="text-2xl mb-2">✨</span>
                       <span>Escape</span>
@@ -427,12 +428,12 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="inspire" 
                       className="hidden" 
                       checked={mood === "inspire"}
-                     
+                      onChange={() => setMood("inspire")}
                     />
                     <label 
                       htmlFor="mood-inspire" 
                       className={`flex flex-col items-center p-4 border-2 ${mood === "inspire" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                     
+                      onClick={() => setMood("inspire")}
                     >
                       <span className="text-2xl mb-2">💫</span>
                       <span>Inspire</span>
