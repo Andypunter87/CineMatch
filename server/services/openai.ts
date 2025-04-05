@@ -41,15 +41,16 @@ Format your response as a JSON object with a 'recommendations' array.`;
 Each recommendation must include:
 - id (number)
 - title (string)
-- year (number)
+- year (number, between 1920-2023)
 - director (string)
-- actors (array of strings)
-- synopsis (string, brief)
-- genres (array of strings)
-- type ("mainstream" or "indie")
-- posterUrl (string - provide a valid working URL)
+- actors (array of strings, 3-4 names maximum)
+- synopsis (string, 1-2 sentences only)
+- genres (array of strings, 2-3 genres maximum)
+- type ("mainstream" or "indie" only)
 - matchPercentage (number between 80-98)
-- matchReason (string)`;
+- matchReason (string, 10-15 words)
+
+DO NOT include a posterUrl field in your response. I will generate those separately based on the movie title.`;
 
     // Make the API call with a timeout
     const responsePromise = openai.chat.completions.create({
@@ -67,28 +68,46 @@ Each recommendation must include:
     const response = await Promise.race([responsePromise, timeoutPromise]) as any;
 
     // Parse the response
-    const content = response.choices[0].message.content;
-    if (!content) {
-      throw new Error("Empty response from OpenAI");
+    let parsedContent: AIRecommendationResponse;
+    try {
+      const content = response.choices[0].message.content;
+      if (!content) {
+        throw new Error("Empty response from OpenAI");
+      }
+      
+      parsedContent = JSON.parse(content) as AIRecommendationResponse;
+      console.log("Successfully received AI recommendations");
+    } catch (error) {
+      console.error("Error parsing OpenAI response:", error);
+      throw new Error("Failed to parse AI recommendations");
     }
-
-    const parsedContent = JSON.parse(content) as AIRecommendationResponse;
-    console.log("Successfully received AI recommendations");
     
     // Format and structure the recommendations to match our Film type
-    return parsedContent.recommendations.map(film => ({
-      id: film.id || Math.floor(Math.random() * 10000),
-      title: film.title,
-      year: film.year,
-      director: film.director || "Unknown",
-      actors: Array.isArray(film.actors) ? film.actors : ["Unknown"],
-      synopsis: film.synopsis || "No synopsis available",
-      genres: Array.isArray(film.genres) ? film.genres : ["Drama"],
-      type: (film.type === "mainstream" || film.type === "indie") ? film.type : "mainstream",
-      posterUrl: film.posterUrl || "https://via.placeholder.com/500x750?text=No+Poster+Available",
-      matchPercentage: film.matchPercentage || 85,
-      matchReason: film.matchReason || `Great match for ${preferences.mood} mood`
-    }));
+    return parsedContent.recommendations.map(film => {
+      // Create a slug from the movie title for more reliable poster URLs
+      const titleSlug = film.title
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .trim();
+      
+      // Generate a reliable placeholder image URL with the movie title
+      const posterUrl = `https://placehold.co/600x900/3498db/ffffff?text=${encodeURIComponent(film.title)}`;
+      
+      return {
+        id: film.id || Math.floor(Math.random() * 10000),
+        title: film.title,
+        year: typeof film.year === 'number' ? film.year : 2000,
+        director: film.director || "Unknown",
+        actors: Array.isArray(film.actors) ? film.actors.slice(0, 4) : ["Unknown"],
+        synopsis: film.synopsis || "No synopsis available",
+        genres: Array.isArray(film.genres) ? film.genres.slice(0, 3) : ["Drama"],
+        type: (film.type === "mainstream" || film.type === "indie") ? film.type : "mainstream",
+        posterUrl: posterUrl,
+        matchPercentage: typeof film.matchPercentage === 'number' ? film.matchPercentage : 85,
+        matchReason: film.matchReason || `Great match for ${preferences.mood} mood`
+      };
+    });
   } catch (error) {
     console.error("Error getting AI recommendations:", error);
     throw new Error("Failed to get AI recommendations");

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { type Film, type RecommendationRequest } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import FilmCard from "@/components/FilmCard";
+import FilmCard from "./FilmCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RefreshCw } from "lucide-react";
 
 interface RecommendationsProps {
   recommendations: Film[];
@@ -99,37 +100,63 @@ export default function Recommendations({
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white rounded-lg overflow-hidden shadow-lg border border-blue-100">
-                <Skeleton className="w-full h-64 bg-blue-100" />
-                <div className="p-4">
-                  <Skeleton className="h-6 w-3/4 mb-2 bg-blue-100" />
-                  <Skeleton className="h-4 w-1/2 mb-4 bg-blue-100" />
-                  <Skeleton className="h-16 w-full bg-blue-100" />
-                </div>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="bg-white py-5 px-8 rounded-lg border shadow-md flex items-center space-x-3 z-10">
+                <RefreshCw className="w-5 h-5 text-primary animate-spin" />
+                <p className="text-gray-800">Getting your personalized film recommendations...</p>
               </div>
-            ))}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 filter blur-sm">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-96 bg-white rounded-lg overflow-hidden shadow-lg border border-blue-100">
+                  <Skeleton className="w-full h-64 bg-blue-100" />
+                  <div className="p-4">
+                    <Skeleton className="h-6 w-3/4 mb-2 bg-blue-100" />
+                    <Skeleton className="h-4 w-1/2 mb-4 bg-blue-100" />
+                    <Skeleton className="h-16 w-full bg-blue-100" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         ) : recommendations.length === 0 ? (
-          <div className="bg-white p-6 rounded-lg text-center border border-blue-100 shadow-md">
-            <p className="text-xl text-gray-800">No recommendations found based on your preferences.</p>
-            <p className="mt-2 text-gray-600">Try a different combination of preferences.</p>
+          <div className="bg-white p-8 rounded-lg text-center border border-blue-100 shadow-md">
+            <div className="text-primary opacity-40 text-5xl mb-4">¯\_(ツ)_/¯</div>
+            <p className="text-xl text-gray-800 font-medium">No recommendations found for these preferences.</p>
+            <p className="mt-2 text-gray-600 mb-4">Try a different combination of settings to get better results.</p>
+            <Button onClick={onReset} variant="secondary" className="mt-2">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try different preferences
+            </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredRecommendations.map((film) => (
-              <FilmCard key={film.id} film={film} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredRecommendations.map((film) => (
+                <FilmCard key={film.id} film={film} />
+              ))}
+            </div>
+            
+            {filteredRecommendations.length === 0 && (
+              <div className="bg-white p-6 rounded-lg text-center border border-blue-100 shadow-md mt-6">
+                <p className="text-gray-800">No {filterType} films found in your recommendations.</p>
+                <Button onClick={() => setFilterType("all")} variant="link" className="mt-2">
+                  Show all recommendations
+                </Button>
+              </div>
+            )}
+          </>
         )}
 
-        <div className="mt-8 flex justify-center">
+        <div className="mt-10 flex justify-center">
           <Button
             onClick={onReset}
             variant="outline"
-            className="px-6 py-3 border border-primary text-primary hover:bg-primary hover:bg-opacity-10 rounded-lg transition-colors"
+            size="lg"
+            className="px-8 py-3 border border-primary text-primary hover:bg-primary hover:bg-opacity-10 rounded-lg transition-colors"
           >
+            <RefreshCw className="w-4 h-4 mr-2" />
             Start Over
           </Button>
         </div>
