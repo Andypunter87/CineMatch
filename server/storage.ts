@@ -14,6 +14,8 @@ export interface IStorage {
   getUserByProviderId(providerId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserStreamingServices(userId: number, streamingServices: string[]): Promise<User>;
+  updateUserCountry(userId: number, country: string): Promise<User>;
+  updateUserPassword(userId: number, passwordHash: string): Promise<User>;
   getRecommendations(preferences: RecommendationRequest): Promise<Film[]>;
   sessionStore: any; // Using any for session store to avoid type issues
 }
@@ -104,6 +106,36 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error updating user streaming services:", error);
       throw new Error("Failed to update user streaming services");
+    }
+  }
+
+  async updateUserCountry(userId: number, country: string): Promise<User> {
+    try {
+      const [updatedUser] = await db
+        .update(users)
+        .set({ country })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      return updatedUser;
+    } catch (error) {
+      console.error("Error updating user country:", error);
+      throw new Error("Failed to update user country");
+    }
+  }
+
+  async updateUserPassword(userId: number, passwordHash: string): Promise<User> {
+    try {
+      const [updatedUser] = await db
+        .update(users)
+        .set({ password: passwordHash })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      return updatedUser;
+    } catch (error) {
+      console.error("Error updating user password:", error);
+      throw new Error("Failed to update user password");
     }
   }
 

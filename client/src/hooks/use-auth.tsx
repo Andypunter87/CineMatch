@@ -17,6 +17,8 @@ type AuthContextType = {
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<User, Error, RegisterData>;
   updateStreamingMutation: UseMutationResult<User, Error, string[]>;
+  updateCountryMutation: UseMutationResult<User, Error, string>;
+  changePasswordMutation: UseMutationResult<User, Error, PasswordChangeData>;
 };
 
 // Create schemas for validation
@@ -38,6 +40,11 @@ export const registerSchema = insertUserSchema.extend({
 
 type LoginData = z.infer<typeof loginSchema>;
 type RegisterData = z.infer<typeof registerSchema>;
+
+type PasswordChangeData = {
+  currentPassword: string;
+  newPassword: string;
+};
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -137,6 +144,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const updateCountryMutation = useMutation({
+    mutationFn: async (country: string) => {
+      const res = await apiRequest("PUT", "/api/user/country", { country });
+      return await res.json();
+    },
+    onSuccess: (user: User) => {
+      queryClient.setQueryData(["/api/user"], user);
+      toast({
+        title: "Country updated",
+        description: "Your country preference has been updated",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: PasswordChangeData) => {
+      const res = await apiRequest("PUT", "/api/user/password", data);
+      return await res.json();
+    },
+    onSuccess: (user: User) => {
+      queryClient.setQueryData(["/api/user"], user);
+      toast({
+        title: "Password updated",
+        description: "Your password has been successfully changed",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Password change failed",
+        description: error.message || "Current password may be incorrect",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <AuthContext.Provider
       value={{
@@ -147,6 +196,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logoutMutation,
         registerMutation,
         updateStreamingMutation,
+        updateCountryMutation,
+        changePasswordMutation,
       }}
     >
       {children}
