@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 interface FilmCardProps {
   film: Film;
@@ -16,6 +17,7 @@ interface FilmCardProps {
 export default function FilmCard({ film, recommendationContext }: FilmCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   
   // Add to watchlist mutation
   const addToWatchlistMutation = useMutation({
@@ -46,8 +48,8 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
             variant="outline" 
             size="sm" 
             onClick={() => {
-              // Only redirect if user clicks this button
-              window.location.href = "/watchlist";
+              // Use wouter navigation instead of a page refresh
+              setLocation("/watchlist");
             }}
           >
             View Watchlist

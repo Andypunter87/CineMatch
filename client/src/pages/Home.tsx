@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Questionnaire from "@/components/Questionnaire";
 import Recommendations from "@/components/Recommendations";
 import { type RecommendationRequest, type Film } from "@shared/schema";
@@ -6,10 +6,30 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 
+// Local storage key for saving preferences
+const PREFERENCES_STORAGE_KEY = "cinematch_preferences";
+
 export default function Home() {
   const { user } = useAuth();
-  const [showQuestionnaire, setShowQuestionnaire] = useState(true);
-  const [preferences, setPreferences] = useState<RecommendationRequest | null>(null);
+  // Initialize from localStorage if available
+  const [showQuestionnaire, setShowQuestionnaire] = useState(() => {
+    const savedPreferences = localStorage.getItem(PREFERENCES_STORAGE_KEY);
+    return !savedPreferences; // Show questionnaire if no saved preferences
+  });
+  
+  const [preferences, setPreferences] = useState<RecommendationRequest | null>(() => {
+    const savedPreferences = localStorage.getItem(PREFERENCES_STORAGE_KEY);
+    return savedPreferences ? JSON.parse(savedPreferences) : null;
+  });
+  
+  // Save preferences to localStorage whenever they change
+  useEffect(() => {
+    if (preferences) {
+      localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(preferences));
+    } else {
+      localStorage.removeItem(PREFERENCES_STORAGE_KEY);
+    }
+  }, [preferences]);
   
   const { data: recommendations, isLoading } = useQuery<Film[]>({
     queryKey: ['/api/recommendations', preferences],
@@ -39,6 +59,7 @@ export default function Home() {
 
   const handleReset = () => {
     setPreferences(null);
+    localStorage.removeItem(PREFERENCES_STORAGE_KEY);
     setShowQuestionnaire(true);
   };
 
