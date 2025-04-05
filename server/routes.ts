@@ -4,13 +4,29 @@ import { storage } from "./storage";
 import { RecommendationRequest, recommendationRequestSchema } from "@shared/schema";
 import { z } from "zod";
 import { ZodError } from "zod";
+import { setupAuth } from "./auth";
+import { initializeDatabase } from "./db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize the database
+  await initializeDatabase();
+  
+  // Setup authentication routes and middleware
+  setupAuth(app);
+  
   // API endpoint for film recommendations
   app.post('/api/recommendations', async (req, res) => {
     try {
+      // Extract user streaming services if logged in
+      const streamingServices = req.isAuthenticated() && req.user 
+        ? req.user.streamingServices 
+        : undefined;
+      
       // Validate input
-      const preferences = recommendationRequestSchema.parse(req.body);
+      const preferences = recommendationRequestSchema.parse({
+        ...req.body,
+        streamingServices
+      });
       
       // Get recommendations based on user preferences
       const recommendations = await storage.getRecommendations(preferences);
@@ -32,14 +48,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Alternative GET route for recommendations with query parameters
   app.get('/api/recommendations', async (req, res) => {
     try {
-      // Extract query parameters
-      const { location, timeOfDay, mood } = req.query;
+      // Extract query parameters - handle timeOfDay as array
+      const { location, mood } = req.query;
+      let timeOfDay = req.query.timeOfDay;
+      
+      // Convert timeOfDay to array if it's a string
+      if (typeof timeOfDay === 'string') {
+        timeOfDay = [timeOfDay];
+      }
+      
+      // Extract user streaming services if logged in
+      const streamingServices = req.isAuthenticated() && req.user 
+        ? req.user.streamingServices 
+        : undefined;
       
       // Validate input
       const preferences = recommendationRequestSchema.parse({
         location,
         timeOfDay, 
-        mood
+        mood,
+        streamingServices
       });
       
       // Get recommendations
@@ -57,6 +85,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(500).json({ message: 'Failed to get recommendations' });
       }
     }
+  });
+
+  // Get list of available streaming services 
+  app.get('/api/streaming-services', (req, res) => {
+    // List of popular streaming services
+    const streamingServices = [
+      "Netflix", 
+      "Amazon Prime Video", 
+      "Hulu", 
+      "Disney+", 
+      "HBO Max", 
+      "Apple TV+", 
+      "Peacock", 
+      "Paramount+", 
+      "Crunchyroll",
+      "Mubi",
+      "Criterion Channel"
+    ];
+    
+    res.json(streamingServices);
   });
 
   const httpServer = createServer(app);

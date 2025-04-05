@@ -29,14 +29,17 @@ export default function Recommendations({
     }
   };
 
-  const getTimeText = (time: string) => {
-    switch (time) {
-      case "weekday": return "Weekday Evening";
-      case "weekend": return "Weekend";
-      case "late": return "Late Night";
-      case "morning": return "Morning/Daytime";
-      default: return "";
-    }
+  const getTimeText = (times: string[]) => {
+    if (!times || times.length === 0) return "";
+    return times.map(time => {
+      switch (time) {
+        case "weekday": return "Weekday Evening";
+        case "weekend": return "Weekend";
+        case "late": return "Late Night";
+        case "morning": return "Morning/Daytime";
+        default: return "";
+      }
+    }).join(", ");
   };
 
   const getMoodText = (mood: string) => {

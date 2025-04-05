@@ -6,11 +6,13 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  streamingServices: text("streaming_services").array(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  streamingServices: true,
 });
 
 // Define the film schema types
@@ -31,8 +33,9 @@ export type Film = {
 // Define recommendation request schema
 export const recommendationRequestSchema = z.object({
   location: z.enum(["home", "travel", "date", "friends"]),
-  timeOfDay: z.enum(["weekday", "weekend", "late", "morning"]),
-  mood: z.enum(["laugh", "think", "cry", "thrill", "escape", "inspire"])
+  timeOfDay: z.array(z.enum(["weekday", "weekend", "late", "morning"])).min(1),
+  mood: z.enum(["laugh", "think", "cry", "thrill", "escape", "inspire"]),
+  streamingServices: z.array(z.string()).optional()
 });
 
 export type RecommendationRequest = z.infer<typeof recommendationRequestSchema>;

@@ -20,7 +20,7 @@ interface QuestionnaireProps {
 export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [location, setLocation] = useState<RecommendationRequest["location"] | "">("");
-  const [timeOfDay, setTimeOfDay] = useState<RecommendationRequest["timeOfDay"] | "">("");
+  const [timeOfDay, setTimeOfDay] = useState<RecommendationRequest["timeOfDay"]>([]);
   const [mood, setMood] = useState<RecommendationRequest["mood"] | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -37,7 +37,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   };
 
   const submitQuestionnaire = () => {
-    if (!location || !timeOfDay || !mood) {
+    if (!location || timeOfDay.length === 0 || !mood) {
       return;
     }
 
@@ -197,18 +197,30 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="time-option">
                     <input 
-                      type="radio" 
+                      type="checkbox" 
                       id="time-weekday" 
                       name="time" 
                       value="weekday" 
                       className="hidden" 
-                      checked={timeOfDay === "weekday"}
-                      onChange={() => setTimeOfDay("weekday")}
+                      checked={timeOfDay.includes("weekday")}
+                      onChange={() => {
+                        if (timeOfDay.includes("weekday")) {
+                          setTimeOfDay(timeOfDay.filter(t => t !== "weekday"));
+                        } else {
+                          setTimeOfDay([...timeOfDay, "weekday"]);
+                        }
+                      }}
                     />
                     <label 
                       htmlFor="time-weekday" 
-                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay === "weekday" ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
-                      onClick={() => setTimeOfDay("weekday")}
+                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("weekday") ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      onClick={() => {
+                        if (timeOfDay.includes("weekday")) {
+                          setTimeOfDay(timeOfDay.filter(t => t !== "weekday"));
+                        } else {
+                          setTimeOfDay([...timeOfDay, "weekday"]);
+                        }
+                      }}
                     >
                       <Calendar className="w-8 h-8 mb-2 text-gray-300" />
                       <span>Weekday Evening</span>
@@ -217,18 +229,30 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
 
                   <div className="time-option">
                     <input 
-                      type="radio" 
+                      type="checkbox" 
                       id="time-weekend" 
                       name="time" 
                       value="weekend" 
                       className="hidden" 
-                      checked={timeOfDay === "weekend"}
-                      onChange={() => setTimeOfDay("weekend")}
+                      checked={timeOfDay.includes("weekend")}
+                      onChange={() => {
+                        if (timeOfDay.includes("weekend")) {
+                          setTimeOfDay(timeOfDay.filter(t => t !== "weekend"));
+                        } else {
+                          setTimeOfDay([...timeOfDay, "weekend"]);
+                        }
+                      }}
                     />
                     <label 
                       htmlFor="time-weekend" 
-                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay === "weekend" ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
-                      onClick={() => setTimeOfDay("weekend")}
+                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("weekend") ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      onClick={() => {
+                        if (timeOfDay.includes("weekend")) {
+                          setTimeOfDay(timeOfDay.filter(t => t !== "weekend"));
+                        } else {
+                          setTimeOfDay([...timeOfDay, "weekend"]);
+                        }
+                      }}
                     >
                       <Calendar className="w-8 h-8 mb-2 text-gray-300" />
                       <span>Weekend</span>
@@ -237,18 +261,30 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
 
                   <div className="time-option">
                     <input 
-                      type="radio" 
+                      type="checkbox" 
                       id="time-late" 
                       name="time" 
                       value="late" 
                       className="hidden" 
-                      checked={timeOfDay === "late"}
-                      onChange={() => setTimeOfDay("late")}
+                      checked={timeOfDay.includes("late")}
+                      onChange={() => {
+                        if (timeOfDay.includes("late")) {
+                          setTimeOfDay(timeOfDay.filter(t => t !== "late"));
+                        } else {
+                          setTimeOfDay([...timeOfDay, "late"]);
+                        }
+                      }}
                     />
                     <label 
                       htmlFor="time-late" 
-                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay === "late" ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
-                      onClick={() => setTimeOfDay("late")}
+                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("late") ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      onClick={() => {
+                        if (timeOfDay.includes("late")) {
+                          setTimeOfDay(timeOfDay.filter(t => t !== "late"));
+                        } else {
+                          setTimeOfDay([...timeOfDay, "late"]);
+                        }
+                      }}
                     >
                       <Moon className="w-8 h-8 mb-2 text-gray-300" />
                       <span>Late Night</span>
@@ -257,18 +293,30 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
 
                   <div className="time-option">
                     <input 
-                      type="radio" 
+                      type="checkbox" 
                       id="time-morning" 
                       name="time" 
                       value="morning" 
                       className="hidden" 
-                      checked={timeOfDay === "morning"}
-                      onChange={() => setTimeOfDay("morning")}
+                      checked={timeOfDay.includes("morning")}
+                      onChange={() => {
+                        if (timeOfDay.includes("morning")) {
+                          setTimeOfDay(timeOfDay.filter(t => t !== "morning"));
+                        } else {
+                          setTimeOfDay([...timeOfDay, "morning"]);
+                        }
+                      }}
                     />
                     <label 
                       htmlFor="time-morning" 
-                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay === "morning" ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
-                      onClick={() => setTimeOfDay("morning")}
+                      className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("morning") ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      onClick={() => {
+                        if (timeOfDay.includes("morning")) {
+                          setTimeOfDay(timeOfDay.filter(t => t !== "morning"));
+                        } else {
+                          setTimeOfDay([...timeOfDay, "morning"]);
+                        }
+                      }}
                     >
                       <Sun className="w-8 h-8 mb-2 text-gray-300" />
                       <span>Morning/Daytime</span>
@@ -287,7 +335,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   <Button 
                     onClick={goToNextStep} 
                     className="px-6 py-2 bg-primary hover:bg-opacity-90 rounded-lg transition-colors"
-                    disabled={!timeOfDay}
+                    disabled={timeOfDay.length === 0}
                   >
                     Next
                   </Button>
