@@ -101,8 +101,8 @@ export default function ProfilePage() {
 
   if (isLoading || !user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-border" />
+      <div className="bg-white min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     );
   }
@@ -189,245 +189,252 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="container mx-auto py-10 px-4 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">My Profile</h1>
-
-      {/* User Info Card */}
-      <Card className="p-6 mb-6 shadow-sm">
-        <div className="flex flex-col md:flex-row justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold">{user.name}</h2>
-            <p className="text-gray-500">@{user.username}</p>
-            <p className="text-gray-500 mt-1">{user.email}</p>
-          </div>
-          <div className="mt-4 md:mt-0">
-            <div className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
-              CineMatch User
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Streaming Services Card */}
-      <Card className="p-6 mb-6 shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">My Streaming Services</h2>
-          {!editingStreamingServices ? (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setEditingStreamingServices(true)}
-            >
-              <Edit2 className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-          ) : (
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setEditingStreamingServices(false);
-                  setSelectedServices(user.streamingServices || []);
-                }}
-              >
-                <X className="h-4 w-4 mr-1" />
-                Cancel
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleStreamingServicesUpdate}
-                disabled={updateStreamingMutation.isPending}
-              >
-                {updateStreamingMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
-                Save
-              </Button>
-            </div>
-          )}
+    <div className="bg-white min-h-screen pt-6 pb-12">
+      <div className="container mx-auto px-6 md:px-8 max-w-4xl">
+        <div className="mb-8 px-2">
+          <h1 className="text-3xl font-bold mb-2">My Profile</h1>
+          <p className="text-slate-500">
+            Manage your account and customize your movie recommendations
+          </p>
         </div>
 
-        {!editingStreamingServices ? (
-          <div className="flex flex-wrap gap-2">
-            {user.streamingServices && user.streamingServices.length > 0 ? (
-              user.streamingServices.map((service: string) => (
-                <Badge key={service} variant="outline" className="text-primary">
-                  {service}
-                </Badge>
-              ))
-            ) : (
-              <p className="text-gray-500 italic">No streaming services selected</p>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {streamingServices.map((service) => (
-              <div 
-                key={service}
-                className={`cursor-pointer p-2 border rounded-md flex items-center space-x-2 ${
-                  selectedServices.includes(service) ? "border-primary bg-primary/5" : "border-gray-200 hover:bg-gray-50"
-                }`}
-                onClick={() => toggleStreamingService(service)}
-              >
-                {selectedServices.includes(service) ? (
-                  <Check className="h-4 w-4 text-primary" />
-                ) : (
-                  <div className="h-4 w-4 border border-gray-300 rounded-sm" />
-                )}
-                <span className={selectedServices.includes(service) ? "text-primary" : ""}>
-                  {service}
-                </span>
+        {/* User Info Card */}
+        <Card className="p-6 mb-6 shadow-lg border border-blue-50">
+          <div className="flex flex-col md:flex-row justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold">{user.name}</h2>
+              <p className="text-gray-500">@{user.username}</p>
+              <p className="text-gray-500 mt-1">{user.email}</p>
+            </div>
+            <div className="mt-4 md:mt-0">
+              <div className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
+                CineMatch User
               </div>
-            ))}
-          </div>
-        )}
-
-        <div className="text-sm text-gray-500 mt-4">
-          These services will be used to suggest films that might be available on your preferred platforms.
-        </div>
-      </Card>
-
-      {/* Country Card */}
-      <Card className="p-6 mb-6 shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">My Country</h2>
-          {!editingCountry ? (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setEditingCountry(true)}
-            >
-              <Edit2 className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-          ) : (
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setEditingCountry(false);
-                  setSelectedCountry(user.country || "");
-                }}
-              >
-                <X className="h-4 w-4 mr-1" />
-                Cancel
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleCountryUpdate}
-                disabled={updateCountryMutation.isPending}
-              >
-                {updateCountryMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
-                Save
-              </Button>
             </div>
-          )}
-        </div>
+          </div>
+        </Card>
 
-        {!editingCountry ? (
-          <div>
-            {user.country ? (
-              <Badge variant="outline" className="text-primary">
-                {user.country}
-              </Badge>
+        {/* Streaming Services Card */}
+        <Card className="p-6 mb-6 shadow-lg border border-blue-50">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">My Streaming Services</h2>
+            {!editingStreamingServices ? (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setEditingStreamingServices(true)}
+              >
+                <Edit2 className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
             ) : (
-              <p className="text-gray-500 italic">No country selected</p>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditingStreamingServices(false);
+                    setSelectedServices(user.streamingServices || []);
+                  }}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Cancel
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleStreamingServicesUpdate}
+                  disabled={updateStreamingMutation.isPending}
+                >
+                  {updateStreamingMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Save
+                </Button>
+              </div>
             )}
           </div>
-        ) : (
-          <Select
-            value={selectedCountry}
-            onValueChange={setSelectedCountry}
-          >
-            <SelectTrigger className="w-full max-w-xs">
-              <SelectValue placeholder="Select a country" />
-            </SelectTrigger>
-            <SelectContent>
-              {countries.map((country) => (
-                <SelectItem key={country} value={country}>
-                  {country}
-                </SelectItem>
+
+          {!editingStreamingServices ? (
+            <div className="flex flex-wrap gap-2">
+              {user.streamingServices && user.streamingServices.length > 0 ? (
+                user.streamingServices.map((service: string) => (
+                  <Badge key={service} variant="outline" className="text-primary">
+                    {service}
+                  </Badge>
+                ))
+              ) : (
+                <p className="text-gray-500 italic">No streaming services selected</p>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {streamingServices.map((service) => (
+                <div 
+                  key={service}
+                  className={`cursor-pointer p-2 border rounded-md flex items-center space-x-2 ${
+                    selectedServices.includes(service) ? "border-primary bg-primary/5" : "border-gray-200 hover:bg-gray-50"
+                  }`}
+                  onClick={() => toggleStreamingService(service)}
+                >
+                  {selectedServices.includes(service) ? (
+                    <Check className="h-4 w-4 text-primary" />
+                  ) : (
+                    <div className="h-4 w-4 border border-gray-300 rounded-sm" />
+                  )}
+                  <span className={selectedServices.includes(service) ? "text-primary" : ""}>
+                    {service}
+                  </span>
+                </div>
               ))}
-            </SelectContent>
-          </Select>
-        )}
+            </div>
+          )}
 
-        <div className="text-sm text-gray-500 mt-4">
-          Your country helps us provide more relevant recommendations based on content availability in your region.
-        </div>
-      </Card>
+          <div className="text-sm text-gray-500 mt-4">
+            These services will be used to suggest films that might be available on your preferred platforms.
+          </div>
+        </Card>
 
-      {/* Change Password */}
-      <Card className="p-6 shadow-sm">
-        <h2 className="text-xl font-semibold mb-4">Change Password</h2>
+        {/* Country Card */}
+        <Card className="p-6 mb-6 shadow-lg border border-blue-50">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">My Country</h2>
+            {!editingCountry ? (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setEditingCountry(true)}
+              >
+                <Edit2 className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            ) : (
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditingCountry(false);
+                    setSelectedCountry(user.country || "");
+                  }}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Cancel
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleCountryUpdate}
+                  disabled={updateCountryMutation.isPending}
+                >
+                  {updateCountryMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Save
+                </Button>
+              </div>
+            )}
+          </div>
 
-        <Form {...passwordForm}>
-          <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
-            <FormField
-              control={passwordForm.control}
-              name="currentPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Current Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+          {!editingCountry ? (
+            <div>
+              {user.country ? (
+                <Badge variant="outline" className="text-primary">
+                  {user.country}
+                </Badge>
+              ) : (
+                <p className="text-gray-500 italic">No country selected</p>
               )}
-            />
-
-            <FormField
-              control={passwordForm.control}
-              name="newPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>New Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={passwordForm.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm New Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button 
-              type="submit" 
-              className="mt-2"
-              disabled={changePasswordMutation.isPending}
+            </div>
+          ) : (
+            <Select
+              value={selectedCountry}
+              onValueChange={setSelectedCountry}
             >
-              {changePasswordMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : null}
-              Change Password
-            </Button>
-          </form>
-        </Form>
-      </Card>
+              <SelectTrigger className="w-full max-w-xs">
+                <SelectValue placeholder="Select a country" />
+              </SelectTrigger>
+              <SelectContent>
+                {countries.map((country) => (
+                  <SelectItem key={country} value={country}>
+                    {country}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          <div className="text-sm text-gray-500 mt-4">
+            Your country helps us provide more relevant recommendations based on content availability in your region.
+          </div>
+        </Card>
+
+        {/* Change Password */}
+        <Card className="p-6 shadow-lg border border-blue-50">
+          <h2 className="text-xl font-semibold mb-4">Change Password</h2>
+
+          <Form {...passwordForm}>
+            <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+              <FormField
+                control={passwordForm.control}
+                name="currentPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Current Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={passwordForm.control}
+                name="newPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>New Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={passwordForm.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm New Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button 
+                type="submit" 
+                className="mt-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
+                disabled={changePasswordMutation.isPending}
+              >
+                {changePasswordMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : null}
+                Change Password
+              </Button>
+            </form>
+          </Form>
+        </Card>
+      </div>
     </div>
   );
 }
