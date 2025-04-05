@@ -22,9 +22,9 @@ export default function Home() {
       const preferencesWithUserInfo = {
         ...preferences,
         // Add streaming services if user has selected them
-        ...(user?.streamingServices?.length && { streamingServices: user.streamingServices }),
+        streamingServices: user?.streamingServices?.length ? user.streamingServices : undefined,
         // Add country if user has specified one
-        ...(user?.country && { country: user.country })
+        country: user?.country || undefined
       };
         
       const response = await apiRequest('POST', '/api/recommendations', preferencesWithUserInfo);

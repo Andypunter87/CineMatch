@@ -23,9 +23,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : undefined;
         
       // Extract user country if logged in and not provided in request
-      const country = req.body.country || (req.isAuthenticated() && req.user 
-        ? req.user.country 
-        : undefined);
+      let country = req.body.country;
+      if ((!country || country === '') && req.isAuthenticated() && req.user && req.user.country) {
+        country = req.user.country;
+      }
       
       // Validate input
       const preferences = recommendationRequestSchema.parse({
@@ -71,7 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : undefined;
         
       // Use user's country if not provided and user is logged in
-      if (!country && req.isAuthenticated() && req.user && req.user.country) {
+      if ((!country || country === '') && req.isAuthenticated() && req.user && req.user.country) {
         country = req.user.country;
       }
       
