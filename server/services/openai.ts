@@ -84,14 +84,22 @@ DO NOT include a posterUrl field in your response. I will generate those separat
     
     // Format and structure the recommendations to match our Film type
     return parsedContent.recommendations.map(film => {
-      // Create a simple placeholder that will always work
-      // Using a data URI directly instead of an external service
-      const title = film.title || "Movie";
-      const safeTitle = title.length > 20 ? title.substring(0, 20) + "..." : title;
-      const year = typeof film.year === 'number' ? film.year : "";
+      // Use a hardcoded set of colorful poster backgrounds
+      const backgrounds = [
+        "linear-gradient(135deg, #3498db, #2c3e50)",
+        "linear-gradient(135deg, #e74c3c, #c0392b)",
+        "linear-gradient(135deg, #1abc9c, #16a085)",
+        "linear-gradient(135deg, #9b59b6, #8e44ad)",
+        "linear-gradient(135deg, #f1c40f, #f39c12)"
+      ];
       
-      // Generate a fixed color poster with the movie title - using UI colors
-      const posterUrl = `https://via.placeholder.com/500x750/3498db/ffffff?text=${encodeURIComponent(safeTitle + (year ? `\n(${year})` : ""))}`;
+      // Choose a background based on the first letter of the title
+      const firstChar = (film.title || "A").charAt(0).toLowerCase();
+      const backgroundIndex = firstChar.charCodeAt(0) % backgrounds.length;
+      const background = backgrounds[backgroundIndex];
+      
+      // No posterUrl - we'll generate it on the client side
+      const posterUrl = "";
       
       return {
         id: film.id || Math.floor(Math.random() * 10000),

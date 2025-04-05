@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
 import { type Film } from "@shared/schema";
 import { Card } from "@/components/ui/card";
-import { Film as FilmIcon, Star, Award, Tag } from "lucide-react";
+import { Film as FilmIcon, Star, Award } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface FilmCardProps {
@@ -9,79 +8,26 @@ interface FilmCardProps {
 }
 
 export default function FilmCard({ film }: FilmCardProps) {
-  const [imageError, setImageError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Create a fallback data URI in case even the placeholder service fails
-  const generateFallbackImage = () => {
-    // Create a simple blue background with the title text
-    const canvas = document.createElement('canvas');
-    canvas.width = 500;
-    canvas.height = 750;
+  // Generate a background gradient based on the film title
+  const getBackgroundGradient = () => {
+    // Define a list of colorful gradients
+    const gradients = [
+      "linear-gradient(135deg, #3498db, #2c3e50)",
+      "linear-gradient(135deg, #e74c3c, #c0392b)",
+      "linear-gradient(135deg, #1abc9c, #16a085)",
+      "linear-gradient(135deg, #9b59b6, #8e44ad)",
+      "linear-gradient(135deg, #f1c40f, #f39c12)",
+      "linear-gradient(135deg, #1e88e5, #0d47a1)",
+      "linear-gradient(135deg, #43a047, #1b5e20)",
+      "linear-gradient(135deg, #fb8c00, #e65100)", 
+      "linear-gradient(135deg, #5e35b1, #311b92)"
+    ];
     
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return '';
+    // Get a consistent gradient based on the film title
+    const titleHash = (film.title || "Movie").split("")
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
     
-    // Draw background
-    ctx.fillStyle = '#3498db';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw title text
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 32px Arial';
-    ctx.textAlign = 'center';
-    
-    // Get title and year
-    const movieTitle = film.title || 'Movie';
-    const displayTitle = movieTitle.length > 20 
-      ? movieTitle.substring(0, 20) + '...' 
-      : movieTitle;
-    
-    // Center the text
-    ctx.fillText(displayTitle, canvas.width / 2, canvas.height / 2);
-    
-    // Draw year if available
-    if (film.year) {
-      ctx.font = '24px Arial';
-      ctx.fillText(`(${film.year})`, canvas.width / 2, canvas.height / 2 + 40);
-    }
-    
-    // Return data URI
-    return canvas.toDataURL('image/png');
-  };
-  
-  // Preload image to check its validity
-  useEffect(() => {
-    if (!film.posterUrl) {
-      setImageError(true);
-      setIsLoading(false);
-      return;
-    }
-    
-    // Set a timer to ensure we don't wait too long for images
-    const loadingTimer = setTimeout(() => {
-      setIsLoading(false);
-    }, 3000);
-    
-    const img = new Image();
-    img.onload = () => {
-      setIsLoading(false);
-      setImageError(false);
-      clearTimeout(loadingTimer);
-    };
-    img.onerror = () => {
-      setIsLoading(false);
-      setImageError(true);
-      clearTimeout(loadingTimer);
-    };
-    img.src = film.posterUrl;
-    
-    return () => clearTimeout(loadingTimer);
-  }, [film.posterUrl]);
-  
-  // Create a fallback image when poster URL is broken or missing
-  const handleImageError = () => {
-    setImageError(true);
+    return gradients[titleHash % gradients.length];
   };
 
   // Ensure we have valid film data
@@ -100,24 +46,18 @@ export default function FilmCard({ film }: FilmCardProps) {
   return (
     <Card className="recommendation-card bg-white rounded-lg overflow-hidden shadow-lg border border-blue-100 group hover:shadow-xl transition-all duration-200 h-full flex flex-col">
       <div className="relative flex-shrink-0">
-        {isLoading ? (
-          <div className="recommendation-image w-full h-64 bg-blue-50 flex items-center justify-center animate-pulse">
-            <FilmIcon className="w-10 h-10 text-blue-200" />
+        {/* Poster with gradient background */}
+        <div 
+          className="w-full h-72 flex items-center justify-center text-center p-4"
+          style={{ background: getBackgroundGradient() }}
+        >
+          <div className="flex flex-col items-center">
+            <FilmIcon className="w-10 h-10 text-white/80 mb-4" />
+            <h3 className="text-xl md:text-2xl font-bold text-white mb-1">{title}</h3>
+            <p className="text-white/90 font-medium">{year}</p>
+            <p className="text-white/70 text-sm mt-2">{director}</p>
           </div>
-        ) : imageError ? (
-          <img 
-            src={generateFallbackImage()}
-            alt={title} 
-            className="recommendation-image w-full h-72 object-cover"
-          />
-        ) : (
-          <img 
-            src={film.posterUrl} 
-            alt={title} 
-            onError={handleImageError}
-            className="recommendation-image w-full h-72 object-cover transition-all duration-300 group-hover:brightness-[0.9]"
-          />
-        )}
+        </div>
         
         {/* Match percentage badge */}
         <div className="absolute top-2 right-2">
@@ -134,7 +74,7 @@ export default function FilmCard({ film }: FilmCardProps) {
           </Badge>
         </div>
         
-        <div className="recommendation-details absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="recommendation-details absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <h3 className="text-xl font-bold text-white">{title}</h3>
           <p className="text-gray-200 text-sm">
             {year} • {director}
