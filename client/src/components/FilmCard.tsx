@@ -35,7 +35,9 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
       return await res.json();
     },
     onSuccess: (watchlistItem) => {
+      // Only invalidate watchlist data without redirecting to homepage
       queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
+      
       toast({
         title: "Added to Watchlist",
         description: `${film.title} has been added to your watchlist as "To Watch"`,
@@ -44,7 +46,7 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
             variant="outline" 
             size="sm" 
             onClick={() => {
-              // Open dialog or redirect to watchlist page
+              // Only redirect if user clicks this button
               window.location.href = "/watchlist";
             }}
           >
@@ -195,7 +197,7 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
           {user && (
             <div className="mt-3 pt-2 border-t border-gray-100">
               <Button 
-                className="w-full"
+                className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
                 size="sm"
                 onClick={() => addToWatchlistMutation.mutate()}
                 disabled={addToWatchlistMutation.isPending}
