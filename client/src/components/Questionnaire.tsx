@@ -125,8 +125,9 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       className={`flex flex-col items-center p-4 border-2 ${location === "travel" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => setLocation("travel")}
                     >
-                      <Globe className="w-8 h-8 mb-2 text-gray-300" />
+                      <Globe className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Traveling</span>
+                      <span className="text-xs text-gray-500 mt-1">On the go entertainment</span>
                     </label>
                   </div>
 
@@ -145,8 +146,9 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       className={`flex flex-col items-center p-4 border-2 ${location === "date" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => setLocation("date")}
                     >
-                      <Heart className="w-8 h-8 mb-2 text-gray-300" />
+                      <Heart className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Date Night</span>
+                      <span className="text-xs text-gray-500 mt-1">Romantic evening</span>
                     </label>
                   </div>
 
@@ -165,8 +167,9 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       className={`flex flex-col items-center p-4 border-2 ${location === "friends" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => setLocation("friends")}
                     >
-                      <Users className="w-8 h-8 mb-2 text-gray-300" />
+                      <Users className="w-8 h-8 mb-2 text-gray-600" />
                       <span>With Friends</span>
+                      <span className="text-xs text-gray-500 mt-1">Group viewing party</span>
                     </label>
                   </div>
                 </div>
@@ -217,6 +220,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <Calendar className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Weekday Evening</span>
+                      <span className="text-xs text-gray-500 mt-1">After work unwinding</span>
                     </label>
                   </div>
 
@@ -242,6 +246,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <Calendar className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Weekend</span>
+                      <span className="text-xs text-gray-500 mt-1">Relaxed leisure time</span>
                     </label>
                   </div>
 
@@ -267,6 +272,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <Moon className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Late Night</span>
+                      <span className="text-xs text-gray-500 mt-1">Midnight viewing</span>
                     </label>
                   </div>
 
@@ -292,6 +298,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <Sun className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Morning/Daytime</span>
+                      <span className="text-xs text-gray-500 mt-1">Bright hours watch</span>
                     </label>
                   </div>
                 </div>
@@ -337,6 +344,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <span className="text-2xl mb-2">😂</span>
                       <span>Laugh</span>
+                      <span className="text-xs text-gray-500 mt-1">Comedy & fun</span>
                     </label>
                   </div>
 
@@ -357,6 +365,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <span className="text-2xl mb-2">🤔</span>
                       <span>Think</span>
+                      <span className="text-xs text-gray-500 mt-1">Thought-provoking</span>
                     </label>
                   </div>
 
@@ -377,6 +386,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <span className="text-2xl mb-2">😢</span>
                       <span>Cry</span>
+                      <span className="text-xs text-gray-500 mt-1">Emotional drama</span>
                     </label>
                   </div>
 
@@ -397,6 +407,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <span className="text-2xl mb-2">😱</span>
                       <span>Thrill</span>
+                      <span className="text-xs text-gray-500 mt-1">Suspense & action</span>
                     </label>
                   </div>
 
@@ -417,6 +428,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <span className="text-2xl mb-2">✨</span>
                       <span>Escape</span>
+                      <span className="text-xs text-gray-500 mt-1">Fantasy & adventure</span>
                     </label>
                   </div>
 
@@ -437,6 +449,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <span className="text-2xl mb-2">💫</span>
                       <span>Inspire</span>
+                      <span className="text-xs text-gray-500 mt-1">Uplifting stories</span>
                     </label>
                   </div>
                 </div>
