@@ -35,21 +35,25 @@ export default function FilmCard({ film }: FilmCardProps) {
         )}
         <div className="recommendation-details absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <h3 className="text-xl font-bold text-white">{film.title}</h3>
-          <p className="text-gray-200 text-sm">{film.year} | {film.actors.slice(0, 2).join(', ')}</p>
-          <p className="mt-2 text-sm text-white">{film.synopsis}</p>
+          <p className="text-gray-200 text-sm">
+            {film.year} {film.actors && film.actors.length > 0 ? `| ${film.actors.slice(0, 2).join(', ')}` : ''}
+          </p>
+          <p className="mt-2 text-sm text-white">{film.synopsis || 'No synopsis available'}</p>
           <div className="mt-4 flex justify-between items-center">
-            <span className="text-blue-200 font-medium">{film.genres.join(' / ')}</span>
+            <span className="text-blue-200 font-medium">
+              {film.genres && film.genres.length > 0 ? film.genres.join(' / ') : 'Various Genres'}
+            </span>
             <span className="bg-primary text-white px-2 py-1 rounded text-xs font-semibold">
-              {film.matchPercentage}% Match
+              {film.matchPercentage || '90'}% Match
             </span>
           </div>
         </div>
       </div>
       <div className="p-4">
         <h3 className="text-lg font-bold truncate text-gray-800">{film.title}</h3>
-        <p className="text-gray-600 text-sm">{film.year} | {film.director}</p>
+        <p className="text-gray-600 text-sm">{film.year} {film.director ? `| ${film.director}` : ''}</p>
         <p className="mt-2 text-sm text-gray-700">
-          <span className="text-primary font-medium">Why this matches:</span> Perfect for {film.matchReason}
+          <span className="text-primary font-medium">Why this matches:</span> {film.matchReason ? `Perfect for ${film.matchReason}` : 'Matches your preferences'}
         </p>
       </div>
     </Card>
