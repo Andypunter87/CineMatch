@@ -123,7 +123,7 @@ export default function FilmCard({ film }: FilmCardProps) {
           {/* Streaming services availability */}
           {film.availableOn && film.availableOn.length > 0 ? (
             <div className="text-sm">
-              <span className="text-primary font-medium">Available on:</span> {' '}
+              <span className="text-primary font-medium">Might be available on:</span> {' '}
               <div className="flex flex-wrap gap-1 mt-1">
                 {film.availableOn.map((service, index) => (
                   <Badge key={index} variant="secondary" className="bg-green-100 text-green-800 border-green-200">
@@ -131,10 +131,13 @@ export default function FilmCard({ film }: FilmCardProps) {
                   </Badge>
                 ))}
               </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Availability may vary by region and time - please verify on the service
+              </p>
             </div>
           ) : (
             <p className="text-sm text-gray-500 italic">
-              Not available on your streaming services
+              May not be available on your streaming services
             </p>
           )}
         </div>

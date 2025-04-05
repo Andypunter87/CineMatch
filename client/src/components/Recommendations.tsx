@@ -77,6 +77,11 @@ export default function Recommendations({
                 <> {" "}on <span className="text-primary font-medium">{preferences.streamingServices.join(", ")}</span></>
               )}
             </p>
+            {preferences.streamingServices && preferences.streamingServices.length > 0 && (
+              <div className="mt-2 text-xs bg-amber-50 border border-amber-200 rounded-md p-2 text-amber-700">
+                <strong>Note:</strong> Streaming availability is an estimate and may vary. For best results, verify films are available on your platforms before watching.
+              </div>
+            )}
           </div>
           <div className="mt-4 md:mt-0">
             <div className="flex space-x-2">
