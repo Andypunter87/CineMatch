@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { type Film, type RecommendationRequest } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Film as FilmIcon, Star, Award, BookmarkPlus, Loader2, Check, AlertCircle } from "lucide-react";
@@ -18,6 +19,7 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [showConfirmation, setShowConfirmation] = useState(false);
   
   // Add to watchlist mutation
   const addToWatchlistMutation = useMutation({
@@ -40,38 +42,17 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
       // Only invalidate watchlist data without redirecting to homepage
       queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
       
-      toast({
-        title: (
-          <div className="flex items-center">
-            <Check className="mr-2 h-4 w-4 text-green-500" />
-            Added to Watchlist
-          </div>
-        ),
-        description: `${film.title} has been added to your watchlist as "To Watch"`,
-        action: (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => {
-              // Use wouter navigation instead of a page refresh
-              setLocation("/watchlist");
-            }}
-          >
-            View Watchlist
-          </Button>
-        ),
-        // Make toast dismissible
-        duration: 5000,
-      });
+      // Show confirmation message within the card
+      setShowConfirmation(true);
+      
+      // Auto-hide confirmation after 5 seconds
+      setTimeout(() => {
+        setShowConfirmation(false);
+      }, 5000);
     },
     onError: (error: Error) => {
       toast({
-        title: (
-          <div className="flex items-center">
-            <AlertCircle className="mr-2 h-4 w-4 text-red-500" />
-            Error
-          </div>
-        ),
+        title: "Error",
         description: `Failed to add to watchlist: ${error.message}`,
         variant: "destructive",
       });
@@ -207,8 +188,26 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
             )}
           </div>
           
-          {/* Add to Watchlist button - show only for authenticated users */}
-          {user && (
+          {/* Confirmation message after adding to watchlist */}
+          {showConfirmation && (
+            <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between bg-blue-50 p-2 rounded-md">
+              <div className="flex items-center">
+                <Check className="h-4 w-4 text-green-500 mr-2" />
+                <span className="text-sm text-blue-700 font-medium">Added to watchlist</span>
+              </div>
+              <Button 
+                variant="link" 
+                size="sm" 
+                onClick={() => setLocation("/watchlist")}
+                className="text-blue-600 p-0 h-auto"
+              >
+                View
+              </Button>
+            </div>
+          )}
+          
+          {/* Add to Watchlist button - show only for authenticated users and if not showing confirmation */}
+          {user && !showConfirmation && (
             <div className="mt-3 pt-2 border-t border-gray-100">
               <Button 
                 className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
