@@ -12,12 +12,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 interface QuestionnaireProps {
   onSubmit: (data: RecommendationRequest) => void;
 }
 
 export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [location, setLocation] = useState<RecommendationRequest["location"] | "">("");
   const [timeOfDay, setTimeOfDay] = useState<RecommendationRequest["timeOfDay"]>([]);
@@ -43,13 +45,19 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
 
     setIsSubmitting(true);
     
+    // Include the user's country for better localized recommendations
+    const requestData: RecommendationRequest = {
+      location,
+      timeOfDay,
+      mood,
+      country: user?.country,
+      // Streaming services are now handled in the Home component
+      // to allow for more flexibility and automatic updates
+    };
+    
     // Simulate a slight delay for better user experience
     setTimeout(() => {
-      onSubmit({
-        location,
-        timeOfDay,
-        mood
-      });
+      onSubmit(requestData);
       setIsSubmitting(false);
     }, 1000);
   };

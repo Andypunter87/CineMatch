@@ -20,15 +20,17 @@ type AuthContextType = {
 };
 
 // Create schemas for validation
-const loginSchema = z.object({
+export const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-const registerSchema = insertUserSchema.extend({
+export const registerSchema = insertUserSchema.extend({
   password: z.string().min(6, "Password must be at least 6 characters"),
   email: z.string().email("Please enter a valid email"),
   confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+  streamingServices: z.array(z.string()).default([]),
+  country: z.string().min(1, "Please select your country"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"], 
@@ -160,5 +162,4 @@ export function useAuth() {
   return context;
 }
 
-// Validation schemas for form validation
-export { loginSchema, registerSchema };
+// Already exported

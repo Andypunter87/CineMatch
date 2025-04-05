@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Mail, User, Lock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Mail, User, Lock, Globe, Tv } from "lucide-react";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
@@ -33,6 +35,7 @@ export default function AuthPage() {
       password: "",
       confirmPassword: "",
       streamingServices: [],
+      country: "",
     },
   });
 
@@ -207,6 +210,96 @@ export default function AuthPage() {
                               <Input className="pl-10" type="password" placeholder="Confirm your password" {...field} />
                             </div>
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={registerForm.control}
+                      name="country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Country</FormLabel>
+                          <div className="relative">
+                            <Globe className="absolute left-3 top-2.5 h-4 w-4 text-slate-500 z-10" />
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="pl-10">
+                                  <SelectValue placeholder="Select your country" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="us">United States</SelectItem>
+                                <SelectItem value="ca">Canada</SelectItem>
+                                <SelectItem value="uk">United Kingdom</SelectItem>
+                                <SelectItem value="au">Australia</SelectItem>
+                                <SelectItem value="fr">France</SelectItem>
+                                <SelectItem value="de">Germany</SelectItem>
+                                <SelectItem value="jp">Japan</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={registerForm.control}
+                      name="streamingServices"
+                      render={() => (
+                        <FormItem>
+                          <div className="mb-2">
+                            <FormLabel className="text-base">Streaming Services</FormLabel>
+                            <div className="flex items-center mb-1">
+                              <Tv className="h-4 w-4 text-slate-500 mr-2" />
+                              <p className="text-sm text-slate-500">
+                                Select the streaming services you use
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {['netflix', 'hulu', 'disney', 'amazon', 'hbo', 'apple', 'paramount'].map((service) => (
+                            <FormField
+                              key={service}
+                              control={registerForm.control}
+                              name="streamingServices"
+                              render={({ field }) => {
+                                return (
+                                  <FormItem
+                                    key={service}
+                                    className="flex flex-row items-start space-x-3 space-y-0 mb-1"
+                                  >
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value?.includes(service)}
+                                        onCheckedChange={(checked) => {
+                                          return checked
+                                            ? field.onChange([...field.value, service])
+                                            : field.onChange(
+                                                field.value?.filter(
+                                                  (value) => value !== service
+                                                )
+                                              )
+                                        }}
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="text-sm font-normal capitalize">
+                                      {service === 'hbo' ? 'HBO Max' : 
+                                       service === 'disney' ? 'Disney+' :
+                                       service === 'amazon' ? 'Amazon Prime' :
+                                       service === 'apple' ? 'Apple TV+' :
+                                       service === 'paramount' ? 'Paramount+' :
+                                       service}
+                                    </FormLabel>
+                                  </FormItem>
+                                )
+                              }}
+                            />
+                          ))}
+                          
                           <FormMessage />
                         </FormItem>
                       )}

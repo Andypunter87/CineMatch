@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   name: text("name"),
   email: text("email").notNull().unique(),
   streamingServices: text("streaming_services").array(),
+  country: text("country"),
   authProvider: text("auth_provider").default("local"),
   providerId: text("provider_id"),
 });
@@ -19,6 +20,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   name: true,
   email: true,
   streamingServices: true,
+  country: true,
   authProvider: true,
   providerId: true,
 });
@@ -43,7 +45,8 @@ export const recommendationRequestSchema = z.object({
   location: z.enum(["home", "travel", "date", "friends"]),
   timeOfDay: z.array(z.enum(["weekday", "weekend", "late", "morning"])).min(1),
   mood: z.enum(["laugh", "think", "cry", "thrill", "escape", "inspire"]),
-  streamingServices: z.array(z.string()).optional()
+  streamingServices: z.array(z.string()).optional(),
+  country: z.string().optional()
 });
 
 export type RecommendationRequest = z.infer<typeof recommendationRequestSchema>;
