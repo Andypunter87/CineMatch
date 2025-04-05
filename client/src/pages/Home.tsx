@@ -43,7 +43,7 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 bg-white">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-center mb-2 bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
           Find Your Perfect Movie Match
@@ -51,17 +51,20 @@ export default function Home() {
         <p className="text-center text-gray-600 max-w-2xl mx-auto">
           Tell us about your mood and preferences, and we'll recommend the perfect films for you to watch.
         </p>
-        {user && user.streamingServices && user.streamingServices.length > 0 && (
-          <div className="mt-2 text-center text-sm bg-blue-50 border border-blue-100 rounded-lg p-3 max-w-2xl mx-auto">
-            <span className="font-medium text-blue-700">Streaming match:</span> We'll search for films available on your preferred platforms 
-            ({user.streamingServices.join(", ")}) in {user.country || "your country"}.
-          </div>
-        )}
       </div>
       
       <div className="max-w-4xl mx-auto">
         {showQuestionnaire ? (
-          <Questionnaire onSubmit={handleSubmitQuestionnaire} />
+          <>
+            <Questionnaire onSubmit={handleSubmitQuestionnaire} />
+            
+            {user && user.streamingServices && user.streamingServices.length > 0 && (
+              <div className="mt-6 text-center text-sm bg-blue-50 border border-blue-100 rounded-lg p-4 max-w-2xl mx-auto shadow-[0_4px_14px_0_rgba(59,130,246,0.2)]">
+                <span className="font-medium text-blue-700">Streaming match:</span> We'll search for films available on your preferred platforms 
+                ({user.streamingServices.join(", ")}) in {user.country || "your country"}.
+              </div>
+            )}
+          </>
         ) : (
           <Recommendations 
             recommendations={recommendations || []} 

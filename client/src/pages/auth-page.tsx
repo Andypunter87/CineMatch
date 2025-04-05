@@ -34,7 +34,7 @@ export default function AuthPage() {
       name: "",
       password: "",
       confirmPassword: "",
-      streamingServices: [],
+      streamingServices: [] as string[],
       country: "",
     },
   });
@@ -69,7 +69,7 @@ export default function AuthPage() {
           </CardHeader>
           
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "register")}>
-            <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsList className="grid w-80 max-w-full mx-auto grid-cols-2 mb-4">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>
             </TabsList>
@@ -261,7 +261,7 @@ export default function AuthPage() {
                             </div>
                           </div>
                           
-                          {['netflix', 'hulu', 'disney', 'amazon', 'hbo', 'apple', 'paramount'].map((service) => (
+                          {['netflix', 'hulu', 'disney', 'amazon', 'hbo', 'apple', 'paramount', 'bbc', 'itv', 'channel4', 'mubi'].map((service) => (
                             <FormField
                               key={service}
                               control={registerForm.control}
@@ -292,6 +292,10 @@ export default function AuthPage() {
                                        service === 'amazon' ? 'Amazon Prime' :
                                        service === 'apple' ? 'Apple TV+' :
                                        service === 'paramount' ? 'Paramount+' :
+                                       service === 'bbc' ? 'BBC iPlayer' :
+                                       service === 'itv' ? 'ITVx' :
+                                       service === 'channel4' ? 'Channel 4' :
+                                       service === 'mubi' ? 'MUBI' :
                                        service}
                                     </FormLabel>
                                   </FormItem>

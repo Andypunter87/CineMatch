@@ -39,8 +39,11 @@ const streamingServices = [
   "Peacock",
   "Paramount+",
   "Crunchyroll",
-  "Mubi",
+  "MUBI",
   "Criterion Channel",
+  "BBC iPlayer",
+  "ITVx",
+  "Channel 4",
 ];
 
 // Countries list (same as in the auth page)

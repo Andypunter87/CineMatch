@@ -50,7 +50,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       location,
       timeOfDay,
       mood,
-      country: user?.country,
+      country: user?.country || undefined,
       // Streaming services are now handled in the Home component
       // to allow for more flexibility and automatic updates
     };
@@ -74,7 +74,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
           </div>
         </div>
 
-        <Card className="bg-white border border-blue-100 shadow-lg">
+        <Card className="bg-white border border-blue-100 shadow-[0_4px_14px_0_rgba(59,130,246,0.2)]">
           <CardContent className="p-8">
             {/* Step 1: Welcome */}
             {currentStep === 1 && (

@@ -44,7 +44,7 @@ export default function FilmCard({ film }: FilmCardProps) {
   const matchPercentage = film.matchPercentage || 90;
   
   return (
-    <Card className="recommendation-card bg-white rounded-lg overflow-hidden shadow-lg border border-blue-100 group hover:shadow-xl transition-all duration-200 h-full flex flex-col">
+    <Card className="recommendation-card bg-white rounded-lg overflow-hidden shadow-[0_4px_14px_0_rgba(59,130,246,0.2)] border border-blue-100 group hover:shadow-[0_8px_20px_0_rgba(59,130,246,0.25)] transition-all duration-200 h-full flex flex-col">
       <div className="relative flex-shrink-0">
         {/* Poster with gradient background */}
         <div 

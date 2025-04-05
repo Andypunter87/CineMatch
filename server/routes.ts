@@ -129,7 +129,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       "Paramount+", 
       "Crunchyroll",
       "Mubi",
-      "Criterion Channel"
+      "Criterion Channel",
+      "BBC iPlayer",
+      "ITVX",
+      "Channel 4"
     ];
     
     res.json(streamingServices);
