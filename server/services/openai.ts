@@ -24,7 +24,8 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
     // Create the system prompt
     const systemPrompt = `You are a film recommendation expert. Provide personalized movie recommendations based on the user's preferences.
 The recommendations should include a mix of mainstream and independent/foreign films.
-Return exactly 6 films that match the criteria.`;
+Return exactly 6 films that match the criteria.
+Format your response as a JSON object with a 'recommendations' array.`;
 
     // Create the user query
     const userQuery = `I'm looking for movie recommendations with these preferences:
@@ -33,18 +34,19 @@ Return exactly 6 films that match the criteria.`;
 - Mood: ${preferences.mood}
 - ${streamingServicesString}
 
-For each film, provide:
+Please respond with a valid JSON object containing an array of recommendations.
+Each film in the JSON recommendations array should include:
 1. A unique id (number)
-2. Title
-3. Year of release
-4. Director
-5. List of main actors (3-4 names)
-6. A brief synopsis (1-2 sentences)
-7. List of genres
-8. Type (either "mainstream" or "indie")
-9. A URL for the poster image (use themoviedb.org URLs if possible)
-10. A match percentage (between 80-98)
-11. A match reason explaining why this film is suitable for my criteria (1 sentence)`;
+2. Title (string)
+3. Year of release (number)
+4. Director (string)
+5. List of main actors (array of strings, 3-4 names)
+6. A brief synopsis (string, 1-2 sentences)
+7. List of genres (array of strings)
+8. Type (string, either "mainstream" or "indie")
+9. A posterUrl (string) - use TMDB format: "https://image.tmdb.org/t/p/w500/[path]" or another reliable source
+10. A match percentage (number between 80-98)
+11. A match reason (string) explaining why this film matches my criteria (1 sentence)`;
 
     // Make the API call
     const response = await openai.chat.completions.create({

@@ -1,19 +1,38 @@
+import { useState } from "react";
 import { type Film } from "@shared/schema";
 import { Card } from "@/components/ui/card";
+import { Film as FilmIcon } from "lucide-react";
 
 interface FilmCardProps {
   film: Film;
 }
 
 export default function FilmCard({ film }: FilmCardProps) {
+  const [imageError, setImageError] = useState(false);
+  
+  // Create a fallback image when poster URL is broken or missing
+  const handleImageError = () => {
+    setImageError(true);
+  };
+  
   return (
     <Card className="recommendation-card bg-white rounded-lg overflow-hidden shadow-lg border border-blue-100 group hover:shadow-xl transition-all duration-200">
       <div className="relative">
-        <img 
-          src={film.posterUrl} 
-          alt={film.title} 
-          className="recommendation-image w-full h-64 object-cover transition-all duration-300 group-hover:brightness-[0.8]"
-        />
+        {imageError ? (
+          <div className="recommendation-image w-full h-64 bg-blue-100 flex items-center justify-center">
+            <div className="flex flex-col items-center">
+              <FilmIcon className="w-12 h-12 text-primary opacity-60" />
+              <p className="mt-2 text-primary/60 font-medium">{film.title}</p>
+            </div>
+          </div>
+        ) : (
+          <img 
+            src={film.posterUrl} 
+            alt={film.title} 
+            onError={handleImageError}
+            className="recommendation-image w-full h-64 object-cover transition-all duration-300 group-hover:brightness-[0.8]"
+          />
+        )}
         <div className="recommendation-details absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <h3 className="text-xl font-bold text-white">{film.title}</h3>
           <p className="text-gray-200 text-sm">{film.year} | {film.actors.slice(0, 2).join(', ')}</p>
