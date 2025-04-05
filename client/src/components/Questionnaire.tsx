@@ -79,12 +79,11 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
             {/* Step 1: Welcome */}
             {currentStep === 1 && (
               <div>
-                <h2 className="text-3xl font-bold mb-6 text-center">Find Your Perfect Film Match</h2>
                 <p className="text-lg text-center mb-8">Answer a few questions and we'll recommend films that match your current situation and mood.</p>
                 <div className="flex justify-center">
                   <Button 
                     onClick={goToNextStep} 
-                    className="px-8 py-6 bg-primary hover:bg-opacity-90 rounded-lg font-medium text-white transition-all transform hover:scale-105"
+                    className="px-8 py-6 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg font-medium text-white transition-all transform hover:scale-105"
                   >
                     Let's Begin
                   </Button>
@@ -192,7 +191,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   </Button>
                   <Button 
                     onClick={goToNextStep} 
-                    className="px-6 py-2 bg-primary hover:bg-opacity-90 rounded-lg transition-colors"
+                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg transition-colors"
                     disabled={!location}
                   >
                     Next
@@ -321,7 +320,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   </Button>
                   <Button 
                     onClick={goToNextStep} 
-                    className="px-6 py-2 bg-primary hover:bg-opacity-90 rounded-lg transition-colors"
+                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg transition-colors"
                     disabled={timeOfDay.length === 0}
                   >
                     Next
@@ -472,7 +471,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   </Button>
                   <Button 
                     onClick={submitQuestionnaire} 
-                    className="px-6 py-3 bg-primary hover:bg-opacity-90 rounded-lg font-medium transition-all transform hover:scale-105"
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg font-medium transition-all transform hover:scale-105"
                     disabled={!mood || isSubmitting}
                   >
                     {isSubmitting ? (
