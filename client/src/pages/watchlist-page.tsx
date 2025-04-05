@@ -297,7 +297,7 @@ export default function WatchlistPage() {
                 ) : (
                   <Eye className="h-4 w-4 mr-1" />
                 )}
-                {item.watched ? "Unwatch" : "Watched"}
+                {item.watched ? "Unwatch" : "Mark as Watched"}
               </Button>
               <div className="flex gap-2">
                 <Button
