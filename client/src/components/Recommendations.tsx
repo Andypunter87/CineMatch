@@ -61,11 +61,11 @@ export default function Recommendations({
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
             <h2 className="text-3xl font-bold mb-2">Your Film Recommendations</h2>
-            <p className="text-gray-400">
+            <p className="text-gray-600">
               Based on your preferences: {" "}
-              <span className="text-light">{getLocationText(preferences.location)}</span>, {" "}
-              <span className="text-light">{getTimeText(preferences.timeOfDay)}</span>, {" "}
-              <span className="text-light">{getMoodText(preferences.mood)}</span>
+              <span className="text-primary font-medium">{getLocationText(preferences.location)}</span>, {" "}
+              <span className="text-primary font-medium">{getTimeText(preferences.timeOfDay)}</span>, {" "}
+              <span className="text-primary font-medium">{getMoodText(preferences.mood)}</span>
             </p>
           </div>
           <div className="mt-4 md:mt-0">
@@ -98,20 +98,20 @@ export default function Recommendations({
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-gray-900 rounded-lg overflow-hidden shadow-lg">
-                <Skeleton className="w-full h-64" />
+              <div key={i} className="bg-white rounded-lg overflow-hidden shadow-lg border border-blue-100">
+                <Skeleton className="w-full h-64 bg-blue-100" />
                 <div className="p-4">
-                  <Skeleton className="h-6 w-3/4 mb-2" />
-                  <Skeleton className="h-4 w-1/2 mb-4" />
-                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-6 w-3/4 mb-2 bg-blue-100" />
+                  <Skeleton className="h-4 w-1/2 mb-4 bg-blue-100" />
+                  <Skeleton className="h-16 w-full bg-blue-100" />
                 </div>
               </div>
             ))}
           </div>
         ) : recommendations.length === 0 ? (
-          <div className="bg-gray-900 p-6 rounded-lg text-center">
-            <p className="text-xl">No recommendations found based on your preferences.</p>
-            <p className="mt-2 text-gray-400">Try a different combination of preferences.</p>
+          <div className="bg-white p-6 rounded-lg text-center border border-blue-100 shadow-md">
+            <p className="text-xl text-gray-800">No recommendations found based on your preferences.</p>
+            <p className="mt-2 text-gray-600">Try a different combination of preferences.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

@@ -27,7 +27,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-dark text-light flex flex-col">
+    <div className="min-h-screen bg-blue-50 text-gray-800 flex flex-col">
       <Header />
       <main className="flex-grow">
         {showQuestionnaire ? (

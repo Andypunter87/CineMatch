@@ -25,6 +25,7 @@ export type Film = {
   type: "mainstream" | "indie";
   posterUrl: string;
   matchPercentage?: number;
+  matchReason?: string;
 };
 
 // Define recommendation request schema

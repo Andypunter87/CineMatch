@@ -66,7 +66,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
           </div>
         </div>
 
-        <Card className="bg-gray-900 border-gray-800">
+        <Card className="bg-white border border-blue-100 shadow-lg">
           <CardContent className="p-8">
             {/* Step 1: Welcome */}
             {currentStep === 1 && (
@@ -101,11 +101,12 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     />
                     <label 
                       htmlFor="location-home" 
-                      className={`flex flex-col items-center p-4 border-2 ${location === "home" ? "border-primary bg-primary bg-opacity-10" : "border-gray-700"} rounded-lg cursor-pointer hover:bg-gray-800 transition-all`}
+                      className={`flex flex-col items-center p-4 border-2 ${location === "home" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => setLocation("home")}
                     >
-                      <HomeIcon className="w-8 h-8 mb-2 text-gray-300" />
+                      <HomeIcon className="w-8 h-8 mb-2 text-gray-600" />
                       <span>At Home</span>
+                      <span className="text-xs text-gray-500 mt-1">Cozy movie night</span>
                     </label>
                   </div>
 
