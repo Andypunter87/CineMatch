@@ -84,15 +84,14 @@ DO NOT include a posterUrl field in your response. I will generate those separat
     
     // Format and structure the recommendations to match our Film type
     return parsedContent.recommendations.map(film => {
-      // Create a slug from the movie title for more reliable poster URLs
-      const titleSlug = film.title
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/[\s_-]+/g, '-')
-        .trim();
+      // Create a simple placeholder that will always work
+      // Using a data URI directly instead of an external service
+      const title = film.title || "Movie";
+      const safeTitle = title.length > 20 ? title.substring(0, 20) + "..." : title;
+      const year = typeof film.year === 'number' ? film.year : "";
       
-      // Generate a reliable placeholder image URL with the movie title
-      const posterUrl = `https://placehold.co/600x900/3498db/ffffff?text=${encodeURIComponent(film.title)}`;
+      // Generate a fixed color poster with the movie title - using UI colors
+      const posterUrl = `https://via.placeholder.com/500x750/3498db/ffffff?text=${encodeURIComponent(safeTitle + (year ? `\n(${year})` : ""))}`;
       
       return {
         id: film.id || Math.floor(Math.random() * 10000),

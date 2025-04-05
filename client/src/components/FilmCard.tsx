@@ -12,6 +12,44 @@ export default function FilmCard({ film }: FilmCardProps) {
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
+  // Create a fallback data URI in case even the placeholder service fails
+  const generateFallbackImage = () => {
+    // Create a simple blue background with the title text
+    const canvas = document.createElement('canvas');
+    canvas.width = 500;
+    canvas.height = 750;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+    
+    // Draw background
+    ctx.fillStyle = '#3498db';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw title text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 32px Arial';
+    ctx.textAlign = 'center';
+    
+    // Get title and year
+    const movieTitle = film.title || 'Movie';
+    const displayTitle = movieTitle.length > 20 
+      ? movieTitle.substring(0, 20) + '...' 
+      : movieTitle;
+    
+    // Center the text
+    ctx.fillText(displayTitle, canvas.width / 2, canvas.height / 2);
+    
+    // Draw year if available
+    if (film.year) {
+      ctx.font = '24px Arial';
+      ctx.fillText(`(${film.year})`, canvas.width / 2, canvas.height / 2 + 40);
+    }
+    
+    // Return data URI
+    return canvas.toDataURL('image/png');
+  };
+  
   // Preload image to check its validity
   useEffect(() => {
     if (!film.posterUrl) {
@@ -20,16 +58,25 @@ export default function FilmCard({ film }: FilmCardProps) {
       return;
     }
     
+    // Set a timer to ensure we don't wait too long for images
+    const loadingTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
+    
     const img = new Image();
     img.onload = () => {
       setIsLoading(false);
       setImageError(false);
+      clearTimeout(loadingTimer);
     };
     img.onerror = () => {
       setIsLoading(false);
       setImageError(true);
+      clearTimeout(loadingTimer);
     };
     img.src = film.posterUrl;
+    
+    return () => clearTimeout(loadingTimer);
   }, [film.posterUrl]);
   
   // Create a fallback image when poster URL is broken or missing
@@ -58,13 +105,11 @@ export default function FilmCard({ film }: FilmCardProps) {
             <FilmIcon className="w-10 h-10 text-blue-200" />
           </div>
         ) : imageError ? (
-          <div className="recommendation-image w-full h-64 bg-blue-100 flex items-center justify-center">
-            <div className="flex flex-col items-center p-2 text-center">
-              <FilmIcon className="w-12 h-12 text-primary opacity-60 mb-2" />
-              <p className="text-primary/70 font-medium text-lg">{title}</p>
-              <p className="text-primary/50 text-sm">{year} • {film.type}</p>
-            </div>
-          </div>
+          <img 
+            src={generateFallbackImage()}
+            alt={title} 
+            className="recommendation-image w-full h-72 object-cover"
+          />
         ) : (
           <img 
             src={film.posterUrl} 
