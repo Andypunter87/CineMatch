@@ -5,6 +5,7 @@ import Questionnaire from "@/components/Questionnaire";
 import Recommendations from "@/components/Recommendations";
 import { type RecommendationRequest, type Film } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Home() {
   const [showQuestionnaire, setShowQuestionnaire] = useState(true);
@@ -13,7 +14,12 @@ export default function Home() {
   const { data: recommendations, isLoading } = useQuery<Film[]>({
     queryKey: ['/api/recommendations', preferences],
     enabled: preferences !== null,
-    staleTime: Infinity
+    staleTime: Infinity,
+    queryFn: async () => {
+      if (!preferences) return [];
+      const response = await apiRequest('POST', '/api/recommendations', preferences);
+      return response.json();
+    }
   });
 
   const handleSubmitQuestionnaire = (data: RecommendationRequest) => {
