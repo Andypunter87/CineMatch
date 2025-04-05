@@ -12,6 +12,11 @@ interface AIRecommendationResponse {
 }
 
 export async function getAIRecommendations(preferences: RecommendationRequest): Promise<Film[]> {
+  // Create a promise that rejects after 8 seconds
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error("OpenAI request timed out")), 8000);
+  });
+
   try {
     // Convert timeOfDay array to string for better readability in the prompt
     const timeOfDayString = preferences.timeOfDay.join(", ");
@@ -21,43 +26,45 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
       ? `Available on these streaming platforms: ${preferences.streamingServices.join(", ")}.`
       : "Streaming platform availability not specified.";
 
-    // Create the system prompt
+    // Create the system prompt - simplified for faster response
     const systemPrompt = `You are a film recommendation expert. Provide personalized movie recommendations based on the user's preferences.
-The recommendations should include a mix of mainstream and independent/foreign films.
-Return exactly 6 films that match the criteria.
+Return exactly 4 films that match the criteria.
 Format your response as a JSON object with a 'recommendations' array.`;
 
-    // Create the user query
+    // Create the user query - simplified for faster response
     const userQuery = `I'm looking for movie recommendations with these preferences:
 - Setting: ${preferences.location}
 - Time: ${timeOfDayString}
 - Mood: ${preferences.mood}
 - ${streamingServicesString}
 
-Please respond with a valid JSON object containing an array of recommendations.
-Each film in the JSON recommendations array should include:
-1. A unique id (number)
-2. Title (string)
-3. Year of release (number)
-4. Director (string)
-5. List of main actors (array of strings, 3-4 names)
-6. A brief synopsis (string, 1-2 sentences)
-7. List of genres (array of strings)
-8. Type (string, either "mainstream" or "indie")
-9. A posterUrl (string) - use TMDB format: "https://image.tmdb.org/t/p/w500/[path]" or another reliable source
-10. A match percentage (number between 80-98)
-11. A match reason (string) explaining why this film matches my criteria (1 sentence)`;
+Each recommendation must include:
+- id (number)
+- title (string)
+- year (number)
+- director (string)
+- actors (array of strings)
+- synopsis (string, brief)
+- genres (array of strings)
+- type ("mainstream" or "indie")
+- posterUrl (string - provide a valid working URL)
+- matchPercentage (number between 80-98)
+- matchReason (string)`;
 
-    // Make the API call
-    const response = await openai.chat.completions.create({
+    // Make the API call with a timeout
+    const responsePromise = openai.chat.completions.create({
       model: MODEL,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userQuery }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.7
+      temperature: 0.7,
+      max_tokens: 800 // Limit token count for faster response
     });
+
+    // Race between the API call and the timeout
+    const response = await Promise.race([responsePromise, timeoutPromise]) as any;
 
     // Parse the response
     const content = response.choices[0].message.content;
@@ -66,20 +73,21 @@ Each film in the JSON recommendations array should include:
     }
 
     const parsedContent = JSON.parse(content) as AIRecommendationResponse;
+    console.log("Successfully received AI recommendations");
     
     // Format and structure the recommendations to match our Film type
     return parsedContent.recommendations.map(film => ({
       id: film.id || Math.floor(Math.random() * 10000),
       title: film.title,
       year: film.year,
-      director: film.director,
-      actors: film.actors,
-      synopsis: film.synopsis,
-      genres: film.genres,
-      type: film.type as "mainstream" | "indie",
-      posterUrl: film.posterUrl,
-      matchPercentage: film.matchPercentage,
-      matchReason: film.matchReason
+      director: film.director || "Unknown",
+      actors: Array.isArray(film.actors) ? film.actors : ["Unknown"],
+      synopsis: film.synopsis || "No synopsis available",
+      genres: Array.isArray(film.genres) ? film.genres : ["Drama"],
+      type: (film.type === "mainstream" || film.type === "indie") ? film.type : "mainstream",
+      posterUrl: film.posterUrl || "https://via.placeholder.com/500x750?text=No+Poster+Available",
+      matchPercentage: film.matchPercentage || 85,
+      matchReason: film.matchReason || `Great match for ${preferences.mood} mood`
     }));
   } catch (error) {
     console.error("Error getting AI recommendations:", error);
