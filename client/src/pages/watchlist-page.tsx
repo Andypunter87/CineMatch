@@ -2,6 +2,25 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { Link } from "wouter";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, BookmarkCheck, Star, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+
+// Define WatchlistItem type
 type WatchlistItem = {
   id: number;
   userId: number;
@@ -19,24 +38,33 @@ type WatchlistItem = {
   userRating?: number;
   userNotes?: string;
 };
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, BookmarkCheck, Star, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog";
+
+// Star rating component
+const StarRating = ({ 
+  value, 
+  onChange, 
+  readOnly = false 
+}: { 
+  value: number; 
+  onChange?: (rating: number) => void;
+  readOnly?: boolean;
+}) => {
+  return (
+    <div className="flex">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={`h-5 w-5 ${
+            star <= value
+              ? "fill-yellow-400 text-yellow-400"
+              : "text-gray-300"
+          } ${!readOnly ? "cursor-pointer" : ""}`}
+          onClick={() => !readOnly && onChange && onChange(star)}
+        />
+      ))}
+    </div>
+  );
+};
 
 export default function WatchlistPage() {
   const { user } = useAuth();
@@ -177,33 +205,6 @@ export default function WatchlistPage() {
     }
   };
 
-  // Render star rating component
-  const StarRating = ({ 
-    value, 
-    onChange, 
-    readOnly = false 
-  }: { 
-    value: number; 
-    onChange?: (rating: number) => void;
-    readOnly?: boolean;
-  }) => {
-    return (
-      <div className="flex">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`h-5 w-5 ${
-              star <= value
-                ? "fill-yellow-400 text-yellow-400"
-                : "text-gray-300"
-            } ${!readOnly ? "cursor-pointer" : ""}`}
-            onClick={() => !readOnly && onChange && onChange(star)}
-          />
-        ))}
-      </div>
-    );
-  };
-
   if (isLoading) {
     return (
       <div className="container py-8 flex justify-center">
@@ -255,7 +256,7 @@ export default function WatchlistPage() {
 
         <TabsContent value="unwatched" className="mt-0">
           <WatchlistGrid
-            items={filteredItems}
+            items={filteredItems.filter(item => !item.watched)}
             toggleWatched={toggleWatched}
             openEditDialog={openEditDialog}
             confirmDelete={confirmDelete}
@@ -265,7 +266,7 @@ export default function WatchlistPage() {
 
         <TabsContent value="watched" className="mt-0">
           <WatchlistGrid
-            items={filteredItems}
+            items={filteredItems.filter(item => item.watched)}
             toggleWatched={toggleWatched}
             openEditDialog={openEditDialog}
             confirmDelete={confirmDelete}
