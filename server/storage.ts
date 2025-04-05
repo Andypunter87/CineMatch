@@ -1,13 +1,27 @@
-import { users, type User, type InsertUser, type Film, type RecommendationRequest } from "@shared/schema";
+import { 
+  users,
+  watchlist,
+  type User,
+  type InsertUser,
+  type Film,
+  type RecommendationRequest
+} from "@shared/schema";
 import { films } from "./data/films";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import session from "express-session";
 import { getAIRecommendations } from "./services/openai";
 import connectPg from "connect-pg-simple";
 
+// Define watchlist item structure
+export type WatchlistItem = typeof watchlist.$inferSelect;
+
+// Define watchlist insert structure
+export type InsertWatchlistItem = typeof watchlist.$inferInsert;
+
 // Define Storage Interface
 export interface IStorage {
+  // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -16,7 +30,17 @@ export interface IStorage {
   updateUserStreamingServices(userId: number, streamingServices: string[]): Promise<User>;
   updateUserCountry(userId: number, country: string): Promise<User>;
   updateUserPassword(userId: number, passwordHash: string): Promise<User>;
+  
+  // Recommendation operations
   getRecommendations(preferences: RecommendationRequest): Promise<Film[]>;
+  
+  // Watchlist operations
+  getWatchlistItems(userId: number): Promise<WatchlistItem[]>;
+  getWatchlistItem(userId: number, itemId: number): Promise<WatchlistItem | undefined>;
+  addToWatchlist(item: InsertWatchlistItem): Promise<WatchlistItem>;
+  updateWatchlistItem(itemId: number, updates: Partial<InsertWatchlistItem>): Promise<WatchlistItem>;
+  removeFromWatchlist(userId: number, itemId: number): Promise<void>;
+  
   sessionStore: any; // Using any for session store to avoid type issues
 }
 
@@ -39,6 +63,78 @@ export class DatabaseStorage implements IStorage {
       },
       createTableIfMissing: true
     });
+  }
+  
+  // Watchlist operations implementation
+  async getWatchlistItems(userId: number): Promise<WatchlistItem[]> {
+    try {
+      const items = await db
+        .select()
+        .from(watchlist)
+        .where(eq(watchlist.userId, userId))
+        .orderBy(desc(watchlist.dateAdded));
+      return items;
+    } catch (error) {
+      console.error("Error retrieving watchlist items:", error);
+      throw new Error("Failed to retrieve watchlist items");
+    }
+  }
+  
+  async getWatchlistItem(userId: number, itemId: number): Promise<WatchlistItem | undefined> {
+    try {
+      const [item] = await db
+        .select()
+        .from(watchlist)
+        .where(and(
+          eq(watchlist.userId, userId),
+          eq(watchlist.id, itemId)
+        ));
+      return item;
+    } catch (error) {
+      console.error("Error retrieving watchlist item:", error);
+      return undefined;
+    }
+  }
+  
+  async addToWatchlist(item: InsertWatchlistItem): Promise<WatchlistItem> {
+    try {
+      const [newItem] = await db
+        .insert(watchlist)
+        .values(item)
+        .returning();
+      return newItem;
+    } catch (error) {
+      console.error("Error adding item to watchlist:", error);
+      throw new Error("Failed to add item to watchlist");
+    }
+  }
+  
+  async updateWatchlistItem(itemId: number, updates: Partial<InsertWatchlistItem>): Promise<WatchlistItem> {
+    try {
+      const [updatedItem] = await db
+        .update(watchlist)
+        .set(updates)
+        .where(eq(watchlist.id, itemId))
+        .returning();
+      return updatedItem;
+    } catch (error) {
+      console.error("Error updating watchlist item:", error);
+      throw new Error("Failed to update watchlist item");
+    }
+  }
+  
+  async removeFromWatchlist(userId: number, itemId: number): Promise<void> {
+    try {
+      await db
+        .delete(watchlist)
+        .where(and(
+          eq(watchlist.userId, userId),
+          eq(watchlist.id, itemId)
+        ));
+    } catch (error) {
+      console.error("Error removing item from watchlist:", error);
+      throw new Error("Failed to remove item from watchlist");
+    }
   }
 
   async getUser(id: number): Promise<User | undefined> {

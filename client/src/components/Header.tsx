@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, User, LogOut, Settings } from "lucide-react";
+import { Loader2, User, LogOut, Settings, Bookmark, Home } from "lucide-react";
 
 export default function Header() {
   const { user, isLoading, logoutMutation } = useAuth();
@@ -22,11 +22,30 @@ export default function Header() {
   return (
     <header className="border-b border-border bg-card">
       <div className="container px-4 py-3 mx-auto flex justify-between items-center">
-        <Link href="/">
-          <span className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent cursor-pointer">
-            CineMatch
-          </span>
-        </Link>
+        <div className="flex items-center gap-6">
+          <Link href="/">
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent cursor-pointer">
+              CineMatch
+            </span>
+          </Link>
+          
+          {user && (
+            <nav className="hidden sm:flex items-center gap-4">
+              <Link href="/">
+                <span className="flex items-center text-sm font-medium hover:text-blue-500 transition-colors">
+                  <Home className="mr-1 h-4 w-4" />
+                  Home
+                </span>
+              </Link>
+              <Link href="/watchlist">
+                <span className="flex items-center text-sm font-medium hover:text-blue-500 transition-colors">
+                  <Bookmark className="mr-1 h-4 w-4" />
+                  Watchlist
+                </span>
+              </Link>
+            </nav>
+          )}
+        </div>
 
         <div className="flex items-center gap-4">
           {isLoading ? (
@@ -47,6 +66,12 @@ export default function Header() {
                     <DropdownMenuItem className="cursor-pointer" onClick={() => setIsMenuOpen(false)}>
                       <Settings className="mr-2 h-4 w-4" />
                       <span>My Profile</span>
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/watchlist">
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => setIsMenuOpen(false)}>
+                      <Bookmark className="mr-2 h-4 w-4" />
+                      <span>My Watchlist</span>
                     </DropdownMenuItem>
                   </Link>
                   <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>

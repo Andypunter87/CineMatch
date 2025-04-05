@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, json, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -13,6 +14,39 @@ export const users = pgTable("users", {
   authProvider: text("auth_provider").default("local"),
   providerId: text("provider_id"),
 });
+
+// Define relations for users
+export const usersRelations = relations(users, ({ many }) => ({
+  watchlistItems: many(watchlist),
+}));
+
+// Add watchlist table to track saved films
+export const watchlist = pgTable("watchlist", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  filmId: integer("film_id").notNull(),
+  filmTitle: text("film_title").notNull(),
+  filmYear: integer("film_year"),
+  filmDirector: text("film_director"),
+  filmType: text("film_type"),
+  filmGenres: text("film_genres").array(),
+  filmPosterUrl: text("film_poster_url"),
+  // Context that generated this recommendation
+  recommendationContext: json("recommendation_context").$type<RecommendationRequest>(),
+  dateAdded: timestamp("date_added").defaultNow(),
+  watched: boolean("watched").default(false),
+  dateWatched: timestamp("date_watched"),
+  userRating: integer("user_rating"), // 1-5 star rating
+  userNotes: text("user_notes"),
+});
+
+// Define relations for watchlist
+export const watchlistRelations = relations(watchlist, ({ one }) => ({
+  user: one(users, {
+    fields: [watchlist.userId],
+    references: [users.id],
+  }),
+}));
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,

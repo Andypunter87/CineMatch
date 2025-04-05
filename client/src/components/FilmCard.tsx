@@ -1,13 +1,52 @@
-import { type Film } from "@shared/schema";
+import { type Film, type RecommendationRequest } from "@shared/schema";
 import { Card } from "@/components/ui/card";
-import { Film as FilmIcon, Star, Award } from "lucide-react";
+import { Film as FilmIcon, Star, Award, BookmarkPlus, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface FilmCardProps {
   film: Film;
+  recommendationContext?: RecommendationRequest;
 }
 
-export default function FilmCard({ film }: FilmCardProps) {
+export default function FilmCard({ film, recommendationContext }: FilmCardProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  // Add to watchlist mutation
+  const addToWatchlistMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/watchlist", {
+        filmId: film.id,
+        filmTitle: film.title,
+        filmYear: film.year,
+        filmDirector: film.director,
+        filmType: film.type,
+        filmGenres: film.genres,
+        filmPosterUrl: film.posterUrl,
+        recommendationContext
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
+      toast({
+        title: "Added to Watchlist",
+        description: `${film.title} has been added to your watchlist`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `Failed to add to watchlist: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
   // Generate a background gradient based on the film title
   const getBackgroundGradient = () => {
     // Define a list of colorful gradients
@@ -137,6 +176,25 @@ export default function FilmCard({ film }: FilmCardProps) {
               </div>
             )}
           </div>
+          
+          {/* Add to Watchlist button - show only for authenticated users */}
+          {user && (
+            <div className="mt-3 pt-2 border-t border-gray-100">
+              <Button 
+                className="w-full"
+                size="sm"
+                onClick={() => addToWatchlistMutation.mutate()}
+                disabled={addToWatchlistMutation.isPending}
+              >
+                {addToWatchlistMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <BookmarkPlus className="mr-2 h-4 w-4" />
+                )}
+                Add to Watchlist
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </Card>

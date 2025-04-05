@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { RecommendationRequest, recommendationRequestSchema } from "@shared/schema";
+import { RecommendationRequest, recommendationRequestSchema, watchlist } from "@shared/schema";
 import { z } from "zod";
 import { ZodError } from "zod";
 import { setupAuth } from "./auth";
@@ -234,6 +234,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Error updating password:', error);
         res.status(500).json({ message: 'Failed to update password' });
       }
+    }
+  });
+  
+  // Watchlist API Routes
+  
+  // Get user watchlist
+  app.get('/api/watchlist', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const watchlistItems = await storage.getWatchlistItems(userId);
+      res.json(watchlistItems);
+    } catch (error) {
+      console.error('Error retrieving watchlist:', error);
+      res.status(500).json({ message: 'Failed to retrieve watchlist' });
+    }
+  });
+  
+  // Add a film to the watchlist
+  app.post('/api/watchlist', isAuthenticated, async (req, res) => {
+    try {
+      const schema = z.object({
+        filmId: z.number(),
+        filmTitle: z.string(),
+        filmYear: z.number().optional(),
+        filmDirector: z.string().optional(),
+        filmType: z.string().optional(),
+        filmGenres: z.array(z.string()).optional(),
+        filmPosterUrl: z.string().optional(),
+        recommendationContext: z.any().optional() // Context of the recommendation
+      });
+      
+      const filmData = schema.parse(req.body);
+      const userId = req.user!.id;
+      
+      const newWatchlistItem = await storage.addToWatchlist({
+        userId,
+        ...filmData
+      });
+      
+      res.status(201).json(newWatchlistItem);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({ message: 'Invalid data format', errors: error.errors });
+      } else {
+        console.error('Error adding to watchlist:', error);
+        res.status(500).json({ message: 'Failed to add film to watchlist' });
+      }
+    }
+  });
+  
+  // Update a watchlist item (mark as watched, rate, etc.)
+  app.put('/api/watchlist/:id', isAuthenticated, async (req, res) => {
+    try {
+      const itemId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      
+      // First check if the item exists and belongs to the user
+      const existingItem = await storage.getWatchlistItem(userId, itemId);
+      if (!existingItem) {
+        return res.status(404).json({ message: 'Watchlist item not found' });
+      }
+      
+      const schema = z.object({
+        watched: z.boolean().optional(),
+        userRating: z.number().min(1).max(5).optional(),
+        userNotes: z.string().optional()
+      });
+      
+      const { watched, userRating, userNotes } = schema.parse(req.body);
+      
+      // Create update object with proper types
+      const updates: Partial<typeof watchlist.$inferInsert> = {
+        watched,
+        userRating,
+        userNotes
+      };
+      
+      // If marking as watched, set the date to now
+      if (watched) {
+        updates.dateWatched = new Date();
+      }
+      
+      const updatedItem = await storage.updateWatchlistItem(itemId, updates);
+      res.json(updatedItem);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({ message: 'Invalid data format', errors: error.errors });
+      } else {
+        console.error('Error updating watchlist item:', error);
+        res.status(500).json({ message: 'Failed to update watchlist item' });
+      }
+    }
+  });
+  
+  // Remove a film from the watchlist
+  app.delete('/api/watchlist/:id', isAuthenticated, async (req, res) => {
+    try {
+      const itemId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      
+      // First check if the item exists and belongs to the user
+      const existingItem = await storage.getWatchlistItem(userId, itemId);
+      if (!existingItem) {
+        return res.status(404).json({ message: 'Watchlist item not found' });
+      }
+      
+      await storage.removeFromWatchlist(userId, itemId);
+      res.status(204).end();
+    } catch (error) {
+      console.error('Error removing from watchlist:', error);
+      res.status(500).json({ message: 'Failed to remove film from watchlist' });
     }
   });
 

@@ -145,7 +145,11 @@ export default function Recommendations({
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredRecommendations.map((film) => (
-                <FilmCard key={film.id} film={film} />
+                <FilmCard 
+                  key={film.id} 
+                  film={film} 
+                  recommendationContext={preferences}
+                />
               ))}
             </div>
             
