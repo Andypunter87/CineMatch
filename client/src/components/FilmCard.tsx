@@ -1,6 +1,6 @@
 import { type Film, type RecommendationRequest } from "@shared/schema";
 import { Card } from "@/components/ui/card";
-import { Film as FilmIcon, Star, Award, BookmarkPlus, Loader2 } from "lucide-react";
+import { Film as FilmIcon, Star, Award, BookmarkPlus, Loader2, Check, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -41,7 +41,12 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
       queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
       
       toast({
-        title: "Added to Watchlist",
+        title: (
+          <div className="flex items-center">
+            <Check className="mr-2 h-4 w-4 text-green-500" />
+            Added to Watchlist
+          </div>
+        ),
         description: `${film.title} has been added to your watchlist as "To Watch"`,
         action: (
           <Button 
@@ -54,12 +59,19 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
           >
             View Watchlist
           </Button>
-        )
+        ),
+        // Make toast dismissible
+        duration: 5000,
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: (
+          <div className="flex items-center">
+            <AlertCircle className="mr-2 h-4 w-4 text-red-500" />
+            Error
+          </div>
+        ),
         description: `Failed to add to watchlist: ${error.message}`,
         variant: "destructive",
       });
