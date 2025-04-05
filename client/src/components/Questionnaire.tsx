@@ -328,7 +328,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="laugh" 
                       className="hidden" 
                       checked={mood === "laugh"}
-                     
+                      onChange={() => setMood("laugh")}
                     />
                     <label 
                       htmlFor="mood-laugh" 
