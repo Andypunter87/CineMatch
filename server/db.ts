@@ -5,7 +5,7 @@ import { users } from "@shared/schema";
 
 // Create postgres connection with proper error handling
 export const client = process.env.DATABASE_URL 
-  ? postgres(process.env.DATABASE_URL) 
+  ? postgres(process.env.DATABASE_URL, { ssl: { rejectUnauthorized: false } }) 
   : postgres({
       host: process.env.PGHOST || 'localhost',
       port: Number(process.env.PGPORT) || 5432,

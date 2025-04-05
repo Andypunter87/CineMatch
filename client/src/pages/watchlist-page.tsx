@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
-import { WatchlistItem } from "@/lib/types";
+import type { WatchlistItem } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, BookmarkCheck, Star, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
@@ -394,7 +394,7 @@ function WatchlistGrid({
           <CardContent className="pb-4 flex-grow">
             {item.filmGenres?.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-3">
-                {item.filmGenres.map((genre) => (
+                {item.filmGenres.map((genre: string) => (
                   <Badge key={genre} variant="outline" className="text-xs">
                     {genre}
                   </Badge>
