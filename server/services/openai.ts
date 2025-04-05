@@ -20,34 +20,37 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
   try {
     // Convert timeOfDay array to string for better readability in the prompt
     const timeOfDayString = preferences.timeOfDay.join(", ");
-    
-    // Create streaming services string if available
-    const streamingServicesString = preferences.streamingServices && preferences.streamingServices.length > 0
-      ? `Available on these streaming platforms: ${preferences.streamingServices.join(", ")}.`
-      : "Streaming platform availability not specified.";
-      
-    // Create country string if available
-    const countryString = preferences.country
-      ? `The user is in ${preferences.country}. Focus on recommending films that might be available on the user's streaming platforms in this country, but prioritize finding excellent matches for their mood/setting over streaming availability.`
-      : "Country not specified. Focus on mood/setting match over streaming availability.";
 
     // Create the system prompt - enhanced for streaming service filtering by country
-    const systemPrompt = `You are a film recommendation expert with deep knowledge of global streaming platform libraries. 
+    const systemPrompt = `You are a film recommendation expert with deep knowledge of global cinema. 
 Provide personalized movie recommendations based on the user's preferences.
-When recommending films, consider which streaming platforms might have the film available in the user's country.
-Be cautious about streaming availability claims - it's better to recommend excellent films that fit the mood/setting criteria even if uncertain about streaming availability.
-For availability, make educated guesses based on the streaming service's typical library in that country.
-Return exactly 4 films that match the criteria.
-Format your response as a JSON object with a 'recommendations' array.
-For each film, list streaming platforms from the user's list that MIGHT have the film available.`;
+
+IMPORTANT ABOUT STREAMING AVAILABILITY:
+1. If NO streaming services are specified by the user, leave the 'availableOn' array EMPTY for ALL recommendations
+2. If streaming services ARE specified, ONLY include them in 'availableOn' when there's a STRONG likelihood the film is available on that service
+3. For older or obscure films, it's better to leave 'availableOn' as an empty array than to make uncertain guesses
+4. NEVER include streaming services the user didn't specify in their preferences
+
+Return exactly 4 films that match the criteria:
+- 2 should be mainstream/popular films
+- 2 should be independent, foreign, or lesser-known films
+- ALL films should strongly match the user's mood and setting preferences
+
+Format your response as a JSON object with a 'recommendations' array.`;
 
     // Create the user query - enhanced for streaming service filtering by country
     const userQuery = `I'm looking for movie recommendations with these preferences:
 - Setting: ${preferences.location}
 - Time: ${timeOfDayString}
 - Mood: ${preferences.mood}
-- ${streamingServicesString}
-- ${countryString}
+${preferences.streamingServices && preferences.streamingServices.length > 0 
+  ? `- User has access to these streaming services: ${preferences.streamingServices.join(", ")}`
+  : `- User hasn't specified any streaming services`
+}
+${preferences.country 
+  ? `- User is located in: ${preferences.country}`
+  : `- User location: Unknown`
+}
 
 Each recommendation must include:
 - id (number)
@@ -60,9 +63,15 @@ Each recommendation must include:
 - type ("mainstream" or "indie" only)
 - matchPercentage (number between 80-98)
 - matchReason (string, 10-15 words)
-- availableOn (array of strings listing which streaming services from the user's list might have this film available - empty array if likely not available on any)
+- availableOn (array of strings)
 
-DO NOT include a posterUrl field in your response. I will generate those separately based on the movie title.`;
+IMPORTANT ABOUT AVAILABILITY:
+- If the user hasn't specified any streaming services, the availableOn array should be EMPTY for all films
+- If the user has specified streaming services, ONLY include services in availableOn when they likely have that specific film
+- For older or obscure films, it's usually better to leave availableOn as an empty array
+- NEVER include streaming services that aren't in the user's list
+
+DO NOT include a posterUrl field in your response.`;
 
     // Make the API call with a timeout
     const responsePromise = openai.chat.completions.create({

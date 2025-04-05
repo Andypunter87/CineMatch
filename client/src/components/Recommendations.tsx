@@ -78,8 +78,8 @@ export default function Recommendations({
               )}
             </p>
             {preferences.streamingServices && preferences.streamingServices.length > 0 && (
-              <div className="mt-2 text-xs bg-amber-50 border border-amber-200 rounded-md p-2 text-amber-700">
-                <strong>Note:</strong> Streaming availability is an estimate and may vary. For best results, verify films are available on your platforms before watching.
+              <div className="mt-2 text-xs bg-blue-50 border border-blue-100 rounded-md p-2 text-blue-700">
+                <strong>Tip:</strong> We've listed streaming services where each film may be available. Always check the services directly for current availability.
               </div>
             )}
           </div>
