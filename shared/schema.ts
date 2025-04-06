@@ -5,7 +5,7 @@ import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull(),  // Adding username column to match DB schema
+  username: text("username"), // Made optional to match new requirements
   email: text("email").notNull().unique(),
   password: text("password"),
   name: text("name"),

@@ -27,8 +27,7 @@ export const loginSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-export const registerSchema = insertUserSchema.extend({
-  username: z.string().min(3, "Username must be at least 3 characters"),
+export const registerSchema = insertUserSchema.omit({ username: true }).extend({
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
   streamingServices: z.array(z.string()).default([]),
