@@ -111,7 +111,7 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
         
         {/* Match percentage badge */}
         <div className="absolute top-2 right-2">
-          <Badge className="bg-primary text-white px-2 py-1 font-medium">
+          <Badge className="bg-primary text-white px-1.5 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm font-medium">
             <Star className="w-3 h-3 mr-1 inline" />
             {matchPercentage}% Match
           </Badge>
@@ -119,20 +119,20 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
         
         {/* Film type badge */}
         <div className="absolute top-2 left-2">
-          <Badge variant="outline" className="bg-white/80 text-gray-700 border-blue-200 px-2 py-1">
+          <Badge variant="outline" className="bg-white/80 text-gray-700 border-blue-200 px-1.5 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm">
             {film.type === "indie" ? "Independent" : "Mainstream"}
           </Badge>
         </div>
         
-        <div className="recommendation-details absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <h3 className="text-xl font-bold text-white">{title}</h3>
-          <p className="text-gray-200 text-sm">
+        <div className="recommendation-details absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent p-3 md:p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <h3 className="text-lg md:text-xl font-bold text-white">{title}</h3>
+          <p className="text-gray-200 text-xs md:text-sm">
             {year} • {director}
           </p>
-          <p className="mt-2 text-sm text-white leading-snug">{synopsis}</p>
-          <div className="mt-3 flex flex-wrap gap-1">
+          <p className="mt-1 md:mt-2 text-xs md:text-sm text-white leading-snug line-clamp-4">{synopsis}</p>
+          <div className="mt-2 md:mt-3 flex flex-wrap gap-1">
             {genres.map((genre, index) => (
-              <Badge key={index} variant="secondary" className="bg-blue-500/80 text-white">
+              <Badge key={index} variant="secondary" className="bg-blue-500/80 text-white text-xs px-1.5 py-0.5">
                 {genre}
               </Badge>
             ))}

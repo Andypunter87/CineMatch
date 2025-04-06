@@ -283,37 +283,40 @@ export default function WatchlistPage() {
                 </div>
               )}
             </CardContent>
-            <div className="p-4 pt-0 mt-auto border-t border-slate-100 flex justify-between">
+            <div className="p-3 sm:p-4 pt-0 mt-auto border-t border-slate-100 flex flex-col sm:flex-row sm:justify-between gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => toggleWatched(item.id, !!item.watched)}
                 disabled={updatePending}
+                className="text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3"
               >
                 {updatePending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                 ) : item.watched ? (
-                  <EyeOff className="h-4 w-4 mr-1" />
+                  <EyeOff className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                 ) : (
-                  <Eye className="h-4 w-4 mr-1" />
+                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                 )}
                 {item.watched ? "Unwatch" : "Mark as Watched"}
               </Button>
-              <div className="flex gap-2">
+              <div className="flex justify-end gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => openEditDialog(item)}
+                  className="h-8 w-8 sm:h-9 sm:w-9 p-0"
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="sr-only">Edit</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => confirmDelete(item.id)}
+                  className="h-8 w-8 sm:h-9 sm:w-9 p-0"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="sr-only">Delete</span>
                 </Button>
               </div>
@@ -362,10 +365,10 @@ export default function WatchlistPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="all">All Films</TabsTrigger>
-            <TabsTrigger value="unwatched">To Watch</TabsTrigger>
-            <TabsTrigger value="watched">Watched</TabsTrigger>
+          <TabsList className="mb-6 w-full">
+            <TabsTrigger className="text-xs sm:text-sm flex-1" value="all">All Films</TabsTrigger>
+            <TabsTrigger className="text-xs sm:text-sm flex-1" value="unwatched">To Watch</TabsTrigger>
+            <TabsTrigger className="text-xs sm:text-sm flex-1" value="watched">Watched</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="mt-0">

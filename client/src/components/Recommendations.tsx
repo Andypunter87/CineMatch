@@ -64,45 +64,47 @@ export default function Recommendations({
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
-            <h2 className="text-3xl font-bold mb-2">Your Film Recommendations</h2>
-            <p className="text-gray-600">
-              Based on your preferences: {" "}
-              <span className="text-primary font-medium">{getLocationText(preferences.location)}</span>, {" "}
-              <span className="text-primary font-medium">{getTimeText(preferences.timeOfDay)}</span>, {" "}
-              <span className="text-primary font-medium">{getMoodText(preferences.mood)}</span>
-              {preferences.country && (
-                <>, {" "}<span className="text-primary font-medium">in {preferences.country}</span></>
-              )}
-              {preferences.streamingServices && preferences.streamingServices.length > 0 && (
-                <> {" "}on <span className="text-primary font-medium">{preferences.streamingServices.join(", ")}</span></>
-              )}
-            </p>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2">Your Film Recommendations</h2>
+            <div className="text-gray-600 text-sm sm:text-base">
+              <p className="mb-1">Based on your preferences:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li><span className="text-primary font-medium">{getLocationText(preferences.location)}</span></li>
+                <li><span className="text-primary font-medium">{getTimeText(preferences.timeOfDay)}</span></li> 
+                <li><span className="text-primary font-medium">{getMoodText(preferences.mood)}</span></li>
+                {preferences.country && (
+                  <li><span className="text-primary font-medium">Country: {preferences.country}</span></li>
+                )}
+                {preferences.streamingServices && preferences.streamingServices.length > 0 && (
+                  <li><span className="text-primary font-medium">Services: {preferences.streamingServices.join(", ")}</span></li>
+                )}
+              </ul>
+            </div>
             {preferences.streamingServices && preferences.streamingServices.length > 0 && (
-              <div className="mt-2 text-xs bg-blue-50 border border-blue-100 rounded-md p-2 text-blue-700">
+              <div className="mt-3 text-xs bg-blue-50 border border-blue-100 rounded-md p-2 text-blue-700">
                 <strong>Tip:</strong> We've listed streaming services where each film may be available. Always check the services directly for current availability.
               </div>
             )}
           </div>
           <div className="mt-4 md:mt-0">
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2">
               <Button 
                 onClick={() => setFilterType("all")} 
                 variant={filterType === "all" ? "default" : "outline"}
-                className="px-4 py-2 text-sm"
+                className="px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-sm h-auto"
               >
                 All Films
               </Button>
               <Button 
                 onClick={() => setFilterType("mainstream")} 
                 variant={filterType === "mainstream" ? "default" : "outline"}
-                className="px-4 py-2 text-sm"
+                className="px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-sm h-auto"
               >
                 Mainstream
               </Button>
               <Button 
                 onClick={() => setFilterType("indie")} 
                 variant={filterType === "indie" ? "default" : "outline"}
-                className="px-4 py-2 text-sm"
+                className="px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-sm h-auto"
               >
                 Indie/Foreign
               </Button>

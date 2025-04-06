@@ -83,7 +83,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                 <div className="flex justify-center">
                   <Button 
                     onClick={goToNextStep} 
-                    className="px-8 py-6 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg font-medium text-white transition-all transform hover:scale-105"
+                    className="px-5 py-4 sm:px-8 sm:py-6 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg font-medium text-white transition-all transform hover:scale-105"
                   >
                     Let's Begin
                   </Button>
@@ -185,13 +185,13 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   <Button 
                     onClick={goToPrevStep} 
                     variant="outline"
-                    className="px-6 py-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+                    className="px-4 py-1.5 sm:px-6 sm:py-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors text-sm sm:text-base h-auto"
                   >
                     Back
                   </Button>
                   <Button 
                     onClick={goToNextStep} 
-                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg transition-colors"
+                    className="px-4 py-1.5 sm:px-6 sm:py-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg transition-colors text-sm sm:text-base h-auto"
                     disabled={!location}
                   >
                     Next
@@ -314,13 +314,13 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   <Button 
                     onClick={goToPrevStep} 
                     variant="outline"
-                    className="px-6 py-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+                    className="px-4 py-1.5 sm:px-6 sm:py-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors text-sm sm:text-base h-auto"
                   >
                     Back
                   </Button>
                   <Button 
                     onClick={goToNextStep} 
-                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg transition-colors"
+                    className="px-4 py-1.5 sm:px-6 sm:py-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg transition-colors text-sm sm:text-base h-auto"
                     disabled={timeOfDay.length === 0}
                   >
                     Next
@@ -465,22 +465,22 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   <Button 
                     onClick={goToPrevStep} 
                     variant="outline"
-                    className="px-6 py-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+                    className="px-4 py-1.5 sm:px-6 sm:py-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors text-sm sm:text-base h-auto"
                   >
                     Back
                   </Button>
                   <Button 
                     onClick={submitQuestionnaire} 
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg font-medium transition-all transform hover:scale-105"
+                    className="px-4 py-1.5 sm:px-6 sm:py-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg font-medium transition-all transform hover:scale-105 text-sm sm:text-base h-auto"
                     disabled={!mood || isSubmitting}
                   >
                     {isSubmitting ? (
                       <span className="flex items-center">
                         <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                        Processing...
+                        <span className="whitespace-nowrap">Processing...</span>
                       </span>
                     ) : (
-                      "Get Recommendations"
+                      <span className="whitespace-nowrap">Get Recommendations</span>
                     )}
                   </Button>
                 </div>
