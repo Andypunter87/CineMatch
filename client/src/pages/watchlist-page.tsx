@@ -429,6 +429,7 @@ export default function WatchlistPage() {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={4}
+                    className="bg-white"
                   />
                 </div>
               </div>
