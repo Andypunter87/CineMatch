@@ -1,20 +1,30 @@
-import { Film } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Footer() {
+  const currentYear = new Date().getFullYear();
+  
   return (
-    <footer className="mt-auto py-6 px-4 border-t border-blue-200 bg-white">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
-        <div className="mb-4 md:mb-0">
-          <div className="flex items-center">
-            <Film className="w-6 h-6 text-primary" />
-            <span className="ml-2 font-bold text-gray-800">CineMatch</span>
+    <footer className="bg-white shadow-sm py-6 mt-auto">
+      <div className="container mx-auto px-4">
+        <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+          <div className="mb-4 md:mb-0">
+            <p>© {currentYear} CineMatch. All rights reserved.</p>
           </div>
-          <p className="text-sm text-gray-600 mt-1">Find your perfect film match</p>
-        </div>
-        <div className="flex space-x-6">
-          <a href="#" className="text-gray-600 hover:text-primary transition-colors">Privacy Policy</a>
-          <a href="#" className="text-gray-600 hover:text-primary transition-colors">Terms of Service</a>
-          <a href="#" className="text-gray-600 hover:text-primary transition-colors">Contact</a>
+          
+          <div className="flex space-x-6">
+            <Link href="/terms" className="hover:text-blue-500 transition-colors">
+              Terms of Service
+            </Link>
+            <Link href="/privacy" className="hover:text-blue-500 transition-colors">
+              Privacy Policy
+            </Link>
+            <a 
+              href="mailto:support@cinematch.app" 
+              className="hover:text-blue-500 transition-colors"
+            >
+              Contact
+            </a>
+          </div>
         </div>
       </div>
     </footer>

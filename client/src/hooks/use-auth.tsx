@@ -32,6 +32,9 @@ export const registerSchema = insertUserSchema.extend({
   confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
   streamingServices: z.array(z.string()).default([]),
   country: z.string().min(1, "Please select your country"),
+  acceptTerms: z.boolean().refine(val => val === true, {
+    message: "You must accept the Terms of Service and Privacy Policy"
+  }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"], 
@@ -82,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterData) => {
-      const { confirmPassword, ...userData } = credentials;
+      const { confirmPassword, acceptTerms, ...userData } = credentials;
       const res = await apiRequest("POST", "/api/register", userData);
       return await res.json();
     },

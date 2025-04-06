@@ -7,9 +7,11 @@ import Home from "@/pages/Home";
 import AuthPage from "@/pages/auth-page";
 import ProfilePage from "@/pages/profile-page";
 import WatchlistPage from "@/pages/watchlist-page";
+import TermsPage from "@/pages/terms-page";
+import PrivacyPage from "@/pages/privacy-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
-import Header from "@/components/Header";
+import Layout from "@/components/Layout";
 
 function Router() {
   return (
@@ -18,6 +20,8 @@ function Router() {
       <ProtectedRoute path="/profile" component={ProfilePage} />
       <ProtectedRoute path="/watchlist" component={WatchlistPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/terms" component={TermsPage} />
+      <Route path="/privacy" component={PrivacyPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -27,13 +31,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <div className="flex flex-col min-h-screen">
-          <Header />
-          <main className="flex-1">
-            <Router />
-          </main>
-          <Toaster />
-        </div>
+        <Layout>
+          <Router />
+        </Layout>
+        <Toaster />
       </AuthProvider>
     </QueryClientProvider>
   );

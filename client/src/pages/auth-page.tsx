@@ -36,6 +36,7 @@ export default function AuthPage() {
       confirmPassword: "",
       streamingServices: [] as string[],
       country: "",
+      acceptTerms: false,
     },
   });
 
@@ -290,6 +291,42 @@ export default function AuthPage() {
                           ))}
                           
                           <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={registerForm.control}
+                      name="acceptTerms"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-3">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel className="text-sm font-normal">
+                              I agree to the{" "}
+                              <a 
+                                href="/terms" 
+                                target="_blank" 
+                                className="text-blue-500 hover:underline"
+                              >
+                                Terms of Service
+                              </a>{" "}
+                              and{" "}
+                              <a 
+                                href="/privacy" 
+                                target="_blank" 
+                                className="text-blue-500 hover:underline"
+                              >
+                                Privacy Policy
+                              </a>
+                            </FormLabel>
+                            <FormMessage />
+                          </div>
                         </FormItem>
                       )}
                     />
