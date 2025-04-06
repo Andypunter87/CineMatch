@@ -11,10 +11,23 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+  authToken?: string,
 ): Promise<Response> {
+  // Define headers with Content-Type when there's data
+  const headers: Record<string, string> = {};
+  
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  // Add Authorization header if authToken is provided
+  if (authToken) {
+    headers["Authorization"] = authToken;
+  }
+  
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });

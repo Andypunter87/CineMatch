@@ -5,10 +5,9 @@ import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password"),
   name: text("name"),
-  email: text("email").notNull().unique(),
   streamingServices: text("streaming_services").array(),
   country: text("country"),
   authProvider: text("auth_provider").default("local"),
@@ -49,10 +48,9 @@ export const watchlistRelations = relations(watchlist, ({ one }) => ({
 }));
 
 export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
+  email: true,
   password: true,
   name: true,
-  email: true,
   streamingServices: true,
   country: true,
   authProvider: true,

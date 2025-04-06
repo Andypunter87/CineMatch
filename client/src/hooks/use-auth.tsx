@@ -23,13 +23,12 @@ type AuthContextType = {
 
 // Create schemas for validation
 export const loginSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Please enter a valid email"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 export const registerSchema = insertUserSchema.extend({
   password: z.string().min(6, "Password must be at least 6 characters"),
-  email: z.string().email("Please enter a valid email"),
   confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
   streamingServices: z.array(z.string()).default([]),
   country: z.string().min(1, "Please select your country"),
@@ -69,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Login successful",
-        description: `Welcome back, ${user.username}!`,
+        description: `Welcome back${user.name ? ', ' + user.name : ''}!`,
       });
     },
     onError: (error: Error) => {
@@ -91,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Registration successful",
-        description: `Welcome to CineMatch, ${user.username}!`,
+        description: `Welcome to CineMatch${user.name ? ', ' + user.name : ''}!`,
       });
     },
     onError: (error: Error) => {

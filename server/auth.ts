@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -10,6 +10,13 @@ import { User, User as SelectUser } from "@shared/schema";
 declare global {
   namespace Express {
     interface User extends SelectUser {}
+    
+    interface Request {
+      headers: {
+        firebaseToken?: string;
+        [key: string]: string | string[] | undefined;
+      }
+    }
   }
 }
 
@@ -29,6 +36,25 @@ async function comparePasswords(supplied: string, stored: string | null) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
+// Helper function to verify Firebase ID token
+async function verifyFirebaseToken(req: Request, res: Response, next: NextFunction) {
+  const token = req.headers.authorization?.split('Bearer ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'No authentication token provided' });
+  }
+  
+  try {
+    // In a real implementation, you would verify the token using Firebase Admin SDK
+    // This is a placeholder for the token verification logic
+    // For now, we'll pass the token in the request for authentication in the route handler
+    req.headers.firebaseToken = token;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid authentication token' });
+  }
+}
+
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "supersecretkey", // It's better to use a proper env variable for this
@@ -46,18 +72,21 @@ export function setupAuth(app: Express) {
   app.use(passport.session());
 
   passport.use(
-    new LocalStrategy(async (username, password, done) => {
-      try {
-        const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
-          return done(null, false);
-        } else {
-          return done(null, user);
+    new LocalStrategy(
+      { usernameField: 'email' }, // Use email field for authentication
+      async (email, password, done) => {
+        try {
+          const user = await storage.getUserByEmail(email);
+          if (!user || !(await comparePasswords(password, user.password))) {
+            return done(null, false);
+          } else {
+            return done(null, user);
+          }
+        } catch (error) {
+          return done(error);
         }
-      } catch (error) {
-        return done(error);
       }
-    }),
+    ),
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
@@ -72,13 +101,7 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { username, password, name, email, streamingServices } = req.body;
-      
-      // Check if username already exists
-      const existingUser = await storage.getUserByUsername(username);
-      if (existingUser) {
-        return res.status(400).json({ error: "Username already exists" });
-      }
+      const { password, name, email, streamingServices, country } = req.body;
 
       // Check if email already exists
       const existingEmail = await storage.getUserByEmail(email);
@@ -88,11 +111,11 @@ export function setupAuth(app: Express) {
 
       // Create the user with hashed password
       const userToCreate = {
-        username,
         email,
         name,
         password: await hashPassword(password),
         streamingServices: streamingServices || [],
+        country,
         authProvider: "local"
       };
       
@@ -155,6 +178,101 @@ export function setupAuth(app: Express) {
       // Return user without password
       const { password, ...userWithoutPassword } = updatedUser;
       res.status(200).json(userWithoutPassword);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/user/country", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    try {
+      const { country } = req.body;
+      const userId = (req.user as SelectUser).id;
+      
+      // Update user's country
+      const updatedUser = await storage.updateUserCountry(userId, country);
+      
+      // Return user without password
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.status(200).json(userWithoutPassword);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/user/password", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const userId = (req.user as SelectUser).id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Verify current password
+      const isMatch = await comparePasswords(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ error: "Current password is incorrect" });
+      }
+      
+      // Update user's password
+      const passwordHash = await hashPassword(newPassword);
+      const updatedUser = await storage.updateUserPassword(userId, passwordHash);
+      
+      // Return user without password
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.status(200).json(userWithoutPassword);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Firebase Authentication Routes
+  
+  // Handle Google Sign-In
+  app.post("/api/auth/google", verifyFirebaseToken, async (req, res, next) => {
+    try {
+      const { email, name, uid, photoURL } = req.body;
+      
+      // Check if the user already exists with this provider ID
+      let user = await storage.getUserByProviderId(uid);
+      
+      if (!user) {
+        // Check if email exists but not linked to this provider
+        user = await storage.getUserByEmail(email);
+        
+        if (user) {
+          // If the user exists with this email but has a different provider,
+          // we could update the provider ID or handle this case differently
+          return res.status(400).json({ error: "Email already in use with a different authentication method" });
+        }
+        
+        // Create a new user
+        user = await storage.createUser({
+          email,
+          name,
+          providerId: uid,
+          authProvider: 'google',
+          streamingServices: [],
+          country: '',
+        });
+      }
+      
+      // Log the user in
+      req.login(user, (err) => {
+        if (err) return next(err);
+        // Return user without password
+        const { password, ...userWithoutPassword } = user;
+        return res.status(200).json(userWithoutPassword);
+      });
     } catch (error) {
       next(error);
     }

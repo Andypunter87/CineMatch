@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { Loader2, Mail, User, Lock, Globe, Tv } from "lucide-react";
 
 export default function AuthPage() {
@@ -20,7 +21,7 @@ export default function AuthPage() {
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
@@ -29,7 +30,6 @@ export default function AuthPage() {
   const registerForm = useForm({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      username: "",
       email: "",
       name: "",
       password: "",
@@ -81,14 +81,14 @@ export default function AuthPage() {
                   <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                     <FormField
                       control={loginForm.control}
-                      name="username"
+                      name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username</FormLabel>
+                          <FormLabel>Email</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-                              <Input className="pl-10" placeholder="Enter your username" {...field} />
+                              <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                              <Input className="pl-10" type="email" placeholder="Enter your email" {...field} />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -133,22 +133,7 @@ export default function AuthPage() {
               <CardContent>
                 <Form {...registerForm}>
                   <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                    <FormField
-                      control={registerForm.control}
-                      name="username"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Username</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-                              <Input className="pl-10" placeholder="Choose a username" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+
                     
                     <FormField
                       control={registerForm.control}
@@ -326,7 +311,7 @@ export default function AuthPage() {
           </Tabs>
           
           <CardFooter className="flex flex-col items-center justify-center pt-4">
-            <p className="text-sm text-slate-500 mt-4">
+            <p className="text-sm text-slate-500">
               {activeTab === "login" 
                 ? "Don't have an account?" 
                 : "Already have an account?"}
