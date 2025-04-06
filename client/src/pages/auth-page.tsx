@@ -138,6 +138,23 @@ export default function AuthPage() {
                     
                     <FormField
                       control={registerForm.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Username</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                              <Input className="pl-10" type="text" placeholder="Choose a username" {...field} />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={registerForm.control}
                       name="email"
                       render={({ field }) => (
                         <FormItem>

@@ -112,6 +112,7 @@ export function setupAuth(app: Express) {
 
       // Create the user with hashed password
       const userToCreate = {
+        username: email.split('@')[0], // Generating username from email as a fallback
         email,
         name,
         password: await hashPassword(password),
@@ -271,6 +272,7 @@ export function setupAuth(app: Express) {
         
         // Create a new user
         user = await storage.createUser({
+          username: email.split('@')[0], // Generate username from email
           email,
           name,
           providerId: uid,
