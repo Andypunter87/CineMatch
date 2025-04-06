@@ -82,6 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         has_streaming_services: (user.streamingServices && user.streamingServices.length > 0) || false,
         has_country: !!user.country
       });
+      
+      // Redirect to home page after successful login
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({
