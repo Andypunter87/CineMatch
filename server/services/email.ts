@@ -7,8 +7,8 @@ if (!process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
-// Sender email address - update this with your verified sender
-const FROM_EMAIL = 'cineMatch@example.com';
+// Sender email address - using the verified sender email
+const FROM_EMAIL = 'andy@more-human.co.uk';
 
 interface EmailOptions {
   to: string;
@@ -104,26 +104,20 @@ export async function sendWelcomeEmail(name: string, email: string): Promise<boo
         <h1>Welcome to CineMatch!</h1>
       </div>
       <div class="content">
-        <p>Hello ${name},</p>
+        <p>Hi ${name},</p>
         
-        <p>Thank you for joining CineMatch! We're excited to help you discover films that perfectly match your preferences and mood.</p>
+        <p>I'm Andy, the creator of CineMatch. I just wanted to say a huge thank you for signing up and trying us out!</p>
         
-        <p>With CineMatch, you can:</p>
-        <ul>
-          <li>Get personalized movie recommendations based on your mood and preferences</li>
-          <li>Discover hidden gems from indie and international cinema</li>
-          <li>Keep track of films you want to watch in your personal Watchlist</li>
-          <li>Rate and review films you've watched to improve future recommendations</li>
-        </ul>
+        <p>I love movies. Nothing makes me happier than discovering something new to watch that I connect with. However, in an age of almost infinite choice at our fingertips it can sometimes be hard to find the right thing to watch at the right time. If you are anything like me, you probably end up spending ages flipping through the different menus of the streaming services just hoping that something perfect for your mood jumps out at you.</p>
         
-        <p>Ready to find your next favorite film?</p>
+        <p>I wanted to make something that makes it easier to find something awesome to watch quickly and ideally, find something that I might not have discovered on my own. CineMatch is my attempt to solve that problem.</p>
+        
+        <p>This project is very much in its early stages, so I'd love to hear from you about how you find it and if you have any feedback for me, I'd really love to hear it!</p>
         
         <a href="https://cinematch.replit.app" class="button">Explore Recommendations</a>
         
-        <p>If you have any questions or need assistance, please don't hesitate to contact us.</p>
-        
-        <p>Happy watching!</p>
-        <p>The CineMatch Team</p>
+        <p>I hope you find something amazing to watch,</p>
+        <p>Andy</p>
       </div>
       <div class="footer">
         <p>Powered by More Human | Contact: andy@more-human.co.uk</p>
