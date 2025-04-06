@@ -111,15 +111,15 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
         
         {/* Match percentage badge */}
         <div className="absolute top-2 right-2">
-          <Badge className="bg-primary text-white px-1.5 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm font-medium">
-            <Star className="w-3 h-3 mr-1 inline" />
-            {matchPercentage}% Match
+          <Badge className="bg-primary text-white px-1.5 py-0.5 text-xs sm:px-2 sm:py-0.5 sm:text-xs md:text-sm font-medium max-w-[120px] truncate">
+            <Star className="w-3 h-3 mr-1 inline flex-shrink-0" />
+            <span className="truncate">{matchPercentage}% Match</span>
           </Badge>
         </div>
         
         {/* Film type badge */}
         <div className="absolute top-2 left-2">
-          <Badge variant="outline" className="bg-white/80 text-gray-700 border-blue-200 px-1.5 py-0.5 text-xs sm:px-2 sm:py-1 sm:text-sm">
+          <Badge variant="outline" className="bg-white/80 text-gray-700 border-blue-200 px-1.5 py-0.5 text-xs sm:px-2 sm:py-0.5 sm:text-xs md:text-sm max-w-[120px] truncate">
             {film.type === "indie" ? "Independent" : "Mainstream"}
           </Badge>
         </div>
@@ -132,8 +132,8 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
           <p className="mt-1 md:mt-2 text-xs md:text-sm text-white leading-snug line-clamp-4">{synopsis}</p>
           <div className="mt-2 md:mt-3 flex flex-wrap gap-1">
             {genres.map((genre, index) => (
-              <Badge key={index} variant="secondary" className="bg-blue-500/80 text-white text-xs px-1.5 py-0.5">
-                {genre}
+              <Badge key={index} variant="secondary" className="bg-blue-500/80 text-white text-xs px-1.5 py-0.5 max-w-[90px] truncate">
+                <span className="truncate">{genre}</span>
               </Badge>
             ))}
           </div>
@@ -157,8 +157,8 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
         
         <div className="mt-3 mb-1 flex flex-wrap gap-1">
           {genres.slice(0, 2).map((genre, index) => (
-            <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-              {genre}
+            <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 max-w-[100px] truncate">
+              <span className="truncate">{genre}</span>
             </Badge>
           ))}
         </div>
@@ -176,8 +176,8 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
             {film.availableOn && film.availableOn.length > 0 ? (
               <div className="flex flex-wrap gap-1 mt-1">
                 {film.availableOn.map((service, index) => (
-                  <Badge key={index} variant="secondary" className="bg-green-100 text-green-800 border-green-200">
-                    {service}
+                  <Badge key={index} variant="secondary" className="bg-green-100 text-green-800 border-green-200 max-w-[100px] truncate">
+                    <span className="truncate">{service}</span>
                   </Badge>
                 ))}
               </div>

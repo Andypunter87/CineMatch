@@ -120,7 +120,7 @@ export default function Recommendations({
                 <p className="text-gray-800">Getting your personalized film recommendations...</p>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 filter blur-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-8 filter blur-sm">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-96 bg-white rounded-lg overflow-hidden shadow-lg border border-blue-100">
                   <Skeleton className="w-full h-64 bg-blue-100" />
@@ -145,7 +145,7 @@ export default function Recommendations({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
               {filteredRecommendations.map((film) => (
                 <FilmCard 
                   key={film.id} 
