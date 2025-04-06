@@ -95,6 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Registration successful",
         description: `Welcome to CineMatch${user.name ? ', ' + user.name : ''}!`,
       });
+      // Redirect to home page after successful registration
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({
