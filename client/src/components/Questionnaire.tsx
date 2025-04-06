@@ -63,9 +63,9 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   };
 
   return (
-    <section className="flex flex-col justify-center items-center py-8 px-4 md:px-8 min-h-[80vh]">
+    <section className="flex flex-col justify-center items-center py-4 px-4 md:px-8 min-h-[75vh]">
       <div className="max-w-2xl w-full">
-        <div className="mb-8 flex justify-center">
+        <div className="mb-4 flex justify-center">
           <div className="flex space-x-2">
             <div className={`w-3 h-3 rounded-full ${currentStep >= 1 ? 'bg-primary' : 'bg-gray-600'}`}></div>
             <div className={`w-3 h-3 rounded-full ${currentStep >= 2 ? 'bg-primary' : 'bg-gray-600'}`}></div>
@@ -75,7 +75,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
         </div>
 
         <Card className="bg-white border border-blue-100 shadow-[0_4px_14px_0_rgba(59,130,246,0.2)]">
-          <CardContent className="p-8">
+          <CardContent className="p-6">
             {/* Step 1: Welcome */}
             {currentStep === 1 && (
               <div>

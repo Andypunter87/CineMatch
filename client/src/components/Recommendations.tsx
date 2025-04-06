@@ -60,9 +60,9 @@ export default function Recommendations({
   );
 
   return (
-    <section className="py-12 px-4 md:px-8">
+    <section className="py-6 px-4 md:px-6">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold mb-2">Your Film Recommendations</h2>
             <div className="text-gray-600 text-sm sm:text-base">

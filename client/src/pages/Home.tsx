@@ -64,8 +64,8 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 bg-white">
-      <div className="mb-8">
+    <div className="container mx-auto px-4 py-6 bg-white">
+      <div className="mb-4">
         <h1 className="text-4xl font-bold text-center mb-2 bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
           Find Your Perfect Movie Match
         </h1>
