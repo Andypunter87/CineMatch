@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
+import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
 
 interface FilmCardProps {
   film: Film;
@@ -41,6 +42,17 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
     onSuccess: (watchlistItem) => {
       // Only invalidate watchlist data without redirecting to homepage
       queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
+      
+      // Track film added to watchlist event
+      trackEvent(AnalyticsEvents.FILM_ADDED_TO_WATCHLIST, {
+        film_id: film.id,
+        film_title: film.title,
+        film_year: film.year,
+        film_type: film.type,
+        film_genres: film.genres.join(','),
+        match_percentage: film.matchPercentage || 90,
+        from_recommendation: !!recommendationContext
+      });
       
       // Show confirmation message within the card
       setShowConfirmation(true);

@@ -8,6 +8,7 @@ import { User, insertUserSchema } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
 
 type AuthContextType = {
   user: User | null;
@@ -73,6 +74,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Login successful",
         description: `Welcome back${user.name ? ', ' + user.name : ''}!`,
       });
+      
+      // Track login event
+      trackEvent(AnalyticsEvents.USER_LOGGED_IN, {
+        user_id: user.id,
+        has_name: !!user.name,
+        has_streaming_services: (user.streamingServices && user.streamingServices.length > 0) || false,
+        has_country: !!user.country
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -95,6 +104,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Registration successful",
         description: `Welcome to CineMatch${user.name ? ', ' + user.name : ''}!`,
       });
+      
+      // Track registration event
+      trackEvent(AnalyticsEvents.USER_REGISTERED, {
+        user_id: user.id,
+        has_name: !!user.name,
+        has_streaming_services: (user.streamingServices && user.streamingServices.length > 0) || false,
+        has_country: !!user.country,
+        streaming_services_count: (user.streamingServices && user.streamingServices.length) || 0
+      });
+      
       // Redirect to home page after successful registration
       window.location.href = "/";
     },

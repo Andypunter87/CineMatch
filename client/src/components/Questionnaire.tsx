@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { type RecommendationRequest } from "@shared/schema";
+
+// Type definition for time of day options
+type TimeOfDay = "weekday" | "weekend" | "late" | "morning";
+
 import { 
   Home as HomeIcon, 
   Globe, 
@@ -13,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
 
 interface QuestionnaireProps {
   onSubmit: (data: RecommendationRequest) => void;
@@ -22,7 +27,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [location, setLocation] = useState<RecommendationRequest["location"] | "">("");
-  const [timeOfDay, setTimeOfDay] = useState<RecommendationRequest["timeOfDay"]>([]);
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay[]>([]);
   const [mood, setMood] = useState<RecommendationRequest["mood"] | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,6 +59,16 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       // Streaming services are now handled in the Home component
       // to allow for more flexibility and automatic updates
     };
+    
+    // Track questionnaire completion event
+    trackEvent(AnalyticsEvents.QUESTIONNAIRE_COMPLETED, {
+      location: location,
+      time_count: timeOfDay.length,
+      time_options: timeOfDay,
+      mood: mood,
+      is_logged_in: !!user,
+      has_country: !!user?.country
+    });
     
     // Simulate a slight delay for better user experience
     setTimeout(() => {
@@ -104,12 +119,18 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="home" 
                       className="hidden" 
                       checked={location === "home"}
-                      onChange={() => setLocation("home")}
+                      onChange={() => {
+                        setLocation("home");
+                        trackEvent(AnalyticsEvents.LOCATION_SELECTED, { location: "home" });
+                      }}
                     />
                     <label 
                       htmlFor="location-home" 
                       className={`flex flex-col items-center p-4 border-2 ${location === "home" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                      onClick={() => setLocation("home")}
+                      onClick={() => {
+                        setLocation("home");
+                        trackEvent(AnalyticsEvents.LOCATION_SELECTED, { location: "home" });
+                      }}
                     >
                       <HomeIcon className="w-8 h-8 mb-2 text-gray-600" />
                       <span>At Home</span>
@@ -125,12 +146,18 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="travel" 
                       className="hidden" 
                       checked={location === "travel"}
-                      onChange={() => setLocation("travel")}
+                      onChange={() => {
+                        setLocation("travel");
+                        trackEvent(AnalyticsEvents.LOCATION_SELECTED, { location: "travel" });
+                      }}
                     />
                     <label 
                       htmlFor="location-travel" 
                       className={`flex flex-col items-center p-4 border-2 ${location === "travel" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                      onClick={() => setLocation("travel")}
+                      onClick={() => {
+                        setLocation("travel");
+                        trackEvent(AnalyticsEvents.LOCATION_SELECTED, { location: "travel" });
+                      }}
                     >
                       <Globe className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Traveling</span>
@@ -146,12 +173,18 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="date" 
                       className="hidden" 
                       checked={location === "date"}
-                      onChange={() => setLocation("date")}
+                      onChange={() => {
+                        setLocation("date");
+                        trackEvent(AnalyticsEvents.LOCATION_SELECTED, { location: "date" });
+                      }}
                     />
                     <label 
                       htmlFor="location-date" 
                       className={`flex flex-col items-center p-4 border-2 ${location === "date" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                      onClick={() => setLocation("date")}
+                      onClick={() => {
+                        setLocation("date");
+                        trackEvent(AnalyticsEvents.LOCATION_SELECTED, { location: "date" });
+                      }}
                     >
                       <Heart className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Date Night</span>
@@ -167,12 +200,18 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="friends" 
                       className="hidden" 
                       checked={location === "friends"}
-                      onChange={() => setLocation("friends")}
+                      onChange={() => {
+                        setLocation("friends");
+                        trackEvent(AnalyticsEvents.LOCATION_SELECTED, { location: "friends" });
+                      }}
                     />
                     <label 
                       htmlFor="location-friends" 
                       className={`flex flex-col items-center p-4 border-2 ${location === "friends" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                      onClick={() => setLocation("friends")}
+                      onClick={() => {
+                        setLocation("friends");
+                        trackEvent(AnalyticsEvents.LOCATION_SELECTED, { location: "friends" });
+                      }}
                     >
                       <Users className="w-8 h-8 mb-2 text-gray-600" />
                       <span>With Friends</span>
@@ -214,11 +253,16 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       className="hidden" 
                       checked={timeOfDay.includes("weekday")}
                       onChange={() => {
-                        if (timeOfDay.includes("weekday")) {
-                          setTimeOfDay(timeOfDay.filter(t => t !== "weekday"));
-                        } else {
-                          setTimeOfDay([...timeOfDay, "weekday"]);
-                        }
+                        const newTimeOfDay = timeOfDay.includes("weekday") 
+                          ? timeOfDay.filter(t => t !== "weekday")
+                          : [...timeOfDay, "weekday"] as TimeOfDay[];
+                        
+                        setTimeOfDay(newTimeOfDay);
+                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
+                          time: "weekday", 
+                          action: timeOfDay.includes("weekday") ? "removed" : "added",
+                          count: newTimeOfDay.length
+                        });
                       }}
                     />
                     <label 
@@ -240,11 +284,16 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       className="hidden" 
                       checked={timeOfDay.includes("weekend")}
                       onChange={() => {
-                        if (timeOfDay.includes("weekend")) {
-                          setTimeOfDay(timeOfDay.filter(t => t !== "weekend"));
-                        } else {
-                          setTimeOfDay([...timeOfDay, "weekend"]);
-                        }
+                        const newTimeOfDay = timeOfDay.includes("weekend") 
+                          ? timeOfDay.filter(t => t !== "weekend")
+                          : [...timeOfDay, "weekend"] as TimeOfDay[];
+                        
+                        setTimeOfDay(newTimeOfDay);
+                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
+                          time: "weekend", 
+                          action: timeOfDay.includes("weekend") ? "removed" : "added",
+                          count: newTimeOfDay.length
+                        });
                       }}
                     />
                     <label 
@@ -266,11 +315,16 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       className="hidden" 
                       checked={timeOfDay.includes("late")}
                       onChange={() => {
-                        if (timeOfDay.includes("late")) {
-                          setTimeOfDay(timeOfDay.filter(t => t !== "late"));
-                        } else {
-                          setTimeOfDay([...timeOfDay, "late"]);
-                        }
+                        const newTimeOfDay = timeOfDay.includes("late") 
+                          ? timeOfDay.filter(t => t !== "late")
+                          : [...timeOfDay, "late"] as TimeOfDay[];
+                        
+                        setTimeOfDay(newTimeOfDay);
+                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
+                          time: "late", 
+                          action: timeOfDay.includes("late") ? "removed" : "added",
+                          count: newTimeOfDay.length
+                        });
                       }}
                     />
                     <label 
@@ -292,11 +346,16 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       className="hidden" 
                       checked={timeOfDay.includes("morning")}
                       onChange={() => {
-                        if (timeOfDay.includes("morning")) {
-                          setTimeOfDay(timeOfDay.filter(t => t !== "morning"));
-                        } else {
-                          setTimeOfDay([...timeOfDay, "morning"]);
-                        }
+                        const newTimeOfDay = timeOfDay.includes("morning") 
+                          ? timeOfDay.filter(t => t !== "morning")
+                          : [...timeOfDay, "morning"] as TimeOfDay[];
+                        
+                        setTimeOfDay(newTimeOfDay);
+                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
+                          time: "morning", 
+                          action: timeOfDay.includes("morning") ? "removed" : "added",
+                          count: newTimeOfDay.length
+                        });
                       }}
                     />
                     <label 
@@ -342,12 +401,18 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="laugh" 
                       className="hidden" 
                       checked={mood === "laugh"}
-                      onChange={() => setMood("laugh")}
+                      onChange={() => {
+                        setMood("laugh");
+                        trackEvent(AnalyticsEvents.MOOD_SELECTED, { mood: "laugh" });
+                      }}
                     />
                     <label 
                       htmlFor="mood-laugh" 
                       className={`flex flex-col items-center p-4 border-2 ${mood === "laugh" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                      onClick={() => setMood("laugh")}
+                      onClick={() => {
+                        setMood("laugh");
+                        trackEvent(AnalyticsEvents.MOOD_SELECTED, { mood: "laugh" });
+                      }}
                     >
                       <span className="text-2xl mb-2">😂</span>
                       <span>Laugh</span>
@@ -363,12 +428,18 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="think" 
                       className="hidden" 
                       checked={mood === "think"}
-                      onChange={() => setMood("think")}
+                      onChange={() => {
+                        setMood("think");
+                        trackEvent(AnalyticsEvents.MOOD_SELECTED, { mood: "think" });
+                      }}
                     />
                     <label 
                       htmlFor="mood-think" 
                       className={`flex flex-col items-center p-4 border-2 ${mood === "think" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                      onClick={() => setMood("think")}
+                      onClick={() => {
+                        setMood("think");
+                        trackEvent(AnalyticsEvents.MOOD_SELECTED, { mood: "think" });
+                      }}
                     >
                       <span className="text-2xl mb-2">🤔</span>
                       <span>Think</span>
@@ -384,12 +455,18 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="cry" 
                       className="hidden" 
                       checked={mood === "cry"}
-                      onChange={() => setMood("cry")}
+                      onChange={() => {
+                        setMood("cry");
+                        trackEvent(AnalyticsEvents.MOOD_SELECTED, { mood: "cry" });
+                      }}
                     />
                     <label 
                       htmlFor="mood-cry" 
                       className={`flex flex-col items-center p-4 border-2 ${mood === "cry" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                      onClick={() => setMood("cry")}
+                      onClick={() => {
+                        setMood("cry");
+                        trackEvent(AnalyticsEvents.MOOD_SELECTED, { mood: "cry" });
+                      }}
                     >
                       <span className="text-2xl mb-2">😢</span>
                       <span>Cry</span>
@@ -405,12 +482,18 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="thrill" 
                       className="hidden" 
                       checked={mood === "thrill"}
-                      onChange={() => setMood("thrill")}
+                      onChange={() => {
+                        setMood("thrill");
+                        trackEvent(AnalyticsEvents.MOOD_SELECTED, { mood: "thrill" });
+                      }}
                     />
                     <label 
                       htmlFor="mood-thrill" 
                       className={`flex flex-col items-center p-4 border-2 ${mood === "thrill" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                      onClick={() => setMood("thrill")}
+                      onClick={() => {
+                        setMood("thrill");
+                        trackEvent(AnalyticsEvents.MOOD_SELECTED, { mood: "thrill" });
+                      }}
                     >
                       <span className="text-2xl mb-2">😱</span>
                       <span>Thrill</span>
@@ -426,12 +509,18 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="escape" 
                       className="hidden" 
                       checked={mood === "escape"}
-                      onChange={() => setMood("escape")}
+                      onChange={() => {
+                        setMood("escape");
+                        trackEvent(AnalyticsEvents.MOOD_SELECTED, { mood: "escape" });
+                      }}
                     />
                     <label 
                       htmlFor="mood-escape" 
                       className={`flex flex-col items-center p-4 border-2 ${mood === "escape" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                      onClick={() => setMood("escape")}
+                      onClick={() => {
+                        setMood("escape");
+                        trackEvent(AnalyticsEvents.MOOD_SELECTED, { mood: "escape" });
+                      }}
                     >
                       <span className="text-2xl mb-2">✨</span>
                       <span>Escape</span>
@@ -447,12 +536,18 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       value="inspire" 
                       className="hidden" 
                       checked={mood === "inspire"}
-                      onChange={() => setMood("inspire")}
+                      onChange={() => {
+                        setMood("inspire");
+                        trackEvent(AnalyticsEvents.MOOD_SELECTED, { mood: "inspire" });
+                      }}
                     />
                     <label 
                       htmlFor="mood-inspire" 
                       className={`flex flex-col items-center p-4 border-2 ${mood === "inspire" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                      onClick={() => setMood("inspire")}
+                      onClick={() => {
+                        setMood("inspire");
+                        trackEvent(AnalyticsEvents.MOOD_SELECTED, { mood: "inspire" });
+                      }}
                     >
                       <span className="text-2xl mb-2">💫</span>
                       <span>Inspire</span>
