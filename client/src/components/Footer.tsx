@@ -6,9 +6,19 @@ export default function Footer() {
   return (
     <footer className="bg-white shadow-sm py-6 mt-auto">
       <div className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
-          <div className="mb-4 md:mb-0">
+        <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row justify-between items-center text-sm text-gray-500">
+          <div className="text-center md:text-left">
             <p>© {currentYear} CineMatch. All rights reserved.</p>
+            <p className="mt-1">
+              This service is powered by More Human. Contact{" "}
+              <a 
+                href="mailto:andy@more-human.co.uk" 
+                className="text-blue-500 hover:underline"
+              >
+                andy@more-human.co.uk
+              </a>
+              {" "}with any questions or comments.
+            </p>
           </div>
           
           <div className="flex space-x-6">
