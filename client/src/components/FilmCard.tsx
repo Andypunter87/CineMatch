@@ -110,17 +110,17 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
         </div>
         
         {/* Match percentage badge */}
-        <div className="absolute top-2 right-2">
-          <Badge className="bg-primary text-white px-1.5 py-0.5 text-xs sm:px-2 sm:py-0.5 sm:text-xs md:text-sm font-medium max-w-[120px] truncate">
-            <Star className="w-3 h-3 mr-1 inline flex-shrink-0" />
+        <div className="absolute top-2 right-2 z-10 max-w-[42%]">
+          <Badge className="bg-primary text-white px-1.5 py-0.5 text-[10px] sm:text-xs sm:px-2 sm:py-0.5 font-medium max-w-full truncate">
+            <Star className="w-3 h-3 mr-0.5 sm:mr-1 inline flex-shrink-0" />
             <span className="truncate">{matchPercentage}% Match</span>
           </Badge>
         </div>
         
         {/* Film type badge */}
-        <div className="absolute top-2 left-2">
-          <Badge variant="outline" className="bg-white/80 text-gray-700 border-blue-200 px-1.5 py-0.5 text-xs sm:px-2 sm:py-0.5 sm:text-xs md:text-sm max-w-[120px] truncate">
-            {film.type === "indie" ? "Independent" : "Mainstream"}
+        <div className="absolute top-2 left-2 z-10 max-w-[42%]">
+          <Badge variant="outline" className="bg-white/90 text-gray-700 border-blue-200 px-1.5 py-0.5 text-[10px] sm:text-xs sm:px-2 sm:py-0.5 max-w-full truncate">
+            <span className="truncate">{film.type === "indie" ? "Independent" : "Mainstream"}</span>
           </Badge>
         </div>
         
