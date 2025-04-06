@@ -408,28 +408,28 @@ export default function WatchlistPage() {
             open={!!editingItemId}
             onOpenChange={(open) => !open && setEditingItemId(null)}
           >
-            <DialogContent>
+            <DialogContent className="bg-white text-gray-800 shadow-xl shadow-blue-100/50">
               <DialogHeader>
-                <DialogTitle>Mark as Watched & Rate</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-gray-900">Mark as Watched & Rate</DialogTitle>
+                <DialogDescription className="text-gray-600">
                   This film will be marked as watched. Add a rating and your thoughts about it.
                 </DialogDescription>
               </DialogHeader>
 
               <div className="py-4 space-y-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Rating</label>
+                  <label className="text-sm font-medium text-gray-800 mb-2 block">Rating</label>
                   <StarRating value={rating} onChange={setRating} />
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Notes</label>
+                  <label className="text-sm font-medium text-gray-800 mb-2 block">Notes</label>
                   <Textarea
                     placeholder="Write your thoughts about this film..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={4}
-                    className="bg-white"
+                    className="bg-white text-gray-800 placeholder:text-gray-400 border-gray-200"
                   />
                 </div>
               </div>
@@ -454,10 +454,10 @@ export default function WatchlistPage() {
           open={!!itemToDelete}
           onOpenChange={(open) => !open && setItemToDelete(null)}
         >
-          <DialogContent>
+          <DialogContent className="bg-white text-gray-800 shadow-xl shadow-blue-100/50">
             <DialogHeader>
-              <DialogTitle>Confirm Removal</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-gray-900">Confirm Removal</DialogTitle>
+              <DialogDescription className="text-gray-600">
                 Are you sure you want to remove this film from your watchlist?
               </DialogDescription>
             </DialogHeader>
