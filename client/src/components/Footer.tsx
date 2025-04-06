@@ -20,9 +20,14 @@ export default function Footer() {
             >
               Terms of Service
             </a>
-            <Link href="/privacy" className="hover:text-blue-500 transition-colors">
+            <a 
+              href="https://material-wave-7a1.notion.site/Privacy-Policy-1cde201190c980d4bb60d1ed8dff7b70?pvs=4"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-blue-500 transition-colors"
+            >
               Privacy Policy
-            </Link>
+            </a>
             <a 
               href="mailto:support@cinematch.app" 
               className="hover:text-blue-500 transition-colors"

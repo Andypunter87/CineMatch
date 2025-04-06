@@ -318,7 +318,7 @@ export default function AuthPage() {
                               </a>{" "}
                               and{" "}
                               <a 
-                                href="/privacy" 
+                                href="https://material-wave-7a1.notion.site/Privacy-Policy-1cde201190c980d4bb60d1ed8dff7b70?pvs=4" 
                                 target="_blank" 
                                 className="text-blue-500 hover:underline"
                               >
