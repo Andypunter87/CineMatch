@@ -2,6 +2,26 @@ import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Function to enable/disable Google Analytics based on user consent
+const setGoogleAnalyticsConsent = (hasConsent: boolean) => {
+  // Access the window object and gtag function
+  const w = window as any;
+  
+  if (w.gtag) {
+    if (hasConsent) {
+      // Enable analytics tracking
+      w.gtag('consent', 'update', {
+        'analytics_storage': 'granted'
+      });
+    } else {
+      // Disable analytics tracking
+      w.gtag('consent', 'update', {
+        'analytics_storage': 'denied'
+      });
+    }
+  }
+};
+
 export default function CookieConsent() {
   const [showBanner, setShowBanner] = useState(false);
 
@@ -10,11 +30,17 @@ export default function CookieConsent() {
     const hasConsented = localStorage.getItem("cookieConsent");
     if (!hasConsented) {
       setShowBanner(true);
+      // Default to no tracking until user consents
+      setGoogleAnalyticsConsent(false);
+    } else {
+      // Apply the user's previous consent choice
+      setGoogleAnalyticsConsent(hasConsented === "true");
     }
   }, []);
 
   const handleAccept = () => {
     localStorage.setItem("cookieConsent", "true");
+    setGoogleAnalyticsConsent(true);
     setShowBanner(false);
   };
 
@@ -22,6 +48,7 @@ export default function CookieConsent() {
     // Set a cookie consent value but mark it as declined
     // This still prevents the banner from showing again
     localStorage.setItem("cookieConsent", "false");
+    setGoogleAnalyticsConsent(false);
     setShowBanner(false);
   };
 
@@ -36,7 +63,7 @@ export default function CookieConsent() {
           <div className="flex-1">
             <h3 className="text-lg font-semibold mb-1">Cookie Consent</h3>
             <p className="text-sm text-gray-600">
-              We use cookies to improve your experience on our site. By continuing to use our site, you consent to our use of cookies in accordance with our{" "}
+              We use cookies and Google Analytics to improve your experience and understand how users interact with our site. By continuing to use our site, you consent to our use of cookies in accordance with our{" "}
               <a 
                 href="https://material-wave-7a1.notion.site/Privacy-Policy-1cde201190c980d4bb60d1ed8dff7b70?pvs=4" 
                 target="_blank" 
