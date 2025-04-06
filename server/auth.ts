@@ -6,6 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User, User as SelectUser } from "@shared/schema";
+import { sendWelcomeEmail } from "./services/email";
 
 declare global {
   namespace Express {
@@ -120,6 +121,19 @@ export function setupAuth(app: Express) {
       };
       
       const user = await storage.createUser(userToCreate);
+
+      // Send welcome email asynchronously (don't wait for it to complete)
+      sendWelcomeEmail(name, email)
+        .then(success => {
+          if (success) {
+            console.log(`Welcome email sent successfully to ${email}`);
+          } else {
+            console.warn(`Failed to send welcome email to ${email}`);
+          }
+        })
+        .catch(error => {
+          console.error(`Error sending welcome email to ${email}:`, error);
+        });
 
       // Log the user in
       req.login(user, (err) => {
@@ -264,6 +278,19 @@ export function setupAuth(app: Express) {
           streamingServices: [],
           country: '',
         });
+        
+        // Send welcome email for new Google-authenticated users
+        sendWelcomeEmail(name, email)
+          .then(success => {
+            if (success) {
+              console.log(`Welcome email sent successfully to ${email} (Google Auth)`);
+            } else {
+              console.warn(`Failed to send welcome email to ${email} (Google Auth)`);
+            }
+          })
+          .catch(error => {
+            console.error(`Error sending welcome email to ${email} (Google Auth):`, error);
+          });
       }
       
       // Log the user in
