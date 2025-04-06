@@ -12,9 +12,14 @@ export default function Footer() {
           </div>
           
           <div className="flex space-x-6">
-            <Link href="/terms" className="hover:text-blue-500 transition-colors">
+            <a 
+              href="https://material-wave-7a1.notion.site/Terms-of-Service-1cde201190c980039e7cdecc08746433?pvs=4"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-blue-500 transition-colors"
+            >
               Terms of Service
-            </Link>
+            </a>
             <Link href="/privacy" className="hover:text-blue-500 transition-colors">
               Privacy Policy
             </Link>

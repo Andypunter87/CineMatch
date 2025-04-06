@@ -310,7 +310,7 @@ export default function AuthPage() {
                             <FormLabel className="text-sm font-normal">
                               I agree to the{" "}
                               <a 
-                                href="/terms" 
+                                href="https://material-wave-7a1.notion.site/Terms-of-Service-1cde201190c980039e7cdecc08746433?pvs=4" 
                                 target="_blank" 
                                 className="text-blue-500 hover:underline"
                               >
