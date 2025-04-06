@@ -12,6 +12,7 @@ import PrivacyPage from "@/pages/privacy-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import Layout from "@/components/Layout";
+import CookieConsent from "@/components/CookieConsent";
 
 function Router() {
   return (
@@ -34,6 +35,7 @@ function App() {
         <Layout>
           <Router />
         </Layout>
+        <CookieConsent />
         <Toaster />
       </AuthProvider>
     </QueryClientProvider>
