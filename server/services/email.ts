@@ -1,6 +1,8 @@
 import sgMail from '@sendgrid/mail';
 
 // Initialize SendGrid with API key
+let sgMailInitialized = false;
+
 if (!process.env.SENDGRID_API_KEY) {
   console.warn('SENDGRID_API_KEY not found. Email functionality will not work.');
 } else {
@@ -12,6 +14,7 @@ if (!process.env.SENDGRID_API_KEY) {
   
   try {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    sgMailInitialized = true;
     console.log('SendGrid initialized successfully');
   } catch (error) {
     console.error('Failed to initialize SendGrid:', error);
@@ -33,8 +36,29 @@ interface EmailOptions {
  */
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
   try {
-    if (!process.env.SENDGRID_API_KEY) {
-      console.error('Cannot send email: SENDGRID_API_KEY is not set');
+    // Check if SendGrid is properly initialized
+    if (!sgMailInitialized) {
+      console.error('Cannot send email: SendGrid is not properly initialized');
+      
+      // Try to initialize again if API key is available
+      if (process.env.SENDGRID_API_KEY) {
+        try {
+          sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+          sgMailInitialized = true;
+          console.log('SendGrid re-initialized successfully');
+        } catch (initError) {
+          console.error('Failed to re-initialize SendGrid:', initError);
+          return false;
+        }
+      } else {
+        console.error('Cannot send email: SENDGRID_API_KEY is not set');
+        return false;
+      }
+    }
+
+    // Validate email address format
+    if (!options.to || !options.to.includes('@') || !options.to.includes('.')) {
+      console.error(`Invalid email address format: ${options.to}`);
       return false;
     }
 

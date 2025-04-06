@@ -124,17 +124,29 @@ export function setupAuth(app: Express) {
       const user = await storage.createUser(userToCreate);
 
       // Send welcome email asynchronously (don't wait for it to complete)
-      sendWelcomeEmail(name, email)
-        .then(success => {
-          if (success) {
-            console.log(`Welcome email sent successfully to ${email}`);
-          } else {
-            console.warn(`Failed to send welcome email to ${email}`);
-          }
-        })
-        .catch(error => {
-          console.error(`Error sending welcome email to ${email}:`, error);
-        });
+      // Make sure name and email are properly sanitized
+      const sanitizedName = (name || '').trim() || 'User';
+      const sanitizedEmail = (email || '').trim();
+      
+      if (sanitizedEmail) {
+        try {
+          sendWelcomeEmail(sanitizedName, sanitizedEmail)
+            .then(success => {
+              if (success) {
+                console.log(`Welcome email sent successfully to ${sanitizedEmail}`);
+              } else {
+                console.warn(`Failed to send welcome email to ${sanitizedEmail}`);
+              }
+            })
+            .catch(error => {
+              console.error(`Error sending welcome email to ${sanitizedEmail}:`, error);
+            });
+        } catch (emailError) {
+          console.error(`Unexpected error attempting to send welcome email to ${sanitizedEmail}:`, emailError);
+        }
+      } else {
+        console.warn('Cannot send welcome email: Invalid or missing email address');
+      }
 
       // Log the user in
       req.login(user, (err) => {
@@ -282,17 +294,29 @@ export function setupAuth(app: Express) {
         });
         
         // Send welcome email for new Google-authenticated users
-        sendWelcomeEmail(name, email)
-          .then(success => {
-            if (success) {
-              console.log(`Welcome email sent successfully to ${email} (Google Auth)`);
-            } else {
-              console.warn(`Failed to send welcome email to ${email} (Google Auth)`);
-            }
-          })
-          .catch(error => {
-            console.error(`Error sending welcome email to ${email} (Google Auth):`, error);
-          });
+        // Make sure name and email are properly sanitized
+        const sanitizedName = (name || '').trim() || 'User';
+        const sanitizedEmail = (email || '').trim();
+        
+        if (sanitizedEmail) {
+          try {
+            sendWelcomeEmail(sanitizedName, sanitizedEmail)
+              .then(success => {
+                if (success) {
+                  console.log(`Welcome email sent successfully to ${sanitizedEmail} (Google Auth)`);
+                } else {
+                  console.warn(`Failed to send welcome email to ${sanitizedEmail} (Google Auth)`);
+                }
+              })
+              .catch(error => {
+                console.error(`Error sending welcome email to ${sanitizedEmail} (Google Auth):`, error);
+              });
+          } catch (emailError) {
+            console.error(`Unexpected error attempting to send welcome email to ${sanitizedEmail} (Google Auth):`, emailError);
+          }
+        } else {
+          console.warn('Cannot send welcome email for Google Auth: Invalid or missing email address');
+        }
       }
       
       // Log the user in
