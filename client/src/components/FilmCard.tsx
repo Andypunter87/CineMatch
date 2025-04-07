@@ -137,19 +137,19 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
         </div>
         
         <div className="recommendation-details absolute inset-0 bg-gradient-to-t from-gray-900/90 to-transparent p-3 md:p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <h3 className="text-lg md:text-xl font-bold text-white">{title}</h3>
-          <p className="text-gray-200 text-xs md:text-sm">
-            {year} • {director}
-          </p>
-          <div className="mt-1 md:mt-2 bg-black/50 backdrop-blur-sm rounded p-2">
+          <div className="bg-black/50 backdrop-blur-sm rounded p-3 mb-2">
+            <h3 className="text-lg md:text-xl font-bold text-white">{title}</h3>
+            <p className="text-gray-200 text-xs md:text-sm mb-2">
+              {year} • {director}
+            </p>
             <p className="text-xs md:text-sm text-white leading-snug line-clamp-4">{synopsis}</p>
-          </div>
-          <div className="mt-2 md:mt-3 flex flex-wrap gap-1">
-            {genres.map((genre, index) => (
-              <Badge key={index} variant="secondary" className="bg-blue-500/80 text-white text-xs px-1.5 py-0.5 max-w-[90px] truncate">
-                <span className="truncate">{genre}</span>
-              </Badge>
-            ))}
+            <div className="mt-3 flex flex-wrap gap-1">
+              {genres.map((genre, index) => (
+                <Badge key={index} variant="secondary" className="bg-blue-500/80 text-white text-xs px-1.5 py-0.5 max-w-[90px] truncate">
+                  <span className="truncate">{genre}</span>
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
       </div>
