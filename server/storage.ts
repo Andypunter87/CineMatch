@@ -1,14 +1,17 @@
 import { 
   users,
   watchlist,
+  analytics,
   type User,
   type InsertUser,
   type Film,
-  type RecommendationRequest
+  type RecommendationRequest,
+  type InsertAnalytics,
+  type Analytics
 } from "@shared/schema";
 import { films } from "./data/films";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, gte, lte, sql, count, SQL } from "drizzle-orm";
 import session from "express-session";
 import { getAIRecommendations } from "./services/openai";
 import { getEnhancedRecommendations } from "./services/recommendation-enhancer";
@@ -41,6 +44,17 @@ export interface IStorage {
   addToWatchlist(item: InsertWatchlistItem): Promise<WatchlistItem>;
   updateWatchlistItem(itemId: number, updates: Partial<InsertWatchlistItem>): Promise<WatchlistItem>;
   removeFromWatchlist(userId: number, itemId: number): Promise<void>;
+  
+  // Analytics operations
+  trackEvent(eventData: InsertAnalytics): Promise<void>;
+  getAnalytics(filter?: {
+    eventType?: string;
+    startDate?: Date;
+    endDate?: Date;
+    userId?: number;
+  }): Promise<Analytics[]>;
+  getUserCount(): Promise<number>;
+  getEventCount(eventType: string): Promise<number>;
   
   sessionStore: any; // Using any for session store to avoid type issues
 }
@@ -335,6 +349,87 @@ export class DatabaseStorage implements IStorage {
         .slice(0, 8);
   
       return recommendations;
+    }
+  }
+  
+  // Analytics operations implementation
+  async trackEvent(eventData: InsertAnalytics): Promise<void> {
+    try {
+      await db
+        .insert(analytics)
+        .values(eventData);
+      console.log(`Tracked event: ${eventData.eventType}`);
+    } catch (error) {
+      console.error("Error tracking event:", error);
+      // Don't throw an error here to avoid disrupting the main application flow
+    }
+  }
+  
+  async getAnalytics(filter?: {
+    eventType?: string;
+    startDate?: Date;
+    endDate?: Date;
+    userId?: number;
+  }): Promise<Analytics[]> {
+    try {
+      // Create filters array
+      const filters: any[] = [];
+      
+      // Apply filters if provided
+      if (filter) {
+        if (filter.eventType) {
+          filters.push(eq(analytics.eventType, filter.eventType));
+        }
+        
+        if (filter.userId) {
+          filters.push(eq(analytics.userId, filter.userId));
+        }
+        
+        if (filter.startDate) {
+          filters.push(gte(analytics.timestamp, filter.startDate));
+        }
+        
+        if (filter.endDate) {
+          filters.push(lte(analytics.timestamp, filter.endDate));
+        }
+      }
+      
+      // Apply all filters at once if there are any
+      const results = filters.length > 0
+        ? await db.select().from(analytics).where(and(...filters)).orderBy(desc(analytics.timestamp))
+        : await db.select().from(analytics).orderBy(desc(analytics.timestamp));
+      
+      return results;
+    } catch (error) {
+      console.error("Error retrieving analytics:", error);
+      return [];
+    }
+  }
+  
+  async getUserCount(): Promise<number> {
+    try {
+      const [result] = await db
+        .select({ count: count() })
+        .from(users);
+      
+      return result.count;
+    } catch (error) {
+      console.error("Error getting user count:", error);
+      return 0;
+    }
+  }
+  
+  async getEventCount(eventType: string): Promise<number> {
+    try {
+      const [result] = await db
+        .select({ count: count() })
+        .from(analytics)
+        .where(eq(analytics.eventType, eventType));
+      
+      return result.count;
+    } catch (error) {
+      console.error("Error getting event count:", error);
+      return 0;
     }
   }
 }

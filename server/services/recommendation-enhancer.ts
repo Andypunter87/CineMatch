@@ -208,8 +208,8 @@ async function postProcessRecommendations(
         console.log(`Available provider types: ${Object.keys(providers.results[countryCode]).join(', ')}`);
         
         // First check flatrate (subscription)
-        if (providers.results[countryCode].flatrate) {
-          const availableServices = providers.results[countryCode].flatrate.map(p => p.provider_name);
+        if (providers.results[countryCode]?.flatrate) {
+          const availableServices = providers.results[countryCode]?.flatrate?.map(p => p.provider_name) || [];
           console.log(`Available flatrate services: ${availableServices.join(', ')}`);
           
           const matchingServices = availableServices.filter(
@@ -245,9 +245,9 @@ async function postProcessRecommendations(
         }
         
         // If no flatrate matches, check buy options as a fallback
-        if (providers.results[countryCode].buy) {
+        if (providers.results[countryCode]?.buy) {
           // We won't add buy options as "available" but we'll log them for debugging
-          const buyServices = providers.results[countryCode].buy.map(p => p.provider_name);
+          const buyServices = providers.results[countryCode]?.buy?.map(p => p.provider_name) || [];
           console.log(`Buy services available (not adding): ${buyServices.join(', ')}`);
         }
       } catch (error) {

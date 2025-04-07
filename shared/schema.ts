@@ -13,6 +13,7 @@ export const users = pgTable("users", {
   country: text("country"),
   authProvider: text("auth_provider").default("local"),
   providerId: text("provider_id"),
+  isAdmin: boolean("is_admin").default(false),
 });
 
 // Define relations for users
@@ -64,9 +65,21 @@ export const insertUserSchema = createInsertSchema(users).pick({
   country: true,
   authProvider: true,
   providerId: true,
+  isAdmin: true,
 });
 
 // Define the film schema types
+// Add analytics table to track usage data
+export const analytics = pgTable("analytics", {
+  id: serial("id").primaryKey(),
+  eventType: text("event_type").notNull(), // registration, login, recommendation, watchlist_add, etc.
+  userId: integer("user_id"), // Can be null for anonymous events
+  data: json("data").$type<Record<string, any>>(), // Additional event data
+  timestamp: timestamp("timestamp").defaultNow(),
+  ip: text("ip"), // Store IP address for geographical data
+  userAgent: text("user_agent"), // Browser and device info
+});
+
 export type Film = {
   id: number;
   title: string;
@@ -101,6 +114,11 @@ export const recommendationRequestSchema = z.object({
 });
 
 export type RecommendationRequest = z.infer<typeof recommendationRequestSchema>;
+
+// Create insert schema for analytics
+export const insertAnalyticsSchema = createInsertSchema(analytics);
+export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;
+export type Analytics = typeof analytics.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;

@@ -162,6 +162,18 @@ export function setupAuth(app: Express) {
         console.warn('Cannot send emails: Invalid or missing email address');
       }
 
+      // Track user registration analytics
+      storage.trackEvent({
+        eventType: 'user_registration',
+        userId: user.id,
+        data: {
+          registrationType: 'email',
+          country: country || 'unknown'
+        } as Record<string, any>,
+        ip: req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+        userAgent: req.headers['user-agent'] as string || 'unknown'
+      }).catch(err => console.error('Error tracking registration event:', err));
+      
       // Log the user in
       req.login(user, (err) => {
         if (err) return next(err);
@@ -179,6 +191,17 @@ export function setupAuth(app: Express) {
       if (err) return next(err);
       if (!user) return res.status(401).json({ error: "Invalid credentials" });
       
+      // Track login event
+      storage.trackEvent({
+        eventType: 'user_login',
+        userId: user.id,
+        data: {
+          loginMethod: 'email',
+        } as Record<string, any>,
+        ip: req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+        userAgent: req.headers['user-agent'] as string || 'unknown'
+      }).catch(err => console.error('Error tracking login event:', err));
+      
       req.login(user, (err) => {
         if (err) return next(err);
         // Return user without password
@@ -189,6 +212,19 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/logout", (req, res, next) => {
+    if (req.isAuthenticated()) {
+      const userId = (req.user as SelectUser).id;
+      
+      // Track logout event
+      storage.trackEvent({
+        eventType: 'user_logout',
+        userId: userId,
+        data: {} as Record<string, any>,
+        ip: req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+        userAgent: req.headers['user-agent'] as string || 'unknown'
+      }).catch(err => console.error('Error tracking logout event:', err));
+    }
+    
     req.logout((err) => {
       if (err) return next(err);
       res.status(200).json({ message: "Logged out successfully" });

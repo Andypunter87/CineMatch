@@ -100,6 +100,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get recommendations
       const recommendations = await storage.getRecommendations(preferences);
       
+      // Track recommendation request
+      const userId = req.isAuthenticated() && req.user ? req.user.id : undefined;
+      storage.trackEvent({
+        eventType: 'recommendation_request',
+        userId,
+        data: {
+          location: preferences.location,
+          mood: preferences.mood,
+          timeOfDay: preferences.timeOfDay,
+          hasStreamingServices: !!preferences.streamingServices?.length,
+          country: preferences.country || 'unknown',
+          resultCount: recommendations.length
+        } as Record<string, any>,
+        ip: req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+        userAgent: req.headers['user-agent'] as string || 'unknown'
+      }).catch(err => console.error('Error tracking recommendation event:', err));
+      
       res.json(recommendations);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -334,6 +351,20 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
         ...filmData
       });
       
+      // Track watchlist add event
+      storage.trackEvent({
+        eventType: 'watchlist_add',
+        userId,
+        data: {
+          filmId: filmData.filmId,
+          filmTitle: filmData.filmTitle,
+          filmYear: filmData.filmYear,
+          filmGenres: filmData.filmGenres?.join(',') || ''
+        } as Record<string, any>,
+        ip: req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+        userAgent: req.headers['user-agent'] as string || 'unknown'
+      }).catch(err => console.error('Error tracking watchlist add event:', err));
+      
       res.status(201).json(newWatchlistItem);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -378,6 +409,38 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
       }
       
       const updatedItem = await storage.updateWatchlistItem(itemId, updates);
+      
+      // Track watched film if that's being updated
+      if (watched) {
+        storage.trackEvent({
+          eventType: 'film_watched',
+          userId,
+          data: {
+            filmId: existingItem.filmId,
+            filmTitle: existingItem.filmTitle,
+            userRating,
+            hasNotes: !!userNotes
+          } as Record<string, any>,
+          ip: req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+          userAgent: req.headers['user-agent'] as string || 'unknown'
+        }).catch(err => console.error('Error tracking film watched event:', err));
+      }
+      
+      // Track if rating was added
+      if (userRating && (!existingItem.userRating || existingItem.userRating !== userRating)) {
+        storage.trackEvent({
+          eventType: 'film_rated',
+          userId,
+          data: {
+            filmId: existingItem.filmId,
+            filmTitle: existingItem.filmTitle,
+            rating: userRating
+          } as Record<string, any>,
+          ip: req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+          userAgent: req.headers['user-agent'] as string || 'unknown'
+        }).catch(err => console.error('Error tracking film rating event:', err));
+      }
+      
       res.json(updatedItem);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -402,6 +465,20 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
       }
       
       await storage.removeFromWatchlist(userId, itemId);
+      
+      // Track watchlist remove event
+      storage.trackEvent({
+        eventType: 'watchlist_remove',
+        userId,
+        data: {
+          filmId: existingItem.filmId,
+          filmTitle: existingItem.filmTitle,
+          wasWatched: !!existingItem.watched
+        } as Record<string, any>,
+        ip: req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+        userAgent: req.headers['user-agent'] as string || 'unknown'
+      }).catch(err => console.error('Error tracking watchlist remove event:', err));
+      
       res.status(204).end();
     } catch (error) {
       console.error('Error removing from watchlist:', error);

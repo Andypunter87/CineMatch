@@ -5,6 +5,8 @@ import { users } from "@shared/schema";
 import { sql } from "drizzle-orm";
 import migrateToEmailLogin from "./migrations/migrate-email-login";
 import { addTMDBFields } from "./migrations/add-tmdb-fields";
+import { addAdminField } from "./migrations/add-admin-field";
+import { createAnalyticsTable } from "./migrations/create-analytics-table";
 
 // Create postgres connection with proper error handling
 export const client = process.env.DATABASE_URL 
@@ -82,6 +84,9 @@ export async function initializeDatabase() {
     
     // Run migration to add TMDB fields to watchlist table
     await addTMDBFields();
+    
+    // Run migration to add isAdmin field to users table
+    await addAdminField();
     
     console.log("Database initialized");
   } catch (error) {
