@@ -391,6 +391,7 @@ export async function convertTMDBMovieToFilm(movie: TMDBMovie | TMDBMovieDetails
       voteAverage: movieDetails.vote_average,
       originalLanguage: movieDetails.original_language,
       releaseDate: movieDetails.release_date,
+      hasCompleteData: !!(posterUrl && movieDetails.runtime), // Flag if film has all required data
     };
   } catch (error) {
     console.error(`Error converting TMDB movie to Film:`, error);

@@ -102,6 +102,7 @@ export type Film = {
   releaseDate?: string;
   availableStreamingByCountry?: Record<string, string[]>; // Map of country code to list of streaming services
   hasStreamingData?: boolean; // Flag to indicate if this film has streaming data from TMDB
+  hasCompleteData?: boolean; // Flag to indicate if film has all required data (poster image and runtime)
 };
 
 // Define recommendation request schema

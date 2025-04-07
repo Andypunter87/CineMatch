@@ -114,6 +114,15 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
   return (
     <Card className="recommendation-card bg-white rounded-lg overflow-hidden shadow-[0_4px_14px_0_rgba(59,130,246,0.2)] border border-blue-100 group hover:shadow-[0_8px_20px_0_rgba(59,130,246,0.25)] transition-all duration-200 h-full flex flex-col">
       <div className="relative flex-shrink-0">
+        {/* Warning badge for incomplete data */}
+        {film.hasCompleteData === false && (
+          <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-20 max-w-[80%]">
+            <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200 text-[10px] sm:text-xs px-2 py-0.5 max-w-full truncate">
+              <span className="truncate">Limited information available</span>
+            </Badge>
+          </div>
+        )}
+        
         {/* Poster image or fallback gradient background */}
         {film.posterUrl && film.posterUrl.startsWith('http') ? (
           <div className="w-full h-72 bg-blue-50 relative overflow-hidden">
@@ -260,7 +269,10 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
             {film.availableOn && film.availableOn.length > 0 ? (
               // Film is available on user's streaming services
               <div className="flex flex-wrap gap-1 mt-1">
-                {film.availableOn.map((service, index) => (
+                {/* Remove duplicates by using Array.filter for uniqueness */}
+                {film.availableOn.filter((service, index, self) => 
+                  self.indexOf(service) === index
+                ).map((service, index) => (
                   <Badge key={index} variant="secondary" className="bg-green-100 text-green-800 border-green-200 max-w-[100px] truncate">
                     <span className="truncate">{service}</span>
                   </Badge>

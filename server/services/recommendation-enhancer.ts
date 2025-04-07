@@ -102,24 +102,47 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
               releaseDate: tmdbFilm.releaseDate || undefined,
               // Include full streaming data for all countries
               availableStreamingByCountry: tmdbFilm.availableStreamingByCountry,
-              // Add a special flag to help with post-processing
-              hasStreamingData: true
+              // Add special flags to help with post-processing
+              hasStreamingData: true,
+              hasCompleteData: !!(tmdbFilm.posterUrl && tmdbFilm.runtime) // Flag to indicate if film has all required data
             };
           }
           
-          // If no match found, return the original film
-          return film;
+          // If no match found, mark as incomplete data and return
+          return {
+            ...film,
+            hasCompleteData: false
+          };
         } catch (error) {
           console.error(`Error enhancing recommendation for "${film.title}":`, error);
-          return film; // Return original film if enhancement fails
+          return {
+            ...film,
+            hasCompleteData: false
+          }; // Return original film if enhancement fails
         }
       })
     );
     
+    // Filter recommendations to prefer films with complete data
+    console.log(`Original recommendation count: ${enhancedRecommendations.length}`);
+    
+    // Count films with complete data
+    const filmsWithCompleteData = enhancedRecommendations.filter(film => film.hasCompleteData);
+    console.log(`Films with complete data: ${filmsWithCompleteData.length}`);
+    
+    // If we have at least 3 films with complete data, use those; otherwise use all
+    let preliminaryRecommendations = enhancedRecommendations;
+    if (filmsWithCompleteData.length >= 3) {
+      preliminaryRecommendations = filmsWithCompleteData;
+      console.log("Using only films with complete data");
+    } else {
+      console.log("Using all films due to insufficient complete data films");
+    }
+    
     // Apply runtime filtering if a preference is specified
-    let filteredRecommendations = enhancedRecommendations;
+    let filteredRecommendations = preliminaryRecommendations;
     if (preferences.runtime) {
-      filteredRecommendations = enhancedRecommendations.filter(film => {
+      filteredRecommendations = preliminaryRecommendations.filter(film => {
         // Only filter films that have runtime info
         if (film.runtime) {
           // Apply strict runtime filtering with only 5 minutes leeway
@@ -290,6 +313,7 @@ async function postProcessRecommendations(
             popularFilm.matchPercentage = 95;
             popularFilm.availableOn = matchingServices;
             popularFilm.hasStreamingData = true;
+            popularFilm.hasCompleteData = !!(popularFilm.posterUrl && popularFilm.runtime);
             
             console.log(`Added popular film "${popularFilm.title}" available on streaming services: ${matchingServices.join(', ')}`);
             
