@@ -114,18 +114,53 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
   return (
     <Card className="recommendation-card bg-white rounded-lg overflow-hidden shadow-[0_4px_14px_0_rgba(59,130,246,0.2)] border border-blue-100 group hover:shadow-[0_8px_20px_0_rgba(59,130,246,0.25)] transition-all duration-200 h-full flex flex-col">
       <div className="relative flex-shrink-0">
-        {/* Poster with gradient background */}
-        <div 
-          className="w-full h-72 flex items-center justify-center text-center p-4"
-          style={{ background: getBackgroundGradient() }}
-        >
-          <div className="flex flex-col items-center">
-            <FilmIcon className="w-10 h-10 text-white/80 mb-4" />
-            <h3 className="text-xl md:text-2xl font-bold text-white mb-1">{title}</h3>
-            <p className="text-white/90 font-medium">{year}</p>
-            <p className="text-white/70 text-sm mt-2">{director}</p>
+        {/* Poster image or fallback gradient background */}
+        {film.posterUrl && film.posterUrl.startsWith('http') ? (
+          <div className="w-full h-72 bg-blue-50 relative overflow-hidden">
+            <img 
+              src={film.posterUrl} 
+              alt={`${title} poster`}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              onError={(e) => {
+                // If image fails to load, replace with gradient background
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement.style.background = getBackgroundGradient();
+                e.currentTarget.parentElement.innerHTML = `
+                  <div class="flex flex-col items-center justify-center h-full text-center p-4">
+                    <svg class="w-10 h-10 text-white/80 mb-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="m22 8-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
+                      <path d="M18 8h-6V2"/>
+                    </svg>
+                    <h3 class="text-xl md:text-2xl font-bold text-white mb-1">${title}</h3>
+                    <p class="text-white/90 font-medium">${year}</p>
+                    <p class="text-white/70 text-sm mt-2">${director}</p>
+                  </div>
+                `;
+              }}
+            />
+            {/* Darkening overlay to ensure text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/40"></div>
+            {/* Film info overlay at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-1">{title}</h3>
+              <p className="text-white/90 font-medium">{year}</p>
+              <p className="text-white/70 text-sm mt-1">{director}</p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div 
+            className="w-full h-72 flex items-center justify-center text-center p-4"
+            style={{ background: getBackgroundGradient() }}
+          >
+            <div className="flex flex-col items-center">
+              <FilmIcon className="w-10 h-10 text-white/80 mb-4" />
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-1">{title}</h3>
+              <p className="text-white/90 font-medium">{year}</p>
+              <p className="text-white/70 text-sm mt-2">{director}</p>
+            </div>
+          </div>
+        )}
         
         {/* Match percentage badge */}
         <div className="absolute top-2 right-2 z-10 max-w-[42%]">
