@@ -156,14 +156,16 @@ DO NOT include a posterUrl field in your response.`;
     } catch (error) {
       // If timeout or any other error and we have retries left
       if (retryCount < MAX_RETRIES) {
-        console.log(`Retrying OpenAI request after error: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.log(`Retrying OpenAI request after error: ${errorMessage}`);
         // Add a small delay before retrying to avoid rate limits
         await new Promise(resolve => setTimeout(resolve, 1000));
         return makeOpenAICall(retryCount + 1);
       }
       
       // If we've used all retries, propagate the error
-      console.error(`Error getting AI recommendations after ${retryCount + 1} attempts:`, error);
+      const errorDetails = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`Error getting AI recommendations after ${retryCount + 1} attempts: ${errorDetails}`);
       throw new Error("Failed to get AI recommendations after multiple attempts");
     }
   };
@@ -172,7 +174,8 @@ DO NOT include a posterUrl field in your response.`;
   try {
     return await makeOpenAICall();
   } catch (error) {
-    console.error("All OpenAI request attempts failed:", error);
+    const errorDetails = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`All OpenAI request attempts failed: ${errorDetails}`);
     throw new Error("Failed to get AI recommendations");
   }
 }
