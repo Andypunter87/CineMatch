@@ -238,6 +238,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // SEO Routes
+  // Google site verification
+  app.get('/googleq9bwQxn38m7f86Zoa3bZBVq6zEOBulsJO4QPJdpmCN4.html', (_req, res) => {
+    res.type('text/html');
+    res.send('google-site-verification: googleq9bwQxn38m7f86Zoa3bZBVq6zEOBulsJO4QPJdpmCN4.html');
+  });
+  
   // Serve robots.txt
   app.get('/robots.txt', (_req, res) => {
     res.type('text/plain');
