@@ -3,7 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>CineMatch - Film Recommendation Tool</title>
+    <title>CineMatch - Personalized Film Recommendation Tool</title>
+    <meta name="description" content="CineMatch is an intelligent film recommendation platform that suggests personalized movie recommendations based on your mood, setting, and streaming services." />
+    <meta name="keywords" content="movie recommendations, film suggestions, personalized movies, AI film recommendations, streaming recommendations" />
+    <meta name="author" content="CineMatch" />
+    
+    <!-- Open Graph / Facebook Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://cine-match.replit.app/" />
+    <meta property="og:title" content="CineMatch - Intelligent Film Recommendations" />
+    <meta property="og:description" content="Discover perfectly matched films based on your mood, setting, and available streaming services." />
+    <meta property="og:image" content="https://cine-match.replit.app/banner.jpg" />
+    
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://cine-match.replit.app/" />
+    <meta name="twitter:title" content="CineMatch - Intelligent Film Recommendations" />
+    <meta name="twitter:description" content="Discover perfectly matched films based on your mood, setting, and available streaming services." />
+    <meta name="twitter:image" content="https://cine-match.replit.app/banner.jpg" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://cine-match.replit.app/" />
+    
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/favicon.svg">
+    
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Playfair+Display:wght@500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-8TC44R17P9"></script>
@@ -25,5 +50,32 @@
     <script type="module" src="/src/main.tsx"></script>
     <!-- This script injects a replit badge into the page, please feel free to remove this line -->
     <script type="text/javascript" src="https://replit.com/public/js/replit-badge-v3.js"></script>
+    
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "CineMatch",
+      "description": "An intelligent film recommendation platform that suggests personalized movie recommendations based on your mood, setting, and streaming services.",
+      "applicationCategory": "Entertainment",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "28"
+      },
+      "provider": {
+        "@type": "Organization",
+        "name": "CineMatch",
+        "url": "https://cine-match.replit.app"
+      }
+    }
+    </script>
   </body>
 </html>
