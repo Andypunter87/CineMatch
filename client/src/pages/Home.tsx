@@ -19,7 +19,17 @@ export default function Home() {
   
   const [preferences, setPreferences] = useState<RecommendationRequest | null>(() => {
     const savedPreferences = localStorage.getItem(PREFERENCES_STORAGE_KEY);
-    return savedPreferences ? JSON.parse(savedPreferences) : null;
+    if (savedPreferences) {
+      const parsed = JSON.parse(savedPreferences);
+      
+      // Handle runtime conversion from string to array for backward compatibility
+      if (parsed.runtime && typeof parsed.runtime === 'string') {
+        parsed.runtime = [parsed.runtime];
+      }
+      
+      return parsed;
+    }
+    return null;
   });
   
   // Save preferences to localStorage whenever they change

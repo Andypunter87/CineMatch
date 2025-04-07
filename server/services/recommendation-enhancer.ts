@@ -141,25 +141,26 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     
     // Apply runtime filtering if a preference is specified
     let filteredRecommendations = preliminaryRecommendations;
-    if (preferences.runtime) {
+    if (preferences.runtime && preferences.runtime.length > 0) {
       filteredRecommendations = preliminaryRecommendations.filter(film => {
         // Only filter films that have runtime info
-        if (film.runtime && preferences.runtime && preferences.runtime.length > 0) {
+        if (typeof film.runtime === 'number') {
           // Check if the film's runtime matches any of the user's selected runtime preferences
-          return preferences.runtime.some(pref => {
+          return preferences.runtime!.some(pref => {
+            const runtime = film.runtime as number; // Safe assertion since we checked above
             switch (pref) {
               case "short":
-                return film.runtime < 95; // Under 90 mins with 5 mins leeway
+                return runtime < 95; // Under 90 mins with 5 mins leeway
               case "medium":
-                return film.runtime >= 85 && film.runtime <= 125; // 90-120 mins with 5 mins leeway
+                return runtime >= 85 && runtime <= 125; // 90-120 mins with 5 mins leeway
               case "long":
-                return film.runtime > 115; // Over 120 mins with 5 mins leeway
+                return runtime > 115; // Over 120 mins with 5 mins leeway
               default:
                 return true;
             }
           });
         }
-        return true; // Keep films without runtime info or when no runtime preference is specified
+        return true; // Keep films without runtime info
       });
       
       // If we've filtered out too many films, add back some that are close to the preference
@@ -167,8 +168,8 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
         const remainingFilms = enhancedRecommendations.filter(film => !filteredRecommendations.includes(film));
         // Sort by how close they are to the preferred runtime range
         remainingFilms.sort((a, b) => {
-          if (!a.runtime) return 1;
-          if (!b.runtime) return -1;
+          if (typeof a.runtime !== 'number') return 1;
+          if (typeof b.runtime !== 'number') return -1;
           
           const getDistanceFromPreference = (runtime: number) => {
             // If multiple runtime preferences, find the closest match
@@ -189,7 +190,7 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
             return 0;
           };
           
-          return getDistanceFromPreference(a.runtime) - getDistanceFromPreference(b.runtime);
+          return getDistanceFromPreference(a.runtime as number) - getDistanceFromPreference(b.runtime as number);
         });
         
         // Add closest matches until we have at least 4 films, or no more remain

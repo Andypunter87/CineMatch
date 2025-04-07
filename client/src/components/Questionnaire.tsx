@@ -59,7 +59,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       location,
       timeOfDay,
       mood,
-      runtime, // Include runtime preference if selected
+      runtime: runtime.length > 0 ? runtime : undefined, // Only include if selected
       country: user?.country || undefined,
       // Streaming services are now handled in the Home component
       // to allow for more flexibility and automatic updates
@@ -400,7 +400,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
             {currentStep === 4 && (
               <div>
                 <h2 className="text-2xl font-bold mb-6">How long of a movie are you looking for?</h2>
-                <p className="text-sm text-gray-600 mb-4">Select multiple options to find a variety of movie lengths.</p>
+                <p className="text-sm text-gray-600 mb-4">You can select multiple options - this will help us find movies that match any of your preferred lengths.</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="runtime-option">
                     <input 
