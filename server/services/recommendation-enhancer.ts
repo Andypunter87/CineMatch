@@ -15,13 +15,32 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     const enhancedRecommendations = await Promise.all(
       aiRecommendations.map(async (film) => {
         try {
+          // Create a more precise search query with both title and year
+          let searchQuery = `${film.title} ${film.year}`;
+          
           // Search for the film in TMDB database
-          const searchResults = await searchMovies(`${film.title} ${film.year}`, 1);
+          let searchResults = await searchMovies(searchQuery, 1);
+          
+          // If no results, try with just the title (sometimes year can be inaccurate)
+          if (!searchResults.results || searchResults.results.length === 0) {
+            searchResults = await searchMovies(film.title, 1);
+          }
           
           // If we found a match
           if (searchResults.results && searchResults.results.length > 0) {
-            // Get the closest match
-            const tmdbMovie = searchResults.results[0];
+            // Sort results by relevance - prioritize closest year match if we have multiple results
+            const sortedResults = searchResults.results
+              .sort((a, b) => {
+                if (a.release_date && b.release_date) {
+                  const yearA = parseInt(a.release_date.split('-')[0]);
+                  const yearB = parseInt(b.release_date.split('-')[0]);
+                  return Math.abs(yearA - film.year) - Math.abs(yearB - film.year);
+                }
+                return 0;
+              });
+            
+            // Get the closest match after sorting
+            const tmdbMovie = sortedResults[0];
             
             // Get streaming providers for this movie
             const watchProviders = await getMovieWatchProviders(tmdbMovie.id);
@@ -51,12 +70,16 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
             return {
               ...film,
               tmdbId: tmdbMovie.id,
+              // Use TMDB poster if available, otherwise keep the original
               posterUrl: tmdbFilm.posterUrl || film.posterUrl,
+              // Include streaming availability
               availableOn,
+              // Include TMDB metadata
               runtime: tmdbFilm.runtime || undefined,
               voteAverage: tmdbFilm.voteAverage || undefined,
               originalLanguage: tmdbFilm.originalLanguage || undefined,
               releaseDate: tmdbFilm.releaseDate || undefined,
+              // Include full streaming data for all countries
               availableStreamingByCountry: tmdbFilm.availableStreamingByCountry
             };
           }

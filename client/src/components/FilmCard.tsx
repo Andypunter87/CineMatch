@@ -216,7 +216,9 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
           
           {/* Streaming services availability - always show availability section */}
           <div className="text-sm">
-            <span className="text-primary font-medium">Available on:</span>
+            <span className="text-primary font-medium">
+              {film.availableOn && film.availableOn.length > 0 ? 'Available on:' : 'Streaming availability:'}
+            </span>
             {film.availableOn && film.availableOn.length > 0 ? (
               <div className="flex flex-wrap gap-1 mt-1">
                 {film.availableOn.map((service, index) => (
@@ -225,9 +227,13 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
                   </Badge>
                 ))}
               </div>
+            ) : film.tmdbId ? (
+              <div className="mt-1 text-gray-500 text-xs italic">
+                Not available on your selected streaming services
+              </div>
             ) : (
               <div className="mt-1 text-gray-500 text-xs italic">
-                Not available on your streaming services or try searching manually
+                Streaming information not available, try searching manually
               </div>
             )}
           </div>
