@@ -76,15 +76,15 @@ function OverviewTab() {
     retry: false,
   });
   
-  if (statsLoading) {
-    return <LoadingState />;
-  }
-  
   // Fetch activity timeline data
   const { data: activityData, isLoading: activityLoading } = useQuery({
     queryKey: ['/api/admin/activity'],
     retry: false,
   });
+  
+  if (statsLoading && activityLoading) {
+    return <LoadingState />;
+  }
   
   return (
     <div className="space-y-6">
