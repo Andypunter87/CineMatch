@@ -270,7 +270,7 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
               // Film is available on user's streaming services
               <div className="flex flex-wrap gap-1 mt-1">
                 {/* Remove duplicates by using Array.filter for uniqueness */}
-                {film.availableOn.filter((service, index, self) => 
+                {(film.availableOn || []).filter((service, index, self) => 
                   self.indexOf(service) === index
                 ).map((service, index) => (
                   <Badge key={index} variant="secondary" className="bg-green-100 text-green-800 border-green-200 max-w-[100px] truncate">

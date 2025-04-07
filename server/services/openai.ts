@@ -12,8 +12,8 @@ interface AIRecommendationResponse {
 }
 
 export async function getAIRecommendations(preferences: RecommendationRequest): Promise<Film[]> {
-  // Increased timeout to 15 seconds for better reliability
-  const TIMEOUT_MS = 15000;
+  // Increased timeout to 20 seconds for better reliability
+  const TIMEOUT_MS = 20000;
   const MAX_RETRIES = 2;
   
   // Create a promise that rejects after the timeout
@@ -34,10 +34,11 @@ IMPORTANT ABOUT STREAMING AVAILABILITY:
 3. For older or obscure films, it's better to leave 'availableOn' as an empty array than to make uncertain guesses
 4. NEVER include streaming services the user didn't specify in their preferences
 
-Return exactly 4 films that match the criteria:
-- 2 should be mainstream/popular films
-- 2 should be independent, foreign, or lesser-known films
+Return 5-6 films that match the criteria:
+- Half should be mainstream/popular films
+- Half should be independent, foreign, or lesser-known films
 - ALL films should strongly match the user's mood and setting preferences
+- Include films with complete information (especially those that have runtime data available)
 
 Format your response as a JSON object with a 'recommendations' array.`;
 
@@ -94,7 +95,7 @@ DO NOT include a posterUrl field in your response.`;
         ],
         response_format: { type: "json_object" },
         temperature: 0.7,
-        max_tokens: 800 // Limit token count for faster response
+        max_tokens: 1200 // Increased token limit to handle more recommendations
       });
 
       // Race between the API call and the timeout

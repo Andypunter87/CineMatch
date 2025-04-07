@@ -130,9 +130,9 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     const filmsWithCompleteData = enhancedRecommendations.filter(film => film.hasCompleteData);
     console.log(`Films with complete data: ${filmsWithCompleteData.length}`);
     
-    // If we have at least 3 films with complete data, use those; otherwise use all
+    // If we have at least 4 films with complete data, use those; otherwise use all
     let preliminaryRecommendations = enhancedRecommendations;
-    if (filmsWithCompleteData.length >= 3) {
+    if (filmsWithCompleteData.length >= 4) {
       preliminaryRecommendations = filmsWithCompleteData;
       console.log("Using only films with complete data");
     } else {
@@ -161,7 +161,7 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       });
       
       // If we've filtered out too many films, add back some that are close to the preference
-      if (filteredRecommendations.length < 2) {
+      if (filteredRecommendations.length < 4) {
         const remainingFilms = enhancedRecommendations.filter(film => !filteredRecommendations.includes(film));
         // Sort by how close they are to the preferred runtime range
         remainingFilms.sort((a, b) => {
@@ -184,8 +184,8 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
           return getDistanceFromPreference(a.runtime) - getDistanceFromPreference(b.runtime);
         });
         
-        // Add closest matches until we have at least 3 films, or no more remain
-        while (filteredRecommendations.length < 3 && remainingFilms.length > 0) {
+        // Add closest matches until we have at least 4 films, or no more remain
+        while (filteredRecommendations.length < 4 && remainingFilms.length > 0) {
           const nextBestFilm = remainingFilms.shift();
           if (nextBestFilm) {
             // Add a note about the runtime mismatch
