@@ -116,8 +116,65 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       })
     );
     
+    // Apply runtime filtering if a preference is specified
+    let filteredRecommendations = enhancedRecommendations;
+    if (preferences.runtime) {
+      filteredRecommendations = enhancedRecommendations.filter(film => {
+        // Only filter films that have runtime info
+        if (film.runtime) {
+          // Apply strict runtime filtering with only 5 minutes leeway
+          switch (preferences.runtime) {
+            case "short":
+              return film.runtime < 95; // Under 90 mins with 5 mins leeway
+            case "medium":
+              return film.runtime >= 85 && film.runtime <= 125; // 90-120 mins with 5 mins leeway
+            case "long":
+              return film.runtime > 115; // Over 120 mins with 5 mins leeway
+            default:
+              return true;
+          }
+        }
+        return true; // Keep films without runtime info
+      });
+      
+      // If we've filtered out too many films, add back some that are close to the preference
+      if (filteredRecommendations.length < 2) {
+        const remainingFilms = enhancedRecommendations.filter(film => !filteredRecommendations.includes(film));
+        // Sort by how close they are to the preferred runtime range
+        remainingFilms.sort((a, b) => {
+          if (!a.runtime) return 1;
+          if (!b.runtime) return -1;
+          
+          const getDistanceFromPreference = (runtime: number) => {
+            switch (preferences.runtime) {
+              case "short":
+                return Math.max(0, runtime - 90);
+              case "medium":
+                return runtime < 90 ? 90 - runtime : runtime > 120 ? runtime - 120 : 0;
+              case "long":
+                return Math.max(0, 120 - runtime);
+              default:
+                return 0;
+            }
+          };
+          
+          return getDistanceFromPreference(a.runtime) - getDistanceFromPreference(b.runtime);
+        });
+        
+        // Add closest matches until we have at least 3 films, or no more remain
+        while (filteredRecommendations.length < 3 && remainingFilms.length > 0) {
+          const nextBestFilm = remainingFilms.shift();
+          if (nextBestFilm) {
+            // Add a note about the runtime mismatch
+            nextBestFilm.matchReason = `${nextBestFilm.matchReason} (close to your runtime preference)`;
+            filteredRecommendations.push(nextBestFilm);
+          }
+        }
+      }
+    }
+    
     // Post-process recommendations to ensure at least one film is available on user's streaming services
-    const finalRecommendations = await postProcessRecommendations(enhancedRecommendations, preferences);
+    const finalRecommendations = await postProcessRecommendations(filteredRecommendations, preferences);
     
     return finalRecommendations;
   } catch (error) {

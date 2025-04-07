@@ -46,6 +46,10 @@ Format your response as a JSON object with a 'recommendations' array.`;
 - Setting: ${preferences.location}
 - Time: ${timeOfDayString}
 - Mood: ${preferences.mood}
+${preferences.runtime 
+  ? `- Runtime preference: ${preferences.runtime === "short" ? "Under 90 minutes" : preferences.runtime === "medium" ? "90-120 minutes" : "Over 120 minutes"}`
+  : `- No runtime preference specified`
+}
 ${preferences.streamingServices && preferences.streamingServices.length > 0 
   ? `- User has access to these streaming services: ${preferences.streamingServices.join(", ")}`
   : `- User hasn't specified any streaming services`

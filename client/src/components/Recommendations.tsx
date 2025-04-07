@@ -54,6 +54,16 @@ export default function Recommendations({
       default: return "";
     }
   };
+  
+  const getRuntimeText = (runtime?: string) => {
+    if (!runtime) return "";
+    switch (runtime) {
+      case "short": return "Under 90 mins";
+      case "medium": return "90-120 mins";
+      case "long": return "Over 120 mins";
+      default: return "";
+    }
+  };
 
   const filteredRecommendations = recommendations.filter(
     film => filterType === "all" || film.type === filterType
@@ -71,6 +81,9 @@ export default function Recommendations({
                 <li><span className="text-primary font-medium">{getLocationText(preferences.location)}</span></li>
                 <li><span className="text-primary font-medium">{getTimeText(preferences.timeOfDay)}</span></li> 
                 <li><span className="text-primary font-medium">{getMoodText(preferences.mood)}</span></li>
+                {preferences.runtime && (
+                  <li><span className="text-primary font-medium">Runtime: {getRuntimeText(preferences.runtime)}</span></li>
+                )}
                 {preferences.country && (
                   <li><span className="text-primary font-medium">Country: {preferences.country}</span></li>
                 )}
