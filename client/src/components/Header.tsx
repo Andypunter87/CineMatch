@@ -13,6 +13,9 @@ import { Loader2, User, LogOut, Settings, Bookmark, Home, BarChart } from "lucid
 export default function Header() {
   const { user, isLoading, logoutMutation } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  // Debug log to check user admin status
+  console.log("User data in header:", user);
 
   const handleLogout = () => {
     logoutMutation.mutate();
