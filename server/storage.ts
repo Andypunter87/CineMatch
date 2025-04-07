@@ -174,7 +174,7 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(sql`
         SELECT 
           id, username, email, name, streaming_services, country, 
-          auth_provider, provider_id, password
+          auth_provider, provider_id, password, is_admin
         FROM users 
         WHERE id = ${id}
       `);
@@ -183,15 +183,14 @@ export class DatabaseStorage implements IStorage {
         return undefined;
       }
       
-      // Convert the result to a User object and add isAdmin=false as default
-      // if the column doesn't exist yet
+      // Convert the result to a User object
       const user = result[0];
       return {
         ...user,
         streamingServices: user.streaming_services,
         authProvider: user.auth_provider,
         providerId: user.provider_id,
-        isAdmin: false // Default value if column doesn't exist yet
+        isAdmin: user.is_admin === true // Convert to boolean in case it's null
       } as User;
     } catch (error) {
       console.error("Error retrieving user with fallback:", error);
