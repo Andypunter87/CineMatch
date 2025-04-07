@@ -6,6 +6,7 @@ import { z } from "zod";
 import { ZodError } from "zod";
 import { setupAuth } from "./auth";
 import { initializeDatabase } from "./db";
+import adminRoutes from "./admin";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 
@@ -25,6 +26,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Setup authentication routes and middleware
   setupAuth(app);
+  
+  // Register admin routes
+  app.use('/api/admin', adminRoutes);
   
   // API endpoint for film recommendations
   app.post('/api/recommendations', async (req, res) => {
@@ -311,6 +315,12 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://cine-match.replit.app/admin</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
   </url>
 </urlset>`);
   });

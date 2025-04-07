@@ -88,6 +88,9 @@ export async function initializeDatabase() {
     // Run migration to add isAdmin field to users table
     await addAdminField();
     
+    // Run migration to create the analytics table
+    await createAnalyticsTable();
+    
     console.log("Database initialized");
   } catch (error) {
     console.error("Error initializing database:", error);

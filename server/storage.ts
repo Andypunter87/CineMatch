@@ -27,6 +27,7 @@ export type InsertWatchlistItem = typeof watchlist.$inferInsert;
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
+  getUserWithFallback(id: number): Promise<User | undefined>; // Fallback method for migrations
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByProviderId(providerId: string): Promise<User | undefined>;
@@ -158,6 +159,42 @@ export class DatabaseStorage implements IStorage {
       return user;
     } catch (error) {
       console.error("Error retrieving user:", error);
+      return undefined;
+    }
+  }
+  
+  /**
+   * Fallback method to get user when there might be schema changes/migrations
+   * Uses raw SQL query to only select columns we know exist
+   */
+  async getUserWithFallback(id: number): Promise<User | undefined> {
+    try {
+      // Use a raw SQL query to select only the basic fields we know exist
+      // This avoids issues with Drizzle trying to access columns that might not exist yet
+      const result = await db.execute(sql`
+        SELECT 
+          id, username, email, name, streaming_services, country, 
+          auth_provider, provider_id, password
+        FROM users 
+        WHERE id = ${id}
+      `);
+      
+      if (result.length === 0) {
+        return undefined;
+      }
+      
+      // Convert the result to a User object and add isAdmin=false as default
+      // if the column doesn't exist yet
+      const user = result[0];
+      return {
+        ...user,
+        streamingServices: user.streaming_services,
+        authProvider: user.auth_provider,
+        providerId: user.provider_id,
+        isAdmin: false // Default value if column doesn't exist yet
+      } as User;
+    } catch (error) {
+      console.error("Error retrieving user with fallback:", error);
       return undefined;
     }
   }

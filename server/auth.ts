@@ -93,9 +93,12 @@ export function setupAuth(app: Express) {
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {
     try {
-      const user = await storage.getUser(id);
+      // Get the user using a simplified query that won't fail if isAdmin doesn't exist yet
+      // This is a fallback for the migration period
+      const user = await storage.getUserWithFallback(id);
       done(null, user);
     } catch (error) {
+      console.error("Error deserializing user:", error);
       done(error);
     }
   });
