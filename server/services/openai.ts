@@ -12,17 +12,20 @@ interface AIRecommendationResponse {
 }
 
 export async function getAIRecommendations(preferences: RecommendationRequest): Promise<Film[]> {
-  // Create a promise that rejects after 8 seconds
-  const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error("OpenAI request timed out")), 8000);
+  // Increased timeout to 15 seconds for better reliability
+  const TIMEOUT_MS = 15000;
+  const MAX_RETRIES = 2;
+  
+  // Create a promise that rejects after the timeout
+  const createTimeoutPromise = () => new Promise((_, reject) => {
+    setTimeout(() => reject(new Error("OpenAI request timed out")), TIMEOUT_MS);
   });
 
-  try {
-    // Convert timeOfDay array to string for better readability in the prompt
-    const timeOfDayString = preferences.timeOfDay.join(", ");
+  // Convert timeOfDay array to string for better readability in the prompt
+  const timeOfDayString = preferences.timeOfDay.join(", ");
 
-    // Create the system prompt - enhanced for streaming service filtering by country
-    const systemPrompt = `You are a film recommendation expert with deep knowledge of global cinema. 
+  // Create the system prompt - enhanced for streaming service filtering by country
+  const systemPrompt = `You are a film recommendation expert with deep knowledge of global cinema. 
 Provide personalized movie recommendations based on the user's preferences.
 
 IMPORTANT ABOUT STREAMING AVAILABILITY:
@@ -38,8 +41,8 @@ Return exactly 4 films that match the criteria:
 
 Format your response as a JSON object with a 'recommendations' array.`;
 
-    // Create the user query - enhanced for streaming service filtering by country
-    const userQuery = `I'm looking for movie recommendations with these preferences:
+  // Create the user query - enhanced for streaming service filtering by country
+  const userQuery = `I'm looking for movie recommendations with these preferences:
 - Setting: ${preferences.location}
 - Time: ${timeOfDayString}
 - Mood: ${preferences.mood}
@@ -73,72 +76,103 @@ IMPORTANT ABOUT AVAILABILITY:
 
 DO NOT include a posterUrl field in your response.`;
 
-    // Make the API call with a timeout
-    const responsePromise = openai.chat.completions.create({
-      model: MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userQuery }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.7,
-      max_tokens: 800 // Limit token count for faster response
-    });
-
-    // Race between the API call and the timeout
-    const response = await Promise.race([responsePromise, timeoutPromise]) as any;
-
-    // Parse the response
-    let parsedContent: AIRecommendationResponse;
+  // Define the API call function that we'll retry if needed
+  const makeOpenAICall = async (retryCount = 0): Promise<Film[]> => {
     try {
-      const content = response.choices[0].message.content;
-      if (!content) {
-        throw new Error("Empty response from OpenAI");
+      console.log(`Making OpenAI request (attempt ${retryCount + 1}/${MAX_RETRIES + 1})...`);
+      
+      // Make the API call with a timeout
+      const responsePromise = openai.chat.completions.create({
+        model: MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userQuery }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+        max_tokens: 800 // Limit token count for faster response
+      });
+
+      // Race between the API call and the timeout
+      const response = await Promise.race([responsePromise, createTimeoutPromise()]) as any;
+
+      // Parse the response
+      let parsedContent: AIRecommendationResponse;
+      try {
+        const content = response.choices[0].message.content;
+        if (!content) {
+          throw new Error("Empty response from OpenAI");
+        }
+        
+        parsedContent = JSON.parse(content) as AIRecommendationResponse;
+        
+        // Validate the structure of the response
+        if (!parsedContent.recommendations || !Array.isArray(parsedContent.recommendations) || parsedContent.recommendations.length === 0) {
+          throw new Error("Invalid recommendations structure in OpenAI response");
+        }
+        
+        console.log(`Successfully received AI recommendations (attempt ${retryCount + 1})`);
+      } catch (parseError) {
+        console.error(`Error parsing OpenAI response (attempt ${retryCount + 1}):`, parseError);
+        
+        // If we have retries left, try again
+        if (retryCount < MAX_RETRIES) {
+          console.log(`Retrying OpenAI request after parsing error...`);
+          return makeOpenAICall(retryCount + 1);
+        }
+        throw new Error("Failed to parse AI recommendations after multiple attempts");
       }
       
-      parsedContent = JSON.parse(content) as AIRecommendationResponse;
-      console.log("Successfully received AI recommendations");
+      // Format and structure the recommendations to match our Film type
+      return parsedContent.recommendations.map(film => {
+        // Use a hardcoded set of colorful poster backgrounds
+        const backgrounds = [
+          "linear-gradient(135deg, #3498db, #2c3e50)",
+          "linear-gradient(135deg, #e74c3c, #c0392b)",
+          "linear-gradient(135deg, #1abc9c, #16a085)",
+          "linear-gradient(135deg, #9b59b6, #8e44ad)",
+          "linear-gradient(135deg, #f1c40f, #f39c12)"
+        ];
+        
+        // Choose a background based on the first letter of the title
+        const firstChar = (film.title || "A").charAt(0).toLowerCase();
+        const backgroundIndex = firstChar.charCodeAt(0) % backgrounds.length;
+        
+        return {
+          id: film.id || Math.floor(Math.random() * 10000),
+          title: film.title,
+          year: typeof film.year === 'number' ? film.year : 2000,
+          director: film.director || "Unknown",
+          actors: Array.isArray(film.actors) ? film.actors.slice(0, 4) : ["Unknown"],
+          synopsis: film.synopsis || "No synopsis available",
+          genres: Array.isArray(film.genres) ? film.genres.slice(0, 3) : ["Drama"],
+          type: (film.type === "mainstream" || film.type === "indie") ? film.type : "mainstream",
+          posterUrl: "", // We'll generate it on the client side
+          matchPercentage: typeof film.matchPercentage === 'number' ? film.matchPercentage : 85,
+          matchReason: film.matchReason || `Great match for ${preferences.mood} mood`,
+          availableOn: Array.isArray(film.availableOn) ? film.availableOn : []
+        };
+      });
     } catch (error) {
-      console.error("Error parsing OpenAI response:", error);
-      throw new Error("Failed to parse AI recommendations");
+      // If timeout or any other error and we have retries left
+      if (retryCount < MAX_RETRIES) {
+        console.log(`Retrying OpenAI request after error: ${error.message}`);
+        // Add a small delay before retrying to avoid rate limits
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return makeOpenAICall(retryCount + 1);
+      }
+      
+      // If we've used all retries, propagate the error
+      console.error(`Error getting AI recommendations after ${retryCount + 1} attempts:`, error);
+      throw new Error("Failed to get AI recommendations after multiple attempts");
     }
-    
-    // Format and structure the recommendations to match our Film type
-    return parsedContent.recommendations.map(film => {
-      // Use a hardcoded set of colorful poster backgrounds
-      const backgrounds = [
-        "linear-gradient(135deg, #3498db, #2c3e50)",
-        "linear-gradient(135deg, #e74c3c, #c0392b)",
-        "linear-gradient(135deg, #1abc9c, #16a085)",
-        "linear-gradient(135deg, #9b59b6, #8e44ad)",
-        "linear-gradient(135deg, #f1c40f, #f39c12)"
-      ];
-      
-      // Choose a background based on the first letter of the title
-      const firstChar = (film.title || "A").charAt(0).toLowerCase();
-      const backgroundIndex = firstChar.charCodeAt(0) % backgrounds.length;
-      const background = backgrounds[backgroundIndex];
-      
-      // No posterUrl - we'll generate it on the client side
-      const posterUrl = "";
-      
-      return {
-        id: film.id || Math.floor(Math.random() * 10000),
-        title: film.title,
-        year: typeof film.year === 'number' ? film.year : 2000,
-        director: film.director || "Unknown",
-        actors: Array.isArray(film.actors) ? film.actors.slice(0, 4) : ["Unknown"],
-        synopsis: film.synopsis || "No synopsis available",
-        genres: Array.isArray(film.genres) ? film.genres.slice(0, 3) : ["Drama"],
-        type: (film.type === "mainstream" || film.type === "indie") ? film.type : "mainstream",
-        posterUrl: posterUrl,
-        matchPercentage: typeof film.matchPercentage === 'number' ? film.matchPercentage : 85,
-        matchReason: film.matchReason || `Great match for ${preferences.mood} mood`,
-        availableOn: Array.isArray(film.availableOn) ? film.availableOn : []
-      };
-    });
+  };
+
+  // Start the API call process with retries
+  try {
+    return await makeOpenAICall();
   } catch (error) {
-    console.error("Error getting AI recommendations:", error);
+    console.error("All OpenAI request attempts failed:", error);
     throw new Error("Failed to get AI recommendations");
   }
 }

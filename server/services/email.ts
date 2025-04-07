@@ -206,7 +206,7 @@ This email was sent to ${email}. If you didn't create this account, please ignor
     
     <p>This project is very much in its early stages, so I'd love to hear from you about how you find it and if you have any feedback for me, I'd really love to hear it!</p>
     
-    <a href="https://cinematch.replit.app" class="button">Explore Recommendations</a>
+    <a href="https://cine-match.replit.app" class="button">Explore Recommendations</a>
     
     <p>I hope you find something amazing to watch,</p>
     <p>Andy</p>
