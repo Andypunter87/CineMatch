@@ -56,7 +56,15 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
             const tmdbFilm = await convertTMDBMovieToFilm(tmdbMovie);
             
             // Filter streaming services to only show the ones the user has access to
-            const countryCode = preferences.country?.toUpperCase() || 'US';
+            // Convert country names to ISO codes that TMDB expects
+            let countryCode = preferences.country?.toUpperCase() || 'US';
+            
+            // Special handling for UK which is "GB" in TMDB
+            if (countryCode === 'UNITED KINGDOM' || countryCode === 'UNITED_KINGDOM' || countryCode === 'UK') {
+              countryCode = 'GB';
+            }
+            
+            console.log(`Using country code: ${countryCode} for streaming service filtering`);
             let availableOn: string[] = [];
             
             // If the user has specified streaming services and the movie is available in their country
@@ -148,7 +156,15 @@ async function postProcessRecommendations(
   
   try {
     // Search for popular movies available on the user's streaming services
-    const countryCode = preferences.country.toUpperCase();
+    // Convert country names to ISO codes that TMDB expects
+    let countryCode = preferences.country.toUpperCase();
+    
+    // Special handling for UK which is "GB" in TMDB
+    if (countryCode === 'UNITED KINGDOM' || countryCode === 'UNITED_KINGDOM' || countryCode === 'UK') {
+      countryCode = 'GB';
+    }
+    
+    console.log(`Using country code: ${countryCode} for streaming service search`);
     const userServices = preferences.streamingServices;
     
     // Get both popular and top-rated movies from TMDB for better coverage
