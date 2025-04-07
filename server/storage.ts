@@ -11,6 +11,7 @@ import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 import session from "express-session";
 import { getAIRecommendations } from "./services/openai";
+import { getEnhancedRecommendations } from "./services/recommendation-enhancer";
 import connectPg from "connect-pg-simple";
 
 // Define watchlist item structure
@@ -237,10 +238,10 @@ export class DatabaseStorage implements IStorage {
 
   async getRecommendations(preferences: RecommendationRequest): Promise<Film[]> {
     try {
-      // Use OpenAI API for recommendations
-      return await getAIRecommendations(preferences);
+      // Use enhanced recommendations that combine OpenAI with TMDB data for streaming availability
+      return await getEnhancedRecommendations(preferences);
     } catch (error) {
-      console.error("Error getting AI recommendations, falling back to local algorithm:", error);
+      console.error("Error getting enhanced recommendations, falling back to local algorithm:", error);
       
       // Fallback to local algorithm if OpenAI fails
       const scoredFilms = this.films.map(film => {

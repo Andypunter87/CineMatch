@@ -4,7 +4,7 @@ import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, BookmarkCheck, Star, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
+import { Loader2, BookmarkCheck, Star, Pencil, Trash2, Eye, EyeOff, Clock, Globe } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,6 +37,12 @@ type WatchlistItem = {
   dateWatched?: string;
   userRating?: number;
   userNotes?: string;
+  // TMDB specific fields
+  tmdbId?: number;
+  voteAverage?: number;
+  runtime?: number;
+  originalLanguage?: string;
+  releaseDate?: string;
 };
 
 // Star rating component
@@ -277,6 +283,31 @@ export default function WatchlistPage() {
                   ))}
                 </div>
               )}
+              
+              {/* TMDB Additional Info */}
+              {(item.runtime || item.voteAverage || item.originalLanguage) && (
+                <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-3">
+                  {item.runtime && (
+                    <div className="flex items-center">
+                      <Clock className="w-3 h-3 mr-1 text-gray-400" />
+                      <span>{Math.floor(item.runtime / 60)}h {item.runtime % 60}m</span>
+                    </div>
+                  )}
+                  {item.voteAverage && (
+                    <div className="flex items-center">
+                      <Star className="w-3 h-3 mr-1 text-amber-400" />
+                      <span>{item.voteAverage.toFixed(1)}/10</span>
+                    </div>
+                  )}
+                  {item.originalLanguage && (
+                    <div className="flex items-center">
+                      <Globe className="w-3 h-3 mr-1 text-gray-400" />
+                      <span>{item.originalLanguage.toUpperCase()}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               {item.userNotes && (
                 <div className="mt-2 text-sm text-slate-600 border-l-2 border-blue-200 pl-3 py-1 italic">
                   "{item.userNotes}"

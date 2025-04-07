@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { type Film, type RecommendationRequest } from "@shared/schema";
 import { Card } from "@/components/ui/card";
-import { Film as FilmIcon, Star, Award, BookmarkPlus, Loader2, Check, AlertCircle } from "lucide-react";
+import { Film as FilmIcon, Star, Award, BookmarkPlus, Loader2, Check, Clock, Globe } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -34,6 +34,12 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
         filmGenres: film.genres,
         filmPosterUrl: film.posterUrl,
         recommendationContext,
+        // TMDB specific fields
+        tmdbId: film.tmdbId,
+        voteAverage: film.voteAverage,
+        runtime: film.runtime,
+        originalLanguage: film.originalLanguage,
+        releaseDate: film.releaseDate,
         // Default to unwatched when adding to watchlist
         watched: false
       });
@@ -178,6 +184,30 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
         </div>
         
         <div className="mt-auto pt-3 border-t border-gray-100 space-y-2">
+          {/* TMDB Additional Info */}
+          {(film.runtime || film.voteAverage || film.originalLanguage) && (
+            <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+              {film.runtime && (
+                <div className="flex items-center">
+                  <Clock className="w-3 h-3 mr-1 text-gray-400" />
+                  <span>{Math.floor(film.runtime / 60)}h {film.runtime % 60}m</span>
+                </div>
+              )}
+              {film.voteAverage && (
+                <div className="flex items-center">
+                  <Star className="w-3 h-3 mr-1 text-amber-400" />
+                  <span>{film.voteAverage.toFixed(1)}/10</span>
+                </div>
+              )}
+              {film.originalLanguage && (
+                <div className="flex items-center">
+                  <Globe className="w-3 h-3 mr-1 text-gray-400" />
+                  <span>{film.originalLanguage.toUpperCase()}</span>
+                </div>
+              )}
+            </div>
+          )}
+          
           <p className="text-sm text-gray-700 leading-snug">
             <Award className="inline-block w-4 h-4 mr-1 text-primary" />
             <span className="text-primary font-medium">Why it matches:</span> {' '}
@@ -186,7 +216,7 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
           
           {/* Streaming services availability - always show availability section */}
           <div className="text-sm">
-            <span className="text-primary font-medium">Check availability on:</span>
+            <span className="text-primary font-medium">Available on:</span>
             {film.availableOn && film.availableOn.length > 0 ? (
               <div className="flex flex-wrap gap-1 mt-1">
                 {film.availableOn.map((service, index) => (
@@ -197,7 +227,7 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
               </div>
             ) : (
               <div className="mt-1 text-gray-500 text-xs italic">
-                Try searching for this film on your preferred streaming services
+                Not available on your streaming services or try searching manually
               </div>
             )}
           </div>
