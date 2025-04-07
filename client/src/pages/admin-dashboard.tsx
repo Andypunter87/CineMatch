@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import Layout from "@/components/Layout";
 import { useQuery } from "@tanstack/react-query";
 import { Redirect } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,11 +18,9 @@ export default function AdminDashboard() {
   // If user is still loading, show loading indicator
   if (isLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[500px]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center min-h-[500px]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
     );
   }
   
@@ -33,39 +30,37 @@ export default function AdminDashboard() {
   }
   
   return (
-    <Layout>
-      <div className="container py-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-4">Admin Dashboard</h1>
-        <p className="text-muted-foreground mb-6">
-          Monitor user activity, recommendation stats, and overall usage of CineMatch.
-        </p>
+    <div className="container py-8 px-6">
+      <h1 className="text-3xl font-bold tracking-tight mb-4">Admin Dashboard</h1>
+      <p className="text-muted-foreground mb-6">
+        Monitor user activity, recommendation stats, and overall usage of CineMatch.
+      </p>
+      
+      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+          <TabsTrigger value="watchlist">Watchlist</TabsTrigger>
+        </TabsList>
         
-        <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-            <TabsTrigger value="watchlist">Watchlist</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="overview">
-            <OverviewTab />
-          </TabsContent>
-          
-          <TabsContent value="users">
-            <UsersTab />
-          </TabsContent>
-          
-          <TabsContent value="recommendations">
-            <RecommendationsTab />
-          </TabsContent>
-          
-          <TabsContent value="watchlist">
-            <WatchlistTab />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </Layout>
+        <TabsContent value="overview">
+          <OverviewTab />
+        </TabsContent>
+        
+        <TabsContent value="users">
+          <UsersTab />
+        </TabsContent>
+        
+        <TabsContent value="recommendations">
+          <RecommendationsTab />
+        </TabsContent>
+        
+        <TabsContent value="watchlist">
+          <WatchlistTab />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
 
