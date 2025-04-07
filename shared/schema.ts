@@ -88,6 +88,7 @@ export type Film = {
   originalLanguage?: string;
   releaseDate?: string;
   availableStreamingByCountry?: Record<string, string[]>; // Map of country code to list of streaming services
+  hasStreamingData?: boolean; // Flag to indicate if this film has streaming data from TMDB
 };
 
 // Define recommendation request schema

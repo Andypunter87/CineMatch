@@ -1,6 +1,11 @@
 import { Film, RecommendationRequest } from "@shared/schema";
 import { getAIRecommendations } from "./openai";
-import { searchMovies, getMovieWatchProviders, convertTMDBMovieToFilm } from "./tmdb";
+import { 
+  searchMovies, 
+  getMovieWatchProviders, 
+  convertTMDBMovieToFilm,
+  getPopularMovies
+} from "./tmdb";
 
 /**
  * Enhanced recommendation service that combines AI recommendations with TMDB data
@@ -80,7 +85,9 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
               originalLanguage: tmdbFilm.originalLanguage || undefined,
               releaseDate: tmdbFilm.releaseDate || undefined,
               // Include full streaming data for all countries
-              availableStreamingByCountry: tmdbFilm.availableStreamingByCountry
+              availableStreamingByCountry: tmdbFilm.availableStreamingByCountry,
+              // Add a special flag to help with post-processing
+              hasStreamingData: true
             };
           }
           
@@ -93,10 +100,95 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       })
     );
     
-    return enhancedRecommendations;
+    // Post-process recommendations to ensure at least one film is available on user's streaming services
+    const finalRecommendations = await postProcessRecommendations(enhancedRecommendations, preferences);
+    
+    return finalRecommendations;
   } catch (error) {
     console.error("Error in enhanced recommendations:", error);
     // Fall back to just returning the AI recommendations
     return await getAIRecommendations(preferences);
+  }
+}
+
+/**
+ * Post-process recommendations to ensure we have at least one film available on user's streaming services
+ */
+async function postProcessRecommendations(
+  recommendations: Film[], 
+  preferences: RecommendationRequest
+): Promise<Film[]> {
+  // If user doesn't have streaming services or country specified, return as is
+  if (!preferences.streamingServices || 
+      !preferences.streamingServices.length || 
+      !preferences.country) {
+    return recommendations;
+  }
+  
+  // Find films that are available on user's streaming services
+  const availableFilms = recommendations.filter(
+    film => film.availableOn && film.availableOn.length > 0
+  );
+  
+  // If we already have films available on user's services, return as is
+  if (availableFilms.length > 0) {
+    console.log(`Found ${availableFilms.length} films already available on user's streaming services`);
+    return recommendations;
+  }
+  
+  console.log("No films available on user's streaming services, searching for alternatives...");
+  
+  try {
+    // Search for popular movies available on the user's streaming services
+    const countryCode = preferences.country.toUpperCase();
+    const userServices = preferences.streamingServices;
+    
+    // Get popular movies from TMDB
+    const popularMovies = await getPopularMovies(1);
+    
+    if (!popularMovies.results || popularMovies.results.length === 0) {
+      return recommendations;
+    }
+    
+    // Find a movie available on the user's services
+    for (const movie of popularMovies.results) {
+      const providers = await getMovieWatchProviders(movie.id);
+      
+      if (providers.results && 
+          providers.results[countryCode] && 
+          providers.results[countryCode].flatrate) {
+        
+        const availableServices = providers.results[countryCode].flatrate.map(p => p.provider_name);
+        
+        const matchingServices = availableServices.filter(
+          service => userServices.some(
+            userService => service.toLowerCase().includes(userService.toLowerCase())
+          )
+        );
+        
+        if (matchingServices.length > 0) {
+          // We found a match! Convert to our Film format
+          const popularFilm = await convertTMDBMovieToFilm(movie);
+          
+          // Add this to the beginning of our recommendations
+          popularFilm.matchReason = "Popular on your streaming services";
+          popularFilm.matchPercentage = 95;
+          popularFilm.availableOn = matchingServices;
+          
+          console.log(`Added popular film "${popularFilm.title}" available on user's services`);
+          
+          // Add to the beginning of the array
+          recommendations.unshift(popularFilm);
+          
+          // Only add one film to avoid overwhelming the original recommendations
+          break;
+        }
+      }
+    }
+    
+    return recommendations;
+  } catch (error) {
+    console.error("Error in postProcessRecommendations:", error);
+    return recommendations;
   }
 }
