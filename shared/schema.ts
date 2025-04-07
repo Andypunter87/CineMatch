@@ -109,6 +109,7 @@ export const recommendationRequestSchema = z.object({
   location: z.enum(["home", "travel", "date", "friends"]),
   timeOfDay: z.array(z.enum(["weekday", "weekend", "late", "morning"])).min(1),
   mood: z.enum(["laugh", "think", "cry", "thrill", "escape", "inspire"]),
+  runtime: z.enum(["short", "medium", "long"]).optional(),
   streamingServices: z.array(z.string()).optional(),
   country: z.string().optional()
 });

@@ -28,6 +28,7 @@ export const AnalyticsEvents = {
   MOOD_SELECTED: 'mood_selected',
   TIME_SELECTED: 'time_selected',
   LOCATION_SELECTED: 'location_selected',
+  RUNTIME_SELECTED: 'runtime_selected',
   QUESTIONNAIRE_COMPLETED: 'questionnaire_completed',
   
   // Watchlist events

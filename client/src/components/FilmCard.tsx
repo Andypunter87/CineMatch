@@ -125,18 +125,21 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
               onError={(e) => {
                 // If image fails to load, replace with gradient background
                 e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement.style.background = getBackgroundGradient();
-                e.currentTarget.parentElement.innerHTML = `
-                  <div class="flex flex-col items-center justify-center h-full text-center p-4">
-                    <svg class="w-10 h-10 text-white/80 mb-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="m22 8-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
-                      <path d="M18 8h-6V2"/>
-                    </svg>
-                    <h3 class="text-xl md:text-2xl font-bold text-white mb-1">${title}</h3>
-                    <p class="text-white/90 font-medium">${year}</p>
-                    <p class="text-white/70 text-sm mt-2">${director}</p>
-                  </div>
-                `;
+                const parentElement = e.currentTarget.parentElement;
+                if (parentElement) {
+                  parentElement.style.background = getBackgroundGradient();
+                  parentElement.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-center p-4">
+                      <svg class="w-10 h-10 text-white/80 mb-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m22 8-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
+                        <path d="M18 8h-6V2"/>
+                      </svg>
+                      <h3 class="text-xl md:text-2xl font-bold text-white mb-1">${title}</h3>
+                      <p class="text-white/90 font-medium">${year}</p>
+                      <p class="text-white/70 text-sm mt-2">${director}</p>
+                    </div>
+                  `;
+                }
               }}
             />
             {/* Darkening overlay to ensure text readability */}

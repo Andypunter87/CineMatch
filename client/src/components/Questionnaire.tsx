@@ -3,6 +3,8 @@ import { type RecommendationRequest } from "@shared/schema";
 
 // Type definition for time of day options
 type TimeOfDay = "weekday" | "weekend" | "late" | "morning";
+// Type definition for runtime options
+type RuntimeOption = "short" | "medium" | "long";
 
 import { 
   Home as HomeIcon, 
@@ -11,7 +13,8 @@ import {
   Users, 
   Calendar, 
   Moon, 
-  Sun 
+  Sun,
+  Clock 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,10 +32,11 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   const [location, setLocation] = useState<RecommendationRequest["location"] | "">("");
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay[]>([]);
   const [mood, setMood] = useState<RecommendationRequest["mood"] | "">("");
+  const [runtime, setRuntime] = useState<RuntimeOption | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const goToNextStep = () => {
-    if (currentStep < 4) {
+    if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -55,6 +59,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       location,
       timeOfDay,
       mood,
+      runtime, // Include runtime preference if selected
       country: user?.country || undefined,
       // Streaming services are now handled in the Home component
       // to allow for more flexibility and automatic updates
@@ -66,6 +71,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       time_count: timeOfDay.length,
       time_options: timeOfDay,
       mood: mood,
+      runtime: runtime || 'not_selected',
       is_logged_in: !!user,
       has_country: !!user?.country
     });
@@ -86,6 +92,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
             <div className={`w-3 h-3 rounded-full ${currentStep >= 2 ? 'bg-primary' : 'bg-gray-600'}`}></div>
             <div className={`w-3 h-3 rounded-full ${currentStep >= 3 ? 'bg-primary' : 'bg-gray-600'}`}></div>
             <div className={`w-3 h-3 rounded-full ${currentStep >= 4 ? 'bg-primary' : 'bg-gray-600'}`}></div>
+            <div className={`w-3 h-3 rounded-full ${currentStep >= 5 ? 'bg-primary' : 'bg-gray-600'}`}></div>
           </div>
         </div>
 
@@ -388,8 +395,114 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
               </div>
             )}
 
-            {/* Step 4: Mood */}
+            {/* Step 4: Runtime */}
             {currentStep === 4 && (
+              <div>
+                <h2 className="text-2xl font-bold mb-6">How long of a movie are you looking for?</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="runtime-option">
+                    <input 
+                      type="radio" 
+                      id="runtime-short" 
+                      name="runtime" 
+                      value="short" 
+                      className="hidden" 
+                      checked={runtime === "short"}
+                      onChange={() => {
+                        setRuntime("short");
+                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "short" });
+                      }}
+                    />
+                    <label 
+                      htmlFor="runtime-short" 
+                      className={`flex flex-col items-center p-4 border-2 ${runtime === "short" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
+                      onClick={() => {
+                        setRuntime("short");
+                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "short" });
+                      }}
+                    >
+                      <Clock className="w-8 h-8 mb-2 text-gray-600" />
+                      <span>Under 90 mins</span>
+                      <span className="text-xs text-gray-500 mt-1">Quick viewing</span>
+                    </label>
+                  </div>
+
+                  <div className="runtime-option">
+                    <input 
+                      type="radio" 
+                      id="runtime-medium" 
+                      name="runtime" 
+                      value="medium" 
+                      className="hidden" 
+                      checked={runtime === "medium"}
+                      onChange={() => {
+                        setRuntime("medium");
+                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "medium" });
+                      }}
+                    />
+                    <label 
+                      htmlFor="runtime-medium" 
+                      className={`flex flex-col items-center p-4 border-2 ${runtime === "medium" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
+                      onClick={() => {
+                        setRuntime("medium");
+                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "medium" });
+                      }}
+                    >
+                      <Clock className="w-8 h-8 mb-2 text-gray-600" />
+                      <span>90-120 mins</span>
+                      <span className="text-xs text-gray-500 mt-1">Standard length</span>
+                    </label>
+                  </div>
+
+                  <div className="runtime-option">
+                    <input 
+                      type="radio" 
+                      id="runtime-long" 
+                      name="runtime" 
+                      value="long" 
+                      className="hidden" 
+                      checked={runtime === "long"}
+                      onChange={() => {
+                        setRuntime("long");
+                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "long" });
+                      }}
+                    />
+                    <label 
+                      htmlFor="runtime-long" 
+                      className={`flex flex-col items-center p-4 border-2 ${runtime === "long" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
+                      onClick={() => {
+                        setRuntime("long");
+                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "long" });
+                      }}
+                    >
+                      <Clock className="w-8 h-8 mb-2 text-gray-600" />
+                      <span>Over 120 mins</span>
+                      <span className="text-xs text-gray-500 mt-1">Epic storytelling</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex justify-between">
+                  <Button 
+                    onClick={goToPrevStep} 
+                    variant="outline"
+                    className="px-4 py-1.5 sm:px-6 sm:py-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors text-sm sm:text-base h-auto"
+                  >
+                    Back
+                  </Button>
+                  <Button 
+                    onClick={goToNextStep} 
+                    className="px-4 py-1.5 sm:px-6 sm:py-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg transition-colors text-sm sm:text-base h-auto"
+                    disabled={!runtime}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: Mood */}
+            {currentStep === 5 && (
               <div>
                 <h2 className="text-2xl font-bold mb-6">What are you in the mood for?</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
