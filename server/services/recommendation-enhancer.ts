@@ -4,7 +4,9 @@ import {
   searchMovies, 
   getMovieWatchProviders, 
   convertTMDBMovieToFilm,
-  getPopularMovies
+  getPopularMovies,
+  getTopRatedMovies,
+  getNowPlayingMovies
 } from "./tmdb";
 
 /**
@@ -66,7 +68,13 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
               // Filter to only include services the user has
               availableOn = tmdbFilm.availableStreamingByCountry[countryCode].filter(
                 service => preferences.streamingServices!.some(
-                  userService => service.toLowerCase().includes(userService.toLowerCase())
+                  userService => {
+                    // Make comparison more flexible by checking both ways
+                    const serviceLower = service.toLowerCase();
+                    const userServiceLower = userService.toLowerCase();
+                    // Check if either is a substring of the other
+                    return serviceLower.includes(userServiceLower) || userServiceLower.includes(serviceLower);
+                  }
                 )
               );
             }
@@ -143,18 +151,30 @@ async function postProcessRecommendations(
     const countryCode = preferences.country.toUpperCase();
     const userServices = preferences.streamingServices;
     
-    // Get popular movies from TMDB
+    // Get both popular and top-rated movies from TMDB for better coverage
+    console.log('Getting popular and top-rated movies from TMDB...');
     const popularMovies = await getPopularMovies(1);
+    const topRatedMovies = await getTopRatedMovies(1);
+    const nowPlayingMovies = await getNowPlayingMovies(1);
     
-    if (!popularMovies.results || popularMovies.results.length === 0) {
-      console.log('No popular movies found from TMDB API');
+    // Combine the results for more choices
+    const allMovies = {
+      results: [
+        ...(popularMovies.results || []),
+        ...(topRatedMovies.results || []),
+        ...(nowPlayingMovies.results || [])
+      ]
+    };
+    
+    if (!allMovies.results || allMovies.results.length === 0) {
+      console.log('No movies found from TMDB API');
       return recommendations;
     }
     
-    console.log(`Checking ${popularMovies.results.length} popular movies for availability on user's services`);
+    console.log(`Checking ${allMovies.results.length} movies for availability on user's services`);
     
     // Find a movie available on the user's services
-    for (const movie of popularMovies.results) {
+    for (const movie of allMovies.results) {
       try {
         const providers = await getMovieWatchProviders(movie.id);
         console.log(`Checking providers for movie ${movie.title} (ID: ${movie.id}) in country ${countryCode}`);
@@ -178,7 +198,13 @@ async function postProcessRecommendations(
           
           const matchingServices = availableServices.filter(
             service => userServices.some(
-              userService => service.toLowerCase().includes(userService.toLowerCase())
+              userService => {
+                // Make comparison more flexible by checking both ways
+                const serviceLower = service.toLowerCase();
+                const userServiceLower = userService.toLowerCase();
+                // Check if either is a substring of the other
+                return serviceLower.includes(userServiceLower) || userServiceLower.includes(serviceLower);
+              }
             )
           );
           
