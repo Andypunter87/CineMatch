@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, User, LogOut, Settings, Bookmark, Home } from "lucide-react";
+import { Loader2, User, LogOut, Settings, Bookmark, Home, BarChart } from "lucide-react";
 
 export default function Header() {
   const { user, isLoading, logoutMutation } = useAuth();
@@ -74,6 +74,14 @@ export default function Header() {
                       <span>My Watchlist</span>
                     </DropdownMenuItem>
                   </Link>
+                  {user.isAdmin && (
+                    <Link href="/admin">
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => setIsMenuOpen(false)}>
+                        <BarChart className="mr-2 h-4 w-4" />
+                        <span>Admin Dashboard</span>
+                      </DropdownMenuItem>
+                    </Link>
+                  )}
                   <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Logout</span>

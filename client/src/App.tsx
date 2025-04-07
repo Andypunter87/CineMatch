@@ -21,7 +21,7 @@ function Router() {
       <ProtectedRoute path="/" component={Home} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
       <ProtectedRoute path="/watchlist" component={WatchlistPage} />
-      <ProtectedRoute path="/admin" component={AdminDashboard} />
+      <ProtectedRoute path="/admin" component={AdminDashboard} adminOnly={true} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
