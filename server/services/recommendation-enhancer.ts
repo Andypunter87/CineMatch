@@ -147,45 +147,73 @@ async function postProcessRecommendations(
     const popularMovies = await getPopularMovies(1);
     
     if (!popularMovies.results || popularMovies.results.length === 0) {
+      console.log('No popular movies found from TMDB API');
       return recommendations;
     }
     
+    console.log(`Checking ${popularMovies.results.length} popular movies for availability on user's services`);
+    
     // Find a movie available on the user's services
     for (const movie of popularMovies.results) {
-      const providers = await getMovieWatchProviders(movie.id);
-      
-      if (providers.results && 
-          providers.results[countryCode] && 
-          providers.results[countryCode].flatrate) {
+      try {
+        const providers = await getMovieWatchProviders(movie.id);
+        console.log(`Checking providers for movie ${movie.title} (ID: ${movie.id}) in country ${countryCode}`);
         
-        const availableServices = providers.results[countryCode].flatrate.map(p => p.provider_name);
-        
-        const matchingServices = availableServices.filter(
-          service => userServices.some(
-            userService => service.toLowerCase().includes(userService.toLowerCase())
-          )
-        );
-        
-        if (matchingServices.length > 0) {
-          // We found a match! Convert to our Film format
-          const popularFilm = await convertTMDBMovieToFilm(movie);
-          
-          // Add this to the beginning of our recommendations
-          popularFilm.matchReason = "Popular on your streaming services";
-          popularFilm.matchPercentage = 95;
-          popularFilm.availableOn = matchingServices;
-          
-          console.log(`Added popular film "${popularFilm.title}" available on user's services`);
-          
-          // Add to the beginning of the array
-          recommendations.unshift(popularFilm);
-          
-          // Only add one film to avoid overwhelming the original recommendations
-          break;
+        if (!providers.results) {
+          console.log(`No provider results available for movie ${movie.title}`);
+          continue;
         }
+        
+        if (!providers.results[countryCode]) {
+          console.log(`No providers in ${countryCode} for movie ${movie.title}`);
+          continue;
+        }
+        
+        console.log(`Available provider types: ${Object.keys(providers.results[countryCode]).join(', ')}`);
+        
+        // First check flatrate (subscription)
+        if (providers.results[countryCode].flatrate) {
+          const availableServices = providers.results[countryCode].flatrate.map(p => p.provider_name);
+          console.log(`Available flatrate services: ${availableServices.join(', ')}`);
+          
+          const matchingServices = availableServices.filter(
+            service => userServices.some(
+              userService => service.toLowerCase().includes(userService.toLowerCase())
+            )
+          );
+          
+          if (matchingServices.length > 0) {
+            // We found a match! Convert to our Film format
+            const popularFilm = await convertTMDBMovieToFilm(movie);
+            
+            // Add this to the beginning of our recommendations
+            popularFilm.matchReason = "Popular on your streaming services";
+            popularFilm.matchPercentage = 95;
+            popularFilm.availableOn = matchingServices;
+            popularFilm.hasStreamingData = true;
+            
+            console.log(`Added popular film "${popularFilm.title}" available on streaming services: ${matchingServices.join(', ')}`);
+            
+            // Add to the beginning of the array
+            recommendations.unshift(popularFilm);
+            
+            // Only add one film to avoid overwhelming the original recommendations
+            return recommendations;
+          }
+        }
+        
+        // If no flatrate matches, check buy options as a fallback
+        if (providers.results[countryCode].buy) {
+          // We won't add buy options as "available" but we'll log them for debugging
+          const buyServices = providers.results[countryCode].buy.map(p => p.provider_name);
+          console.log(`Buy services available (not adding): ${buyServices.join(', ')}`);
+        }
+      } catch (error) {
+        console.error(`Error checking streaming for movie ${movie.title}:`, error);
       }
     }
     
+    console.log('No movies found available on user streaming services');
     return recommendations;
   } catch (error) {
     console.error("Error in postProcessRecommendations:", error);
