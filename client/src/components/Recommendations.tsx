@@ -55,8 +55,22 @@ export default function Recommendations({
     }
   };
   
-  const getRuntimeText = (runtime?: string) => {
-    if (!runtime) return "";
+  const getRuntimeText = (runtime?: string[] | string) => {
+    if (!runtime || (Array.isArray(runtime) && runtime.length === 0)) return "";
+    
+    // Handle array of runtimes
+    if (Array.isArray(runtime)) {
+      return runtime.map(r => {
+        switch (r) {
+          case "short": return "Under 90 mins";
+          case "medium": return "90-120 mins";
+          case "long": return "Over 120 mins";
+          default: return "";
+        }
+      }).join(", ");
+    }
+    
+    // Handle single runtime (legacy support)
     switch (runtime) {
       case "short": return "Under 90 mins";
       case "medium": return "90-120 mins";

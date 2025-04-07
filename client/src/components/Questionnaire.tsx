@@ -32,7 +32,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   const [location, setLocation] = useState<RecommendationRequest["location"] | "">("");
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay[]>([]);
   const [mood, setMood] = useState<RecommendationRequest["mood"] | "">("");
-  const [runtime, setRuntime] = useState<RuntimeOption | undefined>(undefined);
+  const [runtime, setRuntime] = useState<RuntimeOption[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const goToNextStep = () => {
@@ -71,7 +71,8 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       time_count: timeOfDay.length,
       time_options: timeOfDay,
       mood: mood,
-      runtime: runtime || 'not_selected',
+      runtime: runtime.length > 0 ? runtime.join(',') : 'not_selected',
+      runtime_count: runtime.length,
       is_logged_in: !!user,
       has_country: !!user?.country
     });
@@ -399,27 +400,31 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
             {currentStep === 4 && (
               <div>
                 <h2 className="text-2xl font-bold mb-6">How long of a movie are you looking for?</h2>
+                <p className="text-sm text-gray-600 mb-4">Select multiple options to find a variety of movie lengths.</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="runtime-option">
                     <input 
-                      type="radio" 
+                      type="checkbox" 
                       id="runtime-short" 
                       name="runtime" 
                       value="short" 
                       className="hidden" 
-                      checked={runtime === "short"}
+                      checked={runtime.includes("short")}
                       onChange={() => {
-                        setRuntime("short");
-                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "short" });
+                        const newRuntime = runtime.includes("short") 
+                          ? runtime.filter(r => r !== "short")
+                          : [...runtime, "short"] as RuntimeOption[];
+                        setRuntime(newRuntime);
+                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
+                          runtime: "short",
+                          action: runtime.includes("short") ? "removed" : "added",
+                          count: newRuntime.length
+                        });
                       }}
                     />
                     <label 
                       htmlFor="runtime-short" 
-                      className={`flex flex-col items-center p-4 border-2 ${runtime === "short" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                      onClick={() => {
-                        setRuntime("short");
-                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "short" });
-                      }}
+                      className={`flex flex-col items-center p-4 border-2 ${runtime.includes("short") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                     >
                       <Clock className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Under 90 mins</span>
@@ -429,24 +434,27 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
 
                   <div className="runtime-option">
                     <input 
-                      type="radio" 
+                      type="checkbox" 
                       id="runtime-medium" 
                       name="runtime" 
                       value="medium" 
                       className="hidden" 
-                      checked={runtime === "medium"}
+                      checked={runtime.includes("medium")}
                       onChange={() => {
-                        setRuntime("medium");
-                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "medium" });
+                        const newRuntime = runtime.includes("medium") 
+                          ? runtime.filter(r => r !== "medium")
+                          : [...runtime, "medium"] as RuntimeOption[];
+                        setRuntime(newRuntime);
+                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
+                          runtime: "medium",
+                          action: runtime.includes("medium") ? "removed" : "added",
+                          count: newRuntime.length
+                        });
                       }}
                     />
                     <label 
                       htmlFor="runtime-medium" 
-                      className={`flex flex-col items-center p-4 border-2 ${runtime === "medium" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                      onClick={() => {
-                        setRuntime("medium");
-                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "medium" });
-                      }}
+                      className={`flex flex-col items-center p-4 border-2 ${runtime.includes("medium") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                     >
                       <Clock className="w-8 h-8 mb-2 text-gray-600" />
                       <span>90-120 mins</span>
@@ -456,24 +464,27 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
 
                   <div className="runtime-option">
                     <input 
-                      type="radio" 
+                      type="checkbox" 
                       id="runtime-long" 
                       name="runtime" 
                       value="long" 
                       className="hidden" 
-                      checked={runtime === "long"}
+                      checked={runtime.includes("long")}
                       onChange={() => {
-                        setRuntime("long");
-                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "long" });
+                        const newRuntime = runtime.includes("long") 
+                          ? runtime.filter(r => r !== "long")
+                          : [...runtime, "long"] as RuntimeOption[];
+                        setRuntime(newRuntime);
+                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
+                          runtime: "long",
+                          action: runtime.includes("long") ? "removed" : "added",
+                          count: newRuntime.length
+                        });
                       }}
                     />
                     <label 
                       htmlFor="runtime-long" 
-                      className={`flex flex-col items-center p-4 border-2 ${runtime === "long" ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
-                      onClick={() => {
-                        setRuntime("long");
-                        trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "long" });
-                      }}
+                      className={`flex flex-col items-center p-4 border-2 ${runtime.includes("long") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                     >
                       <Clock className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Over 120 mins</span>
@@ -493,7 +504,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   <Button 
                     onClick={goToNextStep} 
                     className="px-4 py-1.5 sm:px-6 sm:py-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg transition-colors text-sm sm:text-base h-auto"
-                    disabled={!runtime}
+                    disabled={runtime.length === 0}
                   >
                     Next
                   </Button>

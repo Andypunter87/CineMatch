@@ -144,20 +144,22 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     if (preferences.runtime) {
       filteredRecommendations = preliminaryRecommendations.filter(film => {
         // Only filter films that have runtime info
-        if (film.runtime) {
-          // Apply strict runtime filtering with only 5 minutes leeway
-          switch (preferences.runtime) {
-            case "short":
-              return film.runtime < 95; // Under 90 mins with 5 mins leeway
-            case "medium":
-              return film.runtime >= 85 && film.runtime <= 125; // 90-120 mins with 5 mins leeway
-            case "long":
-              return film.runtime > 115; // Over 120 mins with 5 mins leeway
-            default:
-              return true;
-          }
+        if (film.runtime && preferences.runtime && preferences.runtime.length > 0) {
+          // Check if the film's runtime matches any of the user's selected runtime preferences
+          return preferences.runtime.some(pref => {
+            switch (pref) {
+              case "short":
+                return film.runtime < 95; // Under 90 mins with 5 mins leeway
+              case "medium":
+                return film.runtime >= 85 && film.runtime <= 125; // 90-120 mins with 5 mins leeway
+              case "long":
+                return film.runtime > 115; // Over 120 mins with 5 mins leeway
+              default:
+                return true;
+            }
+          });
         }
-        return true; // Keep films without runtime info
+        return true; // Keep films without runtime info or when no runtime preference is specified
       });
       
       // If we've filtered out too many films, add back some that are close to the preference
@@ -169,16 +171,22 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
           if (!b.runtime) return -1;
           
           const getDistanceFromPreference = (runtime: number) => {
-            switch (preferences.runtime) {
-              case "short":
-                return Math.max(0, runtime - 90);
-              case "medium":
-                return runtime < 90 ? 90 - runtime : runtime > 120 ? runtime - 120 : 0;
-              case "long":
-                return Math.max(0, 120 - runtime);
-              default:
-                return 0;
+            // If multiple runtime preferences, find the closest match
+            if (preferences.runtime && preferences.runtime.length > 0) {
+              return Math.min(...preferences.runtime.map(pref => {
+                switch (pref) {
+                  case "short":
+                    return Math.max(0, runtime - 90);
+                  case "medium":
+                    return runtime < 90 ? 90 - runtime : runtime > 120 ? runtime - 120 : 0;
+                  case "long":
+                    return Math.max(0, 120 - runtime);
+                  default:
+                    return 0;
+                }
+              }));
             }
+            return 0;
           };
           
           return getDistanceFromPreference(a.runtime) - getDistanceFromPreference(b.runtime);
