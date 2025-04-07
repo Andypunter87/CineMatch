@@ -118,6 +118,128 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 }
 
 /**
+ * Send an admin notification email about new user registration
+ */
+export async function sendAdminNewUserNotification(name: string, email: string): Promise<boolean> {
+  const now = new Date();
+  const formattedDate = now.toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: true
+  });
+  
+  const subject = 'CineMatch: New User Registration';
+  
+  // Create a plain text version
+  const textContent = `
+You have a new user!
+They signed up on ${formattedDate}
+Their name is ${name}
+Their email address is ${email}
+  `;
+  
+  // Create HTML content with inline styles for email compatibility
+  const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CineMatch: New User Registration</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: linear-gradient(to right, #3b82f6, #06b6d4);
+      color: white;
+      padding: 20px;
+      border-radius: 8px 8px 0 0;
+      text-align: center;
+    }
+    .content {
+      padding: 20px;
+      background-color: #fff;
+      border: 1px solid #e5e7eb;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+    }
+    .info-row {
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #f9fafb;
+      border-radius: 4px;
+    }
+    .label {
+      font-weight: bold;
+      color: #4b5563;
+    }
+    .value {
+      color: #111827;
+    }
+    .button {
+      display: inline-block;
+      background: linear-gradient(to right, #3b82f6, #06b6d4);
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎉 New User Registration 🎉</h1>
+  </div>
+  <div class="content">
+    <h2>You have a new user!</h2>
+    
+    <div class="info-row">
+      <p><span class="label">Registration Date:</span> <span class="value">${formattedDate}</span></p>
+    </div>
+    
+    <div class="info-row">
+      <p><span class="label">Name:</span> <span class="value">${name}</span></p>
+    </div>
+    
+    <div class="info-row">
+      <p><span class="label">Email:</span> <span class="value">${email}</span></p>
+    </div>
+    
+    <a href="https://cine-match.replit.app/admin" class="button">View Admin Dashboard</a>
+  </div>
+  <div class="footer">
+    <p>CineMatch - Personalized Film Recommendations</p>
+    <p>This is an automated notification. Please do not reply to this email.</p>
+  </div>
+</body>
+</html>`;
+
+  return sendEmail({
+    to: 'andy@more-human.co.uk',
+    subject,
+    text: textContent,
+    html: htmlContent
+  });
+}
+
+/**
  * Send a welcome email to a new user
  */
 export async function sendWelcomeEmail(name: string, email: string): Promise<boolean> {

@@ -38,6 +38,13 @@ export const watchlist = pgTable("watchlist", {
   dateWatched: timestamp("date_watched"),
   userRating: integer("user_rating"), // 1-5 star rating
   userNotes: text("user_notes"),
+  
+  // TMDB specific fields
+  tmdbId: integer("tmdb_id"),
+  voteAverage: integer("vote_average"),
+  runtime: integer("runtime"),
+  originalLanguage: text("original_language"),
+  releaseDate: text("release_date"),
 });
 
 // Define relations for watchlist
@@ -73,6 +80,14 @@ export type Film = {
   matchPercentage?: number;
   matchReason?: string;
   availableOn?: string[]; // Streaming services where this film is available in the user's country
+  
+  // TMDB specific fields
+  tmdbId?: number;
+  voteAverage?: number;
+  runtime?: number; // in minutes
+  originalLanguage?: string;
+  releaseDate?: string;
+  availableStreamingByCountry?: Record<string, string[]>; // Map of country code to list of streaming services
 };
 
 // Define recommendation request schema

@@ -6,7 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User, User as SelectUser } from "@shared/schema";
-import { sendWelcomeEmail } from "./services/email";
+import { sendWelcomeEmail, sendAdminNewUserNotification } from "./services/email";
 
 declare global {
   namespace Express {
@@ -130,6 +130,7 @@ export function setupAuth(app: Express) {
       
       if (sanitizedEmail) {
         try {
+          // Send welcome email to the user
           sendWelcomeEmail(sanitizedName, sanitizedEmail)
             .then(success => {
               if (success) {
@@ -141,11 +142,24 @@ export function setupAuth(app: Express) {
             .catch(error => {
               console.error(`Error sending welcome email to ${sanitizedEmail}:`, error);
             });
+            
+          // Send notification to admin
+          sendAdminNewUserNotification(sanitizedName, sanitizedEmail)
+            .then(success => {
+              if (success) {
+                console.log(`Admin notification sent successfully for new user: ${sanitizedEmail}`);
+              } else {
+                console.warn(`Failed to send admin notification for new user: ${sanitizedEmail}`);
+              }
+            })
+            .catch(error => {
+              console.error(`Error sending admin notification for new user: ${sanitizedEmail}:`, error);
+            });
         } catch (emailError) {
-          console.error(`Unexpected error attempting to send welcome email to ${sanitizedEmail}:`, emailError);
+          console.error(`Unexpected error attempting to send emails for new user ${sanitizedEmail}:`, emailError);
         }
       } else {
-        console.warn('Cannot send welcome email: Invalid or missing email address');
+        console.warn('Cannot send emails: Invalid or missing email address');
       }
 
       // Log the user in
@@ -300,6 +314,7 @@ export function setupAuth(app: Express) {
         
         if (sanitizedEmail) {
           try {
+            // Send welcome email to the user
             sendWelcomeEmail(sanitizedName, sanitizedEmail)
               .then(success => {
                 if (success) {
@@ -311,11 +326,24 @@ export function setupAuth(app: Express) {
               .catch(error => {
                 console.error(`Error sending welcome email to ${sanitizedEmail} (Google Auth):`, error);
               });
+              
+            // Send notification to admin
+            sendAdminNewUserNotification(sanitizedName, sanitizedEmail)
+              .then(success => {
+                if (success) {
+                  console.log(`Admin notification sent successfully for new user: ${sanitizedEmail} (Google Auth)`);
+                } else {
+                  console.warn(`Failed to send admin notification for new user: ${sanitizedEmail} (Google Auth)`);
+                }
+              })
+              .catch(error => {
+                console.error(`Error sending admin notification for new user: ${sanitizedEmail} (Google Auth):`, error);
+              });
           } catch (emailError) {
-            console.error(`Unexpected error attempting to send welcome email to ${sanitizedEmail} (Google Auth):`, emailError);
+            console.error(`Unexpected error attempting to send emails for new user ${sanitizedEmail} (Google Auth):`, emailError);
           }
         } else {
-          console.warn('Cannot send welcome email for Google Auth: Invalid or missing email address');
+          console.warn('Cannot send emails for Google Auth: Invalid or missing email address');
         }
       }
       
