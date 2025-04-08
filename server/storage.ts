@@ -2,16 +2,22 @@ import {
   users,
   watchlist,
   analytics,
+  friends,
+  friendRequests,
   type User,
   type InsertUser,
   type Film,
   type RecommendationRequest,
   type InsertAnalytics,
-  type Analytics
+  type Analytics,
+  type Friend,
+  type InsertFriend,
+  type FriendRequest,
+  type InsertFriendRequest
 } from "@shared/schema";
 import { films } from "./data/films";
 import { db } from "./db";
-import { eq, and, desc, gte, lte, sql, count, SQL } from "drizzle-orm";
+import { eq, and, or, desc, gte, lte, sql, count, SQL } from "drizzle-orm";
 import session from "express-session";
 import { getAIRecommendations } from "./services/openai";
 import { getEnhancedRecommendations } from "./services/recommendation-enhancer";
@@ -35,6 +41,15 @@ export interface IStorage {
   updateUserStreamingServices(userId: number, streamingServices: string[]): Promise<User>;
   updateUserCountry(userId: number, country: string): Promise<User>;
   updateUserPassword(userId: number, passwordHash: string): Promise<User>;
+  
+  // Friend operations
+  getFriends(userId: number): Promise<User[]>;
+  addFriend(userId: number, friendId: number): Promise<Friend>;
+  removeFriend(userId: number, friendId: number): Promise<void>;
+  createFriendRequest(request: InsertFriendRequest): Promise<FriendRequest>;
+  getFriendRequestByInviteCode(inviteCode: string): Promise<FriendRequest | undefined>;
+  updateFriendRequestStatus(requestId: number, status: string): Promise<FriendRequest>;
+  getFriendRequestsByUserId(userId: number): Promise<FriendRequest[]>;
   
   // Recommendation operations
   getRecommendations(preferences: RecommendationRequest): Promise<Film[]>;
@@ -466,6 +481,168 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error getting event count:", error);
       return 0;
+    }
+  }
+
+  // Friend operations implementation
+  async getFriends(userId: number): Promise<User[]> {
+    try {
+      // First, get all friendships where this user is the first user
+      const directFriendships = await db
+        .select({
+          friendId: friends.friendId,
+        })
+        .from(friends)
+        .where(eq(friends.userId, userId));
+      
+      // Then, get all friendships where this user is the second user
+      const inverseFriendships = await db
+        .select({
+          friendId: friends.userId,
+        })
+        .from(friends)
+        .where(eq(friends.friendId, userId));
+      
+      // Combine the friend IDs
+      const friendIds = [
+        ...directFriendships.map(f => f.friendId),
+        ...inverseFriendships.map(f => f.friendId)
+      ];
+      
+      // If no friends found, return empty array
+      if (friendIds.length === 0) {
+        return [];
+      }
+      
+      // Get the actual user objects for all these friends
+      const friendUsers = await db
+        .select()
+        .from(users)
+        .where(sql`${users.id} IN (${friendIds.join(',')})`);
+      
+      return friendUsers;
+    } catch (error) {
+      console.error("Error retrieving friends:", error);
+      return [];
+    }
+  }
+  
+  async addFriend(userId: number, friendId: number): Promise<Friend> {
+    try {
+      // Check if friendship already exists
+      const existingFriendship = await db
+        .select()
+        .from(friends)
+        .where(
+          or(
+            and(
+              eq(friends.userId, userId),
+              eq(friends.friendId, friendId)
+            ),
+            and(
+              eq(friends.userId, friendId),
+              eq(friends.friendId, userId)
+            )
+          )
+        );
+      
+      if (existingFriendship.length > 0) {
+        throw new Error("Friendship already exists");
+      }
+      
+      // Create new friendship
+      const [newFriendship] = await db
+        .insert(friends)
+        .values({
+          userId,
+          friendId
+        })
+        .returning();
+      
+      return newFriendship;
+    } catch (error) {
+      console.error("Error adding friend:", error);
+      throw new Error("Failed to add friend");
+    }
+  }
+  
+  async removeFriend(userId: number, friendId: number): Promise<void> {
+    try {
+      await db
+        .delete(friends)
+        .where(
+          or(
+            and(
+              eq(friends.userId, userId),
+              eq(friends.friendId, friendId)
+            ),
+            and(
+              eq(friends.userId, friendId),
+              eq(friends.friendId, userId)
+            )
+          )
+        );
+    } catch (error) {
+      console.error("Error removing friend:", error);
+      throw new Error("Failed to remove friend");
+    }
+  }
+  
+  async createFriendRequest(request: InsertFriendRequest): Promise<FriendRequest> {
+    try {
+      const [newRequest] = await db
+        .insert(friendRequests)
+        .values(request)
+        .returning();
+      
+      return newRequest;
+    } catch (error) {
+      console.error("Error creating friend request:", error);
+      throw new Error("Failed to create friend request");
+    }
+  }
+  
+  async getFriendRequestByInviteCode(inviteCode: string): Promise<FriendRequest | undefined> {
+    try {
+      const [request] = await db
+        .select()
+        .from(friendRequests)
+        .where(eq(friendRequests.inviteCode, inviteCode));
+      
+      return request;
+    } catch (error) {
+      console.error("Error retrieving friend request:", error);
+      return undefined;
+    }
+  }
+  
+  async updateFriendRequestStatus(requestId: number, status: string): Promise<FriendRequest> {
+    try {
+      const [updatedRequest] = await db
+        .update(friendRequests)
+        .set({ status })
+        .where(eq(friendRequests.id, requestId))
+        .returning();
+      
+      return updatedRequest;
+    } catch (error) {
+      console.error("Error updating friend request status:", error);
+      throw new Error("Failed to update friend request status");
+    }
+  }
+  
+  async getFriendRequestsByUserId(userId: number): Promise<FriendRequest[]> {
+    try {
+      const requests = await db
+        .select()
+        .from(friendRequests)
+        .where(eq(friendRequests.senderId, userId))
+        .orderBy(desc(friendRequests.createdAt));
+      
+      return requests;
+    } catch (error) {
+      console.error("Error retrieving friend requests:", error);
+      return [];
     }
   }
 }

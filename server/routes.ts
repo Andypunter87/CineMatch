@@ -539,6 +539,151 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
     }
   });
 
+  // ============ FRIENDS API ROUTES ============
+
+  // Get user's friends
+  app.get('/api/friends', isAuthenticated, async (req, res) => {
+    try {
+      const friends = await storage.getFriends(req.user!.id);
+      
+      // Don't send password or other sensitive fields to client
+      const safeUserData = friends.map(friend => ({
+        id: friend.id,
+        username: friend.username,
+        name: friend.name,
+        email: friend.email,
+        streamingServices: friend.streamingServices,
+        country: friend.country
+      }));
+      
+      res.status(200).json(safeUserData);
+    } catch (error) {
+      console.error("Error getting friends:", error);
+      res.status(500).json({ message: "Failed to retrieve friends" });
+    }
+  });
+
+  // Create a new friend request
+  app.post('/api/friend-requests', isAuthenticated, async (req, res) => {
+    try {
+      // Generate a unique invite code
+      const inviteCode = randomBytes(16).toString('hex');
+      
+      const newRequest = await storage.createFriendRequest({
+        senderId: req.user!.id,
+        inviteCode,
+        status: 'pending'
+      });
+      
+      // Track the event
+      await storage.trackEvent({
+        eventType: 'create_friend_request',
+        userId: req.user!.id,
+        data: { 
+          requestId: newRequest.id
+        } as Record<string, any>,
+        timestamp: new Date()
+      });
+      
+      res.status(201).json(newRequest);
+    } catch (error) {
+      console.error("Error creating friend request:", error);
+      res.status(500).json({ message: "Failed to create friend request" });
+    }
+  });
+
+  // Get friend requests created by the user
+  app.get('/api/friend-requests', isAuthenticated, async (req, res) => {
+    try {
+      const requests = await storage.getFriendRequestsByUserId(req.user!.id);
+      res.status(200).json(requests);
+    } catch (error) {
+      console.error("Error retrieving friend requests:", error);
+      res.status(500).json({ message: "Failed to retrieve friend requests" });
+    }
+  });
+
+  // Accept a friend request by invite code
+  app.post('/api/friend-requests/accept', isAuthenticated, async (req, res) => {
+    try {
+      const { inviteCode } = req.body;
+      
+      if (!inviteCode) {
+        return res.status(400).json({ message: "Invite code is required" });
+      }
+      
+      // Find the friend request
+      const request = await storage.getFriendRequestByInviteCode(inviteCode);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Friend request not found" });
+      }
+      
+      if (request.status !== 'pending') {
+        return res.status(400).json({ message: "Friend request is not pending" });
+      }
+      
+      // Cannot accept your own friend request
+      if (request.senderId === req.user!.id) {
+        return res.status(400).json({ message: "Cannot accept your own friend request" });
+      }
+      
+      // Update the request status
+      const updatedRequest = await storage.updateFriendRequestStatus(request.id, 'accepted');
+      
+      // Add each other as friends
+      await storage.addFriend(request.senderId, req.user!.id);
+      
+      // Track the event
+      await storage.trackEvent({
+        eventType: 'accept_friend_request',
+        userId: req.user!.id,
+        data: { 
+          requestId: request.id, 
+          friendId: request.senderId 
+        } as Record<string, any>,
+        timestamp: new Date()
+      });
+      
+      res.status(200).json({ 
+        message: "Friend request accepted", 
+        request: updatedRequest 
+      });
+    } catch (error) {
+      console.error("Error accepting friend request:", error);
+      res.status(500).json({ message: "Failed to accept friend request" });
+    }
+  });
+
+  // Remove a friend
+  app.delete('/api/friends/:friendId', isAuthenticated, async (req, res) => {
+    try {
+      const friendId = parseInt(req.params.friendId);
+      
+      if (isNaN(friendId)) {
+        return res.status(400).json({ message: "Invalid friend ID" });
+      }
+      
+      await storage.removeFriend(req.user!.id, friendId);
+      
+      // Track the event
+      await storage.trackEvent({
+        eventType: 'remove_friend',
+        userId: req.user!.id,
+        data: { 
+          friendId: friendId 
+        } as Record<string, any>,
+        timestamp: new Date()
+      });
+      
+      res.status(200).json({ message: "Friend removed successfully" });
+    }
+    catch (error) {
+      console.error("Error removing friend:", error);
+      res.status(500).json({ message: "Failed to remove friend" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
