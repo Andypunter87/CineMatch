@@ -350,22 +350,46 @@ This email was sent to ${email}. If you didn't create this account, please ignor
 
 /**
  * Send a friend invitation email
+ * @param senderName The name of the sender
+ * @param recipientEmail The recipient's email address
+ * @param inviteCode The invite code for linking
+ * @param isExistingUser Whether the recipient is an existing user
  */
 export async function sendFriendInvitationEmail(
   senderName: string, 
   recipientEmail: string, 
-  inviteCode: string
+  inviteCode: string,
+  isExistingUser: boolean = false
 ): Promise<boolean> {
-  const subject = `${senderName} has invited you to join CineMatch`;
-  
   // Base URL for the application
   const baseUrl = 'https://cine-match.replit.app';
   
+  // Different subject lines for new vs existing users
+  const subject = isExistingUser
+    ? `${senderName} wants to connect on CineMatch`
+    : `${senderName} has invited you to join CineMatch`;
+  
   // Create invite link with the invite code
-  const inviteLink = `${baseUrl}/auth?invite=${inviteCode}`;
+  const inviteLink = isExistingUser
+    ? `${baseUrl}/friends?accept=${inviteCode}`  // Direct to friends page for existing users
+    : `${baseUrl}/auth?invite=${inviteCode}`;    // Direct to auth page for new users
   
   // Create a plain text version for email clients that don't support HTML
-  const textContent = `
+  const textContent = isExistingUser
+    ? `
+Hi there,
+
+${senderName} wants to connect with you on CineMatch so you can share film recommendations and plan watch parties together.
+
+Click the link below to accept their friend request:
+${inviteLink}
+
+Happy movie watching!
+
+---
+Powered by More Human | Contact: andy@more-human.co.uk
+`
+    : `
 Hi there,
 
 ${senderName} has invited you to join CineMatch - a personalized film recommendation platform.
@@ -383,7 +407,96 @@ If you didn't expect this invitation, you can safely ignore this email.
   `;
   
   // Create HTML content with inline styles for email compatibility
-  const htmlContent = `<!DOCTYPE html>
+  let htmlContent = '';
+  
+  // Different HTML templates for new vs existing users
+  if (isExistingUser) {
+    // For existing users - simpler email focusing on the friend connection
+    htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Friend Request on CineMatch</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: linear-gradient(to right, #3b82f6, #06b6d4);
+      color: white;
+      padding: 20px;
+      border-radius: 8px 8px 0 0;
+      text-align: center;
+    }
+    .content {
+      padding: 20px;
+      background-color: #fff;
+      border: 1px solid #e5e7eb;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+    }
+    .friend-bubble {
+      background-color: #f0f9ff;
+      border-left: 4px solid #3b82f6;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .button {
+      display: inline-block;
+      background: linear-gradient(to right, #3b82f6, #06b6d4);
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      margin: 20px 0;
+      font-weight: bold;
+      text-align: center;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>New Friend Request</h1>
+  </div>
+  <div class="content">
+    <div class="friend-bubble">
+      <p><strong>${senderName}</strong> wants to connect with you on CineMatch 🎬</p>
+    </div>
+    
+    <p>Connect with ${senderName} to share recommendations and plan movie nights together.</p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${inviteLink}" class="button">Accept Friend Request</a>
+    </div>
+    
+    <p>Once connected, you'll be able to:</p>
+    <ul>
+      <li>Share your favorite films and recommendations</li>
+      <li>Create watch parties with shared preferences</li>
+      <li>Discover movies that you'll both enjoy</li>
+    </ul>
+  </div>
+  <div class="footer">
+    <p>Powered by More Human | Contact: andy@more-human.co.uk</p>
+  </div>
+</body>
+</html>`;
+  } else {
+    // For new users - more detailed email about the platform
+    htmlContent = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -498,6 +611,7 @@ If you didn't expect this invitation, you can safely ignore this email.
   </div>
 </body>
 </html>`;
+  }
 
   return sendEmail({
     to: recipientEmail,

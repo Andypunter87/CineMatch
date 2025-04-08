@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
@@ -51,6 +51,49 @@ export default function FriendsPage() {
   const { user } = useAuth();
   const [email, setEmail] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [acceptingInvite, setAcceptingInvite] = useState(false);
+  
+  // Get URL parameters for friend invitation acceptance
+  const searchParams = new URLSearchParams(window.location.search);
+  const inviteCode = searchParams.get('accept');
+
+  // Accept friend request mutation
+  const acceptFriendRequestMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const response = await apiRequest("POST", "/api/friend-requests/accept", { inviteCode: code });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Friend request accepted",
+        description: "You have been added as friends",
+      });
+      // Remove the invite code from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+      refetchFriends();
+      queryClient.invalidateQueries({ queryKey: ['/api/friend-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/friends'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to accept invitation",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      });
+      // Remove the invite code from URL even on error
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  });
+
+  // Accept friend request from URL if present
+  useEffect(() => {
+    if (inviteCode && user && !acceptingInvite) {
+      setAcceptingInvite(true);
+      acceptFriendRequestMutation.mutate(inviteCode);
+    }
+  }, [inviteCode, user, acceptingInvite, acceptFriendRequestMutation]);
 
   // Get friends list
   const { 

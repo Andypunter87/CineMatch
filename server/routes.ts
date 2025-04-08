@@ -594,17 +594,46 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
           return res.status(400).json({ message: "You are already friends with this user" });
         }
         
-        // If they exist but aren't friends, create friend connection directly
-        await storage.addFriend(req.user!.id, existingUser.id);
+        // Even for existing users, we'll create a friend request first
+        // This allows the other user to accept or reject the request
+        // Generate a unique invite code
+        const inviteCode = randomBytes(16).toString('hex');
         
-        return res.status(200).json({ 
-          message: "Friend added successfully", 
-          directAdd: true,
-          friend: {
-            id: existingUser.id,
-            name: existingUser.name || existingUser.username,
-            email: existingUser.email
-          }
+        // Create the friend request
+        const newRequest = await storage.createFriendRequest({
+          userId: req.user!.id,
+          email,
+          inviteCode,
+          status: 'pending'
+        });
+        
+        // Send invitation email with the existing user template
+        const senderName = req.user!.name || req.user!.username || 'A friend';
+        const emailSent = await sendFriendInvitationEmail(
+          senderName,
+          email,
+          inviteCode,
+          true // This is an existing user
+        );
+        
+        // Track the event
+        await storage.trackEvent({
+          eventType: 'create_friend_request',
+          userId: req.user!.id,
+          data: { 
+            requestId: newRequest.id,
+            email,
+            emailSent,
+            existingUser: true
+          } as Record<string, any>,
+          timestamp: new Date()
+        });
+        
+        return res.status(201).json({
+          ...newRequest,
+          emailSent,
+          message: "Friend invitation sent",
+          existingUser: true
         });
       }
       
@@ -619,12 +648,13 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
         status: 'pending'
       });
       
-      // Send invitation email
+      // Send invitation email for new users
       const senderName = req.user!.name || req.user!.username || 'A friend';
       const emailSent = await sendFriendInvitationEmail(
         senderName,
         email,
-        inviteCode
+        inviteCode,
+        false // This is a new user
       );
       
       // Track the event
@@ -681,8 +711,16 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
       if (status === 'accept') {
         // Add each other as friends
         if (updatedRequest.userId) {
-          await storage.addFriend(req.user!.id, updatedRequest.userId);
-          await storage.addFriend(updatedRequest.userId, req.user!.id);
+          try {
+            await storage.addFriend(req.user!.id, updatedRequest.userId);
+            await storage.addFriend(updatedRequest.userId, req.user!.id);
+          } catch (error) {
+            const friendError = error as Error;
+            // If friendship already exists, just continue
+            if (friendError.message !== "Friendship already exists") {
+              throw friendError;
+            }
+          }
         }
       }
       
@@ -721,7 +759,15 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
       const updatedRequest = await storage.updateFriendRequestStatus(request.id, 'accepted');
       
       // Add each other as friends
-      await storage.addFriend(request.userId, req.user!.id);
+      try {
+        await storage.addFriend(request.userId, req.user!.id);
+      } catch (error) {
+        const friendError = error as Error;
+        // If friendship already exists, just continue
+        if (friendError.message !== "Friendship already exists") {
+          throw friendError;
+        }
+      }
       
       // Track the event
       await storage.trackEvent({

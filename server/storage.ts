@@ -17,7 +17,7 @@ import {
 } from "@shared/schema";
 import { films } from "./data/films";
 import { db } from "./db";
-import { eq, and, or, desc, gte, lte, sql, count, SQL } from "drizzle-orm";
+import { eq, and, or, desc, gte, lte, sql, count, SQL, inArray } from "drizzle-orm";
 import session from "express-session";
 import { getAIRecommendations } from "./services/openai";
 import { getEnhancedRecommendations } from "./services/recommendation-enhancer";
@@ -515,10 +515,13 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Get the actual user objects for all these friends
+      
+      // Use proper parameterization with in clause
+      const placeholders = friendIds.map(id => `${id}`).join(', ');
       const friendUsers = await db
         .select()
         .from(users)
-        .where(sql`${users.id} IN (${friendIds.join(',')})`);
+        .where(sql`${users.id} IN (${sql.raw(placeholders)})`);
       
       return friendUsers;
     } catch (error) {
