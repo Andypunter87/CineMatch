@@ -24,7 +24,7 @@ export const friendRequests = pgTable("friend_requests", {
   inviteCode: text("invite_code").notNull().unique(), // Unique code for invitation
   status: text("status").notNull().default("pending"), // 'pending', 'accepted', 'rejected'
   createdAt: timestamp("created_at").defaultNow(),
-  expiresAt: timestamp("expires_at"), // Optional expiration time
+  // expiresAt field not used - removed to match actual database structure
 });
 
 // Friends table (represents connections between users)
@@ -175,7 +175,7 @@ export const insertFriendRequestSchema = createInsertSchema(friendRequests).pick
   email: true,
   inviteCode: true,
   status: true,
-  expiresAt: true,
+  // expiresAt removed since it's not in the database
 });
 
 // Create friend schema
