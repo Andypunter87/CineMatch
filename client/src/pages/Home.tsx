@@ -65,7 +65,9 @@ export default function Home() {
   }, [dislikedFilmIds]);
   
   const { data: recommendations, isLoading } = useQuery<Film[]>({
-    queryKey: ['/api/recommendations', preferences, seenFilmIds, dislikedFilmIds],
+    // Remove dislikedFilmIds from the queryKey to prevent automatic refetching when films are disliked
+    // The dislikedFilmIds will still be used in the query function but won't trigger a refetch
+    queryKey: ['/api/recommendations', preferences, seenFilmIds],
     enabled: preferences !== null,
     staleTime: Infinity,
     queryFn: async () => {

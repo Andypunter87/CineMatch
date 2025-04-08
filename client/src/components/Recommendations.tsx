@@ -204,9 +204,9 @@ export default function Recommendations({
           {onGenerateMore && hasMoreToGenerate && (
             <Button
               onClick={onGenerateMore}
-              variant="outline"
+              variant="default"
               size="lg"
-              className="px-8 py-3 border-primary text-primary hover:bg-primary/10 rounded-lg transition-colors"
+              className="px-8 py-3 bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
               Show More Films
@@ -214,9 +214,9 @@ export default function Recommendations({
           )}
           <Button
             onClick={onReset}
-            variant="default"
+            variant="outline"
             size="lg"
-            className="px-8 py-3 bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors"
+            className="px-8 py-3 border-primary text-primary hover:bg-primary/10 rounded-lg transition-colors"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Start Over
