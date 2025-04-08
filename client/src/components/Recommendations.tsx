@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { type Film, type RecommendationRequest } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import FilmCard from "./FilmCard";
@@ -25,6 +25,23 @@ export default function Recommendations({
   onDisliked
 }: RecommendationsProps) {
   const [filterType, setFilterType] = useState<"all" | "mainstream" | "indie">("all");
+  const [isLongLoading, setIsLongLoading] = useState(false);
+  
+  // Set up a timer to change the loading message after 7 seconds
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    if (isLoading) {
+      setIsLongLoading(false);
+      timer = setTimeout(() => {
+        setIsLongLoading(true);
+      }, 7000); // 7 seconds
+    }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isLoading]);
 
   const getLocationText = (location: string) => {
     switch (location) {
@@ -150,7 +167,11 @@ export default function Recommendations({
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="bg-white py-5 px-8 rounded-lg border shadow-md flex items-center space-x-3 z-10">
                 <RefreshCw className="w-5 h-5 text-primary animate-spin" />
-                <p className="text-gray-800">Getting your personalized film recommendations...</p>
+                <p className="text-gray-800">
+                  {isLongLoading
+                    ? "Nearly there! Thanks for waiting..."
+                    : "Getting your personalized film recommendations..."}
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-8 filter blur-sm">
