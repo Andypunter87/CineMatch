@@ -36,5 +36,9 @@ export const AnalyticsEvents = {
   FILM_REMOVED_FROM_WATCHLIST: 'film_removed_from_watchlist',
   FILM_MARKED_WATCHED: 'film_marked_watched',
   FILM_RATED: 'film_rated',
-  FILM_REVIEWED: 'film_reviewed'
+  FILM_REVIEWED: 'film_reviewed',
+  
+  // Recommendation feedback events
+  RECOMMENDATION_LIKED: 'recommendation_liked',
+  RECOMMENDATION_DISLIKED: 'recommendation_disliked',
 };

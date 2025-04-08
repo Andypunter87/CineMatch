@@ -325,6 +325,49 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
 </urlset>`);
   });
   
+  // Recommendation Feedback API route
+  app.post('/api/feedback', async (req, res) => {
+    try {
+      const schema = z.object({
+        filmId: z.number(),
+        filmTitle: z.string(),
+        feedback: z.enum(['like', 'dislike']),
+        recommendationContext: z.any().optional()
+      });
+      
+      const { filmId, filmTitle, feedback, recommendationContext } = schema.parse(req.body);
+      
+      // Get user ID if authenticated
+      const userId = req.isAuthenticated() && req.user ? req.user.id : undefined;
+      
+      // Track feedback event in analytics
+      await storage.trackEvent({
+        eventType: feedback === 'like' ? 'recommendation_liked' : 'recommendation_disliked',
+        userId,
+        data: {
+          filmId,
+          filmTitle,
+          feedback,
+          recommendationContext: JSON.stringify(recommendationContext)
+        } as Record<string, any>,
+        ip: req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+        userAgent: req.headers['user-agent'] as string || 'unknown'
+      });
+      
+      res.status(200).json({ 
+        success: true, 
+        message: `Feedback recorded: ${feedback === 'like' ? 'positive' : 'negative'}`
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({ message: 'Invalid data format', errors: error.errors });
+      } else {
+        console.error('Error recording feedback:', error);
+        res.status(500).json({ message: 'Failed to record feedback' });
+      }
+    }
+  });
+  
   // Watchlist API Routes
   
   // Get user watchlist

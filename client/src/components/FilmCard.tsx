@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { type Film, type RecommendationRequest } from "@shared/schema";
 import { Card } from "@/components/ui/card";
-import { Film as FilmIcon, Star, Award, BookmarkPlus, Loader2, Check, Clock, Globe } from "lucide-react";
+import { Film as FilmIcon, Star, Award, BookmarkPlus, Loader2, Check, Clock, Globe, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -21,7 +21,54 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState<'liked' | 'disliked' | null>(null);
   
+  // Recommendation feedback mutation
+  const recommendationFeedbackMutation = useMutation({
+    mutationFn: async (feedback: 'like' | 'dislike') => {
+      const res = await apiRequest("POST", "/api/feedback", {
+        filmId: film.id,
+        filmTitle: film.title,
+        feedback,
+        recommendationContext
+      });
+      return await res.json();
+    },
+    onSuccess: (_data, variables) => {
+      // Set feedback submitted state
+      setFeedbackSubmitted(variables === 'like' ? 'liked' : 'disliked');
+      
+      // Show success toast
+      toast({
+        title: variables === 'like' ? "We'll recommend more like this" : "We'll show less like this",
+        description: variables === 'like' 
+          ? "Thanks for your feedback! We'll improve your recommendations." 
+          : "Thanks for letting us know. We'll adjust future recommendations.",
+      });
+      
+      // Track feedback event
+      trackEvent(
+        variables === 'like' ? AnalyticsEvents.RECOMMENDATION_LIKED : AnalyticsEvents.RECOMMENDATION_DISLIKED, 
+        {
+          film_id: film.id,
+          film_title: film.title,
+          film_year: film.year,
+          film_type: film.type,
+          film_genres: film.genres.join(','),
+          rating: variables === 'like' ? 'positive' : 'negative',
+          match_percentage: film.matchPercentage || 90
+        }
+      );
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `Failed to submit feedback: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Add to watchlist mutation
   const addToWatchlistMutation = useMutation({
     mutationFn: async () => {
@@ -311,6 +358,51 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
               >
                 View
               </Button>
+            </div>
+          )}
+          
+          {/* Recommendation feedback buttons - show only when recommendation context exists */}
+          {recommendationContext && !feedbackSubmitted && (
+            <div className="mt-3 pt-2 border-t border-gray-100">
+              <div className="text-center text-sm text-gray-500 mb-2">
+                Was this a good recommendation?
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 border-green-200 hover:bg-green-50 hover:text-green-700"
+                  onClick={() => recommendationFeedbackMutation.mutate('like')}
+                  disabled={recommendationFeedbackMutation.isPending}
+                >
+                  <ThumbsUp className="mr-1 h-4 w-4 text-green-500" />
+                  <span>Yes</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 border-red-200 hover:bg-red-50 hover:text-red-700"
+                  onClick={() => recommendationFeedbackMutation.mutate('dislike')}
+                  disabled={recommendationFeedbackMutation.isPending}
+                >
+                  <ThumbsDown className="mr-1 h-4 w-4 text-red-500" />
+                  <span>No</span>
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {/* Feedback submitted confirmation */}
+          {feedbackSubmitted && (
+            <div className="mt-3 pt-2 border-t border-gray-100">
+              <div className="bg-blue-50 p-2 rounded-md flex items-center">
+                <Check className="h-4 w-4 text-green-500 mr-2" />
+                <span className="text-sm text-blue-700">
+                  {feedbackSubmitted === 'liked' 
+                    ? "Thanks! We'll recommend more like this."
+                    : "Thanks! We'll show fewer like this."}
+                </span>
+              </div>
             </div>
           )}
           
