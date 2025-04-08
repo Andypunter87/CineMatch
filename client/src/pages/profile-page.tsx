@@ -52,6 +52,7 @@ const countries = [
   "United Kingdom",
   "Canada",
   "Australia",
+  "Egypt",
   "France",
   "Germany",
   "Japan",

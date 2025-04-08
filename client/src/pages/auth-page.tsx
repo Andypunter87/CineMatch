@@ -225,6 +225,7 @@ export default function AuthPage() {
                                 <SelectItem value="ca">Canada</SelectItem>
                                 <SelectItem value="uk">United Kingdom</SelectItem>
                                 <SelectItem value="au">Australia</SelectItem>
+                                <SelectItem value="eg">Egypt</SelectItem>
                                 <SelectItem value="fr">France</SelectItem>
                                 <SelectItem value="de">Germany</SelectItem>
                                 <SelectItem value="jp">Japan</SelectItem>
