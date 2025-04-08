@@ -142,14 +142,48 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
     
     try {
       // Send invitations sequentially
+      let successCount = 0;
+      let errorCount = 0;
+      
       for (const email of friendEmails) {
-        await friendInviteMutation.mutateAsync(email);
+        try {
+          await friendInviteMutation.mutateAsync(email);
+          successCount++;
+        } catch (error) {
+          errorCount++;
+          console.error(`Failed to send invitation to ${email}:`, error);
+        }
       }
+      
+      // Show summary toast
+      if (successCount > 0) {
+        toast({
+          title: `${successCount} invitation${successCount > 1 ? 's' : ''} sent!`,
+          description: "We'll notify you when they join.",
+          variant: "default"
+        });
+      }
+      
+      if (errorCount > 0) {
+        toast({
+          title: `${errorCount} invitation${errorCount > 1 ? 's' : ''} failed`,
+          description: "There was a problem sending some invitations. Please try again later.",
+          variant: "destructive"
+        });
+      }
+      
+      // Clear the list after sending
+      setFriendEmails([]);
       
       // Go to next step after sending invitations
       goToNextStep();
     } catch (error) {
-      console.error("Error sending invitations:", error);
+      console.error("Error in invitation process:", error);
+      toast({
+        title: "Something went wrong",
+        description: "Please try again or continue without inviting",
+        variant: "destructive"
+      });
     } finally {
       setIsSendingInvites(false);
     }
