@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import Questionnaire from "@/components/Questionnaire";
 import Recommendations from "@/components/Recommendations";
 import { type RecommendationRequest, type Film } from "@shared/schema";
-import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
 
 // Local storage key for saving preferences
 const PREFERENCES_STORAGE_KEY = "cinematch_preferences";
@@ -16,6 +17,9 @@ export default function Home() {
     const savedPreferences = localStorage.getItem(PREFERENCES_STORAGE_KEY);
     return !savedPreferences; // Show questionnaire if no saved preferences
   });
+  
+  // Keep track of which film IDs we've already shown
+  const [seenFilmIds, setSeenFilmIds] = useState<number[]>([]);
   
   const [preferences, setPreferences] = useState<RecommendationRequest | null>(() => {
     const savedPreferences = localStorage.getItem(PREFERENCES_STORAGE_KEY);
@@ -42,7 +46,7 @@ export default function Home() {
   }, [preferences]);
   
   const { data: recommendations, isLoading } = useQuery<Film[]>({
-    queryKey: ['/api/recommendations', preferences],
+    queryKey: ['/api/recommendations', preferences, seenFilmIds],
     enabled: preferences !== null,
     staleTime: Infinity,
     queryFn: async () => {
@@ -54,21 +58,62 @@ export default function Home() {
         // Add streaming services if user has selected them
         streamingServices: user?.streamingServices?.length ? user.streamingServices : undefined,
         // Add country if user has specified one
-        country: user?.country || undefined
+        country: user?.country || undefined,
+        // Add exclusions list if applicable
+        excludeFilmIds: seenFilmIds.length > 0 ? seenFilmIds : undefined
       };
         
       const response = await apiRequest('POST', '/api/recommendations', preferencesWithUserInfo);
-      return response.json();
+      const newRecommendations = await response.json();
+      
+      // Update the seen films list with the new recommendations
+      if (newRecommendations.length > 0 && seenFilmIds.length > 0) {
+        const newIds = newRecommendations.map((film: Film) => film.id);
+        // We don't need to update state here because it would trigger a re-render loop
+        // The update happens in the more suggestions handler
+      }
+      
+      return newRecommendations;
+    }
+  });
+  
+  // Mutation for getting more suggestions
+  const { mutate: getMoreSuggestions, isPending: isLoadingMore } = useMutation({
+    mutationFn: async () => {
+      if (!preferences || !recommendations) return [];
+      
+      // Track current films as seen
+      const currentIds = recommendations.map(film => film.id);
+      const allSeenIds = [...seenFilmIds, ...currentIds];
+      
+      // Update seen film IDs
+      setSeenFilmIds(allSeenIds);
+      
+      // Force a refetch with the updated exclusion list
+      queryClient.invalidateQueries({ queryKey: ['/api/recommendations'] });
+      
+      // Track analytics event
+      trackEvent(AnalyticsEvents.MORE_RECOMMENDATIONS_REQUESTED, {
+        exclusion_count: allSeenIds.length,
+        preference_location: preferences.location,
+        preference_mood: preferences.mood,
+        preference_timeOfDay: preferences.timeOfDay
+      });
+      
+      return true;
     }
   });
 
   const handleSubmitQuestionnaire = (data: RecommendationRequest) => {
+    // Reset seen films when starting a new search
+    setSeenFilmIds([]);
     setPreferences(data);
     setShowQuestionnaire(false);
   };
 
   const handleReset = () => {
     setPreferences(null);
+    setSeenFilmIds([]);
     localStorage.removeItem(PREFERENCES_STORAGE_KEY);
     setShowQuestionnaire(true);
   };
@@ -99,9 +144,11 @@ export default function Home() {
         ) : (
           <Recommendations 
             recommendations={recommendations || []} 
-            isLoading={isLoading} 
+            isLoading={isLoading || isLoadingMore} 
             preferences={preferences!} 
-            onReset={handleReset} 
+            onReset={handleReset}
+            onGenerateMore={getMoreSuggestions}
+            hasMoreToGenerate={recommendations && recommendations.length > 0}
           />
         )}
       </div>

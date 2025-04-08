@@ -3,20 +3,24 @@ import { type Film, type RecommendationRequest } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import FilmCard from "./FilmCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Plus } from "lucide-react";
 
 interface RecommendationsProps {
   recommendations: Film[];
   isLoading: boolean;
   preferences: RecommendationRequest;
   onReset: () => void;
+  onGenerateMore?: () => void;
+  hasMoreToGenerate?: boolean;
 }
 
 export default function Recommendations({ 
   recommendations, 
   isLoading, 
   preferences, 
-  onReset 
+  onReset,
+  onGenerateMore,
+  hasMoreToGenerate = false
 }: RecommendationsProps) {
   const [filterType, setFilterType] = useState<"all" | "mainstream" | "indie">("all");
 
@@ -193,7 +197,18 @@ export default function Recommendations({
           </>
         )}
 
-        <div className="mt-10 flex justify-center">
+        <div className="mt-10 flex flex-wrap justify-center gap-4">
+          {onGenerateMore && hasMoreToGenerate && (
+            <Button
+              onClick={onGenerateMore}
+              variant="outline"
+              size="lg"
+              className="px-8 py-3 border-primary text-primary hover:bg-primary/10 rounded-lg transition-colors"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Show More Films
+            </Button>
+          )}
           <Button
             onClick={onReset}
             variant="default"

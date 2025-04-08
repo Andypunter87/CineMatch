@@ -34,6 +34,11 @@ IMPORTANT ABOUT STREAMING AVAILABILITY:
 3. For older or obscure films, it's better to leave 'availableOn' as an empty array than to make uncertain guesses
 4. NEVER include streaming services the user didn't specify in their preferences
 
+IMPORTANT ABOUT EXCLUDED FILMS:
+1. If the user provides a list of film IDs to exclude, NEVER include any film with those IDs in your recommendations
+2. Films with excluded IDs should be completely omitted from your response - do not reference them at all
+3. Exclusions take absolute priority over all other matching criteria
+
 Return 5-6 films that match the criteria:
 - Half should be mainstream/popular films
 - Half should be independent, foreign, or lesser-known films
@@ -61,6 +66,10 @@ ${preferences.streamingServices && preferences.streamingServices.length > 0
 ${preferences.country 
   ? `- User is located in: ${preferences.country}`
   : `- User location: Unknown`
+}
+${preferences.excludeFilmIds && preferences.excludeFilmIds.length > 0
+  ? `- IMPORTANT: User has already seen these films, EXCLUDE them completely from recommendations: Films with IDs ${preferences.excludeFilmIds.join(", ")}`
+  : ""
 }
 
 Each recommendation must include:

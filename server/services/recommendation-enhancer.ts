@@ -123,15 +123,25 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       })
     );
     
-    // Filter recommendations to prefer films with complete data
+    // Filter recommendations to prefer films with complete data and exclude specified films
     console.log(`Original recommendation count: ${enhancedRecommendations.length}`);
     
+    // First exclude any film IDs that were specified to be excluded
+    let filteredByExclusions = enhancedRecommendations;
+    if (preferences.excludeFilmIds && preferences.excludeFilmIds.length > 0) {
+      console.log(`Excluding ${preferences.excludeFilmIds.length} film IDs from recommendations`);
+      filteredByExclusions = enhancedRecommendations.filter(film => 
+        !preferences.excludeFilmIds?.includes(film.id)
+      );
+      console.log(`After exclusions: ${filteredByExclusions.length} films remain`);
+    }
+    
     // Count films with complete data
-    const filmsWithCompleteData = enhancedRecommendations.filter(film => film.hasCompleteData);
+    const filmsWithCompleteData = filteredByExclusions.filter(film => film.hasCompleteData);
     console.log(`Films with complete data: ${filmsWithCompleteData.length}`);
     
     // If we have at least 4 films with complete data, use those; otherwise use all
-    let preliminaryRecommendations = enhancedRecommendations;
+    let preliminaryRecommendations = filteredByExclusions;
     if (filmsWithCompleteData.length >= 4) {
       preliminaryRecommendations = filmsWithCompleteData;
       console.log("Using only films with complete data");
@@ -316,6 +326,13 @@ async function postProcessRecommendations(
           if (matchingServices.length > 0) {
             // We found a match! Convert to our Film format
             const popularFilm = await convertTMDBMovieToFilm(movie);
+            
+            // Skip if this film is in the exclude list
+            if (preferences.excludeFilmIds && 
+                preferences.excludeFilmIds.includes(popularFilm.id)) {
+              console.log(`Skipping excluded film: ${popularFilm.title} (ID: ${popularFilm.id})`);
+              continue;
+            }
             
             // Add this to the beginning of our recommendations
             popularFilm.matchReason = "Popular on your streaming services";

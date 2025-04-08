@@ -112,7 +112,8 @@ export const recommendationRequestSchema = z.object({
   mood: z.enum(["laugh", "think", "cry", "thrill", "escape", "inspire"]),
   runtime: z.array(z.enum(["short", "medium", "long"])).optional(),
   streamingServices: z.array(z.string()).optional(),
-  country: z.string().optional()
+  country: z.string().optional(),
+  excludeFilmIds: z.array(z.number()).optional() // List of film IDs to exclude from recommendations
 });
 
 export type RecommendationRequest = z.infer<typeof recommendationRequestSchema>;
