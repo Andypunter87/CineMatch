@@ -220,34 +220,47 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
 
     setIsSubmitting(true);
     
-    // Include the user's country for better localized recommendations
-    const requestData: RecommendationRequest = {
-      location,
-      timeOfDay,
-      mood,
-      runtime: runtime.length > 0 ? runtime : undefined, // Only include if selected
-      country: user?.country || undefined,
-      // Streaming services are now handled in the Home component
-      // to allow for more flexibility and automatic updates
-    };
-    
-    // Track questionnaire completion event
-    trackEvent(AnalyticsEvents.QUESTIONNAIRE_COMPLETED, {
-      location: location,
-      time_count: timeOfDay.length,
-      time_options: timeOfDay,
-      mood: mood,
-      runtime: runtime.length > 0 ? runtime.join(',') : 'not_selected',
-      runtime_count: runtime.length,
-      is_logged_in: !!user,
-      has_country: !!user?.country
-    });
-    
-    // Simulate a slight delay for better user experience
-    setTimeout(() => {
-      onSubmit(requestData);
+    try {
+      console.log("Submitting questionnaire with data:", { location, timeOfDay, mood, runtime });
+      
+      // Include the user's country for better localized recommendations
+      const requestData: RecommendationRequest = {
+        location,
+        timeOfDay,
+        mood,
+        runtime: runtime.length > 0 ? runtime : undefined, // Only include if selected
+        country: user?.country || undefined,
+        // Streaming services are now handled in the Home component
+        // to allow for more flexibility and automatic updates
+      };
+      
+      // Track questionnaire completion event
+      trackEvent(AnalyticsEvents.QUESTIONNAIRE_COMPLETED, {
+        location: location,
+        time_count: timeOfDay.length,
+        time_options: timeOfDay,
+        mood: mood,
+        runtime: runtime.length > 0 ? runtime.join(',') : 'not_selected',
+        runtime_count: runtime.length,
+        is_logged_in: !!user,
+        has_country: !!user?.country
+      });
+      
+      // Simulate a slight delay for better user experience
+      setTimeout(() => {
+        onSubmit(requestData);
+        setIsSubmitting(false);
+      }, 1000);
+    } catch (error) {
+      console.error("Error submitting questionnaire:", error);
       setIsSubmitting(false);
-    }, 1000);
+      // Show error toast
+      toast({
+        title: "Error getting recommendations",
+        description: "Please try again or select different options",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
