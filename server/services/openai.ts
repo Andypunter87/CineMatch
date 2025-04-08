@@ -11,10 +11,43 @@ interface AIRecommendationResponse {
   recommendations: Film[];
 }
 
+// Create a cache object to store recent recommendation results
+// This is a simple in-memory cache to avoid repeated identical requests
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
+const recommendationCache = new Map<string, {timestamp: number, data: Film[]}>();
+
 export async function getAIRecommendations(preferences: RecommendationRequest): Promise<Film[]> {
-  // Increased timeout to 20 seconds for better reliability
-  const TIMEOUT_MS = 20000;
+  // Set timeout to 15 seconds - balance between reliability and speed
+  const TIMEOUT_MS = 15000;
   const MAX_RETRIES = 2;
+  
+  // Create a cache key based on the preferences
+  // Exclude excludeFilmIds from the cache key as these change frequently
+  const { excludeFilmIds, ...cacheablePreferences } = preferences;
+  const cacheKey = JSON.stringify({
+    location: cacheablePreferences.location,
+    mood: cacheablePreferences.mood,
+    timeOfDay: cacheablePreferences.timeOfDay,
+    runtime: cacheablePreferences.runtime,
+    country: cacheablePreferences.country,
+    // Include a summarized version of streaming services (sorted to ensure consistent keys)
+    streamingServices: cacheablePreferences.streamingServices?.sort() || []
+  });
+  
+  // Check if we have a valid cached result
+  const now = Date.now();
+  const cachedResult = recommendationCache.get(cacheKey);
+  
+  if (cachedResult && (now - cachedResult.timestamp) < CACHE_TTL) {
+    console.log('Using cached recommendation results');
+    
+    // If there are excludeFilmIds, filter the cached results
+    if (excludeFilmIds?.length) {
+      return cachedResult.data.filter(film => !excludeFilmIds.includes(film.id));
+    }
+    
+    return cachedResult.data;
+  }
   
   // Create a promise that rejects after the timeout
   const createTimeoutPromise = () => new Promise((_, reject) => {
@@ -189,7 +222,24 @@ DO NOT include a posterUrl field in your response.`;
 
   // Start the API call process with retries
   try {
-    return await makeOpenAICall();
+    // Get the recommendations
+    const recommendations = await makeOpenAICall();
+    
+    // Store in cache for future requests
+    recommendationCache.set(cacheKey, {
+      timestamp: Date.now(),
+      data: recommendations
+    });
+    
+    // Check for and delete expired cache entries (cache maintenance)
+    // Convert entries to array to avoid iteration issues
+    Array.from(recommendationCache.entries()).forEach(([key, value]) => {
+      if (now - value.timestamp > CACHE_TTL) {
+        recommendationCache.delete(key);
+      }
+    });
+    
+    return recommendations;
   } catch (error) {
     const errorDetails = error instanceof Error ? error.message : 'Unknown error';
     console.error(`All OpenAI request attempts failed: ${errorDetails}`);
