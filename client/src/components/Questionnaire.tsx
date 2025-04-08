@@ -72,9 +72,25 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   // Function to handle friend invitation
   const friendInviteMutation = useMutation({
     mutationFn: async (email: string) => {
-      const response = await apiRequest("POST", "/api/friend-requests", { email });
-      const data: FriendInviteResponse = await response.json();
-      return data;
+      try {
+        const response = await apiRequest("POST", "/api/friend-requests", { email });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          // If it's a 400 status and the message is about already being friends
+          if (response.status === 400 && errorData.message?.includes("already friends")) {
+            throw new Error("You are already friends with this person");
+          }
+          // For any other error
+          throw new Error(errorData.message || "Failed to send invitation");
+        }
+        
+        const data: FriendInviteResponse = await response.json();
+        return data;
+      } catch (error: any) {
+        console.error("Error in friend invite:", error);
+        throw error;
+      }
     },
     onSuccess: (data: FriendInviteResponse) => {
       toast({
@@ -88,11 +104,20 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Failed to send invitation",
-        description: error.message || "Please try again.",
-        variant: "destructive"
-      });
+      // Special case for already friends
+      if (error.message?.includes("already friends")) {
+        toast({
+          title: "Already Friends",
+          description: "You are already connected with this person.",
+          variant: "default" // Use default instead of destructive for this case
+        });
+      } else {
+        toast({
+          title: "Failed to send invitation",
+          description: error.message || "Please try again.",
+          variant: "destructive"
+        });
+      }
     }
   });
   
@@ -143,19 +168,26 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
     try {
       // Send invitations sequentially
       let successCount = 0;
+      let alreadyFriendsCount = 0;
       let errorCount = 0;
       
       for (const email of friendEmails) {
         try {
           await friendInviteMutation.mutateAsync(email);
           successCount++;
-        } catch (error) {
-          errorCount++;
-          console.error(`Failed to send invitation to ${email}:`, error);
+        } catch (error: any) {
+          if (error.message?.includes("already friends")) {
+            // This is not really an error, the user is already friends with this person
+            alreadyFriendsCount++;
+            console.log(`User is already friends with ${email}`);
+          } else {
+            errorCount++;
+            console.error(`Failed to send invitation to ${email}:`, error);
+          }
         }
       }
       
-      // Show summary toast
+      // Show summary toast for successes
       if (successCount > 0) {
         toast({
           title: `${successCount} invitation${successCount > 1 ? 's' : ''} sent!`,
@@ -164,6 +196,16 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
         });
       }
       
+      // Show summary for already friends
+      if (alreadyFriendsCount > 0) {
+        toast({
+          title: `${alreadyFriendsCount} email${alreadyFriendsCount > 1 ? 's' : ''} already connected`,
+          description: "You're already friends with some of the people you tried to invite.",
+          variant: "default"
+        });
+      }
+      
+      // Show summary for actual errors
       if (errorCount > 0) {
         toast({
           title: `${errorCount} invitation${errorCount > 1 ? 's' : ''} failed`,
@@ -172,11 +214,14 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
         });
       }
       
-      // Clear the list after sending
-      setFriendEmails([]);
-      
-      // Go to next step after sending invitations
-      goToNextStep();
+      // If we had any successful operations (either new invites or identified existing friends)
+      if (successCount > 0 || alreadyFriendsCount > 0) {
+        // Clear the list after sending
+        setFriendEmails([]);
+        
+        // Go to next step
+        goToNextStep();
+      }
     } catch (error) {
       console.error("Error in invitation process:", error);
       toast({
