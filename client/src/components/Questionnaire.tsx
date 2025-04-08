@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { type RecommendationRequest } from "@shared/schema";
 
 // Type definition for time of day options
@@ -14,13 +14,20 @@ import {
   Calendar, 
   Moon, 
   Sun,
-  Clock 
+  Clock,
+  Mail,
+  PlusCircle,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface QuestionnaireProps {
   onSubmit: (data: RecommendationRequest) => void;
@@ -33,17 +40,142 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay[]>([]);
   const [mood, setMood] = useState<RecommendationRequest["mood"] | "">("");
   const [runtime, setRuntime] = useState<RuntimeOption[]>([]);
+  const [friendEmails, setFriendEmails] = useState<string[]>([]);
+  const [newFriendEmail, setNewFriendEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingInvites, setIsSendingInvites] = useState(false);
+  const { toast } = useToast();
+
+  // Check if we should show the friend invitation step (for "friends" or "date" location)
+  const shouldShowFriendStep = location === "friends" || location === "date";
+  
+  // Effect to run when location changes - if it's not a social option, clear friend emails
+  useEffect(() => {
+    if (!shouldShowFriendStep) {
+      setFriendEmails([]);
+    }
+  }, [location, shouldShowFriendStep]);
+  
+  // Friend invitation response type
+  interface FriendInviteResponse {
+    id?: number;
+    directAdd?: boolean;
+    message?: string;
+    emailSent?: boolean;
+    friend?: {
+      id: number;
+      name: string;
+      email: string;
+    };
+  }
+
+  // Function to handle friend invitation
+  const friendInviteMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const response = await apiRequest("POST", "/api/friend-requests", { email });
+      const data: FriendInviteResponse = await response.json();
+      return data;
+    },
+    onSuccess: (data: FriendInviteResponse) => {
+      toast({
+        title: data.directAdd 
+          ? "Friend added!" 
+          : "Invitation sent!",
+        description: data.directAdd 
+          ? `${data.friend?.name || data.friend?.email} has been added to your friends.` 
+          : `We'll notify you when they join.`,
+        variant: "default"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to send invitation",
+        description: error.message || "Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Handle adding a friend email
+  const addFriendEmail = () => {
+    if (!newFriendEmail || !newFriendEmail.includes('@')) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (friendEmails.includes(newFriendEmail)) {
+      toast({
+        title: "Duplicate email",
+        description: "This email is already in your invite list",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setFriendEmails(prev => [...prev, newFriendEmail]);
+    setNewFriendEmail("");
+  };
+  
+  // Remove a friend email
+  const removeFriendEmail = (email: string) => {
+    setFriendEmails(prev => prev.filter(e => e !== email));
+  };
+  
+  // Send invitations to all emails
+  const sendInvitations = async () => {
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: "You need to be logged in to invite friends",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (friendEmails.length === 0) return;
+    
+    setIsSendingInvites(true);
+    
+    try {
+      // Send invitations sequentially
+      for (const email of friendEmails) {
+        await friendInviteMutation.mutateAsync(email);
+      }
+      
+      // Go to next step after sending invitations
+      goToNextStep();
+    } catch (error) {
+      console.error("Error sending invitations:", error);
+    } finally {
+      setIsSendingInvites(false);
+    }
+  };
 
   const goToNextStep = () => {
-    if (currentStep < 5) {
+    // Determine if we should show friend step
+    if (currentStep === 2 && shouldShowFriendStep) {
+      // If user selected "friends" or "date" location, add friend collection step
+      setCurrentStep(currentStep + 1);
+    } else if (currentStep === 3 && shouldShowFriendStep) {
+      // If we're on the standard step 3 (time selection) and coming from friend step
+      setCurrentStep(currentStep + 2);
+    } else if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     }
   };
 
   const goToPrevStep = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+      // If we're on step 5 and shouldShowFriendStep, go back to step 3 (skipping friend step when going backwards)
+      if (currentStep === 5 && shouldShowFriendStep) {
+        setCurrentStep(3);
+      } else {
+        setCurrentStep(currentStep - 1);
+      }
     }
   };
 
@@ -247,8 +379,114 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
               </div>
             )}
 
+            {/* Friend Invitation Step (special step between location and time for social options) */}
+            {currentStep === 3 && shouldShowFriendStep && (
+              <div>
+                <h2 className="text-2xl font-bold mb-2">Invite Friends to Watch</h2>
+                <p className="text-gray-600 mb-6">
+                  {location === "date" 
+                    ? "Invite your date to join the movie selection process." 
+                    : "Invite friends to get recommendations everyone will enjoy."}
+                </p>
+                
+                {!user && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-yellow-700">
+                      <strong>Login required:</strong> You need to be logged in to invite friends. 
+                      You can continue without inviting or <a href="/auth" className="underline text-blue-600">login here</a>.
+                    </p>
+                  </div>
+                )}
+                
+                <div className="space-y-4">
+                  {/* Email input */}
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="email"
+                      placeholder="Enter friend's email address"
+                      value={newFriendEmail}
+                      onChange={(e) => setNewFriendEmail(e.target.value)}
+                      className="flex-1"
+                      disabled={!user || isSendingInvites}
+                    />
+                    <Button
+                      onClick={addFriendEmail}
+                      disabled={!user || !newFriendEmail || isSendingInvites}
+                      size="sm"
+                      className="bg-blue-500 hover:bg-blue-600"
+                    >
+                      <PlusCircle className="h-4 w-4 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                  
+                  {/* Friend email list */}
+                  {friendEmails.length > 0 && (
+                    <div className="border border-blue-100 rounded-lg p-4 bg-blue-50">
+                      <h3 className="text-sm font-medium mb-2 text-blue-800">Friends to invite:</h3>
+                      <ul className="space-y-2">
+                        {friendEmails.map((email) => (
+                          <li key={email} className="flex items-center justify-between bg-white p-2 rounded border border-blue-100">
+                            <span className="text-sm flex items-center">
+                              <Mail className="h-4 w-4 mr-2 text-blue-500" /> 
+                              {email}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFriendEmail(email)}
+                              disabled={isSendingInvites}
+                              className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="mt-8 flex justify-between">
+                  <Button 
+                    onClick={goToPrevStep} 
+                    variant="outline"
+                    className="px-4 py-1.5 sm:px-6 sm:py-2 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors text-sm sm:text-base h-auto"
+                    disabled={isSendingInvites}
+                  >
+                    Back
+                  </Button>
+                  
+                  {friendEmails.length > 0 && user ? (
+                    <Button 
+                      onClick={sendInvitations} 
+                      className="px-4 py-1.5 sm:px-6 sm:py-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg transition-colors text-sm sm:text-base h-auto"
+                      disabled={isSendingInvites}
+                    >
+                      {isSendingInvites ? (
+                        <span className="flex items-center">
+                          <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                          <span className="whitespace-nowrap">Sending Invites...</span>
+                        </span>
+                      ) : (
+                        <span>Send Invitations &amp; Continue</span>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={goToNextStep} 
+                      className="px-4 py-1.5 sm:px-6 sm:py-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg transition-colors text-sm sm:text-base h-auto"
+                      disabled={isSendingInvites}
+                    >
+                      Skip &amp; Continue
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+            
             {/* Step 3: Time */}
-            {currentStep === 3 && (
+            {currentStep === 3 && !shouldShowFriendStep && (
               <div>
                 <h2 className="text-2xl font-bold mb-6">When are you watching?</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

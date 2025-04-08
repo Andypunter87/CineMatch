@@ -347,3 +347,162 @@ This email was sent to ${email}. If you didn't create this account, please ignor
     html: htmlContent
   });
 }
+
+/**
+ * Send a friend invitation email
+ */
+export async function sendFriendInvitationEmail(
+  senderName: string, 
+  recipientEmail: string, 
+  inviteCode: string
+): Promise<boolean> {
+  const subject = `${senderName} has invited you to join CineMatch`;
+  
+  // Base URL for the application
+  const baseUrl = 'https://cine-match.replit.app';
+  
+  // Create invite link with the invite code
+  const inviteLink = `${baseUrl}/auth?invite=${inviteCode}`;
+  
+  // Create a plain text version for email clients that don't support HTML
+  const textContent = `
+Hi there,
+
+${senderName} has invited you to join CineMatch - a personalized film recommendation platform.
+
+CineMatch helps you discover films that match your mood and preferences, and now you can share the experience with friends!
+
+Use this link to create an account and connect with ${senderName}:
+${inviteLink}
+
+Happy movie watching!
+
+---
+Powered by More Human | Contact: andy@more-human.co.uk
+If you didn't expect this invitation, you can safely ignore this email.
+  `;
+  
+  // Create HTML content with inline styles for email compatibility
+  const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Friend Invitation to CineMatch</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: linear-gradient(to right, #3b82f6, #06b6d4);
+      color: white;
+      padding: 20px;
+      border-radius: 8px 8px 0 0;
+      text-align: center;
+    }
+    .content {
+      padding: 20px;
+      background-color: #fff;
+      border: 1px solid #e5e7eb;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+    }
+    .friend-bubble {
+      background-color: #f0f9ff;
+      border-left: 4px solid #3b82f6;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .button {
+      display: inline-block;
+      background: linear-gradient(to right, #3b82f6, #06b6d4);
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      margin: 20px 0;
+      font-weight: bold;
+      text-align: center;
+    }
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .feature {
+      flex: 1 0 45%;
+      padding: 15px;
+      background-color: #f9fafb;
+      border-radius: 8px;
+      min-width: 200px;
+    }
+    .feature-title {
+      font-weight: bold;
+      color: #3b82f6;
+      margin-bottom: 5px;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>You've Been Invited to CineMatch!</h1>
+  </div>
+  <div class="content">
+    <div class="friend-bubble">
+      <p><strong>${senderName}</strong> has invited you to join CineMatch - a personalized film recommendation platform. 🎬</p>
+    </div>
+    
+    <p>CineMatch helps you discover films that match your mood and preferences, and now you can share the experience with friends!</p>
+    
+    <div class="features">
+      <div class="feature">
+        <div class="feature-title">🎯 Personalized Recommendations</div>
+        <p>Get film suggestions tailored to your mood and preferences</p>
+      </div>
+      <div class="feature">
+        <div class="feature-title">👥 Watch with Friends</div>
+        <p>Create viewing parties and get recommendations that everyone will enjoy</p>
+      </div>
+      <div class="feature">
+        <div class="feature-title">📋 Build Your Watchlist</div>
+        <p>Save films to watch later and track what you've seen</p>
+      </div>
+      <div class="feature">
+        <div class="feature-title">🔍 Find Where to Stream</div>
+        <p>See which of your services offer each recommended film</p>
+      </div>
+    </div>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${inviteLink}" class="button">Accept Invitation & Join</a>
+    </div>
+    
+    <p>When you accept this invitation, you'll be automatically connected with ${senderName} so you can share recommendations and create movie nights together.</p>
+  </div>
+  <div class="footer">
+    <p>Powered by More Human | Contact: andy@more-human.co.uk</p>
+    <p>If you didn't expect this invitation, you can safely ignore this email.</p>
+  </div>
+</body>
+</html>`;
+
+  return sendEmail({
+    to: recipientEmail,
+    subject,
+    text: textContent,
+    html: htmlContent
+  });
+}

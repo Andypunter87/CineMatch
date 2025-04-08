@@ -9,6 +9,7 @@ import { initializeDatabase } from "./db";
 import adminRoutes from "./admin";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
+import { sendFriendInvitationEmail } from "./services/email";
 
 const scryptAsync = promisify(scrypt);
 
@@ -566,26 +567,82 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
   // Create a new friend request
   app.post('/api/friend-requests', isAuthenticated, async (req, res) => {
     try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      // Validate email format
+      if (!email.includes('@') || !email.includes('.')) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+      
+      // Check if the user is trying to invite themselves
+      if (req.user!.email.toLowerCase() === email.toLowerCase()) {
+        return res.status(400).json({ message: "You cannot invite yourself" });
+      }
+      
+      // Check if the user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        // If they are already friends, don't create duplicate
+        const friends = await storage.getFriends(req.user!.id);
+        const isAlreadyFriend = friends.some(friend => friend.id === existingUser.id);
+        
+        if (isAlreadyFriend) {
+          return res.status(400).json({ message: "You are already friends with this user" });
+        }
+        
+        // If they exist but aren't friends, create friend connection directly
+        await storage.addFriend(req.user!.id, existingUser.id);
+        
+        return res.status(200).json({ 
+          message: "Friend added successfully", 
+          directAdd: true,
+          friend: {
+            id: existingUser.id,
+            name: existingUser.name || existingUser.username,
+            email: existingUser.email
+          }
+        });
+      }
+      
       // Generate a unique invite code
       const inviteCode = randomBytes(16).toString('hex');
       
+      // Create the friend request with the email
       const newRequest = await storage.createFriendRequest({
         senderId: req.user!.id,
+        email,
         inviteCode,
         status: 'pending'
       });
+      
+      // Send invitation email
+      const senderName = req.user!.name || req.user!.username || 'A friend';
+      const emailSent = await sendFriendInvitationEmail(
+        senderName,
+        email,
+        inviteCode
+      );
       
       // Track the event
       await storage.trackEvent({
         eventType: 'create_friend_request',
         userId: req.user!.id,
         data: { 
-          requestId: newRequest.id
+          requestId: newRequest.id,
+          email,
+          emailSent
         } as Record<string, any>,
         timestamp: new Date()
       });
       
-      res.status(201).json(newRequest);
+      res.status(201).json({
+        ...newRequest,
+        emailSent
+      });
     } catch (error) {
       console.error("Error creating friend request:", error);
       res.status(500).json({ message: "Failed to create friend request" });
