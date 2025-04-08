@@ -661,6 +661,38 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
   });
 
   // Accept a friend request by invite code
+  // Handle PATCH requests for friend requests (accept/reject)
+  app.patch('/api/friend-requests/:requestId', isAuthenticated, async (req, res) => {
+    try {
+      const requestId = parseInt(req.params.requestId, 10);
+      if (isNaN(requestId)) {
+        return res.status(400).json({ message: "Invalid request ID" });
+      }
+      
+      const { status } = req.body;
+      if (!status || !['accept', 'reject'].includes(status)) {
+        return res.status(400).json({ message: "Status must be 'accept' or 'reject'" });
+      }
+      
+      // Update request status
+      const updatedRequest = await storage.updateFriendRequestStatus(requestId, status);
+      
+      // If accepting, create friend connection
+      if (status === 'accept') {
+        // Add each other as friends
+        if (updatedRequest.senderId) {
+          await storage.addFriend(req.user!.id, updatedRequest.senderId);
+          await storage.addFriend(updatedRequest.senderId, req.user!.id);
+        }
+      }
+      
+      res.status(200).json(updatedRequest);
+    } catch (error) {
+      console.error("Error updating friend request:", error);
+      res.status(500).json({ message: "Failed to update friend request" });
+    }
+  });
+  
   app.post('/api/friend-requests/accept', isAuthenticated, async (req, res) => {
     try {
       const { inviteCode } = req.body;

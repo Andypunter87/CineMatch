@@ -633,10 +633,26 @@ export class DatabaseStorage implements IStorage {
   
   async getFriendRequestsByUserId(userId: number): Promise<FriendRequest[]> {
     try {
+      // Get the user's email
+      const userResult = await db
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, userId));
+      
+      if (!userResult.length) return [];
+      
+      const userEmail = userResult[0].email;
+      
+      // Get requests either sent by user or addressed to user's email
       const requests = await db
         .select()
         .from(friendRequests)
-        .where(eq(friendRequests.senderId, userId))
+        .where(
+          or(
+            eq(friendRequests.senderId, userId),
+            eq(friendRequests.email, userEmail)
+          )
+        )
         .orderBy(desc(friendRequests.createdAt));
       
       return requests;

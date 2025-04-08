@@ -10,6 +10,7 @@ import WatchlistPage from "@/pages/watchlist-page";
 import TermsPage from "@/pages/terms-page";
 import PrivacyPage from "@/pages/privacy-page";
 import AdminDashboard from "@/pages/admin-dashboard";
+import FriendsPage from "@/pages/friends-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import Layout from "@/components/Layout";
@@ -21,6 +22,7 @@ function Router() {
       <ProtectedRoute path="/" component={Home} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
       <ProtectedRoute path="/watchlist" component={WatchlistPage} />
+      <ProtectedRoute path="/friends" component={FriendsPage} />
       <ProtectedRoute path="/admin" component={AdminDashboard} adminOnly={true} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/terms" component={TermsPage} />
