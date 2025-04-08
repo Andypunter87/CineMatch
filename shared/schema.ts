@@ -19,7 +19,7 @@ export const users = pgTable("users", {
 // Friend requests table
 export const friendRequests = pgTable("friend_requests", {
   id: serial("id").primaryKey(),
-  senderId: integer("sender_id").notNull(), // User who sent the invite
+  userId: integer("user_id").notNull(), // User who sent the invite
   email: text("email"), // Optional email of the invited person
   inviteCode: text("invite_code").notNull().unique(), // Unique code for invitation
   status: text("status").notNull().default("pending"), // 'pending', 'accepted', 'rejected'
@@ -46,7 +46,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 // Define relations for friend requests
 export const friendRequestRelations = relations(friendRequests, ({ one }) => ({
   sender: one(users, {
-    fields: [friendRequests.senderId],
+    fields: [friendRequests.userId],
     references: [users.id],
     relationName: "senderRelation"
   }),
@@ -171,7 +171,7 @@ export type Analytics = typeof analytics.$inferSelect;
 
 // Create friend request schema
 export const insertFriendRequestSchema = createInsertSchema(friendRequests).pick({
-  senderId: true,
+  userId: true,
   email: true,
   inviteCode: true,
   status: true,

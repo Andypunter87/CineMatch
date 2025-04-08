@@ -613,7 +613,7 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
       
       // Create the friend request with the email
       const newRequest = await storage.createFriendRequest({
-        senderId: req.user!.id,
+        userId: req.user!.id,
         email,
         inviteCode,
         status: 'pending'
@@ -680,9 +680,9 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
       // If accepting, create friend connection
       if (status === 'accept') {
         // Add each other as friends
-        if (updatedRequest.senderId) {
-          await storage.addFriend(req.user!.id, updatedRequest.senderId);
-          await storage.addFriend(updatedRequest.senderId, req.user!.id);
+        if (updatedRequest.userId) {
+          await storage.addFriend(req.user!.id, updatedRequest.userId);
+          await storage.addFriend(updatedRequest.userId, req.user!.id);
         }
       }
       
@@ -713,7 +713,7 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
       }
       
       // Cannot accept your own friend request
-      if (request.senderId === req.user!.id) {
+      if (request.userId === req.user!.id) {
         return res.status(400).json({ message: "Cannot accept your own friend request" });
       }
       
@@ -721,7 +721,7 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
       const updatedRequest = await storage.updateFriendRequestStatus(request.id, 'accepted');
       
       // Add each other as friends
-      await storage.addFriend(request.senderId, req.user!.id);
+      await storage.addFriend(request.userId, req.user!.id);
       
       // Track the event
       await storage.trackEvent({
@@ -729,7 +729,7 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
         userId: req.user!.id,
         data: { 
           requestId: request.id, 
-          friendId: request.senderId 
+          friendId: request.userId 
         } as Record<string, any>,
         timestamp: new Date()
       });

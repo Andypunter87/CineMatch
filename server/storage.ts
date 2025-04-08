@@ -649,7 +649,7 @@ export class DatabaseStorage implements IStorage {
         .from(friendRequests)
         .where(
           or(
-            eq(friendRequests.senderId, userId),
+            eq(friendRequests.userId, userId),
             eq(friendRequests.email, userEmail)
           )
         )
