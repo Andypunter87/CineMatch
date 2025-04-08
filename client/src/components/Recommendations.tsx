@@ -12,6 +12,7 @@ interface RecommendationsProps {
   onReset: () => void;
   onGenerateMore?: () => void;
   hasMoreToGenerate?: boolean;
+  onDisliked?: (filmId: number) => void;
 }
 
 export default function Recommendations({ 
@@ -20,7 +21,8 @@ export default function Recommendations({
   preferences, 
   onReset,
   onGenerateMore,
-  hasMoreToGenerate = false
+  hasMoreToGenerate = false,
+  onDisliked
 }: RecommendationsProps) {
   const [filterType, setFilterType] = useState<"all" | "mainstream" | "indie">("all");
 
@@ -182,6 +184,7 @@ export default function Recommendations({
                   key={film.id} 
                   film={film} 
                   recommendationContext={preferences}
+                  onDisliked={onDisliked}
                 />
               ))}
             </div>

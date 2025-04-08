@@ -14,9 +14,10 @@ import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
 interface FilmCardProps {
   film: Film;
   recommendationContext?: RecommendationRequest;
+  onDisliked?: (filmId: number) => void;
 }
 
-export default function FilmCard({ film, recommendationContext }: FilmCardProps) {
+export default function FilmCard({ film, recommendationContext, onDisliked }: FilmCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -45,6 +46,11 @@ export default function FilmCard({ film, recommendationContext }: FilmCardProps)
           ? "Thanks for your feedback! We'll improve your recommendations." 
           : "Thanks for letting us know. We'll adjust future recommendations.",
       });
+      
+      // If user disliked this film and onDisliked callback is provided, call it
+      if (variables === 'dislike' && onDisliked) {
+        onDisliked(film.id);
+      }
       
       // Track feedback event
       trackEvent(

@@ -21,6 +21,20 @@ export default function Home() {
   // Keep track of which film IDs we've already shown
   const [seenFilmIds, setSeenFilmIds] = useState<number[]>([]);
   
+  // Keep track of film IDs that received negative feedback
+  const [dislikedFilmIds, setDislikedFilmIds] = useState<number[]>(() => {
+    // Try to load disliked film IDs from localStorage
+    const savedDislikedFilms = localStorage.getItem('dislikedFilmIds');
+    if (savedDislikedFilms) {
+      try {
+        return JSON.parse(savedDislikedFilms);
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+  
   const [preferences, setPreferences] = useState<RecommendationRequest | null>(() => {
     const savedPreferences = localStorage.getItem(PREFERENCES_STORAGE_KEY);
     if (savedPreferences) {
@@ -45,12 +59,22 @@ export default function Home() {
     }
   }, [preferences]);
   
+  // Save disliked film IDs to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('dislikedFilmIds', JSON.stringify(dislikedFilmIds));
+  }, [dislikedFilmIds]);
+  
   const { data: recommendations, isLoading } = useQuery<Film[]>({
-    queryKey: ['/api/recommendations', preferences, seenFilmIds],
+    queryKey: ['/api/recommendations', preferences, seenFilmIds, dislikedFilmIds],
     enabled: preferences !== null,
     staleTime: Infinity,
     queryFn: async () => {
       if (!preferences) return [];
+      
+      // Combine seen film IDs and disliked film IDs for the exclusion list
+      // Use a more compatible approach to deduplicate the arrays
+      const allIdsWithDuplicates = [...seenFilmIds, ...dislikedFilmIds];
+      const allExcludedIds = Array.from(new Set(allIdsWithDuplicates));
       
       // If user is logged in, add their streaming services and country to preferences
       const preferencesWithUserInfo = {
@@ -60,7 +84,7 @@ export default function Home() {
         // Add country if user has specified one
         country: user?.country || undefined,
         // Add exclusions list if applicable
-        excludeFilmIds: seenFilmIds.length > 0 ? seenFilmIds : undefined
+        excludeFilmIds: allExcludedIds.length > 0 ? allExcludedIds : undefined
       };
         
       const response = await apiRequest('POST', '/api/recommendations', preferencesWithUserInfo);
@@ -92,9 +116,14 @@ export default function Home() {
       // Force a refetch with the updated exclusion list
       queryClient.invalidateQueries({ queryKey: ['/api/recommendations'] });
       
+      // Calculate total exclusions for analytics 
+      const allExclusionsWithDuplicates = [...allSeenIds, ...dislikedFilmIds];
+      const totalExclusions = Array.from(new Set(allExclusionsWithDuplicates)).length;
+      
       // Track analytics event
       trackEvent(AnalyticsEvents.MORE_RECOMMENDATIONS_REQUESTED, {
-        exclusion_count: allSeenIds.length,
+        exclusion_count: totalExclusions,
+        disliked_count: dislikedFilmIds.length,
         preference_location: preferences.location,
         preference_mood: preferences.mood,
         preference_timeOfDay: preferences.timeOfDay
@@ -114,8 +143,19 @@ export default function Home() {
   const handleReset = () => {
     setPreferences(null);
     setSeenFilmIds([]);
+    // Optionally clear disliked films when starting over
+    // Comment out the next line if you want disliked films to persist across sessions
+    setDislikedFilmIds([]);
     localStorage.removeItem(PREFERENCES_STORAGE_KEY);
     setShowQuestionnaire(true);
+  };
+  
+  // Handler for when a user dislikes a film
+  const handleFilmDisliked = (filmId: number) => {
+    // Add this film ID to the disliked films list if it's not already there
+    if (!dislikedFilmIds.includes(filmId)) {
+      setDislikedFilmIds(prev => [...prev, filmId]);
+    }
   };
 
   return (
@@ -149,6 +189,7 @@ export default function Home() {
             onReset={handleReset}
             onGenerateMore={getMoreSuggestions}
             hasMoreToGenerate={recommendations && recommendations.length > 0}
+            onDisliked={handleFilmDisliked}
           />
         )}
       </div>
