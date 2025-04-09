@@ -139,6 +139,21 @@ export class DatabaseStorage implements IStorage {
   
   async addToWatchlist(item: InsertWatchlistItem): Promise<WatchlistItem> {
     try {
+      // Check if the film is already in the user's watchlist
+      const [existingItem] = await db
+        .select()
+        .from(watchlist)
+        .where(and(
+          eq(watchlist.userId, item.userId),
+          eq(watchlist.filmId, item.filmId)
+        ));
+      
+      // If it already exists, return the existing item
+      if (existingItem) {
+        return existingItem;
+      }
+      
+      // Otherwise, insert the new item
       const [newItem] = await db
         .insert(watchlist)
         .values(item)
@@ -323,23 +338,23 @@ export class DatabaseStorage implements IStorage {
         let score = 0;
         let matchReason = "";
   
-        // Score based on location
-        if (preferences.location === "home" && 
+        // Score based on audience (previously location)
+        if (preferences.audience === "solo" && 
             (film.genres.includes("Drama") || film.genres.includes("Documentary"))) {
           score += 20;
-          matchReason = "a quiet night at home";
-        } else if (preferences.location === "date" && 
+          matchReason = "for solo viewing";
+        } else if (preferences.audience === "date" && 
                   (film.genres.includes("Romance") || film.genres.includes("Comedy"))) {
           score += 25;
-          matchReason = "a perfect date night";
-        } else if (preferences.location === "friends" && 
+          matchReason = "for a perfect date night";
+        } else if (preferences.audience === "friends" && 
                   (film.genres.includes("Comedy") || film.genres.includes("Action") || film.genres.includes("Horror"))) {
           score += 20;
-          matchReason = "watching with friends";
-        } else if (preferences.location === "travel" && 
-                  (film.genres.includes("Adventure") || film.genres.includes("Fantasy"))) {
+          matchReason = "for watching with friends";
+        } else if (preferences.audience === "family" && 
+                  (film.genres.includes("Family") || film.genres.includes("Adventure") || film.genres.includes("Animation"))) {
           score += 20;
-          matchReason = "when you're traveling";
+          matchReason = "for family viewing";
         }
   
         // Handle timeOfDay as array

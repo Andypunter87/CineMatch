@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { type Film, type RecommendationRequest } from "@shared/schema";
 import { Card } from "@/components/ui/card";
-import { Film as FilmIcon, Star, Award, BookmarkPlus, Loader2, Check, Clock, Globe, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Film as FilmIcon, Star, Award, BookmarkPlus, BookmarkCheck, Loader2, Check, Clock, Globe, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
@@ -23,6 +23,13 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
   const [, setLocation] = useLocation();
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<'liked' | 'disliked' | null>(null);
+  
+  // Check if this film is already in the user's watchlist
+  const { data: watchlistItems = [] } = useQuery<any[]>({
+    queryKey: ['/api/watchlist'],
+    enabled: !!user, // Only fetch if user is logged in
+    staleTime: 60000, // Cache for 1 minute
+  });
   
   // Recommendation feedback mutation
   const recommendationFeedbackMutation = useMutation({
@@ -151,6 +158,9 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
     return gradients[titleHash % gradients.length];
   };
 
+  // Check if the film is already in the user's watchlist
+  const isInWatchlist = watchlistItems.some((item: {filmId: number}) => item.filmId === film.id);
+  
   // Ensure we have valid film data
   const title = film.title || "Unknown Title";
   const year = film.year || "Unknown Year";
@@ -412,22 +422,29 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
             </div>
           )}
           
-          {/* Add to Watchlist button - show only for authenticated users and if not showing confirmation */}
+          {/* Add to Watchlist button or Already in Watchlist indicator */}
           {user && !showConfirmation && (
             <div className="mt-3 pt-2 border-t border-gray-100">
-              <Button 
-                className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
-                size="sm"
-                onClick={() => addToWatchlistMutation.mutate()}
-                disabled={addToWatchlistMutation.isPending}
-              >
-                {addToWatchlistMutation.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <BookmarkPlus className="mr-2 h-4 w-4" />
-                )}
-                Add to Watchlist
-              </Button>
+              {isInWatchlist ? (
+                <div className="flex items-center justify-center bg-blue-50 text-blue-700 p-2 rounded-md">
+                  <BookmarkCheck className="mr-2 h-4 w-4 text-blue-500" />
+                  <span className="text-sm font-medium">Already in your watchlist</span>
+                </div>
+              ) : (
+                <Button 
+                  className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
+                  size="sm"
+                  onClick={() => addToWatchlistMutation.mutate()}
+                  disabled={addToWatchlistMutation.isPending}
+                >
+                  {addToWatchlistMutation.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <BookmarkPlus className="mr-2 h-4 w-4" />
+                  )}
+                  Add to Watchlist
+                </Button>
+              )}
             </div>
           )}
         </div>
