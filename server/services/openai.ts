@@ -76,15 +76,20 @@ IMPORTANT ABOUT EXCLUDED FILMS:
 2. Films with excluded IDs should be completely omitted from your response - do not reference them at all
 3. Exclusions take absolute priority over all other matching criteria
 
-IMPORTANT ABOUT GROUP VIEWING AND DATES:
-1. If the user indicates this is a date night, prioritize films that work well for couples (romantic comedies, dramas with romantic elements, or crowd-pleasing films)
-2. If the user indicates this is a group viewing, prioritize films that work well with groups (comedies, action films, or broadly appealing entertainment)
-3. For both date night and group viewing, prioritize films that spark conversation or create shared experiences
+IMPORTANT ABOUT AUDIENCES:
+1. If audience is "solo", focus purely on the user's personal taste based on other preferences
+2. If audience is "friends", prioritize films that work well with groups (comedies, action films, or broadly appealing entertainment)
+3. If audience is "date", prioritize films that work well for couples (romantic comedies, dramas with romantic elements, or crowd-pleasing films that set the right tone)
+4. If audience is "family", prioritize family-friendly films appropriate for all ages (avoiding excessive violence, sexual content, or strong language)
+
+IMPORTANT ABOUT GROUP VIEWING:
+1. If the user indicates this is a group viewing with friends or a date night, prioritize films that spark conversation or create shared experiences
+2. For family viewing, prioritize films with positive themes, clear storylines, and appropriate content
 
 Return 5-6 films that match the criteria:
 - Half should be mainstream/popular films
 - Half should be independent, foreign, or lesser-known films
-- ALL films should strongly match the user's mood and setting preferences
+- ALL films should strongly match the user's mood, audience and setting preferences
 - Include films with complete information (especially those that have runtime data available)
 
 Format your response as a JSON object with a 'recommendations' array.`;

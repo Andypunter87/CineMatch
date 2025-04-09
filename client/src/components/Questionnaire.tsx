@@ -95,6 +95,24 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
     };
   }
 
+  // Helper function to add time of day with proper type casting
+  const updateTimeOfDay = (time: TimeOfDay, isAdding: boolean) => {
+    if (isAdding) {
+      setTimeOfDay(prev => [...prev, time]);
+    } else {
+      setTimeOfDay(prev => prev.filter(t => t !== time));
+    }
+  };
+
+  // Helper function to add runtime with proper type casting
+  const updateRuntime = (option: RuntimeOption, isAdding: boolean) => {
+    if (isAdding) {
+      setRuntime(prev => [...prev, option]);
+    } else {
+      setRuntime(prev => prev.filter(r => r !== option));
+    }
+  };
+
   // Function to handle friend invitation
   const friendInviteMutation = useMutation({
     mutationFn: async (email: string) => {
@@ -410,7 +428,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <HomeIcon className="w-8 h-8 mb-2 text-gray-600" />
                       <span>At Home</span>
-                      <span className="text-xs text-gray-500 mt-1">Cozy movie night</span>
+                      <span className="text-xs text-gray-500 mt-1 text-center">Cozy movie night</span>
                     </label>
                   </div>
 
@@ -437,7 +455,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <Globe className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Traveling</span>
-                      <span className="text-xs text-gray-500 mt-1">On the go entertainment</span>
+                      <span className="text-xs text-gray-500 mt-1 text-center">On the go entertainment</span>
                     </label>
                   </div>
                 </div>
@@ -489,7 +507,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <UserIcon className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Solo</span>
-                      <span className="text-xs text-gray-500 mt-1">We'll make suggestions that are all about your taste</span>
+                      <span className="text-xs text-gray-500 mt-1 text-center">We'll make suggestions that are all about your taste</span>
                     </label>
                   </div>
 
@@ -516,7 +534,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <Users className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Friends</span>
-                      <span className="text-xs text-gray-500 mt-1">We'll come up with something for everyone</span>
+                      <span className="text-xs text-gray-500 mt-1 text-center">We'll come up with something for everyone</span>
                     </label>
                   </div>
 
@@ -543,7 +561,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <Heart className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Date Night</span>
-                      <span className="text-xs text-gray-500 mt-1">We'll suggest things that suit you both, but that set the tone just right</span>
+                      <span className="text-xs text-gray-500 mt-1 text-center">We'll suggest things that suit you both, but that set the tone just right</span>
                     </label>
                   </div>
 
@@ -570,7 +588,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     >
                       <Baby className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Family</span>
-                      <span className="text-xs text-gray-500 mt-1">We'll come up with family friendly options</span>
+                      <span className="text-xs text-gray-500 mt-1 text-center">We'll come up with family friendly options</span>
                     </label>
                   </div>
                 </div>
@@ -794,27 +812,35 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       className="hidden"
                       checked={timeOfDay.includes("weekday")}
                       onChange={() => {
-                        const newTimeOfDay = timeOfDay.includes("weekday") 
-                          ? timeOfDay.filter(t => t !== "weekday") 
-                          : [...timeOfDay, "weekday"];
-                        setTimeOfDay(newTimeOfDay);
-                        trackEvent(AnalyticsEvents.TIME_SELECTED, { time: "weekday", selected: !timeOfDay.includes("weekday") });
+                        if (timeOfDay.includes("weekday")) {
+                          updateTimeOfDay("weekday", false);
+                        } else {
+                          updateTimeOfDay("weekday", true);
+                        }
+                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
+                          time: "weekday", 
+                          selected: !timeOfDay.includes("weekday") 
+                        });
                       }}
                     />
                     <label 
                       htmlFor="time-weekday" 
                       className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("weekday") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => {
-                        const newTimeOfDay = timeOfDay.includes("weekday") 
-                          ? timeOfDay.filter(t => t !== "weekday") 
-                          : [...timeOfDay, "weekday"];
-                        setTimeOfDay(newTimeOfDay);
-                        trackEvent(AnalyticsEvents.TIME_SELECTED, { time: "weekday", selected: !timeOfDay.includes("weekday") });
+                        if (timeOfDay.includes("weekday")) {
+                          updateTimeOfDay("weekday", false);
+                        } else {
+                          updateTimeOfDay("weekday", true);
+                        }
+                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
+                          time: "weekday", 
+                          selected: !timeOfDay.includes("weekday") 
+                        });
                       }}
                     >
                       <Calendar className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Weekday</span>
-                      <span className="text-xs text-gray-500 mt-1">Monday to Friday viewing</span>
+                      <span className="text-xs text-gray-500 mt-1 text-center">Monday to Friday viewing</span>
                     </label>
                   </div>
                   
@@ -827,27 +853,35 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       className="hidden"
                       checked={timeOfDay.includes("weekend")}
                       onChange={() => {
-                        const newTimeOfDay = timeOfDay.includes("weekend") 
-                          ? timeOfDay.filter(t => t !== "weekend") 
-                          : [...timeOfDay, "weekend"];
-                        setTimeOfDay(newTimeOfDay);
-                        trackEvent(AnalyticsEvents.TIME_SELECTED, { time: "weekend", selected: !timeOfDay.includes("weekend") });
+                        if (timeOfDay.includes("weekend")) {
+                          updateTimeOfDay("weekend", false);
+                        } else {
+                          updateTimeOfDay("weekend", true);
+                        }
+                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
+                          time: "weekend", 
+                          selected: !timeOfDay.includes("weekend") 
+                        });
                       }}
                     />
                     <label 
                       htmlFor="time-weekend" 
                       className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("weekend") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => {
-                        const newTimeOfDay = timeOfDay.includes("weekend") 
-                          ? timeOfDay.filter(t => t !== "weekend") 
-                          : [...timeOfDay, "weekend"];
-                        setTimeOfDay(newTimeOfDay);
-                        trackEvent(AnalyticsEvents.TIME_SELECTED, { time: "weekend", selected: !timeOfDay.includes("weekend") });
+                        if (timeOfDay.includes("weekend")) {
+                          updateTimeOfDay("weekend", false);
+                        } else {
+                          updateTimeOfDay("weekend", true);
+                        }
+                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
+                          time: "weekend", 
+                          selected: !timeOfDay.includes("weekend") 
+                        });
                       }}
                     >
                       <Calendar className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Weekend</span>
-                      <span className="text-xs text-gray-500 mt-1">Saturday and Sunday</span>
+                      <span className="text-xs text-gray-500 mt-1 text-center">Saturday and Sunday</span>
                     </label>
                   </div>
                   
@@ -860,27 +894,35 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       className="hidden"
                       checked={timeOfDay.includes("morning")}
                       onChange={() => {
-                        const newTimeOfDay = timeOfDay.includes("morning") 
-                          ? timeOfDay.filter(t => t !== "morning") 
-                          : [...timeOfDay, "morning"];
-                        setTimeOfDay(newTimeOfDay);
-                        trackEvent(AnalyticsEvents.TIME_SELECTED, { time: "morning", selected: !timeOfDay.includes("morning") });
+                        if (timeOfDay.includes("morning")) {
+                          updateTimeOfDay("morning", false);
+                        } else {
+                          updateTimeOfDay("morning", true);
+                        }
+                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
+                          time: "morning", 
+                          selected: !timeOfDay.includes("morning") 
+                        });
                       }}
                     />
                     <label 
                       htmlFor="time-morning" 
                       className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("morning") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => {
-                        const newTimeOfDay = timeOfDay.includes("morning") 
-                          ? timeOfDay.filter(t => t !== "morning") 
-                          : [...timeOfDay, "morning"];
-                        setTimeOfDay(newTimeOfDay);
-                        trackEvent(AnalyticsEvents.TIME_SELECTED, { time: "morning", selected: !timeOfDay.includes("morning") });
+                        if (timeOfDay.includes("morning")) {
+                          updateTimeOfDay("morning", false);
+                        } else {
+                          updateTimeOfDay("morning", true);
+                        }
+                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
+                          time: "morning", 
+                          selected: !timeOfDay.includes("morning") 
+                        });
                       }}
                     >
                       <Sun className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Morning/Day</span>
-                      <span className="text-xs text-gray-500 mt-1">Daytime viewing</span>
+                      <span className="text-xs text-gray-500 mt-1 text-center">Daytime viewing</span>
                     </label>
                   </div>
                   
@@ -893,27 +935,35 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       className="hidden"
                       checked={timeOfDay.includes("late")}
                       onChange={() => {
-                        const newTimeOfDay = timeOfDay.includes("late") 
-                          ? timeOfDay.filter(t => t !== "late") 
-                          : [...timeOfDay, "late"];
-                        setTimeOfDay(newTimeOfDay);
-                        trackEvent(AnalyticsEvents.TIME_SELECTED, { time: "late", selected: !timeOfDay.includes("late") });
+                        if (timeOfDay.includes("late")) {
+                          updateTimeOfDay("late", false);
+                        } else {
+                          updateTimeOfDay("late", true);
+                        }
+                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
+                          time: "late", 
+                          selected: !timeOfDay.includes("late") 
+                        });
                       }}
                     />
                     <label 
                       htmlFor="time-late" 
                       className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("late") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => {
-                        const newTimeOfDay = timeOfDay.includes("late") 
-                          ? timeOfDay.filter(t => t !== "late") 
-                          : [...timeOfDay, "late"];
-                        setTimeOfDay(newTimeOfDay);
-                        trackEvent(AnalyticsEvents.TIME_SELECTED, { time: "late", selected: !timeOfDay.includes("late") });
+                        if (timeOfDay.includes("late")) {
+                          updateTimeOfDay("late", false);
+                        } else {
+                          updateTimeOfDay("late", true);
+                        }
+                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
+                          time: "late", 
+                          selected: !timeOfDay.includes("late") 
+                        });
                       }}
                     >
                       <Moon className="w-8 h-8 mb-2 text-gray-600" />
                       <span>Evening/Late</span>
-                      <span className="text-xs text-gray-500 mt-1">Nighttime viewing</span>
+                      <span className="text-xs text-gray-500 mt-1 text-center">Nighttime viewing</span>
                     </label>
                   </div>
                 </div>
@@ -1111,22 +1161,30 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                         className="hidden"
                         checked={runtime.includes("short")}
                         onChange={() => {
-                          const newRuntime = runtime.includes("short") 
-                            ? runtime.filter(r => r !== "short") 
-                            : [...runtime, "short"];
-                          setRuntime(newRuntime);
-                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "short", selected: !runtime.includes("short") });
+                          if (runtime.includes("short")) {
+                            updateRuntime("short", false);
+                          } else {
+                            updateRuntime("short", true);
+                          }
+                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
+                            runtime: "short", 
+                            selected: !runtime.includes("short") 
+                          });
                         }}
                       />
                       <label 
                         htmlFor="runtime-short" 
                         className={`flex items-center gap-2 px-4 py-2 border ${runtime.includes("short") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-full cursor-pointer hover:bg-blue-50 transition-all`}
                         onClick={() => {
-                          const newRuntime = runtime.includes("short") 
-                            ? runtime.filter(r => r !== "short") 
-                            : [...runtime, "short"];
-                          setRuntime(newRuntime);
-                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "short", selected: !runtime.includes("short") });
+                          if (runtime.includes("short")) {
+                            updateRuntime("short", false);
+                          } else {
+                            updateRuntime("short", true);
+                          }
+                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
+                            runtime: "short", 
+                            selected: !runtime.includes("short") 
+                          });
                         }}
                       >
                         <Clock className="w-4 h-4 text-gray-600" />
@@ -1143,22 +1201,30 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                         className="hidden"
                         checked={runtime.includes("medium")}
                         onChange={() => {
-                          const newRuntime = runtime.includes("medium") 
-                            ? runtime.filter(r => r !== "medium") 
-                            : [...runtime, "medium"];
-                          setRuntime(newRuntime);
-                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "medium", selected: !runtime.includes("medium") });
+                          if (runtime.includes("medium")) {
+                            updateRuntime("medium", false);
+                          } else {
+                            updateRuntime("medium", true);
+                          }
+                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
+                            runtime: "medium", 
+                            selected: !runtime.includes("medium") 
+                          });
                         }}
                       />
                       <label 
                         htmlFor="runtime-medium" 
                         className={`flex items-center gap-2 px-4 py-2 border ${runtime.includes("medium") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-full cursor-pointer hover:bg-blue-50 transition-all`}
                         onClick={() => {
-                          const newRuntime = runtime.includes("medium") 
-                            ? runtime.filter(r => r !== "medium") 
-                            : [...runtime, "medium"];
-                          setRuntime(newRuntime);
-                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "medium", selected: !runtime.includes("medium") });
+                          if (runtime.includes("medium")) {
+                            updateRuntime("medium", false);
+                          } else {
+                            updateRuntime("medium", true);
+                          }
+                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
+                            runtime: "medium", 
+                            selected: !runtime.includes("medium") 
+                          });
                         }}
                       >
                         <Clock className="w-4 h-4 text-gray-600" />
@@ -1175,22 +1241,30 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                         className="hidden"
                         checked={runtime.includes("long")}
                         onChange={() => {
-                          const newRuntime = runtime.includes("long") 
-                            ? runtime.filter(r => r !== "long") 
-                            : [...runtime, "long"];
-                          setRuntime(newRuntime);
-                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "long", selected: !runtime.includes("long") });
+                          if (runtime.includes("long")) {
+                            updateRuntime("long", false);
+                          } else {
+                            updateRuntime("long", true);
+                          }
+                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
+                            runtime: "long", 
+                            selected: !runtime.includes("long") 
+                          });
                         }}
                       />
                       <label 
                         htmlFor="runtime-long" 
                         className={`flex items-center gap-2 px-4 py-2 border ${runtime.includes("long") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-full cursor-pointer hover:bg-blue-50 transition-all`}
                         onClick={() => {
-                          const newRuntime = runtime.includes("long") 
-                            ? runtime.filter(r => r !== "long") 
-                            : [...runtime, "long"];
-                          setRuntime(newRuntime);
-                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { runtime: "long", selected: !runtime.includes("long") });
+                          if (runtime.includes("long")) {
+                            updateRuntime("long", false);
+                          } else {
+                            updateRuntime("long", true);
+                          }
+                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
+                            runtime: "long", 
+                            selected: !runtime.includes("long") 
+                          });
                         }}
                       >
                         <Clock className="w-4 h-4 text-gray-600" />
