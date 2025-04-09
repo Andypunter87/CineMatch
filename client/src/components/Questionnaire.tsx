@@ -1101,123 +1101,78 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   <h3 className="font-medium mb-3">Film Length (Optional)</h3>
                   <div className="flex flex-wrap gap-3">
                     <div className="runtime-option">
-                      <input 
-                        type="checkbox" 
-                        id="runtime-short" 
-                        name="runtime" 
-                        value="short" 
-                        className="hidden"
-                        checked={runtime.includes("short")}
-                        onChange={() => {
-                          if (runtime.includes("short")) {
-                            updateRuntime("short", false);
-                          } else {
-                            updateRuntime("short", true);
-                          }
-                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
-                            runtime: "short", 
-                            selected: !runtime.includes("short") 
-                          });
-                        }}
-                      />
-                      <label 
-                        htmlFor="runtime-short" 
+                      <div 
                         className={`flex items-center gap-2 px-4 py-2 border ${runtime.includes("short") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-full cursor-pointer hover:bg-blue-50 transition-all`}
                         onClick={() => {
-                          if (runtime.includes("short")) {
-                            updateRuntime("short", false);
-                          } else {
-                            updateRuntime("short", true);
-                          }
+                          const newValue = !runtime.includes("short");
+                          // Direct state update to avoid race conditions
+                          setRuntime(prev => {
+                            if (newValue) {
+                              if (prev.includes("short")) return prev;
+                              return [...prev, "short" as RuntimeOption];
+                            } else {
+                              return prev.filter(item => item !== "short");
+                            }
+                          });
                           trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
                             runtime: "short", 
-                            selected: !runtime.includes("short") 
+                            selected: newValue
                           });
                         }}
                       >
                         <Clock className="w-4 h-4 text-gray-600" />
                         <span>Under 90 min</span>
-                      </label>
+                      </div>
                     </div>
                     
                     <div className="runtime-option">
-                      <input 
-                        type="checkbox" 
-                        id="runtime-medium" 
-                        name="runtime" 
-                        value="medium" 
-                        className="hidden"
-                        checked={runtime.includes("medium")}
-                        onChange={() => {
-                          if (runtime.includes("medium")) {
-                            updateRuntime("medium", false);
-                          } else {
-                            updateRuntime("medium", true);
-                          }
-                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
-                            runtime: "medium", 
-                            selected: !runtime.includes("medium") 
-                          });
-                        }}
-                      />
-                      <label 
-                        htmlFor="runtime-medium" 
+                      <div 
                         className={`flex items-center gap-2 px-4 py-2 border ${runtime.includes("medium") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-full cursor-pointer hover:bg-blue-50 transition-all`}
                         onClick={() => {
-                          if (runtime.includes("medium")) {
-                            updateRuntime("medium", false);
-                          } else {
-                            updateRuntime("medium", true);
-                          }
+                          const newValue = !runtime.includes("medium");
+                          // Direct state update to avoid race conditions
+                          setRuntime(prev => {
+                            if (newValue) {
+                              if (prev.includes("medium")) return prev;
+                              return [...prev, "medium" as RuntimeOption];
+                            } else {
+                              return prev.filter(item => item !== "medium");
+                            }
+                          });
                           trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
                             runtime: "medium", 
-                            selected: !runtime.includes("medium") 
+                            selected: newValue
                           });
                         }}
                       >
                         <Clock className="w-4 h-4 text-gray-600" />
                         <span>90-120 min</span>
-                      </label>
+                      </div>
                     </div>
                     
                     <div className="runtime-option">
-                      <input 
-                        type="checkbox" 
-                        id="runtime-long" 
-                        name="runtime" 
-                        value="long" 
-                        className="hidden"
-                        checked={runtime.includes("long")}
-                        onChange={() => {
-                          if (runtime.includes("long")) {
-                            updateRuntime("long", false);
-                          } else {
-                            updateRuntime("long", true);
-                          }
-                          trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
-                            runtime: "long", 
-                            selected: !runtime.includes("long") 
-                          });
-                        }}
-                      />
-                      <label 
-                        htmlFor="runtime-long" 
+                      <div 
                         className={`flex items-center gap-2 px-4 py-2 border ${runtime.includes("long") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-full cursor-pointer hover:bg-blue-50 transition-all`}
                         onClick={() => {
-                          if (runtime.includes("long")) {
-                            updateRuntime("long", false);
-                          } else {
-                            updateRuntime("long", true);
-                          }
+                          const newValue = !runtime.includes("long");
+                          // Direct state update to avoid race conditions
+                          setRuntime(prev => {
+                            if (newValue) {
+                              if (prev.includes("long")) return prev;
+                              return [...prev, "long" as RuntimeOption];
+                            } else {
+                              return prev.filter(item => item !== "long");
+                            }
+                          });
                           trackEvent(AnalyticsEvents.RUNTIME_SELECTED, { 
                             runtime: "long", 
-                            selected: !runtime.includes("long") 
+                            selected: newValue
                           });
                         }}
                       >
                         <Clock className="w-4 h-4 text-gray-600" />
                         <span>Over 120 min</span>
-                      </label>
+                      </div>
                     </div>
                   </div>
                 </div>
