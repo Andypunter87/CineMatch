@@ -257,7 +257,7 @@ Their email address is ${email}
     <a href="https://cine-match.replit.app/admin" class="button">View Admin Dashboard</a>
   </div>
   <div class="footer">
-    <p>CineMatch - Personalized Film Recommendations</p>
+    <p>CineMatch - The Right Movie For Right Now</p>
     <p>This is an automated notification. Please do not reply to this email.</p>
   </div>
 </body>

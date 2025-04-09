@@ -373,7 +373,7 @@ export default function AuthPage() {
       {/* Right side - Hero section */}
       <div className="hidden md:flex md:w-1/2 bg-gradient-to-b from-blue-400 to-cyan-500 flex-col justify-center items-center p-8 text-white">
         <div className="max-w-xl">
-          <h1 className="text-4xl font-bold mb-4">Find Your Perfect Movie Match</h1>
+          <h1 className="text-4xl font-bold mb-4">The Right Movie For Right Now</h1>
           <p className="text-xl mb-6">
             CineMatch uses advanced AI to recommend movies based on your mood, time availability, and preferences.
           </p>

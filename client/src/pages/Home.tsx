@@ -164,7 +164,7 @@ export default function Home() {
     <div className="container mx-auto px-4 py-6 bg-white">
       <div className="mb-4">
         <h1 className="text-4xl font-bold text-center mb-2 bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
-          Find Your Perfect Movie Match
+          The Right Movie For Right Now
         </h1>
         <p className="text-center text-gray-600 max-w-2xl mx-auto">
           Tell us about your mood and preferences, and we'll recommend the perfect films for you to watch.
