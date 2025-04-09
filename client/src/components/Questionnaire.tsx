@@ -812,37 +812,22 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="time-option">
-                    <input 
-                      type="checkbox" 
-                      id="time-weekday" 
-                      name="time" 
-                      value="weekday" 
-                      className="hidden"
-                      checked={timeOfDay.includes("weekday")}
-                      onChange={() => {
-                        if (timeOfDay.includes("weekday")) {
-                          updateTimeOfDay("weekday", false);
-                        } else {
-                          updateTimeOfDay("weekday", true);
-                        }
-                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
-                          time: "weekday", 
-                          selected: !timeOfDay.includes("weekday") 
-                        });
-                      }}
-                    />
                     <label 
-                      htmlFor="time-weekday" 
                       className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("weekday") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => {
-                        if (timeOfDay.includes("weekday")) {
-                          updateTimeOfDay("weekday", false);
-                        } else {
-                          updateTimeOfDay("weekday", true);
-                        }
+                        const newValue = !timeOfDay.includes("weekday");
+                        // Direct state update to avoid race conditions
+                        setTimeOfDay(prev => {
+                          if (newValue) {
+                            if (prev.includes("weekday")) return prev;
+                            return [...prev, "weekday" as TimeOfDay];
+                          } else {
+                            return prev.filter(item => item !== "weekday");
+                          }
+                        });
                         trackEvent(AnalyticsEvents.TIME_SELECTED, { 
                           time: "weekday", 
-                          selected: !timeOfDay.includes("weekday") 
+                          selected: newValue
                         });
                       }}
                     >
@@ -853,37 +838,22 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   </div>
                   
                   <div className="time-option">
-                    <input 
-                      type="checkbox" 
-                      id="time-weekend" 
-                      name="time" 
-                      value="weekend" 
-                      className="hidden"
-                      checked={timeOfDay.includes("weekend")}
-                      onChange={() => {
-                        if (timeOfDay.includes("weekend")) {
-                          updateTimeOfDay("weekend", false);
-                        } else {
-                          updateTimeOfDay("weekend", true);
-                        }
-                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
-                          time: "weekend", 
-                          selected: !timeOfDay.includes("weekend") 
-                        });
-                      }}
-                    />
                     <label 
-                      htmlFor="time-weekend" 
                       className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("weekend") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => {
-                        if (timeOfDay.includes("weekend")) {
-                          updateTimeOfDay("weekend", false);
-                        } else {
-                          updateTimeOfDay("weekend", true);
-                        }
+                        const newValue = !timeOfDay.includes("weekend");
+                        // Direct state update to avoid race conditions
+                        setTimeOfDay(prev => {
+                          if (newValue) {
+                            if (prev.includes("weekend")) return prev;
+                            return [...prev, "weekend" as TimeOfDay];
+                          } else {
+                            return prev.filter(item => item !== "weekend");
+                          }
+                        });
                         trackEvent(AnalyticsEvents.TIME_SELECTED, { 
                           time: "weekend", 
-                          selected: !timeOfDay.includes("weekend") 
+                          selected: newValue
                         });
                       }}
                     >
@@ -894,37 +864,22 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   </div>
                   
                   <div className="time-option">
-                    <input 
-                      type="checkbox" 
-                      id="time-morning" 
-                      name="time" 
-                      value="morning" 
-                      className="hidden"
-                      checked={timeOfDay.includes("morning")}
-                      onChange={() => {
-                        if (timeOfDay.includes("morning")) {
-                          updateTimeOfDay("morning", false);
-                        } else {
-                          updateTimeOfDay("morning", true);
-                        }
-                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
-                          time: "morning", 
-                          selected: !timeOfDay.includes("morning") 
-                        });
-                      }}
-                    />
                     <label 
-                      htmlFor="time-morning" 
                       className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("morning") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => {
-                        if (timeOfDay.includes("morning")) {
-                          updateTimeOfDay("morning", false);
-                        } else {
-                          updateTimeOfDay("morning", true);
-                        }
+                        const newValue = !timeOfDay.includes("morning");
+                        // Direct state update to avoid race conditions
+                        setTimeOfDay(prev => {
+                          if (newValue) {
+                            if (prev.includes("morning")) return prev;
+                            return [...prev, "morning" as TimeOfDay];
+                          } else {
+                            return prev.filter(item => item !== "morning");
+                          }
+                        });
                         trackEvent(AnalyticsEvents.TIME_SELECTED, { 
                           time: "morning", 
-                          selected: !timeOfDay.includes("morning") 
+                          selected: newValue
                         });
                       }}
                     >
@@ -935,37 +890,22 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   </div>
                   
                   <div className="time-option">
-                    <input 
-                      type="checkbox" 
-                      id="time-late" 
-                      name="time" 
-                      value="late" 
-                      className="hidden"
-                      checked={timeOfDay.includes("late")}
-                      onChange={() => {
-                        if (timeOfDay.includes("late")) {
-                          updateTimeOfDay("late", false);
-                        } else {
-                          updateTimeOfDay("late", true);
-                        }
-                        trackEvent(AnalyticsEvents.TIME_SELECTED, { 
-                          time: "late", 
-                          selected: !timeOfDay.includes("late") 
-                        });
-                      }}
-                    />
                     <label 
-                      htmlFor="time-late" 
                       className={`flex flex-col items-center p-4 border-2 ${timeOfDay.includes("late") ? "border-primary bg-primary bg-opacity-10" : "border-blue-200"} rounded-lg cursor-pointer hover:bg-blue-50 transition-all`}
                       onClick={() => {
-                        if (timeOfDay.includes("late")) {
-                          updateTimeOfDay("late", false);
-                        } else {
-                          updateTimeOfDay("late", true);
-                        }
+                        const newValue = !timeOfDay.includes("late");
+                        // Direct state update to avoid race conditions
+                        setTimeOfDay(prev => {
+                          if (newValue) {
+                            if (prev.includes("late")) return prev;
+                            return [...prev, "late" as TimeOfDay];
+                          } else {
+                            return prev.filter(item => item !== "late");
+                          }
+                        });
                         trackEvent(AnalyticsEvents.TIME_SELECTED, { 
                           time: "late", 
-                          selected: !timeOfDay.includes("late") 
+                          selected: newValue
                         });
                       }}
                     >
