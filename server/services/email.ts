@@ -23,8 +23,9 @@ if (!process.env.SENDGRID_API_KEY) {
 }
 
 // For development/debugging purposes only
-// Disable this in production
-const DEBUG_MODE = true;
+// Set to false to send real emails via SendGrid
+// Or set the DEBUG_EMAIL_MODE environment variable to "false" to override
+const DEBUG_MODE = process.env.DEBUG_EMAIL_MODE !== "false";
 
 // Sender email address - using the verified sender email
 const FROM_EMAIL = 'andy@more-human.co.uk';
