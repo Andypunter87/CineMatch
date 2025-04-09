@@ -329,7 +329,7 @@ export default function FriendsPage() {
               </div>
             ) : friends && friends.length > 0 ? (
               friends.map((friend) => (
-                <Card key={friend.id} className="overflow-hidden">
+                <Card key={friend.id} className="overflow-hidden bg-white shadow-md">
                   <CardContent className="p-0">
                     <div className="p-6">
                       <div className="flex items-start justify-between">
@@ -363,7 +363,7 @@ export default function FriendsPage() {
                 </Card>
               ))
             ) : (
-              <div className="col-span-full bg-gray-50 rounded-lg p-8 text-center">
+              <div className="col-span-full bg-white shadow-md rounded-lg p-8 text-center">
                 <h3 className="font-medium text-gray-900 mb-1">No friends yet</h3>
                 <p className="text-gray-500 mb-5">
                   Start by inviting your friends to join your CineMatch experience
@@ -387,7 +387,7 @@ export default function FriendsPage() {
                 <h3 className="text-lg font-medium mb-3">Friend Requests Received</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {receivedRequests.map((request) => (
-                    <Card key={request.id}>
+                    <Card key={request.id} className="bg-white shadow-md">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
@@ -436,7 +436,7 @@ export default function FriendsPage() {
                 <h3 className="text-lg font-medium mb-3">Invitations Sent</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {sentRequests.map((request) => (
-                    <Card key={request.id}>
+                    <Card key={request.id} className="bg-white shadow-md">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
@@ -470,7 +470,7 @@ export default function FriendsPage() {
             )}
 
             {pendingRequests.length === 0 && (
-              <div className="bg-gray-50 rounded-lg p-8 text-center">
+              <div className="bg-white shadow-md rounded-lg p-8 text-center">
                 <h3 className="font-medium text-gray-900 mb-1">No pending requests</h3>
                 <p className="text-gray-500">
                   Requests will appear here when you send or receive friend invitations
