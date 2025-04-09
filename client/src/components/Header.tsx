@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Loader2, User, LogOut, Settings, Bookmark, Home, BarChart, Users } from "lucide-react";
+import { NotificationBell } from "./notifications/NotificationBell";
 
 export default function Header() {
   const { user, isLoading, logoutMutation } = useAuth();
@@ -58,6 +59,7 @@ export default function Header() {
               <span className="text-sm hidden sm:inline-block">
                 Welcome, {user.name || user.username}
               </span>
+              <NotificationBell />
               <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">

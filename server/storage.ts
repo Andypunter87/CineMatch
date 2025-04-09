@@ -4,6 +4,7 @@ import {
   analytics,
   friends,
   friendRequests,
+  notifications,
   type User,
   type InsertUser,
   type Film,
@@ -13,7 +14,9 @@ import {
   type Friend,
   type InsertFriend,
   type FriendRequest,
-  type InsertFriendRequest
+  type InsertFriendRequest,
+  type Notification,
+  type InsertNotification
 } from "@shared/schema";
 import { films } from "./data/films";
 import { db } from "./db";
@@ -71,6 +74,13 @@ export interface IStorage {
   }): Promise<Analytics[]>;
   getUserCount(): Promise<number>;
   getEventCount(eventType: string): Promise<number>;
+  
+  // Notification operations
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getUserNotifications(userId: number): Promise<Notification[]>;
+  markNotificationAsRead(notificationId: number): Promise<Notification>;
+  markAllNotificationsAsRead(userId: number): Promise<void>;
+  getUnreadNotificationsCount(userId: number): Promise<number>;
   
   sessionStore: any; // Using any for session store to avoid type issues
 }
@@ -662,6 +672,76 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error retrieving friend requests:", error);
       return [];
+    }
+  }
+  
+  // Notification operations implementation
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    try {
+      const [newNotification] = await db
+        .insert(notifications)
+        .values(notification)
+        .returning();
+      return newNotification;
+    } catch (error) {
+      console.error("Error creating notification:", error);
+      throw new Error("Failed to create notification");
+    }
+  }
+
+  async getUserNotifications(userId: number): Promise<Notification[]> {
+    try {
+      const userNotifications = await db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt));
+      return userNotifications;
+    } catch (error) {
+      console.error("Error getting user notifications:", error);
+      return [];
+    }
+  }
+
+  async markNotificationAsRead(notificationId: number): Promise<Notification> {
+    try {
+      const [updatedNotification] = await db
+        .update(notifications)
+        .set({ read: true })
+        .where(eq(notifications.id, notificationId))
+        .returning();
+      return updatedNotification;
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      throw new Error("Failed to mark notification as read");
+    }
+  }
+
+  async markAllNotificationsAsRead(userId: number): Promise<void> {
+    try {
+      await db
+        .update(notifications)
+        .set({ read: true })
+        .where(eq(notifications.userId, userId));
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      throw new Error("Failed to mark all notifications as read");
+    }
+  }
+
+  async getUnreadNotificationsCount(userId: number): Promise<number> {
+    try {
+      const [result] = await db
+        .select({ count: count() })
+        .from(notifications)
+        .where(and(
+          eq(notifications.userId, userId),
+          eq(notifications.read, false)
+        ));
+      return result.count;
+    } catch (error) {
+      console.error("Error getting unread notifications count:", error);
+      return 0;
     }
   }
 }

@@ -42,6 +42,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   sentFriendRequests: many(friendRequests, { relationName: "senderRelation" }),
   friends: many(friends, { relationName: "userFriends" }),
   friendOf: many(friends, { relationName: "friendOfUser" }),
+  notifications: many(notifications),
+  relatedNotifications: many(notifications, { relationName: "relatedUserNotifications" }),
 }));
 
 // Define relations for friend requests
@@ -126,6 +128,17 @@ export const analytics = pgTable("analytics", {
   userAgent: text("user_agent"), // Browser and device info
 });
 
+// Create notifications table
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(), // friend_request_accepted, etc.
+  message: text("message").notNull(),
+  relatedUserId: integer("related_user_id").references(() => users.id), // For friend-related notifications
+  read: boolean("read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export type Film = {
   id: number;
   title: string;
@@ -192,6 +205,32 @@ export type InsertFriendRequest = z.infer<typeof insertFriendRequestSchema>;
 
 export type Friend = typeof friends.$inferSelect;
 export type InsertFriend = z.infer<typeof insertFriendSchema>;
+
+// Create notification schema
+export const notificationRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+  relatedUser: one(users, {
+    fields: [notifications.relatedUserId],
+    references: [users.id],
+    relationName: "relatedUserNotifications"
+  }),
+}));
+
+export const insertNotificationSchema = createInsertSchema(notifications, {
+  createdAt: z.date().optional(),
+}).pick({
+  userId: true,
+  type: true,
+  message: true,
+  relatedUserId: true,
+  read: true,
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;

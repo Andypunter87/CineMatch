@@ -9,6 +9,7 @@ import { addAdminField } from "./migrations/add-admin-field";
 import { createAnalyticsTable } from "./migrations/create-analytics-table";
 import { createFriendsTables } from "./migrations/create-friends-tables";
 import { addFriendNameField } from "./migrations/add-friend-name";
+import { createNotificationsTable } from "./migrations/create-notifications-table";
 
 // Create postgres connection with proper error handling
 export const client = process.env.DATABASE_URL 
@@ -98,6 +99,9 @@ export async function initializeDatabase() {
     
     // Run migration to add friendName field to friend_requests table
     await addFriendNameField();
+    
+    // Run migration to create the notifications table
+    await createNotificationsTable();
     
     console.log("Database initialized");
   } catch (error) {

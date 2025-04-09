@@ -737,6 +737,15 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
             if (requesterUser && accepterUser) {
               await sendFriendRequestAcceptedEmails(requesterUser, accepterUser);
               
+              // Create notification for the requester
+              await storage.createNotification({
+                userId: updatedRequest.userId,
+                type: 'friend_request_accepted',
+                message: `${accepterUser.name || accepterUser.username} accepted your friend request.`,
+                relatedUserId: req.user!.id,
+                read: false
+              });
+              
               // Track email sent event
               await storage.trackEvent({
                 eventType: 'friend_accept_email_sent',
@@ -804,6 +813,15 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
         if (requesterUser && accepterUser) {
           await sendFriendRequestAcceptedEmails(requesterUser, accepterUser);
           
+          // Create notification for the requester
+          await storage.createNotification({
+            userId: request.userId,
+            type: 'friend_request_accepted',
+            message: `${accepterUser.name || accepterUser.username} accepted your friend request.`,
+            relatedUserId: req.user!.id,
+            read: false
+          });
+          
           // Track email sent event
           await storage.trackEvent({
             eventType: 'friend_accept_email_sent',
@@ -870,6 +888,56 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
     catch (error) {
       console.error("Error removing friend:", error);
       res.status(500).json({ message: "Failed to remove friend" });
+    }
+  });
+
+  // Notifications endpoints
+  // Get notifications for the current user
+  app.get('/api/notifications', isAuthenticated, async (req, res) => {
+    try {
+      const notifications = await storage.getUserNotifications(req.user!.id);
+      res.status(200).json(notifications);
+    } catch (error) {
+      console.error("Error getting notifications:", error);
+      res.status(500).json({ message: "Failed to get notifications" });
+    }
+  });
+
+  // Mark a notification as read
+  app.patch('/api/notifications/:notificationId', isAuthenticated, async (req, res) => {
+    try {
+      const notificationId = parseInt(req.params.notificationId, 10);
+      if (isNaN(notificationId)) {
+        return res.status(400).json({ message: "Invalid notification ID" });
+      }
+      
+      const notification = await storage.markNotificationAsRead(notificationId);
+      res.status(200).json(notification);
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  // Mark all notifications as read
+  app.post('/api/notifications/mark-all-read', isAuthenticated, async (req, res) => {
+    try {
+      await storage.markAllNotificationsAsRead(req.user!.id);
+      res.status(200).json({ message: "All notifications marked as read" });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
+  // Get unread notification count
+  app.get('/api/notifications/unread-count', isAuthenticated, async (req, res) => {
+    try {
+      const count = await storage.getUnreadNotificationsCount(req.user!.id);
+      res.status(200).json({ count });
+    } catch (error) {
+      console.error("Error getting unread notification count:", error);
+      res.status(500).json({ message: "Failed to get unread notification count" });
     }
   });
 
