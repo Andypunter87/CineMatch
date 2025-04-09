@@ -98,7 +98,11 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   // Helper function to add time of day with proper type casting
   const updateTimeOfDay = (time: TimeOfDay, isAdding: boolean) => {
     if (isAdding) {
-      setTimeOfDay(prev => [...prev, time]);
+      setTimeOfDay(prev => {
+        // Check if item already exists to avoid duplicates
+        if (prev.includes(time)) return prev;
+        return [...prev, time];
+      });
     } else {
       setTimeOfDay(prev => prev.filter(t => t !== time));
     }
@@ -107,7 +111,11 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   // Helper function to add runtime with proper type casting
   const updateRuntime = (option: RuntimeOption, isAdding: boolean) => {
     if (isAdding) {
-      setRuntime(prev => [...prev, option]);
+      setRuntime(prev => {
+        // Check if item already exists to avoid duplicates
+        if (prev.includes(option)) return prev;
+        return [...prev, option];
+      });
     } else {
       setRuntime(prev => prev.filter(r => r !== option));
     }
