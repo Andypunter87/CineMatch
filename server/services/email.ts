@@ -1,4 +1,5 @@
 import sgMail from '@sendgrid/mail';
+import { User } from '@shared/schema';
 
 // Initialize SendGrid with API key
 let sgMailInitialized = false;
@@ -379,8 +380,9 @@ This email was sent to ${email}. If you didn't create this account, please ignor
 }
 
 /**
- * Send a friend invitation email
+ * Send a friend invitation email to the recipient
  * @param senderName The name of the sender
+ * @param senderEmail The email of the sender (for notifications)
  * @param recipientEmail The recipient's email address
  * @param inviteCode The invite code for linking
  * @param isExistingUser Whether the recipient is an existing user
@@ -389,7 +391,8 @@ export async function sendFriendInvitationEmail(
   senderName: string, 
   recipientEmail: string, 
   inviteCode: string,
-  isExistingUser: boolean = false
+  isExistingUser: boolean = false,
+  senderEmail?: string // Optional parameter for sender notification
 ): Promise<boolean> {
   // Base URL for the application
   const baseUrl = 'https://cine-match.replit.app';
@@ -414,6 +417,11 @@ ${senderName} wants to connect with you on CineMatch so you can share film recom
 Click the link below to accept their friend request:
 ${inviteLink}
 
+Once connected, you'll be able to:
+- Share your favorite films and recommendations
+- Create watch parties with shared preferences
+- Discover movies that you'll both enjoy
+
 Happy movie watching!
 
 ---
@@ -428,6 +436,12 @@ CineMatch helps you discover films that match your mood and preferences, and now
 
 Use this link to create an account and connect with ${senderName}:
 ${inviteLink}
+
+CineMatch makes it easy to:
+- Find movies that match your mood and situation
+- Discover films available on your streaming services
+- Share recommendations with friends
+- Plan movie nights together
 
 Happy movie watching!
 
@@ -643,10 +657,391 @@ If you didn't expect this invitation, you can safely ignore this email.
 </html>`;
   }
 
-  return sendEmail({
+  const invitationSent = await sendEmail({
     to: recipientEmail,
     subject,
     text: textContent,
     html: htmlContent
   });
+  
+  // If senderEmail is provided, send a confirmation notification
+  if (invitationSent && senderEmail) {
+    await sendInvitationConfirmationEmail(senderName, senderEmail, recipientEmail, isExistingUser);
+  }
+  
+  return invitationSent;
+}
+
+/**
+ * Send a confirmation email to the sender when they invite someone
+ * @param senderName The name of the person who sent the invitation
+ * @param senderEmail The email of the sender
+ * @param recipientEmail The email of the person who was invited
+ * @param isExistingUser Whether the recipient is an existing user
+ */
+export async function sendInvitationConfirmationEmail(
+  senderName: string,
+  senderEmail: string,
+  recipientEmail: string,
+  isExistingUser: boolean
+): Promise<boolean> {
+  // Base URL for the application
+  const baseUrl = 'https://cine-match.replit.app';
+  
+  const subject = 'Friend invitation sent on CineMatch';
+  
+  // Create a plain text version
+  const textContent = `
+Hi ${senderName},
+
+Your invitation to ${recipientEmail} has been sent successfully.
+
+${isExistingUser 
+  ? `Since ${recipientEmail} is already a CineMatch user, they'll receive a friend request notification.` 
+  : `We've sent ${recipientEmail} an invitation to join CineMatch and connect with you.`}
+
+You'll receive a notification when they accept your invitation.
+
+You can manage your friend connections at ${baseUrl}/friends
+
+Happy movie watching!
+
+---
+Powered by More Human | Contact: andy@more-human.co.uk
+`;
+  
+  // Create HTML content with inline styles for email compatibility
+  const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CineMatch Friend Invitation Sent</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: linear-gradient(to right, #3b82f6, #06b6d4);
+      color: white;
+      padding: 20px;
+      border-radius: 8px 8px 0 0;
+      text-align: center;
+    }
+    .content {
+      padding: 20px;
+      background-color: #fff;
+      border: 1px solid #e5e7eb;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+    }
+    .status-bubble {
+      background-color: #f0f9ff;
+      border-left: 4px solid #3b82f6;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .button {
+      display: inline-block;
+      background: linear-gradient(to right, #3b82f6, #06b6d4);
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      margin: 20px 0;
+      font-weight: bold;
+      text-align: center;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Invitation Sent</h1>
+  </div>
+  <div class="content">
+    <p>Hi ${senderName},</p>
+    
+    <div class="status-bubble">
+      <p>Your invitation to <strong>${recipientEmail}</strong> has been sent successfully! 🎬</p>
+    </div>
+    
+    <p>${isExistingUser 
+      ? `Since ${recipientEmail} is already a CineMatch user, they'll receive a friend request notification.` 
+      : `We've sent ${recipientEmail} an invitation to join CineMatch and connect with you.`}</p>
+    
+    <p>You'll receive a notification when they accept your invitation.</p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${baseUrl}/friends" class="button">Manage Friend Connections</a>
+    </div>
+  </div>
+  <div class="footer">
+    <p>Powered by More Human | Contact: andy@more-human.co.uk</p>
+  </div>
+</body>
+</html>`;
+  
+  return sendEmail({
+    to: senderEmail,
+    subject,
+    text: textContent,
+    html: htmlContent
+  });
+}
+
+/**
+ * Send notification emails when a friend request is accepted
+ * This sends emails to both the requester and the accepter
+ * @param requesterUser The user who initially sent the request
+ * @param accepterUser The user who accepted the request
+ */
+export async function sendFriendRequestAcceptedEmails(
+  requesterUser: User,
+  accepterUser: User
+): Promise<boolean> {
+  // Base URL for the application
+  const baseUrl = 'https://cine-match.replit.app';
+  
+  try {
+    // Send email to the requester (person who sent the original invite)
+    const requesterSubject = `${accepterUser.name || accepterUser.username} accepted your friend request`;
+    const requesterText = `
+Hi ${requesterUser.name || requesterUser.username},
+
+Great news! ${accepterUser.name || accepterUser.username} has accepted your friend request on CineMatch.
+
+You can now:
+- Share film recommendations with each other
+- Create shared movie nights
+- Discover films that match both your preferences
+
+Visit your friends page to see your connections:
+${baseUrl}/friends
+
+Happy movie watching!
+
+---
+Powered by More Human | Contact: andy@more-human.co.uk
+    `;
+    
+    const requesterHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Friend Request Accepted on CineMatch</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: linear-gradient(to right, #3b82f6, #06b6d4);
+      color: white;
+      padding: 20px;
+      border-radius: 8px 8px 0 0;
+      text-align: center;
+    }
+    .content {
+      padding: 20px;
+      background-color: #fff;
+      border: 1px solid #e5e7eb;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+    }
+    .success-bubble {
+      background-color: #f0fdf4;
+      border-left: 4px solid #22c55e;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .button {
+      display: inline-block;
+      background: linear-gradient(to right, #3b82f6, #06b6d4);
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      margin: 20px 0;
+      font-weight: bold;
+      text-align: center;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Friend Request Accepted</h1>
+  </div>
+  <div class="content">
+    <p>Hi ${requesterUser.name || requesterUser.username},</p>
+    
+    <div class="success-bubble">
+      <p><strong>${accepterUser.name || accepterUser.username}</strong> has accepted your friend request on CineMatch! 🎬</p>
+    </div>
+    
+    <p>You can now:</p>
+    <ul>
+      <li>Share film recommendations with each other</li>
+      <li>Create shared movie nights</li>
+      <li>Discover films that match both your preferences</li>
+    </ul>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${baseUrl}/friends" class="button">View Friends</a>
+    </div>
+  </div>
+  <div class="footer">
+    <p>Powered by More Human | Contact: andy@more-human.co.uk</p>
+  </div>
+</body>
+</html>`;
+
+    // Send to requester
+    await sendEmail({
+      to: requesterUser.email,
+      subject: requesterSubject,
+      text: requesterText,
+      html: requesterHtml
+    });
+    
+    // Send email to the accepter (person who accepted the request)
+    const accepterSubject = `You're now connected with ${requesterUser.name || requesterUser.username} on CineMatch`;
+    const accepterText = `
+Hi ${accepterUser.name || accepterUser.username},
+
+You are now connected with ${requesterUser.name || requesterUser.username} on CineMatch.
+
+You can now:
+- Share film recommendations with each other
+- Create shared movie nights
+- Discover films that match both your preferences
+
+Visit your friends page to see your connections:
+${baseUrl}/friends
+
+Happy movie watching!
+
+---
+Powered by More Human | Contact: andy@more-human.co.uk
+    `;
+    
+    const accepterHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New Friend Connection on CineMatch</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: linear-gradient(to right, #3b82f6, #06b6d4);
+      color: white;
+      padding: 20px;
+      border-radius: 8px 8px 0 0;
+      text-align: center;
+    }
+    .content {
+      padding: 20px;
+      background-color: #fff;
+      border: 1px solid #e5e7eb;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+    }
+    .success-bubble {
+      background-color: #f0fdf4;
+      border-left: 4px solid #22c55e;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .button {
+      display: inline-block;
+      background: linear-gradient(to right, #3b82f6, #06b6d4);
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      margin: 20px 0;
+      font-weight: bold;
+      text-align: center;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>New Friend Connection</h1>
+  </div>
+  <div class="content">
+    <p>Hi ${accepterUser.name || accepterUser.username},</p>
+    
+    <div class="success-bubble">
+      <p>You're now connected with <strong>${requesterUser.name || requesterUser.username}</strong> on CineMatch! 🎬</p>
+    </div>
+    
+    <p>You can now:</p>
+    <ul>
+      <li>Share film recommendations with each other</li>
+      <li>Create shared movie nights</li>
+      <li>Discover films that match both your preferences</li>
+    </ul>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${baseUrl}/friends" class="button">View Friends</a>
+    </div>
+  </div>
+  <div class="footer">
+    <p>Powered by More Human | Contact: andy@more-human.co.uk</p>
+  </div>
+</body>
+</html>`;
+
+    // Send to accepter
+    await sendEmail({
+      to: accepterUser.email,
+      subject: accepterSubject,
+      text: accepterText,
+      html: accepterHtml
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Error sending friend request accepted emails:", error);
+    return false;
+  }
 }

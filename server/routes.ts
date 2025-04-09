@@ -9,7 +9,7 @@ import { initializeDatabase } from "./db";
 import adminRoutes from "./admin";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { sendFriendInvitationEmail } from "./services/email";
+import { sendFriendInvitationEmail, sendFriendRequestAcceptedEmails } from "./services/email";
 
 const scryptAsync = promisify(scrypt);
 
@@ -609,11 +609,13 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
         
         // Send invitation email with the existing user template
         const senderName = req.user!.name || req.user!.username || 'A friend';
+        const senderEmail = req.user!.email; // Get the sender's email for notification
         const emailSent = await sendFriendInvitationEmail(
           senderName,
           email,
           inviteCode,
-          true // This is an existing user
+          true, // This is an existing user
+          senderEmail // Pass sender email for confirmation notification
         );
         
         // Track the event
@@ -650,11 +652,13 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
       
       // Send invitation email for new users
       const senderName = req.user!.name || req.user!.username || 'A friend';
+      const senderEmail = req.user!.email; // Get the sender's email for notification
       const emailSent = await sendFriendInvitationEmail(
         senderName,
         email,
         inviteCode,
-        false // This is a new user
+        false, // This is a new user
+        senderEmail // Pass sender email for confirmation notification
       );
       
       // Track the event
@@ -714,6 +718,26 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
           try {
             await storage.addFriend(req.user!.id, updatedRequest.userId);
             await storage.addFriend(updatedRequest.userId, req.user!.id);
+            
+            // Get user objects for both parties
+            const requesterUser = await storage.getUser(updatedRequest.userId);
+            const accepterUser = req.user;
+            
+            // Send email notifications if both users are found
+            if (requesterUser && accepterUser) {
+              await sendFriendRequestAcceptedEmails(requesterUser, accepterUser);
+              
+              // Track email sent event
+              await storage.trackEvent({
+                eventType: 'friend_accept_email_sent',
+                userId: req.user!.id,
+                data: { 
+                  requestId: requestId,
+                  friendId: updatedRequest.userId
+                } as Record<string, any>,
+                timestamp: new Date()
+              });
+            }
           } catch (error) {
             const friendError = error as Error;
             // If friendship already exists, just continue
@@ -761,6 +785,26 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
       // Add each other as friends
       try {
         await storage.addFriend(request.userId, req.user!.id);
+        
+        // Get user objects for both parties
+        const requesterUser = await storage.getUser(request.userId);
+        const accepterUser = req.user;
+        
+        // Send email notifications if both users are found
+        if (requesterUser && accepterUser) {
+          await sendFriendRequestAcceptedEmails(requesterUser, accepterUser);
+          
+          // Track email sent event
+          await storage.trackEvent({
+            eventType: 'friend_accept_email_sent',
+            userId: req.user!.id,
+            data: { 
+              requestId: request.id,
+              friendId: request.userId
+            } as Record<string, any>,
+            timestamp: new Date()
+          });
+        }
       } catch (error) {
         const friendError = error as Error;
         // If friendship already exists, just continue
