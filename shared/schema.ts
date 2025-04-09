@@ -160,9 +160,7 @@ export const recommendationRequestSchema = z.object({
   streamingServices: z.array(z.string()).optional(),
   country: z.string().optional(),
   excludeFilmIds: z.array(z.number()).optional(), // List of film IDs to exclude from recommendations
-  viewingParty: z.object({
-    friendIds: z.array(z.number()) // Array of friend IDs who are watching together
-  }).optional()
+  viewingParty: z.array(z.number()).optional(), // Array of friend IDs who are watching together
 });
 
 export type RecommendationRequest = z.infer<typeof recommendationRequestSchema>;

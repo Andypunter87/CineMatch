@@ -35,7 +35,7 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
     streamingServices: cacheablePreferences.streamingServices?.sort() || [],
     // Include information about viewing party
     hasViewingParty: !!viewingParty,
-    friendCount: viewingParty?.friendIds?.length || 0
+    friendCount: viewingParty?.length || 0
   });
   
   // Check if we have a valid cached result
@@ -115,8 +115,8 @@ ${preferences.country
   ? `- User is located in: ${preferences.country}`
   : `- User location: Unknown`
 }
-${preferences.viewingParty && preferences.viewingParty.friendIds && preferences.viewingParty.friendIds.length > 0
-  ? `- IMPORTANT: This is a ${preferences.audience === "date" ? "date night" : "group viewing"} with ${preferences.viewingParty.friendIds.length} other ${preferences.viewingParty.friendIds.length === 1 ? "person" : "people"}. Recommend films that work well for shared viewing experiences.`
+${preferences.viewingParty && preferences.viewingParty.length > 0
+  ? `- IMPORTANT: This is a ${preferences.audience === "date" ? "date night" : "group viewing"} with ${preferences.viewingParty.length} other ${preferences.viewingParty.length === 1 ? "person" : "people"}. Recommend films that work well for shared viewing experiences.`
   : ""
 }
 ${preferences.audience === "family"

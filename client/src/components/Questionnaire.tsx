@@ -338,9 +338,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
         runtime: runtime.length > 0 ? runtime : undefined, // Only include if selected
         country: user?.country || undefined,
         // Add viewing party data if we have selected friends
-        viewingParty: selectedFriends.length > 0 ? {
-          friendIds: selectedFriends
-        } : undefined
+        viewingParty: selectedFriends.length > 0 ? selectedFriends : undefined
         // Streaming services are now handled in the Home component
         // to allow for more flexibility and automatic updates
       };
