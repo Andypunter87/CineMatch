@@ -23,7 +23,7 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
   
   // Create a cache key based on the preferences
   // Exclude excludeFilmIds from the cache key as these change frequently
-  const { excludeFilmIds, ...cacheablePreferences } = preferences;
+  const { excludeFilmIds, viewingParty, ...cacheablePreferences } = preferences;
   const cacheKey = JSON.stringify({
     location: cacheablePreferences.location,
     mood: cacheablePreferences.mood,
@@ -31,7 +31,10 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
     runtime: cacheablePreferences.runtime,
     country: cacheablePreferences.country,
     // Include a summarized version of streaming services (sorted to ensure consistent keys)
-    streamingServices: cacheablePreferences.streamingServices?.sort() || []
+    streamingServices: cacheablePreferences.streamingServices?.sort() || [],
+    // Include information about viewing party
+    hasViewingParty: !!viewingParty,
+    friendCount: viewingParty?.friendIds?.length || 0
   });
   
   // Check if we have a valid cached result
@@ -72,6 +75,11 @@ IMPORTANT ABOUT EXCLUDED FILMS:
 2. Films with excluded IDs should be completely omitted from your response - do not reference them at all
 3. Exclusions take absolute priority over all other matching criteria
 
+IMPORTANT ABOUT GROUP VIEWING AND DATES:
+1. If the user indicates this is a date night, prioritize films that work well for couples (romantic comedies, dramas with romantic elements, or crowd-pleasing films)
+2. If the user indicates this is a group viewing, prioritize films that work well with groups (comedies, action films, or broadly appealing entertainment)
+3. For both date night and group viewing, prioritize films that spark conversation or create shared experiences
+
 Return 5-6 films that match the criteria:
 - Half should be mainstream/popular films
 - Half should be independent, foreign, or lesser-known films
@@ -99,6 +107,10 @@ ${preferences.streamingServices && preferences.streamingServices.length > 0
 ${preferences.country 
   ? `- User is located in: ${preferences.country}`
   : `- User location: Unknown`
+}
+${preferences.viewingParty && preferences.viewingParty.friendIds && preferences.viewingParty.friendIds.length > 0
+  ? `- IMPORTANT: This is a ${preferences.location === "date" ? "date night" : "group viewing"} with ${preferences.viewingParty.friendIds.length} other ${preferences.viewingParty.friendIds.length === 1 ? "person" : "people"}. Recommend films that work well for shared viewing experiences.`
+  : ""
 }
 ${preferences.excludeFilmIds && preferences.excludeFilmIds.length > 0
   ? `- IMPORTANT: User has already seen these films, EXCLUDE them completely from recommendations: Films with IDs ${preferences.excludeFilmIds.join(", ")}`

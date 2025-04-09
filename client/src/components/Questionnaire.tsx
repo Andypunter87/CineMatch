@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { type RecommendationRequest } from "@shared/schema";
+import { type RecommendationRequest, type User } from "@shared/schema";
 
 // Type definition for time of day options
 type TimeOfDay = "weekday" | "weekend" | "late" | "morning";
@@ -17,7 +17,9 @@ import {
   Clock,
   Mail,
   PlusCircle,
-  X
+  X,
+  UserCheck,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,8 +28,10 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface QuestionnaireProps {
   onSubmit: (data: RecommendationRequest) => void;
@@ -42,12 +46,27 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   const [runtime, setRuntime] = useState<RuntimeOption[]>([]);
   const [friendEmails, setFriendEmails] = useState<string[]>([]);
   const [newFriendEmail, setNewFriendEmail] = useState("");
+  const [selectedFriends, setSelectedFriends] = useState<number[]>([]);
+  const [activeTab, setActiveTab] = useState<string>("select");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingInvites, setIsSendingInvites] = useState(false);
   const { toast } = useToast();
-
+  
   // Check if we should show the friend invitation step (for "friends" or "date" location)
   const shouldShowFriendStep = location === "friends" || location === "date";
+  
+  // Fetch user's friends list
+  const { data: friends = [], isLoading: isLoadingFriends } = useQuery<User[]>({
+    queryKey: ["/api/friends"],
+    enabled: !!user && (location === "friends" || location === "date"), // Only fetch when user is logged in and on friend step
+    queryFn: async () => {
+      const response = await fetch("/api/friends");
+      if (!response.ok) {
+        throw new Error("Failed to fetch friends");
+      }
+      return await response.json();
+    }
+  });
   
   // Effect to run when location changes - if it's not a social option, clear friend emails
   useEffect(() => {
@@ -266,7 +285,13 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
     setIsSubmitting(true);
     
     try {
-      console.log("Submitting questionnaire with data:", { location, timeOfDay, mood, runtime });
+      console.log("Submitting questionnaire with data:", { 
+        location, 
+        timeOfDay, 
+        mood, 
+        runtime,
+        selectedFriends: selectedFriends.length > 0 ? selectedFriends : undefined
+      });
       
       // Include the user's country for better localized recommendations
       const requestData: RecommendationRequest = {
@@ -275,6 +300,10 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
         mood,
         runtime: runtime.length > 0 ? runtime : undefined, // Only include if selected
         country: user?.country || undefined,
+        // Add viewing party data if we have selected friends
+        viewingParty: selectedFriends.length > 0 ? {
+          friendIds: selectedFriends
+        } : undefined
         // Streaming services are now handled in the Home component
         // to allow for more flexibility and automatic updates
       };
@@ -288,7 +317,9 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
         runtime: runtime.length > 0 ? runtime.join(',') : 'not_selected',
         runtime_count: runtime.length,
         is_logged_in: !!user,
-        has_country: !!user?.country
+        has_country: !!user?.country,
+        has_friends: selectedFriends.length > 0,
+        friend_count: selectedFriends.length
       });
       
       // Simulate a slight delay for better user experience
@@ -474,70 +505,139 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
             {/* Friend Invitation Step (special step between location and time for social options) */}
             {currentStep === 3 && shouldShowFriendStep && (
               <div>
-                <h2 className="text-2xl font-bold mb-2">Invite Friends to Watch</h2>
+                <h2 className="text-2xl font-bold mb-2">
+                  {location === "date" ? "Select Your Date" : "Select Friends to Watch With"}
+                </h2>
                 <p className="text-gray-600 mb-6">
                   {location === "date" 
-                    ? "Invite your date to join the movie selection process." 
-                    : "Invite friends to get recommendations everyone will enjoy."}
+                    ? "Choose your date partner for personalized movie recommendations." 
+                    : "Select friends for recommendations that everyone will enjoy."}
                 </p>
                 
                 {!user && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                     <p className="text-sm text-yellow-700">
-                      <strong>Login required:</strong> You need to be logged in to invite friends. 
-                      You can continue without inviting or <a href="/auth" className="underline text-blue-600">login here</a>.
+                      <strong>Login required:</strong> You need to be logged in to invite or select friends. 
+                      You can continue without friends or <a href="/auth" className="underline text-blue-600">login here</a>.
                     </p>
                   </div>
                 )}
                 
-                <div className="space-y-4">
-                  {/* Email input */}
-                  <div className="flex items-center space-x-2">
-                    <Input
-                      type="email"
-                      placeholder="Enter friend's email address"
-                      value={newFriendEmail}
-                      onChange={(e) => setNewFriendEmail(e.target.value)}
-                      className="flex-1"
-                      disabled={!user || isSendingInvites}
-                    />
-                    <Button
-                      onClick={addFriendEmail}
-                      disabled={!user || !newFriendEmail || isSendingInvites}
-                      size="sm"
-                      className="bg-blue-500 hover:bg-blue-600"
-                    >
-                      <PlusCircle className="h-4 w-4 mr-1" />
-                      Add
-                    </Button>
-                  </div>
-                  
-                  {/* Friend email list */}
-                  {friendEmails.length > 0 && (
-                    <div className="border border-blue-100 rounded-lg p-4 bg-blue-50">
-                      <h3 className="text-sm font-medium mb-2 text-blue-800">Friends to invite:</h3>
-                      <ul className="space-y-2">
-                        {friendEmails.map((email) => (
-                          <li key={email} className="flex items-center justify-between bg-white p-2 rounded border border-blue-100">
-                            <span className="text-sm flex items-center">
-                              <Mail className="h-4 w-4 mr-2 text-blue-500" /> 
-                              {email}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeFriendEmail(email)}
-                              disabled={isSendingInvites}
-                              className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
+                {user && (
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-6">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="select">Select Existing Friends</TabsTrigger>
+                      <TabsTrigger value="invite">Invite New Friends</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="select" className="mt-4">
+                      {isLoadingFriends ? (
+                        <div className="flex justify-center py-6">
+                          <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                        </div>
+                      ) : friends.length === 0 ? (
+                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-center">
+                          <p className="text-blue-800 mb-2">You don't have any friends yet.</p>
+                          <p className="text-sm text-blue-600">Switch to the "Invite New Friends" tab to invite some!</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {friends.map((friend) => (
+                            <div 
+                              key={friend.id}
+                              className={`border rounded-lg p-3 flex items-center space-x-3 cursor-pointer transition-colors ${
+                                selectedFriends.includes(friend.id) 
+                                  ? 'bg-blue-50 border-blue-300' 
+                                  : 'border-gray-200 hover:border-blue-200 hover:bg-blue-50/50'
+                              }`}
+                              onClick={() => {
+                                if (selectedFriends.includes(friend.id)) {
+                                  setSelectedFriends(prev => prev.filter(id => id !== friend.id));
+                                } else {
+                                  setSelectedFriends(prev => [...prev, friend.id]);
+                                }
+                              }}
                             >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
+                              <Avatar className="h-10 w-10 border">
+                                <AvatarFallback className="bg-blue-100 text-blue-800">
+                                  {(friend.name?.charAt(0) || friend.username?.charAt(0) || 'U').toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate">
+                                  {friend.name || friend.username || 'Unknown user'}
+                                </p>
+                                <p className="text-xs text-gray-500 truncate">{friend.email}</p>
+                              </div>
+                              {selectedFriends.includes(friend.id) && (
+                                <Check className="h-5 w-5 text-blue-600" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {selectedFriends.length > 0 && (
+                        <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                          <p className="text-sm text-blue-800 font-medium">
+                            {selectedFriends.length} friend{selectedFriends.length !== 1 ? 's' : ''} selected
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
+                    
+                    <TabsContent value="invite" className="mt-4">
+                      <div className="space-y-4">
+                        {/* Email input */}
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            type="email"
+                            placeholder="Enter friend's email address"
+                            value={newFriendEmail}
+                            onChange={(e) => setNewFriendEmail(e.target.value)}
+                            className="flex-1"
+                            disabled={!user || isSendingInvites}
+                          />
+                          <Button
+                            onClick={addFriendEmail}
+                            disabled={!user || !newFriendEmail || isSendingInvites}
+                            size="sm"
+                            className="bg-blue-500 hover:bg-blue-600"
+                          >
+                            <PlusCircle className="h-4 w-4 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                        
+                        {/* Friend email list */}
+                        {friendEmails.length > 0 && (
+                          <div className="border border-blue-100 rounded-lg p-4 bg-blue-50">
+                            <h3 className="text-sm font-medium mb-2 text-blue-800">Friends to invite:</h3>
+                            <ul className="space-y-2">
+                              {friendEmails.map((email) => (
+                                <li key={email} className="flex items-center justify-between bg-white p-2 rounded border border-blue-100">
+                                  <span className="text-sm flex items-center">
+                                    <Mail className="h-4 w-4 mr-2 text-blue-500" /> 
+                                    {email}
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeFriendEmail(email)}
+                                    disabled={isSendingInvites}
+                                    className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                )}
                 
                 <div className="mt-8 flex justify-between">
                   <Button 
@@ -549,7 +649,8 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     Back
                   </Button>
                   
-                  {friendEmails.length > 0 && user ? (
+                  {/* Show different buttons based on the active tab */}
+                  {activeTab === "invite" && friendEmails.length > 0 && user ? (
                     <Button 
                       onClick={sendInvitations} 
                       className="px-4 py-1.5 sm:px-6 sm:py-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg transition-colors text-sm sm:text-base h-auto"
@@ -570,7 +671,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                       className="px-4 py-1.5 sm:px-6 sm:py-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 rounded-lg transition-colors text-sm sm:text-base h-auto"
                       disabled={isSendingInvites}
                     >
-                      Skip &amp; Continue
+                      {selectedFriends.length > 0 ? "Continue With Selected Friends" : "Skip & Continue"}
                     </Button>
                   )}
                 </div>
