@@ -8,6 +8,7 @@ import { addTMDBFields } from "./migrations/add-tmdb-fields";
 import { addAdminField } from "./migrations/add-admin-field";
 import { createAnalyticsTable } from "./migrations/create-analytics-table";
 import { createFriendsTables } from "./migrations/create-friends-tables";
+import { addFriendNameField } from "./migrations/add-friend-name";
 
 // Create postgres connection with proper error handling
 export const client = process.env.DATABASE_URL 
@@ -94,6 +95,9 @@ export async function initializeDatabase() {
     
     // Run migration to create friends and friend_requests tables
     await createFriendsTables();
+    
+    // Run migration to add friendName field to friend_requests table
+    await addFriendNameField();
     
     console.log("Database initialized");
   } catch (error) {

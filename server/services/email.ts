@@ -383,17 +383,19 @@ This email was sent to ${email}. If you didn't create this account, please ignor
 /**
  * Send a friend invitation email to the recipient
  * @param senderName The name of the sender
- * @param senderEmail The email of the sender (for notifications)
  * @param recipientEmail The recipient's email address
  * @param inviteCode The invite code for linking
  * @param isExistingUser Whether the recipient is an existing user
+ * @param senderEmail The email of the sender (for notifications)
+ * @param recipientName Optional recipient name for personalization
  */
 export async function sendFriendInvitationEmail(
   senderName: string, 
   recipientEmail: string, 
   inviteCode: string,
   isExistingUser: boolean = false,
-  senderEmail?: string // Optional parameter for sender notification
+  senderEmail?: string, // Optional parameter for sender notification
+  recipientName?: string // Optional recipient name for personalization
 ): Promise<boolean> {
   // Base URL for the application
   const baseUrl = 'https://cine-match.replit.app';
@@ -411,7 +413,7 @@ export async function sendFriendInvitationEmail(
   // Create a plain text version for email clients that don't support HTML
   const textContent = isExistingUser
     ? `
-Hi there,
+Hi ${recipientName || 'there'},
 
 ${senderName} wants to connect with you on CineMatch so you can share film recommendations and plan watch parties together.
 
@@ -429,7 +431,7 @@ Happy movie watching!
 Powered by More Human | Contact: andy@more-human.co.uk
 `
     : `
-Hi there,
+Hi ${recipientName || 'there'},
 
 ${senderName} has invited you to join CineMatch - a personalized film recommendation platform.
 
@@ -521,7 +523,7 @@ If you didn't expect this invitation, you can safely ignore this email.
       <p><strong>${senderName}</strong> wants to connect with you on CineMatch 🎬</p>
     </div>
     
-    <p>Connect with ${senderName} to share recommendations and plan movie nights together.</p>
+    <p>Hi ${recipientName || 'there'}, connect with ${senderName} to share recommendations and plan movie nights together.</p>
     
     <div style="text-align: center; margin: 30px 0;">
       <a href="${inviteLink}" class="button">Accept Friend Request</a>
@@ -623,7 +625,7 @@ If you didn't expect this invitation, you can safely ignore this email.
       <p><strong>${senderName}</strong> has invited you to join CineMatch - a personalized film recommendation platform. 🎬</p>
     </div>
     
-    <p>CineMatch helps you discover films that match your mood and preferences, and now you can share the experience with friends!</p>
+    <p>Hi ${recipientName || 'there'}, CineMatch helps you discover films that match your mood and preferences, and now you can share the experience with friends!</p>
     
     <div class="features">
       <div class="feature">
@@ -667,7 +669,7 @@ If you didn't expect this invitation, you can safely ignore this email.
   
   // If senderEmail is provided, send a confirmation notification
   if (invitationSent && senderEmail) {
-    await sendInvitationConfirmationEmail(senderName, senderEmail, recipientEmail, isExistingUser);
+    await sendInvitationConfirmationEmail(senderName, senderEmail, recipientEmail, isExistingUser, recipientName);
   }
   
   return invitationSent;
@@ -679,12 +681,14 @@ If you didn't expect this invitation, you can safely ignore this email.
  * @param senderEmail The email of the sender
  * @param recipientEmail The email of the person who was invited
  * @param isExistingUser Whether the recipient is an existing user
+ * @param recipientName Optional recipient name for personalization
  */
 export async function sendInvitationConfirmationEmail(
   senderName: string,
   senderEmail: string,
   recipientEmail: string,
-  isExistingUser: boolean
+  isExistingUser: boolean,
+  recipientName?: string
 ): Promise<boolean> {
   // Base URL for the application
   const baseUrl = 'https://cine-match.replit.app';
@@ -695,11 +699,11 @@ export async function sendInvitationConfirmationEmail(
   const textContent = `
 Hi ${senderName},
 
-Your invitation to ${recipientEmail} has been sent successfully.
+Your invitation to ${recipientName ? recipientName + ' (' + recipientEmail + ')' : recipientEmail} has been sent successfully.
 
 ${isExistingUser 
-  ? `Since ${recipientEmail} is already a CineMatch user, they'll receive a friend request notification.` 
-  : `We've sent ${recipientEmail} an invitation to join CineMatch and connect with you.`}
+  ? `Since ${recipientName || recipientEmail} is already a CineMatch user, they'll receive a friend request notification.` 
+  : `We've sent ${recipientName || recipientEmail} an invitation to join CineMatch and connect with you.`}
 
 You'll receive a notification when they accept your invitation.
 
@@ -775,12 +779,12 @@ Powered by More Human | Contact: andy@more-human.co.uk
     <p>Hi ${senderName},</p>
     
     <div class="status-bubble">
-      <p>Your invitation to <strong>${recipientEmail}</strong> has been sent successfully! 🎬</p>
+      <p>Your invitation to <strong>${recipientName ? `${recipientName} (${recipientEmail})` : recipientEmail}</strong> has been sent successfully! 🎬</p>
     </div>
     
     <p>${isExistingUser 
-      ? `Since ${recipientEmail} is already a CineMatch user, they'll receive a friend request notification.` 
-      : `We've sent ${recipientEmail} an invitation to join CineMatch and connect with you.`}</p>
+      ? `Since ${recipientName || recipientEmail} is already a CineMatch user, they'll receive a friend request notification.` 
+      : `We've sent ${recipientName || recipientEmail} an invitation to join CineMatch and connect with you.`}</p>
     
     <p>You'll receive a notification when they accept your invitation.</p>
     

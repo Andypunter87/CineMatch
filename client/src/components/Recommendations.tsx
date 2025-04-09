@@ -121,6 +121,9 @@ export default function Recommendations({
                 {preferences.runtime && (
                   <li><span className="text-primary font-medium">Runtime: {getRuntimeText(preferences.runtime)}</span></li>
                 )}
+                {preferences.viewingParty && preferences.viewingParty.length > 0 && (
+                  <li><span className="text-primary font-medium">Watching with: {preferences.viewingParty.length} {preferences.viewingParty.length === 1 ? 'friend' : 'friends'}</span></li>
+                )}
                 {preferences.country && (
                   <li><span className="text-primary font-medium">Country: {preferences.country}</span></li>
                 )}

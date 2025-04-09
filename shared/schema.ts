@@ -21,6 +21,7 @@ export const friendRequests = pgTable("friend_requests", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(), // User who sent the invite
   email: text("email"), // Optional email of the invited person
+  friendName: text("friend_name"), // Name of the invited person
   inviteCode: text("invite_code").notNull().unique(), // Unique code for invitation
   status: text("status").notNull().default("pending"), // 'pending', 'accepted', 'rejected'
   createdAt: timestamp("created_at").defaultNow(),
@@ -174,6 +175,7 @@ export type Analytics = typeof analytics.$inferSelect;
 export const insertFriendRequestSchema = createInsertSchema(friendRequests).pick({
   userId: true,
   email: true,
+  friendName: true,
   inviteCode: true,
   status: true,
   // expiresAt removed since it's not in the database

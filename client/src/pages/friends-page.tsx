@@ -36,6 +36,7 @@ interface FriendRequestResponse {
   id: number;
   status: string;
   email: string;
+  friendName?: string;
   inviteCode: string;
   userId: number;
   createdAt: string;
@@ -50,6 +51,7 @@ interface FriendRequestResponse {
 export default function FriendsPage() {
   const { user } = useAuth();
   const [email, setEmail] = useState("");
+  const [friendName, setFriendName] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [acceptingInvite, setAcceptingInvite] = useState(false);
   
@@ -120,8 +122,8 @@ export default function FriendsPage() {
 
   // Add friend mutation
   const addFriendMutation = useMutation({
-    mutationFn: async (friendEmail: string) => {
-      const response = await apiRequest("POST", "/api/friend-requests", { email: friendEmail });
+    mutationFn: async (data: { email: string, friendName: string }) => {
+      const response = await apiRequest("POST", "/api/friend-requests", data);
       return response.json();
     },
     onSuccess: () => {
@@ -130,6 +132,7 @@ export default function FriendsPage() {
         description: "We'll notify you when they accept your request",
       });
       setEmail("");
+      setFriendName("");
       setInviteOpen(false);
       refetchFriends();
       refetchRequests();
@@ -201,7 +204,17 @@ export default function FriendsPage() {
       });
       return;
     }
-    addFriendMutation.mutate(email);
+    
+    if (!friendName || friendName.trim() === '') {
+      toast({
+        title: "Friend's name is required",
+        description: "Please enter your friend's name",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    addFriendMutation.mutate({ email, friendName });
   };
 
   // Filter requests by status
@@ -259,6 +272,19 @@ export default function FriendsPage() {
               <DialogTitle>Invite a Friend</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium">
+                  Friend's Name
+                </label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Enter their name"
+                  value={friendName}
+                  onChange={(e) => setFriendName(e.target.value)}
+                  required
+                />
+              </div>
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium">
                   Friend's Email
@@ -418,7 +444,8 @@ export default function FriendsPage() {
                               <Mail className="h-5 w-5 text-blue-500" />
                             </div>
                             <div className="ml-3">
-                              <h4 className="font-medium">{request.email}</h4>
+                              <h4 className="font-medium">{request.friendName || 'Friend'}</h4>
+                              <p className="text-sm text-gray-500">{request.email}</p>
                               <div className="flex items-center text-xs text-gray-500">
                                 <Clock className="h-3 w-3 mr-1" />
                                 <span>Pending response</span>

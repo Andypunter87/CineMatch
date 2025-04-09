@@ -567,7 +567,7 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
   // Create a new friend request
   app.post('/api/friend-requests', isAuthenticated, async (req, res) => {
     try {
-      const { email } = req.body;
+      const { email, friendName } = req.body;
       
       if (!email) {
         return res.status(400).json({ message: "Email is required" });
@@ -576,6 +576,10 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
       // Validate email format
       if (!email.includes('@') || !email.includes('.')) {
         return res.status(400).json({ message: "Invalid email format" });
+      }
+      
+      if (!friendName || friendName.trim() === '') {
+        return res.status(400).json({ message: "Friend's name is required" });
       }
       
       // Check if the user is trying to invite themselves
@@ -603,6 +607,7 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
         const newRequest = await storage.createFriendRequest({
           userId: req.user!.id,
           email,
+          friendName,
           inviteCode,
           status: 'pending'
         });
@@ -615,7 +620,8 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
           email,
           inviteCode,
           true, // This is an existing user
-          senderEmail // Pass sender email for confirmation notification
+          senderEmail, // Pass sender email for confirmation notification
+          friendName // Pass the recipient's name
         );
         
         // Track the event
@@ -625,6 +631,7 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
           data: { 
             requestId: newRequest.id,
             email,
+            friendName,
             emailSent,
             existingUser: true
           } as Record<string, any>,
@@ -642,10 +649,11 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
       // Generate a unique invite code
       const inviteCode = randomBytes(16).toString('hex');
       
-      // Create the friend request with the email
+      // Create the friend request with the email and name
       const newRequest = await storage.createFriendRequest({
         userId: req.user!.id,
         email,
+        friendName,
         inviteCode,
         status: 'pending'
       });
@@ -658,7 +666,8 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
         email,
         inviteCode,
         false, // This is a new user
-        senderEmail // Pass sender email for confirmation notification
+        senderEmail, // Pass sender email for confirmation notification
+        friendName // Pass the recipient's name
       );
       
       // Track the event
@@ -668,6 +677,7 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
         data: { 
           requestId: newRequest.id,
           email,
+          friendName,
           emailSent
         } as Record<string, any>,
         timestamp: new Date()
