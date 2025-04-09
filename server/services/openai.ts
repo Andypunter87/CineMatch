@@ -26,6 +26,7 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
   const { excludeFilmIds, viewingParty, ...cacheablePreferences } = preferences;
   const cacheKey = JSON.stringify({
     location: cacheablePreferences.location,
+    audience: cacheablePreferences.audience,
     mood: cacheablePreferences.mood,
     timeOfDay: cacheablePreferences.timeOfDay,
     runtime: cacheablePreferences.runtime,
@@ -91,6 +92,7 @@ Format your response as a JSON object with a 'recommendations' array.`;
   // Create the user query - enhanced for streaming service filtering by country
   const userQuery = `I'm looking for movie recommendations with these preferences:
 - Setting: ${preferences.location}
+- Audience: ${preferences.audience || "solo"} 
 - Time: ${timeOfDayString}
 - Mood: ${preferences.mood}
 ${preferences.runtime && preferences.runtime.length > 0
@@ -109,7 +111,11 @@ ${preferences.country
   : `- User location: Unknown`
 }
 ${preferences.viewingParty && preferences.viewingParty.friendIds && preferences.viewingParty.friendIds.length > 0
-  ? `- IMPORTANT: This is a ${preferences.location === "date" ? "date night" : "group viewing"} with ${preferences.viewingParty.friendIds.length} other ${preferences.viewingParty.friendIds.length === 1 ? "person" : "people"}. Recommend films that work well for shared viewing experiences.`
+  ? `- IMPORTANT: This is a ${preferences.audience === "date" ? "date night" : "group viewing"} with ${preferences.viewingParty.friendIds.length} other ${preferences.viewingParty.friendIds.length === 1 ? "person" : "people"}. Recommend films that work well for shared viewing experiences.`
+  : ""
+}
+${preferences.audience === "family"
+  ? "- IMPORTANT: These are family-friendly recommendations. Prioritize films appropriate for family viewing with content suitable for all ages."
   : ""
 }
 ${preferences.excludeFilmIds && preferences.excludeFilmIds.length > 0
