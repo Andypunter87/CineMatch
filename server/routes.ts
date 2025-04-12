@@ -55,6 +55,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get recommendations based on user preferences
       const recommendations = await storage.getRecommendations(preferences);
       
+      // If user is authenticated, save these recommendations to their history
+      if (req.isAuthenticated() && req.user) {
+        await storage.saveUserRecommendations(req.user.id, preferences, recommendations);
+      }
+      
       res.json(recommendations);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -939,6 +944,25 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
     } catch (error) {
       console.error("Error getting unread notification count:", error);
       res.status(500).json({ message: "Failed to get unread notification count" });
+    }
+  });
+
+  // Get last recommendations for a user
+  app.get('/api/recommendations/history', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const lastRecommendations = await storage.getUserLastRecommendations(userId);
+      
+      if (lastRecommendations) {
+        // Return the recommendations history
+        res.json(lastRecommendations);
+      } else {
+        // No recommendations history found
+        res.status(404).json({ message: 'No recommendation history found' });
+      }
+    } catch (error) {
+      console.error('Error getting last recommendations:', error);
+      res.status(500).json({ message: 'Failed to get recommendation history' });
     }
   });
 
