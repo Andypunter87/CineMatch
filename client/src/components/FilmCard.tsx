@@ -419,11 +419,34 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                     : "Thanks! We'll show fewer like this."}
                 </span>
               </div>
+              {/* Only show this message when the film hasn't been added to the watchlist */}
+              {!isInWatchlist && (
+                <div className="mt-2 text-xs text-gray-500 italic">
+                  <span className="font-medium">Note:</span> This film hasn't been added to your watchlist yet. 
+                  {feedbackSubmitted === 'liked' && " Use the 'Add to Watchlist' button below to save it for later."}
+                </div>
+              )}
+              {/* Add to watchlist button if user liked the film but it's not yet in the watchlist */}
+              {feedbackSubmitted === 'liked' && !isInWatchlist && (
+                <Button 
+                  className="w-full mt-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
+                  size="sm"
+                  onClick={() => addToWatchlistMutation.mutate()}
+                  disabled={addToWatchlistMutation.isPending}
+                >
+                  {addToWatchlistMutation.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <BookmarkPlus className="mr-2 h-4 w-4" />
+                  )}
+                  Add to Watchlist
+                </Button>
+              )}
             </div>
           )}
           
           {/* Add to Watchlist button or Already in Watchlist indicator */}
-          {user && !showConfirmation && (
+          {user && !showConfirmation && !feedbackSubmitted && (
             <div className="mt-3 pt-2 border-t border-gray-100">
               {isInWatchlist ? (
                 <div className="flex items-center justify-center bg-blue-50 text-blue-700 p-2 rounded-md">
