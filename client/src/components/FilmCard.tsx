@@ -39,7 +39,13 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
         const response = await fetch('/api/watchlist', { credentials: 'include' });
         if (response.ok) {
           const data = await response.json();
-          setWatchlistItems(data || []);
+          console.log('DEBUG - Film ID:', film.id, 'Watchlist data:', data);
+          if (Array.isArray(data)) {
+            setWatchlistItems(data || []);
+          } else {
+            console.error('Unexpected watchlist data format:', data);
+            setWatchlistItems([]);
+          }
         }
       } catch (error) {
         console.error('Error fetching watchlist:', error);
@@ -49,15 +55,20 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
     fetchWatchlist();
     
     // Setup a polling mechanism to check the watchlist periodically
-    const intervalId = setInterval(fetchWatchlist, 3000);
+    const intervalId = setInterval(fetchWatchlist, 5000);
     
     // Cleanup on unmount
     return () => clearInterval(intervalId);
-  }, [user]);
+  }, [user, film.id]);
 
-  // Check if this specific film is in the watchlist
+  // Check if this specific film is in the watchlist using BOTH id and title to be extra safe
   const exactFilmInWatchlist = watchlistItems.some(
-    (item: any) => item && item.filmId === film.id
+    (item: any) => {
+      // Check if both filmId and filmTitle match to be absolutely certain
+      return item && 
+        item.filmId === film.id && 
+        item.filmTitle.toLowerCase() === film.title.toLowerCase();
+    }
   );
   
   // Update state whenever watchlist items change
