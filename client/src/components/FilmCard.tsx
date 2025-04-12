@@ -110,9 +110,11 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
           const response = await fetch('/api/watchlist');
           const watchlistItems = await response.json();
           
-          // Check if this film is in the watchlist
+          // Check if this film is in the watchlist using both ID and title
           const found = watchlistItems.some((item: any) => 
-            item && item.filmId === film.id
+            item && 
+            item.filmId === film.id && 
+            item.filmTitle.toLowerCase() === film.title.toLowerCase()
           );
           
           setIsWatchlisted(found);
@@ -492,7 +494,30 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                 <Button 
                   className="w-full mt-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
                   size="sm"
-                  onClick={() => addToWatchlistMutation.mutate()}
+                  onClick={() => {
+                    // Double-check with a fresh API call to make absolutely sure
+                    fetch('/api/watchlist', { credentials: 'include' })
+                      .then(response => response.json())
+                      .then(data => {
+                        const alreadyInWatchlist = data.some((item: any) => 
+                          item && 
+                          item.filmId === film.id && 
+                          item.filmTitle.toLowerCase() === film.title.toLowerCase()
+                        );
+                        
+                        if (alreadyInWatchlist) {
+                          setIsWatchlisted(true);
+                        } else {
+                          // Only mutate if not already in watchlist
+                          addToWatchlistMutation.mutate();
+                        }
+                      })
+                      .catch(error => {
+                        console.error('Error checking watchlist before add:', error);
+                        // Fallback to direct mutation on error
+                        addToWatchlistMutation.mutate();
+                      });
+                  }}
                   disabled={addToWatchlistMutation.isPending}
                 >
                   {addToWatchlistMutation.isPending ? (
@@ -524,7 +549,9 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                       .then(response => response.json())
                       .then(data => {
                         const alreadyInWatchlist = data.some((item: any) => 
-                          item && item.filmId === film.id
+                          item && 
+                          item.filmId === film.id && 
+                          item.filmTitle.toLowerCase() === film.title.toLowerCase()
                         );
                         
                         if (alreadyInWatchlist) {
