@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { type Film, type RecommendationRequest } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Film as FilmIcon, Star, Award, BookmarkPlus, BookmarkCheck, Loader2, Check, Clock, Globe, ThumbsUp, ThumbsDown } from "lucide-react";
@@ -24,12 +24,38 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<'liked' | 'disliked' | null>(null);
   
-  // Check if this film is already in the user's watchlist
-  const { data: watchlistItems = [] } = useQuery<any[]>({
-    queryKey: ['/api/watchlist'],
-    enabled: !!user, // Only fetch if user is logged in
-    staleTime: 0, // Disable caching to ensure fresh data
-  });
+  // Use a more simple approach
+  const [isWatchlisted, setIsWatchlisted] = useState<boolean>(false);
+  
+  // Use effect to manually check if film is in watchlist to avoid stale data issues
+  useEffect(() => {
+    // Define an async function inside the effect
+    async function checkWatchlist() {
+      if (!user) return;
+      
+      try {
+        const response = await fetch('/api/watchlist');
+        const watchlistItems = await response.json();
+        
+        // Check if this film is in the watchlist
+        const found = watchlistItems.some((item: any) => 
+          item && item.filmId === film.id
+        );
+        
+        setIsWatchlisted(found);
+      } catch (error) {
+        console.error('Error checking watchlist:', error);
+      }
+    }
+    
+    // Call the function
+    checkWatchlist();
+    
+    // Also check after feedback is submitted
+    if (feedbackSubmitted) {
+      setTimeout(checkWatchlist, 500);
+    }
+  }, [user, film.id, feedbackSubmitted]);
   
   // Recommendation feedback mutation
   const recommendationFeedbackMutation = useMutation({
@@ -163,12 +189,7 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
     return gradients[titleHash % gradients.length];
   };
 
-  // Check if the film is already in the user's watchlist
-  // More robust check for film in watchlist
-  const isInWatchlist = Array.isArray(watchlistItems) && 
-    watchlistItems.some((item: {filmId: number}) => 
-      item && typeof item.filmId === 'number' && item.filmId === film.id
-    );
+  // No need for this check anymore since we're using isWatchlisted state
   
   // Ensure we have valid film data
   const title = film.title || "Unknown Title";
@@ -429,14 +450,14 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                 </span>
               </div>
               {/* Only show this message when the film hasn't been added to the watchlist */}
-              {!isInWatchlist && (
+              {!isWatchlisted && (
                 <div className="mt-2 text-xs text-gray-500 italic">
                   <span className="font-medium">Note:</span> This film hasn't been added to your watchlist yet. 
                   {feedbackSubmitted === 'liked' && " Use the 'Add to Watchlist' button below to save it for later."}
                 </div>
               )}
               {/* Add to watchlist button if user liked the film but it's not yet in the watchlist */}
-              {feedbackSubmitted === 'liked' && !isInWatchlist && (
+              {feedbackSubmitted === 'liked' && !isWatchlisted && (
                 <Button 
                   className="w-full mt-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
                   size="sm"
@@ -457,7 +478,7 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
           {/* Add to Watchlist button or Already in Watchlist indicator */}
           {user && !showConfirmation && !feedbackSubmitted && (
             <div className="mt-3 pt-2 border-t border-gray-100">
-              {isInWatchlist ? (
+              {isWatchlisted ? (
                 <div className="flex items-center justify-center bg-blue-50 text-blue-700 p-2 rounded-md">
                   <BookmarkCheck className="mr-2 h-4 w-4 text-blue-500" />
                   <span className="text-sm font-medium">Already in your watchlist</span>
