@@ -5,6 +5,7 @@ import {
   friends,
   friendRequests,
   notifications,
+  userRecommendations,
   type User,
   type InsertUser,
   type Film,
@@ -16,7 +17,9 @@ import {
   type FriendRequest,
   type InsertFriendRequest,
   type Notification,
-  type InsertNotification
+  type InsertNotification,
+  type UserRecommendations,
+  type InsertUserRecommendations
 } from "@shared/schema";
 import { films } from "./data/films";
 import { db } from "./db";
@@ -56,6 +59,8 @@ export interface IStorage {
   
   // Recommendation operations
   getRecommendations(preferences: RecommendationRequest): Promise<Film[]>;
+  saveUserRecommendations(userId: number, preferences: RecommendationRequest, recommendations: Film[]): Promise<UserRecommendations>;
+  getUserLastRecommendations(userId: number): Promise<UserRecommendations | undefined>;
   
   // Watchlist operations
   getWatchlistItems(userId: number): Promise<WatchlistItem[]>;
@@ -769,6 +774,67 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error getting unread notifications count:", error);
       return 0;
+    }
+  }
+
+  // User recommendation history operations
+  async saveUserRecommendations(userId: number, preferences: RecommendationRequest, recommendations: Film[]): Promise<UserRecommendations> {
+    try {
+      // First, check if there's an existing recommendation for this user
+      const [existingRecommendation] = await db
+        .select()
+        .from(userRecommendations)
+        .where(eq(userRecommendations.userId, userId));
+      
+      const now = new Date();
+      
+      if (existingRecommendation) {
+        // Update the existing recommendation
+        const [updated] = await db
+          .update(userRecommendations)
+          .set({
+            preferences,
+            recommendations,
+            updatedAt: now
+          })
+          .where(eq(userRecommendations.id, existingRecommendation.id))
+          .returning();
+        
+        return updated;
+      } else {
+        // Insert a new recommendation
+        const [newRecommendation] = await db
+          .insert(userRecommendations)
+          .values({
+            userId,
+            preferences,
+            recommendations,
+            createdAt: now,
+            updatedAt: now
+          })
+          .returning();
+          
+        return newRecommendation;
+      }
+    } catch (error) {
+      console.error("Error saving user recommendations:", error);
+      throw new Error("Failed to save user recommendations");
+    }
+  }
+  
+  async getUserLastRecommendations(userId: number): Promise<UserRecommendations | undefined> {
+    try {
+      const [lastRecommendation] = await db
+        .select()
+        .from(userRecommendations)
+        .where(eq(userRecommendations.userId, userId))
+        .orderBy(desc(userRecommendations.updatedAt))
+        .limit(1);
+      
+      return lastRecommendation;
+    } catch (error) {
+      console.error("Error getting user's last recommendations:", error);
+      return undefined;
     }
   }
 }
