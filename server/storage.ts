@@ -646,9 +646,21 @@ export class DatabaseStorage implements IStorage {
   
   async updateFriendRequestStatus(requestId: number, status: string): Promise<FriendRequest> {
     try {
+      // Normalize status to ensure consistency
+      // 'accept' will be stored as 'accepted', 'reject' as 'rejected'
+      // This handles any inconsistencies in the API calls
+      let normalizedStatus = status;
+      if (status === 'accept') {
+        normalizedStatus = 'accepted';
+      } else if (status === 'reject') {
+        normalizedStatus = 'rejected';
+      }
+      
+      console.log(`Updating friend request ${requestId} status to: ${normalizedStatus} (original: ${status})`);
+      
       const [updatedRequest] = await db
         .update(friendRequests)
-        .set({ status })
+        .set({ status: normalizedStatus })
         .where(eq(friendRequests.id, requestId))
         .returning();
       

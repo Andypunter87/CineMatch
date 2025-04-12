@@ -89,11 +89,43 @@ export default function FriendsPage() {
     }
   });
 
-  // Accept friend request from URL if present
+  // Accept friend request from URL if present with improved error handling
   useEffect(() => {
-    if (inviteCode && user && !acceptingInvite) {
+    // Only attempt to accept invitation if:
+    // 1. We have an invite code in the URL
+    // 2. The user is logged in
+    // 3. We're not already in the process of accepting the invitation
+    // 4. The mutation is not currently in progress
+    if (inviteCode && user && !acceptingInvite && !acceptFriendRequestMutation.isPending) {
+      console.log("Processing invitation with code:", inviteCode);
       setAcceptingInvite(true);
-      acceptFriendRequestMutation.mutate(inviteCode);
+      
+      // Set a timeout to reset the accepting state if the mutation takes too long
+      // This prevents the UI from getting stuck if there's a network issue
+      const safetyTimeout = setTimeout(() => {
+        if (acceptFriendRequestMutation.isPending) {
+          console.log("Invitation acceptance is taking too long, resetting state");
+          setAcceptingInvite(false);
+          
+          toast({
+            title: "Invitation processing timeout",
+            description: "Please try again or contact support if the issue persists",
+            variant: "destructive",
+          });
+          
+          // Remove the invite code from URL on timeout
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, newUrl);
+        }
+      }, 10000); // 10 second timeout
+      
+      // Process the invitation
+      acceptFriendRequestMutation.mutate(inviteCode, {
+        onSettled: () => {
+          // Clear the timeout when mutation completes (success or error)
+          clearTimeout(safetyTimeout);
+        }
+      });
     }
   }, [inviteCode, user, acceptingInvite, acceptFriendRequestMutation]);
 
@@ -217,10 +249,18 @@ export default function FriendsPage() {
     addFriendMutation.mutate({ email, friendName });
   };
 
-  // Filter requests by status
-  const pendingRequests = friendRequests?.filter(req => req.status === 'pending') || [];
-  const sentRequests = friendRequests?.filter(req => req.status === 'pending' && req.userId === user?.id) || [];
-  const receivedRequests = friendRequests?.filter(req => req.status === 'pending' && req.userId !== user?.id) || [];
+  // Filter requests by status with improved handling for status values
+  const pendingRequests = friendRequests?.filter(req => 
+    // Check for both 'pending' and potential alternate values
+    (req.status === 'pending' || req.status === 'Pending')) || [];
+    
+  const sentRequests = friendRequests?.filter(req => 
+    // Check for both 'pending' and potential alternate values for sent requests
+    (req.status === 'pending' || req.status === 'Pending') && req.userId === user?.id) || [];
+    
+  const receivedRequests = friendRequests?.filter(req => 
+    // Check for both 'pending' and potential alternate values for received requests
+    (req.status === 'pending' || req.status === 'Pending') && req.userId !== user?.id) || [];
 
   if (!user) {
     return (

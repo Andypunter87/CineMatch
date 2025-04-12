@@ -405,10 +405,14 @@ export async function sendFriendInvitationEmail(
     ? `${senderName} wants to connect on CineMatch`
     : `${senderName} has invited you to join CineMatch`;
   
-  // Create invite link with the invite code
-  const inviteLink = isExistingUser
-    ? `${baseUrl}/friends?accept=${inviteCode}`  // Direct to friends page for existing users
-    : `${baseUrl}/auth?invite=${inviteCode}`;    // Direct to auth page for new users
+  // Create invite link with the invite code - ensuring consistent URL formats
+  // Always direct to the friends page for both existing and new users
+  // The auth system will handle redirecting unauthenticated users to login/signup
+  const inviteLink = `${baseUrl}/friends?accept=${inviteCode}`;
+  
+  // Log the link for debugging purposes
+  console.log(`Generated invite link: ${inviteLink} for ${recipientEmail} (${isExistingUser ? 'existing' : 'new'} user)`);
+  
   
   // Create a plain text version for email clients that don't support HTML
   const textContent = isExistingUser

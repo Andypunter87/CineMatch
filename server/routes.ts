@@ -798,12 +798,13 @@ Sitemap: https://cine-match.replit.app/sitemap.xml`);
         return res.status(400).json({ message: "Cannot accept your own friend request" });
       }
       
-      // Update the request status
-      const updatedRequest = await storage.updateFriendRequestStatus(request.id, 'accepted');
+      // Update the request status - using 'accept' to be consistent with PATCH route
+      const updatedRequest = await storage.updateFriendRequestStatus(request.id, 'accept');
       
-      // Add each other as friends
+      // Add each other as friends - making it bidirectional like in the other route
       try {
         await storage.addFriend(request.userId, req.user!.id);
+        await storage.addFriend(req.user!.id, request.userId);
         
         // Get user objects for both parties
         const requesterUser = await storage.getUser(request.userId);
