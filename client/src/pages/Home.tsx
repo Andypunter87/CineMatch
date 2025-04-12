@@ -5,6 +5,7 @@ import { type RecommendationRequest, type Film } from "@shared/schema";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { useRecommendationHistory } from "@/hooks/use-recommendation-history";
 import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
 
 // Local storage key for saving preferences
@@ -12,8 +13,21 @@ const PREFERENCES_STORAGE_KEY = "cinematch_preferences";
 
 export default function Home() {
   const { user } = useAuth();
-  // Initialize from localStorage if available
+  const { 
+    recommendations: historyRecommendations, 
+    preferences: historyPreferences, 
+    isLoading: isLoadingHistory,
+    hasHistory
+  } = useRecommendationHistory();
+  
+  // Initialize from localStorage or recommendation history
   const [showQuestionnaire, setShowQuestionnaire] = useState(() => {
+    // First check if we have a saved history from the server
+    if (user && hasHistory) {
+      return false;
+    }
+    
+    // Otherwise check local storage
     const savedPreferences = localStorage.getItem(PREFERENCES_STORAGE_KEY);
     return !savedPreferences; // Show questionnaire if no saved preferences
   });
@@ -36,6 +50,12 @@ export default function Home() {
   });
   
   const [preferences, setPreferences] = useState<RecommendationRequest | null>(() => {
+    // First try to use history preferences if user is logged in and has history
+    if (user && historyPreferences) {
+      return historyPreferences;
+    }
+    
+    // Otherwise try to use localStorage
     const savedPreferences = localStorage.getItem(PREFERENCES_STORAGE_KEY);
     if (savedPreferences) {
       const parsed = JSON.parse(savedPreferences);
@@ -88,6 +108,13 @@ export default function Home() {
         // Add exclusions list if applicable
         excludeFilmIds: allExcludedIds.length > 0 ? allExcludedIds : undefined
       };
+
+      // First check if we have history recommendations and preferences match
+      if (user && historyRecommendations && 
+          JSON.stringify(historyPreferences) === JSON.stringify(preferences)) {
+        console.log("Using saved recommendations from history");
+        return historyRecommendations;
+      }
         
       const response = await apiRequest('POST', '/api/recommendations', preferencesWithUserInfo);
       const newRecommendations = await response.json();
@@ -102,6 +129,14 @@ export default function Home() {
       return newRecommendations;
     }
   });
+  
+  // This effect will ensure history recommendations are available immediately
+  useEffect(() => {
+    if (user && historyRecommendations && !recommendations && preferences) {
+      // This helps pre-populate the query cache with history data
+      queryClient.setQueryData(['/api/recommendations', preferences, seenFilmIds], historyRecommendations);
+    }
+  }, [user, historyRecommendations, recommendations, preferences, seenFilmIds]);
   
   // Mutation for getting more suggestions
   const { mutate: getMoreSuggestions, isPending: isLoadingMore } = useMutation({
@@ -160,6 +195,13 @@ export default function Home() {
     }
   };
 
+  // Determine if we're showing history recommendations
+  const isShowingHistory = 
+    user && 
+    historyRecommendations && 
+    recommendations && 
+    JSON.stringify(historyRecommendations) === JSON.stringify(recommendations);
+
   return (
     <div className="container mx-auto px-4 py-6 bg-white">
       <div className="mb-4">
@@ -184,15 +226,22 @@ export default function Home() {
             )}
           </>
         ) : (
-          <Recommendations 
-            recommendations={recommendations || []} 
-            isLoading={isLoading || isLoadingMore} 
-            preferences={preferences!} 
-            onReset={handleReset}
-            onGenerateMore={getMoreSuggestions}
-            hasMoreToGenerate={recommendations && recommendations.length > 0}
-            onDisliked={handleFilmDisliked}
-          />
+          <>
+            {isShowingHistory && (
+              <div className="mb-4 text-center text-sm bg-indigo-50 border border-indigo-100 rounded-lg p-3 max-w-2xl mx-auto shadow-[0_4px_14px_0_rgba(79,70,229,0.2)]">
+                <span className="font-medium text-indigo-700">Welcome back!</span> We've loaded your previous recommendations.
+              </div>
+            )}
+            <Recommendations 
+              recommendations={recommendations || []} 
+              isLoading={isLoading || isLoadingMore} 
+              preferences={preferences!} 
+              onReset={handleReset}
+              onGenerateMore={getMoreSuggestions}
+              hasMoreToGenerate={recommendations && recommendations.length > 0}
+              onDisliked={handleFilmDisliked}
+            />
+          </>
         )}
       </div>
     </div>
