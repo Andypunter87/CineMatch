@@ -85,6 +85,23 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
         onDisliked(film.id);
       }
       
+      // Check watchlist status again after feedback
+      setTimeout(async () => {
+        try {
+          const response = await fetch('/api/watchlist');
+          const watchlistItems = await response.json();
+          
+          // Check if this film is in the watchlist
+          const found = watchlistItems.some((item: any) => 
+            item && item.filmId === film.id
+          );
+          
+          setIsWatchlisted(found);
+        } catch (error) {
+          console.error('Error checking watchlist after feedback:', error);
+        }
+      }, 500);
+      
       // Track feedback event
       trackEvent(
         variables === 'like' ? AnalyticsEvents.RECOMMENDATION_LIKED : AnalyticsEvents.RECOMMENDATION_DISLIKED, 
@@ -132,13 +149,8 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
       return await res.json();
     },
     onSuccess: (watchlistItem) => {
-      // Immediately update the component's state to show it's in the watchlist
-      // by setting an updated array in the cache
-      const currentItems = queryClient.getQueryData<any[]>(['/api/watchlist']) || [];
-      queryClient.setQueryData(['/api/watchlist'], [...currentItems, watchlistItem]);
-      
-      // Also invalidate the watchlist query to refresh from server
-      queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
+      // Immediately update our local state
+      setIsWatchlisted(true);
       
       // Track film added to watchlist event
       trackEvent(AnalyticsEvents.FILM_ADDED_TO_WATCHLIST, {
