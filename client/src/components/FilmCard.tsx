@@ -28,7 +28,7 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
   const { data: watchlistItems = [] } = useQuery<any[]>({
     queryKey: ['/api/watchlist'],
     enabled: !!user, // Only fetch if user is logged in
-    staleTime: 60000, // Cache for 1 minute
+    staleTime: 0, // Disable caching to ensure fresh data
   });
   
   // Recommendation feedback mutation
@@ -106,7 +106,12 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
       return await res.json();
     },
     onSuccess: (watchlistItem) => {
-      // Only invalidate watchlist data without redirecting to homepage
+      // Immediately update the component's state to show it's in the watchlist
+      // by setting an updated array in the cache
+      const currentItems = queryClient.getQueryData<any[]>(['/api/watchlist']) || [];
+      queryClient.setQueryData(['/api/watchlist'], [...currentItems, watchlistItem]);
+      
+      // Also invalidate the watchlist query to refresh from server
       queryClient.invalidateQueries({ queryKey: ["/api/watchlist"] });
       
       // Track film added to watchlist event
@@ -159,7 +164,11 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
   };
 
   // Check if the film is already in the user's watchlist
-  const isInWatchlist = watchlistItems.some((item: {filmId: number}) => item.filmId === film.id);
+  // More robust check for film in watchlist
+  const isInWatchlist = Array.isArray(watchlistItems) && 
+    watchlistItems.some((item: {filmId: number}) => 
+      item && typeof item.filmId === 'number' && item.filmId === film.id
+    );
   
   // Ensure we have valid film data
   const title = film.title || "Unknown Title";
