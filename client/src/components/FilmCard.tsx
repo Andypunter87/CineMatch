@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
 
@@ -27,35 +27,43 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
   // Use a more simple approach
   const [isWatchlisted, setIsWatchlisted] = useState<boolean>(false);
   
-  // Use effect to manually check if film is in watchlist to avoid stale data issues
+  // Use a directly fetched watchlist approach
+  const [watchlistItems, setWatchlistItems] = useState<any[]>([]);
+  
+  // Fetch the watchlist data when the component mounts and when user logs in
   useEffect(() => {
-    // Define an async function inside the effect
-    async function checkWatchlist() {
-      if (!user) return;
-      
+    if (!user) return;
+    
+    const fetchWatchlist = async () => {
       try {
-        const response = await fetch('/api/watchlist');
-        const watchlistItems = await response.json();
-        
-        // Check if this film is in the watchlist
-        const found = watchlistItems.some((item: any) => 
-          item && item.filmId === film.id
-        );
-        
-        setIsWatchlisted(found);
+        const response = await fetch('/api/watchlist', { credentials: 'include' });
+        if (response.ok) {
+          const data = await response.json();
+          setWatchlistItems(data || []);
+        }
       } catch (error) {
-        console.error('Error checking watchlist:', error);
+        console.error('Error fetching watchlist:', error);
       }
-    }
+    };
     
-    // Call the function
-    checkWatchlist();
+    fetchWatchlist();
     
-    // Also check after feedback is submitted
-    if (feedbackSubmitted) {
-      setTimeout(checkWatchlist, 500);
-    }
-  }, [user, film.id, feedbackSubmitted]);
+    // Setup a polling mechanism to check the watchlist periodically
+    const intervalId = setInterval(fetchWatchlist, 3000);
+    
+    // Cleanup on unmount
+    return () => clearInterval(intervalId);
+  }, [user]);
+
+  // Check if this specific film is in the watchlist
+  const exactFilmInWatchlist = watchlistItems.some(
+    (item: any) => item && item.filmId === film.id
+  );
+  
+  // Update state whenever watchlist items change
+  useEffect(() => {
+    setIsWatchlisted(exactFilmInWatchlist);
+  }, [exactFilmInWatchlist, watchlistItems.length]);
   
   // Recommendation feedback mutation
   const recommendationFeedbackMutation = useMutation({
@@ -490,7 +498,7 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
           {/* Add to Watchlist button or Already in Watchlist indicator */}
           {user && !showConfirmation && !feedbackSubmitted && (
             <div className="mt-3 pt-2 border-t border-gray-100">
-              {isWatchlisted ? (
+              {exactFilmInWatchlist ? (
                 <div className="flex items-center justify-center bg-blue-50 text-blue-700 p-2 rounded-md">
                   <BookmarkCheck className="mr-2 h-4 w-4 text-blue-500" />
                   <span className="text-sm font-medium">Already in your watchlist</span>
@@ -499,7 +507,27 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                 <Button 
                   className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
                   size="sm"
-                  onClick={() => addToWatchlistMutation.mutate()}
+                  onClick={() => {
+                    // Double-check with a fresh API call to make absolutely sure
+                    fetch('/api/watchlist', { credentials: 'include' })
+                      .then(response => response.json())
+                      .then(data => {
+                        const alreadyInWatchlist = data.some((item: any) => 
+                          item && item.filmId === film.id
+                        );
+                        
+                        if (alreadyInWatchlist) {
+                          setIsWatchlisted(true);
+                        } else {
+                          // Only mutate if not already in watchlist
+                          addToWatchlistMutation.mutate();
+                        }
+                      })
+                      .catch(() => {
+                        // On error, try the mutation anyway
+                        addToWatchlistMutation.mutate();
+                      });
+                  }}
                   disabled={addToWatchlistMutation.isPending}
                 >
                   {addToWatchlistMutation.isPending ? (
