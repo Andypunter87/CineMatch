@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, json, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, json, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -139,6 +139,16 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Table to store user's last set of recommendations
+export const userRecommendations = pgTable("user_recommendations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  preferences: jsonb("preferences").$type<RecommendationRequest>().notNull(),
+  recommendations: jsonb("recommendations").$type<Film[]>().notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export type Film = {
   id: number;
   title: string;
@@ -231,6 +241,15 @@ export const insertNotificationSchema = createInsertSchema(notifications, {
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// Create schema for user recommendations
+export const insertUserRecommendationsSchema = createInsertSchema(userRecommendations, {
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+});
+
+export type UserRecommendations = typeof userRecommendations.$inferSelect;
+export type InsertUserRecommendations = z.infer<typeof insertUserRecommendationsSchema>;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
