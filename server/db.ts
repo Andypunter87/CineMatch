@@ -10,6 +10,7 @@ import { createAnalyticsTable } from "./migrations/create-analytics-table";
 import { createFriendsTables } from "./migrations/create-friends-tables";
 import { addFriendNameField } from "./migrations/add-friend-name";
 import { createNotificationsTable } from "./migrations/create-notifications-table";
+import { createUserRecommendationsTable } from "./migrations/create-user-recommendations-table";
 
 // Create postgres connection with proper error handling
 export const client = process.env.DATABASE_URL 
@@ -102,6 +103,9 @@ export async function initializeDatabase() {
     
     // Run migration to create the notifications table
     await createNotificationsTable();
+    
+    // Run migration to create the user recommendations table
+    await createUserRecommendationsTable();
     
     console.log("Database initialized");
   } catch (error) {
