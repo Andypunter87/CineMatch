@@ -32,6 +32,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register admin routes
   app.use('/api/admin', adminRoutes);
   
+  // Special endpoint specifically for "Show More Films" functionality
+  app.post('/api/recommendations/more', async (req, res) => {
+    try {
+      console.log("Received request for more recommendations");
+      
+      // Validate the incoming request
+      const preferences = recommendationRequestSchema.parse(req.body);
+      
+      // Get excluded film IDs or initialize an empty array
+      const excludeFilmIds = preferences.excludeFilmIds || [];
+      
+      // Get batch size (default to 8 if not specified)
+      const batchSize = preferences.requestedBatchSize || 8;
+      
+      console.log(`Requesting ${batchSize} more recommendations, excluding ${excludeFilmIds.length} films`);
+      
+      // Use our dedicated helper function that has special handling for additional recommendations
+      const { getAdditionalRecommendations } = require('./services/recommendation-helper');
+      const additionalRecommendations = await getAdditionalRecommendations(
+        preferences,
+        excludeFilmIds,
+        batchSize
+      );
+      
+      console.log(`Returning ${additionalRecommendations.length} additional recommendations`);
+      
+      // Return the recommendations
+      res.json(additionalRecommendations);
+    } catch (error) {
+      console.error('Error getting more recommendations:', error);
+      res.status(500).json({ message: 'Failed to get more recommendations' });
+    }
+  });
+  
   // API endpoint for film recommendations
   app.post('/api/recommendations', async (req, res) => {
     try {
