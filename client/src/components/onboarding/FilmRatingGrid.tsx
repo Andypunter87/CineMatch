@@ -3,14 +3,8 @@ import {
   Card,
   CardContent,
 } from '@/components/ui/card';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { Loader2, Star, StarHalf, StarOff, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Star, EyeOff } from 'lucide-react';
 
 interface Film {
   id: number;
@@ -135,7 +129,7 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
             />
           </div>
           <span className="text-sm font-medium whitespace-nowrap">
-            {ratedCount}/{totalFilms}
+            {ratedCount}/12
           </span>
         </div>
       </div>
@@ -147,7 +141,7 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {getCurrentFilms().map((film) => (
               <FilmRatingCard
                 key={film.id}
@@ -159,7 +153,7 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
           </div>
           
           {/* Page navigation */}
-          <div className="flex justify-between items-center mt-6">
+          <div className="flex justify-between items-center mt-8">
             <Button
               variant="outline"
               size="sm"
@@ -213,26 +207,30 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
 
   return (
-    <Card className="overflow-hidden relative transition-all duration-200">
+    <Card className="overflow-hidden transition-all duration-200 shadow-lg hover:shadow-xl">
       <CardContent className="p-0">
-        {/* Film Poster */}
+        {/* Film Poster with semi-transparent rating interface */}
         <div className="aspect-[2/3] relative">
+          {/* Movie poster - more visible now */}
           <img
             src={film.posterUrl}
             alt={`${film.title} (${film.year})`}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover z-0"
           />
           
-          {/* Rating Overlay with Film Info - Always visible for better UX */}
-          <div className="absolute inset-0 flex flex-col bg-black/80 p-3">
+          {/* Semi-transparent rating overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/60 p-3 
+                        flex flex-col z-10">
             {/* Film title and year prominently at the top */}
-            <div className="text-white text-center mb-2">
+            <div className="text-white text-center mb-3 bg-black/50 py-2 rounded-md">
               <h3 className="text-base sm:text-lg font-semibold mb-1">{film.title}</h3>
               <p className="text-sm opacity-90">{film.year}</p>
             </div>
             
             <div className="flex-grow flex flex-col items-center justify-center">
-              <div className="text-white text-center mb-3 text-sm font-medium">Rate this movie:</div>
+              <div className="text-white text-center mb-3 px-2 py-1 bg-black/50 rounded-md text-sm font-medium">
+                Rate this movie:
+              </div>
               
               {/* Star Rating System with Hover Effect */}
               <div className="flex items-center justify-center gap-2 mb-4">
@@ -249,7 +247,7 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
                       // to give visual feedback before the click happens
                       setTimeout(() => setHoveredStar(null), 300);
                     }}
-                    className={`text-2xl transition-all duration-150 transform hover:scale-110 ${
+                    className={`text-2xl transition-all duration-150 transform hover:scale-125 ${
                       // If hovering, highlight this star and all stars below it
                       hoveredStar && star <= hoveredStar
                         ? 'text-yellow-300' 
@@ -257,11 +255,11 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
                         : currentRating && currentRating >= star 
                           ? 'text-yellow-400' 
                           // Otherwise, show gray stars
-                          : 'text-gray-400'
+                          : 'text-gray-300'
                     }`}
                     aria-label={`Rate ${star} stars`}
                   >
-                    <Star className={`h-8 w-8 ${
+                    <Star className={`h-8 w-8 drop-shadow-md ${
                       // If hovering or rated, fill the star
                       (hoveredStar && star <= hoveredStar) || (currentRating && currentRating >= star)
                         ? 'fill-current' 
@@ -272,7 +270,7 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
               </div>
               
               {/* Rating Description - Show what the current hover/selection means */}
-              <div className="text-center h-6 mb-2">
+              <div className="text-center h-6 mb-3 bg-black/40 px-3 py-0.5 rounded-full">
                 {hoveredStar && (
                   <span className="text-sm text-yellow-300 font-medium">
                     {hoveredStar === 1 && "Didn't like it"}
@@ -291,15 +289,20 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
                     {currentRating === 5 && "Loved it!"}
                   </span>
                 )}
+                {!hoveredStar && !currentRating && (
+                  <span className="text-sm text-gray-300 font-medium">
+                    Rate from 1-5 stars
+                  </span>
+                )}
               </div>
               
-              {/* Haven't Seen Button */}
+              {/* Haven't Seen Button - Always visible */}
               <button
                 onClick={() => onRateFilm(film.id, null)}
-                className={`mt-1 flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`mt-1 flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors w-full max-w-[160px] ${
                   currentRating === undefined
                     ? 'bg-gray-700 text-white'
-                    : 'bg-gray-600/50 text-gray-200 hover:bg-gray-600'
+                    : 'bg-gray-600/70 text-gray-200 hover:bg-gray-700 hover:text-white'
                 }`}
               >
                 <EyeOff className="h-4 w-4 mr-1.5" />
