@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -114,6 +114,18 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
   // Calculate overall progress
   const overallProgress = Math.round((ratedCount / totalFilms) * 100);
   
+  // Whether to show progress animation
+  const [progressAnimation, setProgressAnimation] = useState(false);
+  
+  // Update progress animation when ratings change
+  useEffect(() => {
+    if (ratedCount > 0) {
+      setProgressAnimation(true);
+      const timer = setTimeout(() => setProgressAnimation(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [ratedCount]);
+  
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -124,14 +136,29 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
         <div className="mt-4 flex items-center justify-center gap-2">
           <div className="h-2 w-full max-w-md bg-gray-200 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-primary rounded-full transition-all duration-300"
+              className={`h-full bg-primary rounded-full transition-all duration-300 ${
+                progressAnimation ? 'animate-pulse' : ''
+              }`}
               style={{ width: `${overallProgress}%` }}
             />
           </div>
-          <span className="text-sm font-medium whitespace-nowrap">
+          <span className={`text-sm font-medium whitespace-nowrap transition-all duration-300 ${
+            progressAnimation ? 'scale-110 text-primary font-bold' : ''
+          }`}>
             {ratedCount}/12
           </span>
         </div>
+        
+        {ratedCount >= 5 && ratedCount < totalFilms && (
+          <div className="mt-2 text-sm text-green-600 animate-pulse">
+            You've rated enough movies! You can continue or click "Complete Ratings"
+          </div>
+        )}
+        {ratedCount === totalFilms && (
+          <div className="mt-2 text-sm font-medium text-green-600">
+            Great job! You've rated all the movies.
+          </div>
+        )}
       </div>
 
       {isLoading ? (
@@ -208,6 +235,26 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [haventSeenClicked, setHaventSeenClicked] = useState(false);
+  const [starClickedAnimation, setStarClickedAnimation] = useState(false);
+  
+  // Function to handle "Haven't Seen It" button click with visual feedback
+  const handleHaventSeen = () => {
+    setHaventSeenClicked(true);
+    onRateFilm(film.id, null);
+    
+    // Reset after animation completes
+    setTimeout(() => setHaventSeenClicked(false), 1500);
+  };
+  
+  // Function to handle star rating with visual feedback
+  const handleStarClick = (star: number) => {
+    setStarClickedAnimation(true);
+    onRateFilm(film.id, star);
+    
+    // Reset animation after it completes
+    setTimeout(() => setStarClickedAnimation(false), 1000);
+  };
 
   return (
     <Card className="overflow-hidden transition-all duration-200 shadow-lg hover:shadow-xl border-2 border-gray-300 rounded-xl">
@@ -261,65 +308,107 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
-                  onClick={() => onRateFilm(film.id, star)}
+                  onClick={() => handleStarClick(star)}
                   onMouseEnter={() => setHoveredStar(star)}
                   onMouseLeave={() => setHoveredStar(null)}
-                  className={`transition-all duration-150 transform hover:scale-110 ${
+                  disabled={starClickedAnimation}
+                  className={`transition-all duration-150 transform relative ${
                     (hoveredStar && star <= hoveredStar) || (currentRating && currentRating >= star)
                       ? 'text-yellow-300'
                       : 'text-gray-400'
-                  }`}
+                  } ${currentRating === star && starClickedAnimation ? 'animate-pulse' : 'hover:scale-110'}`}
                   aria-label={`Rate ${star} stars`}
                 >
+                  {/* Star animation effect */}
+                  {currentRating === star && starClickedAnimation && (
+                    <span className="absolute inset-0 flex items-center justify-center animate-ping opacity-70">
+                      <Star className="w-8 h-8 sm:w-10 sm:h-10 fill-yellow-300 stroke-yellow-300" />
+                    </span>
+                  )}
+                  
                   <Star 
                     className={`w-8 h-8 sm:w-10 sm:h-10 filter drop-shadow-md ${
                       (hoveredStar && star <= hoveredStar) || (currentRating && currentRating >= star)
                         ? 'fill-yellow-300 stroke-yellow-300'
                         : 'stroke-white'
-                    }`} 
+                    } ${currentRating === star && starClickedAnimation ? 'animate-bounce' : ''}`} 
                   />
                 </button>
               ))}
             </div>
             
-            {/* Rating description */}
-            <div className="text-center mb-4 bg-black/30 py-1.5 rounded-md">
-              {hoveredStar && (
-                <span className="text-sm sm:text-base text-yellow-300 font-medium">
-                  {hoveredStar === 1 && "Didn't like it"}
-                  {hoveredStar === 2 && "It was OK"}
-                  {hoveredStar === 3 && "Liked it"}
-                  {hoveredStar === 4 && "Really liked it"}
-                  {hoveredStar === 5 && "Loved it!"}
-                </span>
+            {/* Rating description with feedback */}
+            <div className="text-center mb-4 bg-black/30 py-1.5 rounded-md min-h-[2.5rem] relative">
+              {/* Star clicked animation feedback */}
+              {starClickedAnimation && (
+                <div className="absolute inset-0 bg-green-600/20 rounded-md flex items-center justify-center">
+                  <span className="text-sm sm:text-base text-white font-medium flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Rating saved!
+                  </span>
+                </div>
               )}
-              {!hoveredStar && currentRating && (
-                <span className="text-sm sm:text-base text-yellow-300 font-medium">
-                  {currentRating === 1 && "Didn't like it"}
-                  {currentRating === 2 && "It was OK"}
-                  {currentRating === 3 && "Liked it"}
-                  {currentRating === 4 && "Really liked it"}
-                  {currentRating === 5 && "Loved it!"}
-                </span>
-              )}
-              {!hoveredStar && !currentRating && (
-                <span className="text-sm sm:text-base text-gray-300 font-medium">
-                  Tap a star to rate
-                </span>
-              )}
+              
+              {/* Normal rating descriptions */}
+              <div className={starClickedAnimation ? 'opacity-0' : 'opacity-100'}>
+                {hoveredStar && (
+                  <span className="text-sm sm:text-base text-yellow-300 font-medium">
+                    {hoveredStar === 1 && "Didn't like it"}
+                    {hoveredStar === 2 && "It was OK"}
+                    {hoveredStar === 3 && "Liked it"}
+                    {hoveredStar === 4 && "Really liked it"}
+                    {hoveredStar === 5 && "Loved it!"}
+                  </span>
+                )}
+                {!hoveredStar && currentRating && (
+                  <span className="text-sm sm:text-base text-yellow-300 font-medium">
+                    {currentRating === 1 && "Didn't like it"}
+                    {currentRating === 2 && "It was OK"}
+                    {currentRating === 3 && "Liked it"}
+                    {currentRating === 4 && "Really liked it"}
+                    {currentRating === 5 && "Loved it!"}
+                  </span>
+                )}
+                {!hoveredStar && !currentRating && (
+                  <span className="text-sm sm:text-base text-gray-300 font-medium">
+                    Tap a star to rate
+                  </span>
+                )}
+              </div>
             </div>
             
-            {/* Haven't Seen Button */}
+            {/* Haven't Seen Button with visual feedback */}
             <button
-              onClick={() => onRateFilm(film.id, null)}
-              className={`w-full flex items-center justify-center py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+              onClick={handleHaventSeen}
+              disabled={haventSeenClicked}
+              className={`w-full flex items-center justify-center py-2 px-3 rounded-md text-sm font-medium 
+                transition-all duration-300 relative overflow-hidden ${
                 currentRating === undefined
-                  ? 'bg-blue-600 text-white shadow-md'
+                  ? haventSeenClicked 
+                    ? 'bg-green-600 text-white shadow-md' 
+                    : 'bg-blue-600 text-white shadow-md hover:bg-blue-700'
                   : 'bg-gray-800/80 text-white/90 hover:bg-gray-800 hover:text-white'
               }`}
             >
-              <EyeOff className="h-4 w-4 mr-2" />
-              Haven't Seen It
+              {/* Success animation overlay */}
+              {haventSeenClicked && (
+                <span className="absolute inset-0 flex items-center justify-center bg-green-600 text-white animate-pulse">
+                  <span className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Marked as Not Seen
+                  </span>
+                </span>
+              )}
+              
+              {/* Normal button content */}
+              <EyeOff className={`h-4 w-4 mr-2 ${haventSeenClicked ? 'opacity-0' : 'opacity-100'}`} />
+              <span className={haventSeenClicked ? 'opacity-0' : 'opacity-100'}>
+                Haven't Seen It
+              </span>
             </button>
           </div>
         </div>
