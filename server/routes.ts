@@ -54,7 +54,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...preferences,
         excludeFilmIds: excludeFilmIds,
         requestedBatchSize: batchSize,
-        _bypassStreamingFilter: true  // Special flag to bypass streaming service filtering
+        _bypassStreamingFilter: true,  // Special flag to bypass streaming service filtering
+        // Also disable other strict filters to get more diverse recommendations
+        _disableRuntimeFilter: true,
+        _disableMoodFilter: true
       });
       
       console.log(`Returning ${additionalRecommendations.length} additional recommendations`);
