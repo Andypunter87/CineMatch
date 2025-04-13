@@ -4,7 +4,7 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Star, EyeOff } from 'lucide-react';
+import { Loader2, Star, EyeOff, Film as FilmIcon } from 'lucide-react';
 
 interface Film {
   id: number;
@@ -206,17 +206,41 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
   onRateFilm,
 }) => {
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   return (
     <Card className="overflow-hidden transition-all duration-200 shadow-lg hover:shadow-xl border-2 border-gray-300 rounded-xl">
       <CardContent className="p-0">
         <div className="aspect-[2/3] relative">
-          {/* Film poster */}
-          <div className="absolute inset-0 z-10">
+          {/* Film poster with loading/error states */}
+          <div className="absolute inset-0 z-10 bg-gray-900">
+            {!imageLoaded && !imageError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                <Loader2 className="h-12 w-12 animate-spin text-gray-400" />
+              </div>
+            )}
+            
+            {imageError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800">
+                <FilmIcon className="h-16 w-16 mb-2 text-gray-500" />
+                <span className="text-gray-400 text-sm text-center px-4">
+                  Poster not available
+                </span>
+              </div>
+            )}
+            
             <img 
               src={film.posterUrl} 
               alt={`${film.title} poster`} 
-              className="w-full h-full object-cover"
+              onLoad={() => setImageLoaded(true)}
+              onError={() => {
+                setImageLoaded(true);
+                setImageError(true);
+              }}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${
+                imageLoaded && !imageError ? 'opacity-100' : 'opacity-0'
+              }`}
             />
           </div>
           
