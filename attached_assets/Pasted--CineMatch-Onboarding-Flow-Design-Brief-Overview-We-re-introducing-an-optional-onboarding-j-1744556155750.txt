@@ -1,0 +1,68 @@
+🎬 CineMatch Onboarding Flow – Design Brief
+
+🧭 Overview
+
+We’re introducing an optional onboarding journey for new users of CineMatch to help them:
+	•	Understand the core value of the app
+	•	Discover its key features
+	•	Provide quick preference data (via movie ratings) to improve recommendations from the start
+
+This flow appears immediately after account creation (or invite sign-up), but can be skipped at any time.
+
+⸻
+
+🎯 Goals
+	•	Educate users on how CineMatch works and what makes it special
+	•	Collect useful signals about viewing preferences to improve recommendation quality
+	•	Encourage user engagement with minimal friction
+
+⸻
+
+🧱 Flow Overview
+
+1. Explainer Screens (3 pages)
+	•	Style: Pager with “Next” and “Skip” buttons on each screen
+	•	Copy/Visual content:
+	1.	Mood-based magic: “Get great movie recommendations that match how you’re feeling — right now.”
+	2.	Hidden gems, uncovered: “Discover brilliant films you might have missed — from cult classics to indie darlings.”
+	3.	Harmony for group nights: “Watching together? We’ll suggest films that work for everyone in the room.”
+	•	Design to match current app style (see screenshot)
+	•	Optional: include small icons/visuals to reinforce the theme of each screen
+
+2. Movie Rating Step (Batch of 10)
+	•	Layout: Grid of 10 movie posters, with titles clearly labelled
+	•	Interaction on hover or tap:
+	•	“Not Seen”
+	•	“Not Interested”
+	•	“Seen – Loved it”
+	•	“Seen – Liked it”
+	•	“Seen – Meh”
+	•	“Seen – Hated it”
+	•	After initial batch:
+	•	Prompt user: “Want even better picks? Rate 10 more?” with Yes / Not Now option
+	•	If Yes, load another 10 using same layout
+
+3. Completion
+	•	Confirmation screen: “You’re all set! Let’s find something brilliant to watch.”
+	•	Button: “Go to Recommendations” (takes them to main app/home view)
+
+⸻
+
+🧩 Functional & Data Handling
+	•	Ratings and preferences are saved to the user’s Watchlist data model
+	•	These early signals are used to:
+	•	Improve first-session recommendations
+	•	Help shape mood-based suggestions and group-friendly picks
+	•	Rating input should be stored in a structured format:
+title_id, seen_status, interest_rating (if applicable)
+	•	The movie list for rating should pull from the existing app database with logic to ensure:
+	•	Mix of genres
+	•	Broad recognisability (popular, not too obscure)
+	•	No duplicates or films already in user’s Watchlist
+
+⸻
+
+🧪 Optional (Stretch Features)
+	•	Add visual feedback animation (e.g. a little tick or card flip) when user submits a rating
+	•	Save progress mid-onboarding in case user leaves early and returns
+	•	Allow onboarding to be re-accessed via a Help menu or Settings

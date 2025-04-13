@@ -1,0 +1,89 @@
+Absolutely! Here’s the updated CineMatch Brand Guide — perfect for dropping straight into your Apple Notes, Notion, or wherever you keep your working documents.
+
+⸻
+
+🍿 CineMatch Brand Guide
+
+Last updated: April 2025
+
+⸻
+
+🧭 Brand Essence
+
+CineMatch helps people find the right movie for right now — based on how they’re feeling and who they’re watching with. We reduce decision fatigue, spark discovery, and help people stop scrolling and start watching.
+
+⸻
+
+🗣️ Voice & Tone
+
+Warm, smart, playful — emotionally intuitive.
+	•	Warm & Helpful – Friendly, calm, approachable
+	•	Smart, Not Snobby – Knows film, but never pretentious
+	•	Playfully Clear – Punchy, casual, confident
+	•	Emotion-Led – Leans on vibe, feeling, and mood over plot or genre
+
+Examples:
+	•	“Feeling nostalgic? Let’s cue up a classic.”
+	•	“You rate, we recommend. Easy.”
+	•	“No more endless scrolling. We’ve got you.”
+
+⸻
+
+🎨 Visual Identity
+
+Colours
+	•	Primary Blue: #4DA8F2
+	•	Gradient Accent: Blue → Turquoise (#4DA8F2 → #64D9D9)
+	•	Navy Text: #1C1C2B
+	•	Muted Grey Text: #707070
+	•	Background White: #FFFFFF
+
+Typography
+	•	Sans Serif (Inter, Helvetica Neue, or system default)
+	•	Headers: Bold, Title Case
+	•	Body: Clean, regular weight, dark blue
+
+Style
+	•	Rounded UI, clean white space
+	•	Grid layout for film posters
+	•	Simple, line-style icons (film, mood, popcorn etc.)
+
+⸻
+
+⭐ Core Features to Highlight
+	•	Mood-first recommendations
+	•	Hidden gem discovery
+	•	Group-friendly suggestions
+	•	Personalised watchlist
+	•	Works across all major streaming services
+
+⸻
+
+📣 Messaging Pillars
+
+Theme	Message Style
+Mood Matching	“Tell us how you feel. We’ll find the film.”
+Discovery	“Missed it? Not anymore.”
+Group Picks	“Something everyone can agree on.”
+Time-saving	“Stop scrolling. Start watching.”
+
+
+
+⸻
+
+🖼️ Asset Guidelines
+	•	Onboarding slides: Minimal, fun, informative (use app style)
+	•	Banners/Social Tiles: Mood + emoji + action (“In a thriller mood?” → try…)
+	•	Icons/Illustrations: Match app style — minimal, rounded, blue-accented
+
+⸻
+
+✅ Copy Checklist for Any New Asset
+	•	Is it emotionally intuitive?
+	•	Does it sound like a friend who knows movies?
+	•	Is it short and clear — no waffle?
+	•	Does it help the user take action or discover something new?
+
+⸻
+
+Would you like me to turn this into a formatted PDF or Notion template next? Or link it to a style library if you’re using Figma or Replit’s native tools?
