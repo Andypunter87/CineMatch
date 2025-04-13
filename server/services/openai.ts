@@ -31,6 +31,8 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
     timeOfDay: cacheablePreferences.timeOfDay,
     runtime: cacheablePreferences.runtime,
     country: cacheablePreferences.country,
+    // Include the requested batch size
+    requestedBatchSize: cacheablePreferences.requestedBatchSize || 6,
     // Include a summarized version of streaming services (sorted to ensure consistent keys)
     streamingServices: cacheablePreferences.streamingServices?.sort() || [],
     // Include information about viewing party
@@ -97,7 +99,7 @@ IMPORTANT ABOUT GROUP VIEWING:
 1. If the user indicates this is a group viewing with friends or a date night, prioritize films that spark conversation or create shared experiences
 2. For family viewing, prioritize films with positive themes, clear storylines, and appropriate content
 
-Return 5-6 films that match the criteria:
+Return the requested number of films that match the criteria:
 - Half should be mainstream/popular films
 - Half should be independent, foreign, or lesser-known films
 - ALL films should strongly match the user's mood, audience and setting preferences
@@ -112,6 +114,7 @@ Format your response as a JSON object with a 'recommendations' array.`;
 - Audience: ${preferences.audience || "solo"} 
 - Time: ${timeOfDayString}
 - Mood: ${preferences.mood}
+- Number of films to return: ${preferences.requestedBatchSize || 6}
 ${preferences.runtime && preferences.runtime.length > 0
   ? `- Runtime preferences: ${preferences.runtime.map(r => 
     r === "short" ? "Under 90 minutes" : 
