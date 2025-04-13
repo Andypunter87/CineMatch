@@ -168,9 +168,9 @@ export default function Home() {
       
       // Determine batch size for consistent results
       // For "Show More" requests, we want at least the same number as the initial load
-      // For more diverse recommendations, request a larger number (at least 8-10)
-      // This ensures we get at least 4-5 new films even after filtering
-      const batchSize = initialBatchSize > 0 ? Math.max(initialBatchSize + 4, 10) : 10; 
+      // For more diverse recommendations, request a larger number (at least 15-20)
+      // This ensures we get at least 8-10 new films even after filtering
+      const batchSize = initialBatchSize > 0 ? Math.max(initialBatchSize * 2, 15) : 15; 
       
       // Create a complete preferences object with all exclusions
       const combinedExclusions = Array.from(new Set([...allSeenIds, ...dislikedFilmIds]));
@@ -180,7 +180,11 @@ export default function Home() {
       const requestBody = {
         ...preferences,
         excludeFilmIds: combinedExclusions,
-        requestedBatchSize: batchSize
+        requestedBatchSize: batchSize,
+        // Add special flags to bypass filters and get more diverse recommendations
+        _bypassStreamingFilter: true,
+        _disableMoodFilter: true,
+        _disableRuntimeFilter: true
       };
       
       // Make the API request to get more recommendations using the special "more" endpoint

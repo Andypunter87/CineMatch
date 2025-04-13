@@ -339,13 +339,22 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     let processedRecommendations = await postProcessRecommendations(filteredRecommendations, preferences);
     
     // Apply additional filtering to ensure mood preferences are respected
-    processedRecommendations = filterRecommendationsByMood(processedRecommendations, preferences.mood);
+    // Check if we should bypass mood filtering (for "Show More" requests)
+    if (preferences._disableMoodFilter !== true) {
+      console.log(`Applying additional mood filtering for mood: ${preferences.mood}`);
+      processedRecommendations = filterRecommendationsByMood(processedRecommendations, preferences.mood);
+    } else {
+      console.log("Bypassing mood filtering to provide more diverse recommendations");
+    }
     
     // Apply additional filtering to ensure runtime preferences are respected
-    if (preferences.runtime && preferences.runtime.length > 0) {
+    if (preferences.runtime && preferences.runtime.length > 0 && preferences._disableRuntimeFilter !== true) {
       // Cast to the expected type for runtime preferences
       const runtimePrefs = preferences.runtime as Array<"short" | "medium" | "long">;
+      console.log(`Applying additional runtime filtering for preferences: ${preferences.runtime.join(', ')}`);
       processedRecommendations = filterRecommendationsByRuntime(processedRecommendations, runtimePrefs);
+    } else if (preferences._disableRuntimeFilter === true) {
+      console.log("Bypassing runtime filtering to provide more diverse recommendations");
     }
     
     return processedRecommendations;
