@@ -61,6 +61,7 @@ export interface IStorage {
   getRecommendations(preferences: RecommendationRequest): Promise<Film[]>;
   saveUserRecommendations(userId: number, preferences: RecommendationRequest, recommendations: Film[]): Promise<UserRecommendations>;
   getUserLastRecommendations(userId: number): Promise<UserRecommendations | undefined>;
+  getUserRatedFilms(userId: number): Promise<{ filmId: number; title: string; genres: string[]; rating: number; filmType: string }[]>; // New method to get user's rated films
   
   // Watchlist operations
   getWatchlistItems(userId: number): Promise<WatchlistItem[]>;
@@ -835,6 +836,37 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error getting user's last recommendations:", error);
       return undefined;
+    }
+  }
+  
+  /**
+   * Gets all films rated by the user from the watchlist
+   * This is used to inform the recommendation engine of user preferences
+   */
+  async getUserRatedFilms(userId: number): Promise<{ filmId: number; title: string; genres: string[]; rating: number; filmType: string }[]> {
+    try {
+      // Get all watchlist items with non-null ratings
+      const ratedItems = await db
+        .select()
+        .from(watchlist)
+        .where(and(
+          eq(watchlist.userId, userId),
+          sql`${watchlist.userRating} IS NOT NULL`
+        ));
+      
+      // Map to the required format with just the necessary fields
+      return ratedItems
+        .filter(item => item.userRating !== null && item.userRating > 0)
+        .map(item => ({
+          filmId: item.filmId,
+          title: item.filmTitle,
+          genres: item.filmGenres || [],
+          rating: item.userRating as number,
+          filmType: item.filmType || 'unknown'
+        }));
+    } catch (error) {
+      console.error("Error getting user's rated films:", error);
+      return [];
     }
   }
 }
