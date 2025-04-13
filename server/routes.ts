@@ -113,9 +113,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get recommendations based on user preferences
       let recommendations = await storage.getRecommendations(preferences);
+      let originalRecommendations = [...recommendations]; // Store original recommendations
       
+      // Minimum number of recommendations we want to display
+      const MIN_RECOMMENDATIONS = 5;
+      
+      // If we don't have enough recommendations initially, skip the filtering
+      if (recommendations.length < MIN_RECOMMENDATIONS) {
+        console.log(`Not enough initial recommendations (${recommendations.length}). Skipping similarity filtering.`);
+      }
       // Check for previous recommendations with similar preferences to avoid repetition
-      if (req.isAuthenticated() && req.user) {
+      else if (req.isAuthenticated() && req.user) {
         try {
           // Get the user's last recommendations
           const lastRecommendations = await storage.getUserLastRecommendations(req.user.id);
@@ -151,19 +159,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 return true;
               });
               
-              // If we've filtered out too many films, get more
-              if (recommendations.length < 4) {
-                console.log(`Only ${recommendations.length} recommendations after filtering, getting more`);
-                const moreRecommendations = await storage.getRecommendations({
-                  ...preferences,
-                  excludeFilmIds: [...(preferences.excludeFilmIds || []), ...Array.from(prevFilmIds)]
-                });
+              // If we've filtered out too many films, restore original recommendations
+              if (recommendations.length < MIN_RECOMMENDATIONS) {
+                console.log(`Only ${recommendations.length} recommendations after filtering, restoring original set`);
                 
-                // Add new recommendations until we have enough
-                for (const film of moreRecommendations) {
-                  if (!prevFilmIds.has(film.id) && !recommendations.some(r => r.id === film.id)) {
-                    recommendations.push(film);
-                    if (recommendations.length >= 5) break;
+                // If we have enough original recommendations, use those
+                if (originalRecommendations.length >= MIN_RECOMMENDATIONS) {
+                  recommendations = originalRecommendations;
+                } 
+                // Otherwise, get additional recommendations
+                else {
+                  console.log(`Not enough original recommendations either, getting more`);
+                  const moreRecommendations = await storage.getRecommendations({
+                    ...preferences,
+                    excludeFilmIds: [...(preferences.excludeFilmIds || []), ...Array.from(prevFilmIds)],
+                    _bypassStreamingFilter: true,
+                    _disableMoodFilter: true,
+                    _disableRuntimeFilter: true
+                  });
+                  
+                  // Add new recommendations until we have enough
+                  for (const film of moreRecommendations) {
+                    if (!prevFilmIds.has(film.id) && !recommendations.some(r => r.id === film.id)) {
+                      recommendations.push(film);
+                      if (recommendations.length >= MIN_RECOMMENDATIONS) break;
+                    }
                   }
                 }
               }
@@ -239,9 +259,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get recommendations
       let recommendations = await storage.getRecommendations(preferences);
+      let originalRecommendations = [...recommendations]; // Store original recommendations
       
+      // Minimum number of recommendations we want to display
+      const MIN_RECOMMENDATIONS = 5;
+      
+      // If we don't have enough recommendations initially, skip the filtering
+      if (recommendations.length < MIN_RECOMMENDATIONS) {
+        console.log(`Not enough initial recommendations (${recommendations.length}). Skipping similarity filtering.`);
+      }
       // Check for previous recommendations with similar preferences to avoid repetition
-      if (req.isAuthenticated() && req.user) {
+      else if (req.isAuthenticated() && req.user) {
         try {
           // Get the user's last recommendations
           const lastRecommendations = await storage.getUserLastRecommendations(req.user.id);
@@ -277,19 +305,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 return true;
               });
               
-              // If we've filtered out too many films, get more
-              if (recommendations.length < 4) {
-                console.log(`Only ${recommendations.length} recommendations after filtering, getting more`);
-                const moreRecommendations = await storage.getRecommendations({
-                  ...preferences,
-                  excludeFilmIds: [...(preferences.excludeFilmIds || []), ...Array.from(prevFilmIds)]
-                });
+              // If we've filtered out too many films, restore original recommendations
+              if (recommendations.length < MIN_RECOMMENDATIONS) {
+                console.log(`Only ${recommendations.length} recommendations after filtering, restoring original set`);
                 
-                // Add new recommendations until we have enough
-                for (const film of moreRecommendations) {
-                  if (!prevFilmIds.has(film.id) && !recommendations.some(r => r.id === film.id)) {
-                    recommendations.push(film);
-                    if (recommendations.length >= 5) break;
+                // If we have enough original recommendations, use those
+                if (originalRecommendations.length >= MIN_RECOMMENDATIONS) {
+                  recommendations = originalRecommendations;
+                } 
+                // Otherwise, get additional recommendations
+                else {
+                  console.log(`Not enough original recommendations either, getting more`);
+                  const moreRecommendations = await storage.getRecommendations({
+                    ...preferences,
+                    excludeFilmIds: [...(preferences.excludeFilmIds || []), ...Array.from(prevFilmIds)],
+                    _bypassStreamingFilter: true,
+                    _disableMoodFilter: true,
+                    _disableRuntimeFilter: true
+                  });
+                  
+                  // Add new recommendations until we have enough
+                  for (const film of moreRecommendations) {
+                    if (!prevFilmIds.has(film.id) && !recommendations.some(r => r.id === film.id)) {
+                      recommendations.push(film);
+                      if (recommendations.length >= MIN_RECOMMENDATIONS) break;
+                    }
                   }
                 }
               }
