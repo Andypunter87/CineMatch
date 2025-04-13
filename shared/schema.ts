@@ -193,6 +193,7 @@ export const recommendationRequestSchema = z.object({
     filmType: z.string()
   })).optional(), // User's rated films for personalized recommendations
   requestedBatchSize: z.number().positive().optional(), // Requested number of films to return
+  _bypassStreamingFilter: z.boolean().optional(), // Special flag used for "Show More" to bypass streaming service constraints
 });
 
 export type RecommendationRequest = z.infer<typeof recommendationRequestSchema>;

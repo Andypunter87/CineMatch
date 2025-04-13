@@ -57,6 +57,12 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     // Performance optimization: start timestamp
     const startTime = Date.now();
     
+    // Check if this request has the bypass flag 
+    const bypassStreamingFilter = preferences._bypassStreamingFilter === true;
+    if (bypassStreamingFilter) {
+      console.log("Bypass streaming filter flag detected - will return broader set of recommendations");
+    }
+    
     // Ensure we have a requested batch size
     const requestedBatchSize = preferences.requestedBatchSize || 6;
     
@@ -458,6 +464,12 @@ async function postProcessRecommendations(
   recommendations: Film[], 
   preferences: RecommendationRequest
 ): Promise<Film[]> {
+  // Check if we should bypass streaming filtering (for "Show More" requests)
+  if (preferences._bypassStreamingFilter === true) {
+    console.log("Bypassing streaming service filtering to provide more diverse recommendations");
+    return recommendations;
+  }
+  
   // If user doesn't have streaming services or country specified, return as is
   if (!preferences.streamingServices || 
       !preferences.streamingServices.length || 

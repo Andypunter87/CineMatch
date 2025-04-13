@@ -41,10 +41,15 @@ export async function getAdditionalRecommendations(
   console.log(`Requesting additional batch of ${batchSize} recommendations, excluding ${excludeFilmIds.length} films`);
   
   // Create a new preferences object with the exclusions and batch size
+  // For the "Show More" feature, we'll temporarily disable the streaming service filtering
+  // to get a more diverse set of recommendations
   const requestWithExclusions: RecommendationRequest = {
     ...preferences,
     excludeFilmIds: excludeFilmIds,
-    requestedBatchSize: batchSize
+    requestedBatchSize: batchSize,
+    // Don't constrain to streaming services for additional recommendations
+    // This helps avoid getting the same film repeatedly when options are limited
+    _bypassStreamingFilter: true
   };
   
   // Call the AI recommendation service with our updated preferences
