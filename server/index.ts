@@ -6,6 +6,32 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Force HTTPS redirect for production environment
+app.use((req, res, next) => {
+  // Skip for development environment
+  if (app.get("env") !== "production") {
+    return next();
+  }
+  
+  // Check if it's HTTP and not localhost
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  
+  if (forwardedProto === 'http') {
+    // Redirect to HTTPS version of the same URL
+    const secureUrl = `https://${req.headers.host}${req.url}`;
+    return res.redirect(301, secureUrl);
+  }
+  
+  // Add HSTS header to force HTTPS in browsers
+  // max-age=31536000 is 1 year
+  res.setHeader(
+    'Strict-Transport-Security',
+    'max-age=31536000; includeSubDomains'
+  );
+  
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
