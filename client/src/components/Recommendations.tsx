@@ -225,17 +225,6 @@ export default function Recommendations({
         )}
 
         <div className="mt-10 flex flex-wrap justify-center gap-4">
-          {onGenerateMore && hasMoreToGenerate && (
-            <Button
-              onClick={onGenerateMore}
-              variant="default"
-              size="lg"
-              className="px-8 py-3 bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Show More Films
-            </Button>
-          )}
           <Button
             onClick={onReset}
             variant="default"
