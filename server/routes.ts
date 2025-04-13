@@ -46,7 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get user rated films if logged in
-      let userRatedFilms = [];
+      let userRatedFilms: { filmId: number; title: string; genres: string[]; rating: number; filmType: string }[] = [];
       if (req.isAuthenticated() && req.user) {
         try {
           userRatedFilms = await storage.getUserRatedFilms(req.user.id);
@@ -110,13 +110,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         country = req.user.country;
       }
       
+      // Get user rated films if logged in
+      let userRatedFilms: { filmId: number; title: string; genres: string[]; rating: number; filmType: string }[] = [];
+      if (req.isAuthenticated() && req.user) {
+        try {
+          userRatedFilms = await storage.getUserRatedFilms(req.user.id);
+        } catch (error) {
+          console.error("Error getting user rated films:", error);
+          // Continue without user ratings if there's an error
+        }
+      }
+      
       // Validate input
       const preferences = recommendationRequestSchema.parse({
         location,
         timeOfDay, 
         mood,
         streamingServices,
-        country
+        country,
+        userRatedFilms
       });
       
       // Get recommendations

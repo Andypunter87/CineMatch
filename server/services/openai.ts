@@ -23,7 +23,7 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
   
   // Create a cache key based on the preferences
   // Exclude excludeFilmIds from the cache key as these change frequently
-  const { excludeFilmIds, viewingParty, ...cacheablePreferences } = preferences;
+  const { excludeFilmIds, viewingParty, userRatedFilms, ...cacheablePreferences } = preferences;
   const cacheKey = JSON.stringify({
     location: cacheablePreferences.location,
     audience: cacheablePreferences.audience,
@@ -35,7 +35,10 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
     streamingServices: cacheablePreferences.streamingServices?.sort() || [],
     // Include information about viewing party
     hasViewingParty: !!viewingParty,
-    friendCount: viewingParty?.length || 0
+    friendCount: viewingParty?.length || 0,
+    // Include summary of user ratings to make the cache key user-specific
+    hasUserRatings: !!userRatedFilms?.length,
+    userRatingsCount: userRatedFilms?.length || 0
   });
   
   // Check if we have a valid cached result

@@ -185,6 +185,13 @@ export const recommendationRequestSchema = z.object({
   country: z.string().optional(),
   excludeFilmIds: z.array(z.number()).optional(), // List of film IDs to exclude from recommendations
   viewingParty: z.array(z.number()).optional(), // Array of friend IDs who are watching together
+  userRatedFilms: z.array(z.object({
+    filmId: z.number(),
+    title: z.string(),
+    genres: z.array(z.string()),
+    rating: z.number(),
+    filmType: z.string()
+  })).optional(), // User's rated films for personalized recommendations
 });
 
 export type RecommendationRequest = z.infer<typeof recommendationRequestSchema>;
