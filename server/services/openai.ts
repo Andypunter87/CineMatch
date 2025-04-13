@@ -79,6 +79,14 @@ IMPORTANT ABOUT EXCLUDED FILMS:
 2. Films with excluded IDs should be completely omitted from your response - do not reference them at all
 3. Exclusions take absolute priority over all other matching criteria
 
+IMPORTANT ABOUT USER RATINGS:
+1. If the user provides a list of rated films, use these ratings to personalize recommendations
+2. For highly rated films (4-5 stars), recommend similar films with related genres, directors, or styles
+3. For moderately rated films (3 stars), consider their genres but don't prioritize them
+4. For poorly rated films (1-2 stars), avoid recommending similar films
+5. Pay special attention to the genres and film types (mainstream vs indie) that the user has rated highly
+6. If the user has rated both indie and mainstream films, ensure a balanced mix in recommendations
+
 IMPORTANT ABOUT AUDIENCES:
 1. If audience is "solo", focus purely on the user's personal taste based on other preferences
 2. If audience is "friends", prioritize films that work well with groups (comedies, action films, or broadly appealing entertainment)
@@ -94,6 +102,7 @@ Return 5-6 films that match the criteria:
 - Half should be independent, foreign, or lesser-known films
 - ALL films should strongly match the user's mood, audience and setting preferences
 - Include films with complete information (especially those that have runtime data available)
+- When user has rated films, prioritize recommendations that match their apparent taste
 
 Format your response as a JSON object with a 'recommendations' array.`;
 
@@ -128,6 +137,13 @@ ${preferences.audience === "family"
 }
 ${preferences.excludeFilmIds && preferences.excludeFilmIds.length > 0
   ? `- IMPORTANT: User has already seen these films, EXCLUDE them completely from recommendations: Films with IDs ${preferences.excludeFilmIds.join(", ")}`
+  : ""
+}
+${preferences.userRatedFilms && preferences.userRatedFilms.length > 0
+  ? `- IMPORTANT: User has rated these films, use them to personalize recommendations:
+${preferences.userRatedFilms.map(film => 
+  `  * "${film.title}" (${film.filmType}) - Genres: [${film.genres.join(", ")}] - User rating: ${film.rating}/5`
+).join("\n")}`
   : ""
 }
 
