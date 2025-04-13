@@ -331,7 +331,9 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     
     // Apply additional filtering to ensure runtime preferences are respected
     if (preferences.runtime && preferences.runtime.length > 0) {
-      processedRecommendations = filterRecommendationsByRuntime(processedRecommendations, preferences.runtime);
+      // Cast to the expected type for runtime preferences
+      const runtimePrefs = preferences.runtime as Array<"short" | "medium" | "long">;
+      processedRecommendations = filterRecommendationsByRuntime(processedRecommendations, runtimePrefs);
     }
     
     return processedRecommendations;
@@ -346,7 +348,7 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
  * Filters recommendations to ensure they match the user's runtime preferences
  * This provides an additional verification step after AI recommendations
  */
-function filterRecommendationsByRuntime(recommendations: Film[], runtimePrefs: string[]): Film[] {
+function filterRecommendationsByRuntime(recommendations: Film[], runtimePrefs: Array<"short" | "medium" | "long">): Film[] {
   if (!runtimePrefs || !runtimePrefs.length || recommendations.length === 0) {
     return recommendations;
   }
@@ -370,7 +372,9 @@ function filterRecommendationsByRuntime(recommendations: Film[], runtimePrefs: s
     // Check if the film's runtime falls within any of the user's preferred ranges
     return runtimePrefs.some(prefRange => {
       const [min, max] = runtimeRanges[prefRange] || [0, Infinity];
-      return film.runtime >= min && film.runtime <= max;
+      // At this point, we know film.runtime is defined because of the earlier check
+      const runtime = film.runtime as number;
+      return runtime >= min && runtime <= max;
     });
   });
   
