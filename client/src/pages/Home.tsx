@@ -35,6 +35,9 @@ export default function Home() {
   // Keep track of which film IDs we've already shown
   const [seenFilmIds, setSeenFilmIds] = useState<number[]>([]);
   
+  // Keep track of the initial batch size to ensure consistent "Show More" behavior
+  const [initialBatchSize, setInitialBatchSize] = useState<number>(0);
+  
   // Keep track of film IDs that received negative feedback
   const [dislikedFilmIds, setDislikedFilmIds] = useState<number[]>(() => {
     // Try to load disliked film IDs from localStorage
@@ -90,8 +93,12 @@ export default function Home() {
     queryKey: ['/api/recommendations', preferences, seenFilmIds],
     enabled: preferences !== null,
     staleTime: Infinity,
-    queryFn: async () => {
+    queryFn: async ({ meta }) => {
       if (!preferences) return [];
+      
+      // If this is a request for more films, get the requestedBatchSize from meta
+      // This ensures we return the same number of films each time
+      const requestedBatchSize = meta?.requestedBatchSize as number | undefined;
       
       // Combine seen film IDs and disliked film IDs for the exclusion list
       // Use a more compatible approach to deduplicate the arrays
@@ -106,11 +113,14 @@ export default function Home() {
         // Add country if user has specified one
         country: user?.country || undefined,
         // Add exclusions list if applicable
-        excludeFilmIds: allExcludedIds.length > 0 ? allExcludedIds : undefined
+        excludeFilmIds: allExcludedIds.length > 0 ? allExcludedIds : undefined,
+        // Add requestedBatchSize if available to ensure consistent number of recommendations
+        requestedBatchSize: requestedBatchSize
       };
 
       // First check if we have history recommendations and preferences match
-      if (user && historyRecommendations && 
+      // Only use history if this isn't a "show more" request (no requestedBatchSize)
+      if (!requestedBatchSize && user && historyRecommendations && 
           JSON.stringify(historyPreferences) === JSON.stringify(preferences)) {
         console.log("Using saved recommendations from history");
         return historyRecommendations;
@@ -119,11 +129,10 @@ export default function Home() {
       const response = await apiRequest('POST', '/api/recommendations', preferencesWithUserInfo);
       const newRecommendations = await response.json();
       
-      // Update the seen films list with the new recommendations
-      if (newRecommendations.length > 0 && seenFilmIds.length > 0) {
-        const newIds = newRecommendations.map((film: Film) => film.id);
-        // We don't need to update state here because it would trigger a re-render loop
-        // The update happens in the more suggestions handler
+      // If this is an initial request (not a "show more" request), save the batch size
+      if (!requestedBatchSize && newRecommendations.length > 0) {
+        // We don't set initialBatchSize directly here as it could cause a re-render loop
+        // The useEffect hook will handle this update
       }
       
       return newRecommendations;
@@ -138,6 +147,13 @@ export default function Home() {
     }
   }, [user, historyRecommendations, recommendations, preferences, seenFilmIds]);
   
+  // Track the initial batch size when recommendations are first loaded
+  useEffect(() => {
+    if (recommendations && recommendations.length > 0 && initialBatchSize === 0) {
+      setInitialBatchSize(recommendations.length);
+    }
+  }, [recommendations, initialBatchSize]);
+  
   // Mutation for getting more suggestions
   const { mutate: getMoreSuggestions, isPending: isLoadingMore } = useMutation({
     mutationFn: async () => {
@@ -151,7 +167,32 @@ export default function Home() {
       setSeenFilmIds(allSeenIds);
       
       // Force a refetch with the updated exclusion list
-      queryClient.invalidateQueries({ queryKey: ['/api/recommendations'] });
+      const batchSize = initialBatchSize > 0 ? initialBatchSize : 6; // Default to 6 if initial size not set yet
+      
+      // Create a custom query context to pass to invalidateQueries
+      // This will be picked up in the queryFn to request the same number of recommendations
+      const queryContext = {
+        meta: {
+          requestedBatchSize: batchSize
+        }
+      };
+      
+      // Invalidate the query with our meta information
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/recommendations'],
+        refetchType: 'active'
+      });
+      
+      // Then force a refetch with our context
+      queryClient.fetchQuery({
+        queryKey: ['/api/recommendations', preferences, seenFilmIds],
+        queryFn: async () => {
+          return []; // This will be ignored as the real query function will be used
+        },
+        meta: {
+          requestedBatchSize: batchSize
+        }
+      });
       
       // Calculate total exclusions for analytics 
       const allExclusionsWithDuplicates = [...allSeenIds, ...dislikedFilmIds];
@@ -163,7 +204,8 @@ export default function Home() {
         disliked_count: dislikedFilmIds.length,
         preference_location: preferences.location,
         preference_mood: preferences.mood,
-        preference_timeOfDay: preferences.timeOfDay
+        preference_timeOfDay: preferences.timeOfDay,
+        batch_size: batchSize
       });
       
       return true;
