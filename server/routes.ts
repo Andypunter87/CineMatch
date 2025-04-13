@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { RecommendationRequest, recommendationRequestSchema, watchlist } from "@shared/schema";
+import { RecommendationRequest, recommendationRequestSchema, watchlist, Film } from "@shared/schema";
 import { z } from "zod";
 import { ZodError } from "zod";
 import { setupAuth } from "./auth";
@@ -65,10 +65,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Get recommendations based on user preferences
-      const recommendations = await storage.getRecommendations(preferences);
+      let recommendations = await storage.getRecommendations(preferences);
       
-      // If user is authenticated, save these recommendations to their history
+      // Check for previous recommendations with similar preferences to avoid repetition
       if (req.isAuthenticated() && req.user) {
+        try {
+          // Get the user's last recommendations
+          const lastRecommendations = await storage.getUserLastRecommendations(req.user.id);
+          
+          if (lastRecommendations) {
+            // Check if the preferences are similar (same mood, audience, location, etc.)
+            const lastPrefs = lastRecommendations.preferences;
+            const similarPreferences = 
+              lastPrefs.mood === preferences.mood && 
+              lastPrefs.audience === preferences.audience && 
+              lastPrefs.location === preferences.location &&
+              JSON.stringify(lastPrefs.timeOfDay) === JSON.stringify(preferences.timeOfDay);
+            
+            if (similarPreferences) {
+              console.log("Similar preferences detected, ensuring variety in recommendations");
+              
+              // Parse the previous recommendations
+              const prevRecommendations: Film[] = JSON.parse(lastRecommendations.recommendations);
+              const prevFilmIds = new Set(prevRecommendations.map(film => film.id));
+              
+              // Limit to at most one film from previous recommendations
+              let sharedCount = 0;
+              recommendations = recommendations.filter(film => {
+                // If this film was in previous recommendations
+                if (prevFilmIds.has(film.id)) {
+                  // Allow only one previous film to remain
+                  if (sharedCount === 0) {
+                    sharedCount++;
+                    return true;
+                  }
+                  return false;
+                }
+                return true;
+              });
+              
+              // If we've filtered out too many films, get more
+              if (recommendations.length < 4) {
+                console.log(`Only ${recommendations.length} recommendations after filtering, getting more`);
+                const moreRecommendations = await storage.getRecommendations({
+                  ...preferences,
+                  excludeFilmIds: [...(preferences.excludeFilmIds || []), ...Array.from(prevFilmIds)]
+                });
+                
+                // Add new recommendations until we have enough
+                for (const film of moreRecommendations) {
+                  if (!prevFilmIds.has(film.id) && !recommendations.some(r => r.id === film.id)) {
+                    recommendations.push(film);
+                    if (recommendations.length >= 5) break;
+                  }
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error comparing with previous recommendations:", error);
+          // Continue with original recommendations if there's an error
+        }
+        
+        // Save these recommendations to history
         await storage.saveUserRecommendations(req.user.id, preferences, recommendations);
       }
       
@@ -132,7 +191,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Get recommendations
-      const recommendations = await storage.getRecommendations(preferences);
+      let recommendations = await storage.getRecommendations(preferences);
+      
+      // Check for previous recommendations with similar preferences to avoid repetition
+      if (req.isAuthenticated() && req.user) {
+        try {
+          // Get the user's last recommendations
+          const lastRecommendations = await storage.getUserLastRecommendations(req.user.id);
+          
+          if (lastRecommendations) {
+            // Check if the preferences are similar (same mood, audience, location, etc.)
+            const lastPrefs = lastRecommendations.preferences;
+            const similarPreferences = 
+              lastPrefs.mood === preferences.mood && 
+              lastPrefs.audience === preferences.audience && 
+              lastPrefs.location === preferences.location &&
+              JSON.stringify(lastPrefs.timeOfDay) === JSON.stringify(preferences.timeOfDay);
+            
+            if (similarPreferences) {
+              console.log("Similar preferences detected, ensuring variety in recommendations");
+              
+              // Parse the previous recommendations
+              const prevRecommendations: Film[] = JSON.parse(lastRecommendations.recommendations);
+              const prevFilmIds = new Set(prevRecommendations.map(film => film.id));
+              
+              // Limit to at most one film from previous recommendations
+              let sharedCount = 0;
+              recommendations = recommendations.filter(film => {
+                // If this film was in previous recommendations
+                if (prevFilmIds.has(film.id)) {
+                  // Allow only one previous film to remain
+                  if (sharedCount === 0) {
+                    sharedCount++;
+                    return true;
+                  }
+                  return false;
+                }
+                return true;
+              });
+              
+              // If we've filtered out too many films, get more
+              if (recommendations.length < 4) {
+                console.log(`Only ${recommendations.length} recommendations after filtering, getting more`);
+                const moreRecommendations = await storage.getRecommendations({
+                  ...preferences,
+                  excludeFilmIds: [...(preferences.excludeFilmIds || []), ...Array.from(prevFilmIds)]
+                });
+                
+                // Add new recommendations until we have enough
+                for (const film of moreRecommendations) {
+                  if (!prevFilmIds.has(film.id) && !recommendations.some(r => r.id === film.id)) {
+                    recommendations.push(film);
+                    if (recommendations.length >= 5) break;
+                  }
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error comparing with previous recommendations:", error);
+          // Continue with original recommendations if there's an error
+        }
+        
+        // Save these recommendations to history
+        await storage.saveUserRecommendations(req.user.id, preferences, recommendations);
+      }
       
       // Track recommendation request
       const userId = req.isAuthenticated() && req.user ? req.user.id : undefined;
