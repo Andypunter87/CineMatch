@@ -39,6 +39,17 @@ export function ProtectedRoute({
           return <Redirect to="/" />;
         }
         
+        // Redirect to onboarding if the user needs it and isn't already there
+        if (
+          user.needsOnboarding && 
+          path !== "/onboarding" && 
+          !path.startsWith("/auth") && 
+          !path.startsWith("/terms") && 
+          !path.startsWith("/privacy")
+        ) {
+          return <Redirect to="/onboarding" />;
+        }
+        
         return <Component />;
       }}
     </Route>
