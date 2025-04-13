@@ -87,29 +87,16 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
           : "Thanks for letting us know. We'll adjust future recommendations.",
       });
       
-      // If user disliked this film and onDisliked callback is provided, call it
+      // Only call onDisliked after a brief delay to prevent race conditions
       if (variables === 'dislike' && onDisliked) {
-        onDisliked(film.id);
+        // Use a small delay to prevent immediate disappearance which can be jarring
+        setTimeout(() => {
+          onDisliked(film.id);
+        }, 1000);
       }
       
-      // Check watchlist status again after feedback
-      setTimeout(async () => {
-        try {
-          const response = await fetch('/api/watchlist');
-          const watchlistItems = await response.json();
-          
-          // Check if this film is in the watchlist using both ID and title
-          const found = watchlistItems.some((item: any) => 
-            item && 
-            item.filmId === film.id && 
-            item.filmTitle.toLowerCase() === film.title.toLowerCase()
-          );
-          
-          setIsWatchlisted(found);
-        } catch (error) {
-          console.error('Error checking watchlist after feedback:', error);
-        }
-      }, 500);
+      // Refresh watchlist data to ensure accurate state
+      queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
       
       // Track feedback event
       trackEvent(
@@ -161,6 +148,9 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
       // Immediately update our local state
       setIsWatchlisted(true);
       
+      // Invalidate the watchlist query to update data everywhere
+      queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
+      
       // Track film added to watchlist event
       trackEvent(AnalyticsEvents.FILM_ADDED_TO_WATCHLIST, {
         film_id: film.id,
@@ -170,6 +160,12 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
         film_genres: film.genres.join(','),
         match_percentage: film.matchPercentage || 90,
         from_recommendation: !!recommendationContext
+      });
+      
+      // Show success toast
+      toast({
+        title: "Added to watchlist",
+        description: `"${film.title}" has been added to your watchlist`,
       });
       
       // Show confirmation message within the card
@@ -483,28 +479,20 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                   className="w-full mt-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
                   size="sm"
                   onClick={() => {
-                    // Double-check with a fresh API call to make absolutely sure
-                    fetch('/api/watchlist', { credentials: 'include' })
-                      .then(response => response.json())
-                      .then(data => {
-                        const alreadyInWatchlist = data.some((item: any) => 
-                          item && 
-                          item.filmId === film.id && 
-                          item.filmTitle.toLowerCase() === film.title.toLowerCase()
-                        );
-                        
-                        if (alreadyInWatchlist) {
-                          setIsWatchlisted(true);
-                        } else {
-                          // Only mutate if not already in watchlist
-                          addToWatchlistMutation.mutate();
-                        }
-                      })
-                      .catch(error => {
-                        console.error('Error checking watchlist before add:', error);
-                        // Fallback to direct mutation on error
-                        addToWatchlistMutation.mutate();
+                    // Use current state to determine if item is in watchlist
+                    if (isWatchlisted) {
+                      setIsWatchlisted(true);
+                      toast({
+                        title: "Already in your watchlist",
+                        description: "This film is already saved to your watchlist",
                       });
+                    } else {
+                      // Add to watchlist
+                      addToWatchlistMutation.mutate();
+                      
+                      // Invalidate watchlist query to refresh data
+                      queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
+                    }
                   }}
                   disabled={addToWatchlistMutation.isPending}
                 >
@@ -532,27 +520,20 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                   className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
                   size="sm"
                   onClick={() => {
-                    // Double-check with a fresh API call to make absolutely sure
-                    fetch('/api/watchlist', { credentials: 'include' })
-                      .then(response => response.json())
-                      .then(data => {
-                        const alreadyInWatchlist = data.some((item: any) => 
-                          item && 
-                          item.filmId === film.id && 
-                          item.filmTitle.toLowerCase() === film.title.toLowerCase()
-                        );
-                        
-                        if (alreadyInWatchlist) {
-                          setIsWatchlisted(true);
-                        } else {
-                          // Only mutate if not already in watchlist
-                          addToWatchlistMutation.mutate();
-                        }
-                      })
-                      .catch(() => {
-                        // On error, try the mutation anyway
-                        addToWatchlistMutation.mutate();
+                    // Use current state to determine if item is in watchlist
+                    if (isWatchlisted) {
+                      setIsWatchlisted(true);
+                      toast({
+                        title: "Already in your watchlist",
+                        description: "This film is already saved to your watchlist",
                       });
+                    } else {
+                      // Add to watchlist
+                      addToWatchlistMutation.mutate();
+                      
+                      // Invalidate watchlist query to refresh data
+                      queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
+                    }
                   }}
                   disabled={addToWatchlistMutation.isPending}
                 >
