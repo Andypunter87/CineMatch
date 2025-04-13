@@ -207,108 +207,90 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
 
   return (
-    <Card className="overflow-hidden transition-all duration-200 shadow-lg hover:shadow-xl">
+    <Card className="overflow-hidden transition-all duration-200 border-2 border-gray-200">
       <CardContent className="p-0">
-        {/* Film Poster with semi-transparent rating interface */}
         <div className="aspect-[2/3] relative">
-          {/* Movie poster - more visible now */}
-          <img
-            src={film.posterUrl}
-            alt={`${film.title} (${film.year})`}
-            className="w-full h-full object-cover z-0"
-          />
+          {/* Film poster */}
+          <div className="absolute inset-0 z-10">
+            <img 
+              src={film.posterUrl} 
+              alt={`${film.title} poster`} 
+              className="w-full h-full object-cover"
+            />
+          </div>
           
-          {/* Semi-transparent rating overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/60 p-3 
-                        flex flex-col z-10">
-            {/* Film title and year prominently at the top */}
-            <div className="text-white text-center mb-3 bg-black/50 py-2 rounded-md">
-              <h3 className="text-base sm:text-lg font-semibold mb-1">{film.title}</h3>
-              <p className="text-sm opacity-90">{film.year}</p>
+          {/* Film title and year overlay at top */}
+          <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/90 to-transparent p-3 text-center">
+            <h3 className="text-base sm:text-lg font-bold text-white">{film.title}</h3>
+            <p className="text-sm text-white/90">{film.year}</p>
+          </div>
+          
+          {/* Rating interface - positioned at bottom, semi-transparent */}
+          <div className="absolute bottom-0 left-0 right-0 z-20 p-3 bg-gradient-to-t from-black to-transparent">
+            <div className="text-white text-center mb-2 text-sm font-medium">
+              Rate this movie:
             </div>
             
-            <div className="flex-grow flex flex-col items-center justify-center">
-              <div className="text-white text-center mb-3 px-2 py-1 bg-black/50 rounded-md text-sm font-medium">
-                Rate this movie:
-              </div>
-              
-              {/* Star Rating System with Hover Effect */}
-              <div className="flex items-center justify-center gap-2 mb-4">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => onRateFilm(film.id, star)}
-                    onMouseEnter={() => setHoveredStar(star)}
-                    onMouseLeave={() => setHoveredStar(null)}
-                    // Add touch events for mobile devices
-                    onTouchStart={() => setHoveredStar(star)}
-                    onTouchEnd={() => {
-                      // Don't immediately clear hover state on touch devices
-                      // to give visual feedback before the click happens
-                      setTimeout(() => setHoveredStar(null), 300);
-                    }}
-                    className={`text-2xl transition-all duration-150 transform hover:scale-125 ${
-                      // If hovering, highlight this star and all stars below it
-                      hoveredStar && star <= hoveredStar
-                        ? 'text-yellow-300' 
-                        // If already rated, show filled stars up to the rating
-                        : currentRating && currentRating >= star 
-                          ? 'text-yellow-400' 
-                          // Otherwise, show gray stars
-                          : 'text-gray-300'
-                    }`}
-                    aria-label={`Rate ${star} stars`}
-                  >
-                    <Star className={`h-8 w-8 drop-shadow-md ${
-                      // If hovering or rated, fill the star
+            {/* Star Rating - Make sure all 5 stars are visible */}
+            <div className="flex justify-center mb-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => onRateFilm(film.id, star)}
+                  onMouseEnter={() => setHoveredStar(star)}
+                  onMouseLeave={() => setHoveredStar(null)}
+                  className={`mx-1 transition-all duration-150 ${
+                    (hoveredStar && star <= hoveredStar) || (currentRating && currentRating >= star)
+                      ? 'text-yellow-300'
+                      : 'text-gray-400'
+                  }`}
+                  aria-label={`Rate ${star} stars`}
+                >
+                  <Star 
+                    className={`w-6 h-6 ${
                       (hoveredStar && star <= hoveredStar) || (currentRating && currentRating >= star)
-                        ? 'fill-current' 
-                        : ''
-                    }`} />
-                  </button>
-                ))}
-              </div>
-              
-              {/* Rating Description - Show what the current hover/selection means */}
-              <div className="text-center h-6 mb-3 bg-black/40 px-3 py-0.5 rounded-full">
-                {hoveredStar && (
-                  <span className="text-sm text-yellow-300 font-medium">
-                    {hoveredStar === 1 && "Didn't like it"}
-                    {hoveredStar === 2 && "It was OK"}
-                    {hoveredStar === 3 && "Liked it"}
-                    {hoveredStar === 4 && "Really liked it"}
-                    {hoveredStar === 5 && "Loved it!"}
-                  </span>
-                )}
-                {!hoveredStar && currentRating && (
-                  <span className="text-sm text-yellow-400 font-medium">
-                    {currentRating === 1 && "Didn't like it"}
-                    {currentRating === 2 && "It was OK"}
-                    {currentRating === 3 && "Liked it"}
-                    {currentRating === 4 && "Really liked it"}
-                    {currentRating === 5 && "Loved it!"}
-                  </span>
-                )}
-                {!hoveredStar && !currentRating && (
-                  <span className="text-sm text-gray-300 font-medium">
-                    Rate from 1-5 stars
-                  </span>
-                )}
-              </div>
-              
-              {/* Haven't Seen Button - Always visible */}
-              <button
-                onClick={() => onRateFilm(film.id, null)}
-                className={`mt-1 flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-colors w-full max-w-[160px] ${
-                  currentRating === undefined
-                    ? 'bg-gray-700 text-white'
-                    : 'bg-gray-600/70 text-gray-200 hover:bg-gray-700 hover:text-white'
-                }`}
-              >
-                <EyeOff className="h-4 w-4 mr-1.5" />
-                Haven't Seen It
-              </button>
+                        ? 'fill-yellow-300 stroke-yellow-300'
+                        : 'stroke-white'
+                    }`} 
+                  />
+                </button>
+              ))}
             </div>
+            
+            {/* Rating description */}
+            <div className="text-center mb-2 h-5">
+              {hoveredStar && (
+                <span className="text-xs text-yellow-300 font-medium">
+                  {hoveredStar === 1 && "Didn't like it"}
+                  {hoveredStar === 2 && "It was OK"}
+                  {hoveredStar === 3 && "Liked it"}
+                  {hoveredStar === 4 && "Really liked it"}
+                  {hoveredStar === 5 && "Loved it!"}
+                </span>
+              )}
+              {!hoveredStar && currentRating && (
+                <span className="text-xs text-yellow-300 font-medium">
+                  {currentRating === 1 && "Didn't like it"}
+                  {currentRating === 2 && "It was OK"}
+                  {currentRating === 3 && "Liked it"}
+                  {currentRating === 4 && "Really liked it"}
+                  {currentRating === 5 && "Loved it!"}
+                </span>
+              )}
+            </div>
+            
+            {/* Haven't Seen Button */}
+            <button
+              onClick={() => onRateFilm(film.id, null)}
+              className={`w-full flex items-center justify-center py-1 px-2 rounded text-sm font-medium ${
+                currentRating === undefined
+                  ? 'bg-gray-800 text-white'
+                  : 'bg-gray-800/70 text-white/90 hover:bg-gray-800'
+              }`}
+            >
+              <EyeOff className="h-3 w-3 mr-1" />
+              Haven't Seen It
+            </button>
           </div>
         </div>
       </CardContent>
