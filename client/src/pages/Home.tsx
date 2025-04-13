@@ -169,15 +169,7 @@ export default function Home() {
       // Force a refetch with the updated exclusion list
       const batchSize = initialBatchSize > 0 ? initialBatchSize : 6; // Default to 6 if initial size not set yet
       
-      // Create a custom query context to pass to invalidateQueries
-      // This will be picked up in the queryFn to request the same number of recommendations
-      const queryContext = {
-        meta: {
-          requestedBatchSize: batchSize
-        }
-      };
-      
-      // Invalidate the query with our meta information
+      // Invalidate the query to clear the cache
       queryClient.invalidateQueries({ 
         queryKey: ['/api/recommendations'],
         refetchType: 'active'

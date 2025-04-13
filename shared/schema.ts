@@ -192,6 +192,7 @@ export const recommendationRequestSchema = z.object({
     rating: z.number(),
     filmType: z.string()
   })).optional(), // User's rated films for personalized recommendations
+  requestedBatchSize: z.number().positive().optional(), // Requested number of films to return
 });
 
 export type RecommendationRequest = z.infer<typeof recommendationRequestSchema>;
