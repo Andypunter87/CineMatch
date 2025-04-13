@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { queryClient } from "@/lib/queryClient";
 import {
   Form,
   FormControl,
@@ -435,6 +436,55 @@ export default function ProfilePage() {
             </form>
           </Form>
         </Card>
+        
+        {/* Developer Tools - Only shown in development */}
+        {import.meta.env.MODE !== 'production' && (
+          <Card className="p-6 mt-6 shadow-lg border border-blue-50 bg-amber-50/30">
+            <h2 className="text-xl font-semibold mb-4">Developer Tools</h2>
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Onboarding Flow Testing</h3>
+                <p className="text-sm text-gray-500 mb-3">
+                  Reset your onboarding status to test the onboarding flow. This is only available in development mode.
+                </p>
+                <Button 
+                  variant="secondary"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/onboarding/reset-status', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                          'Content-Type': 'application/json'
+                        }
+                      });
+                      
+                      if (response.ok) {
+                        toast({
+                          title: "Onboarding reset successful",
+                          description: "Refresh the page to start the onboarding flow",
+                        });
+                        // Invalidate user data
+                        queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+                      } else {
+                        throw new Error("Failed to reset onboarding status");
+                      }
+                    } catch (error) {
+                      console.error("Error resetting onboarding:", error);
+                      toast({
+                        title: "Reset failed",
+                        description: "Could not reset onboarding status",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                >
+                  Reset Onboarding Status
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
       </div>
     </div>
   );

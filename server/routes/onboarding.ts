@@ -207,4 +207,31 @@ router.post('/complete', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * For testing: Reset onboarding status
+ * This endpoint allows testing the onboarding flow with existing users
+ * It's for development purposes only and should be removed in production
+ */
+router.post('/reset-status', async (req: Request, res: Response) => {
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ message: 'This endpoint is not available in production' });
+    }
+    
+    const userId = req.user!.id;
+    
+    // Update user to reset onboarding status
+    const updatedUser = await storage.updateOnboardingStatus(userId, true);
+    
+    res.json({ 
+      success: true,
+      message: 'Onboarding status reset for testing',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Error resetting onboarding status:', error);
+    res.status(500).json({ message: 'Failed to reset onboarding status' });
+  }
+});
+
 export default router;
