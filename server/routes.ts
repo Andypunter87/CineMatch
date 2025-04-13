@@ -88,7 +88,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let userRatedFilms: { filmId: number; title: string; genres: string[]; rating: number; filmType: string }[] = [];
       if (req.isAuthenticated() && req.user) {
         try {
+          // Get the user's own rated films
           userRatedFilms = await storage.getUserRatedFilms(req.user.id);
+          
+          // If this is a group viewing (with friends), include friends' rated films too
+          if (req.body.audience === "friends" && req.body.viewingParty && Array.isArray(req.body.viewingParty) && req.body.viewingParty.length > 0) {
+            console.log(`Including preferences from ${req.body.viewingParty.length} friends in the viewing party`);
+            
+            // For each friend in the viewing party, get their rated films
+            for (const friendId of req.body.viewingParty) {
+              if (typeof friendId === 'number' && friendId > 0) {
+                try {
+                  const friendRatings = await storage.getUserRatedFilms(friendId);
+                  if (friendRatings && friendRatings.length > 0) {
+                    console.log(`Adding ${friendRatings.length} rated films from friend ID ${friendId}`);
+                    userRatedFilms = [...userRatedFilms, ...friendRatings];
+                  }
+                } catch (error) {
+                  console.error(`Error getting rated films for friend ID ${friendId}:`, error);
+                  // Continue with other friends if one fails
+                }
+              }
+            }
+            
+            console.log(`Total group preferences: ${userRatedFilms.length} rated films`);
+          }
         } catch (error) {
           console.error("Error getting user rated films:", error);
           // Continue without user ratings if there's an error
@@ -240,7 +264,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let userRatedFilms: { filmId: number; title: string; genres: string[]; rating: number; filmType: string }[] = [];
       if (req.isAuthenticated() && req.user) {
         try {
+          // Get the user's own rated films
           userRatedFilms = await storage.getUserRatedFilms(req.user.id);
+          
+          // If this is a group viewing (with friends), include friends' rated films too
+          const audience = req.query.audience as string;
+          const viewingParty = req.query.viewingParty 
+            ? Array.isArray(req.query.viewingParty) 
+                ? req.query.viewingParty.map(id => parseInt(id as string)).filter(id => !isNaN(id))
+                : [parseInt(req.query.viewingParty as string)].filter(id => !isNaN(id))
+            : [];
+            
+          if (audience === "friends" && viewingParty.length > 0) {
+            console.log(`Including preferences from ${viewingParty.length} friends in the viewing party (GET route)`);
+            
+            // For each friend in the viewing party, get their rated films
+            for (const friendId of viewingParty) {
+              try {
+                const friendRatings = await storage.getUserRatedFilms(friendId);
+                if (friendRatings && friendRatings.length > 0) {
+                  console.log(`Adding ${friendRatings.length} rated films from friend ID ${friendId}`);
+                  userRatedFilms = [...userRatedFilms, ...friendRatings];
+                }
+              } catch (error) {
+                console.error(`Error getting rated films for friend ID ${friendId}:`, error);
+                // Continue with other friends if one fails
+              }
+            }
+            
+            console.log(`Total group preferences: ${userRatedFilms.length} rated films`);
+          }
         } catch (error) {
           console.error("Error getting user rated films:", error);
           // Continue without user ratings if there's an error

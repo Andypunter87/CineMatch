@@ -110,8 +110,14 @@ IMPORTANT ABOUT AUDIENCES:
 4. If audience is "family", prioritize family-friendly films appropriate for all ages (avoiding excessive violence, sexual content, or strong language)
 
 IMPORTANT ABOUT GROUP VIEWING:
-1. If the user indicates this is a group viewing with friends or a date night, prioritize films that spark conversation or create shared experiences
-2. For family viewing, prioritize films with positive themes, clear storylines, and appropriate content
+1. If the user indicates this is a group viewing with friends, prioritize films that:
+   a. Are broadly appealing rather than niche or divisive
+   b. Spark conversation or create shared experiences
+   c. Have strong entertainment value over artistic merit in borderline cases
+   d. Balance the preferences of everyone in the group based on their rated films
+   e. Find common ground in genres and styles that overlap across multiple friends' preferences
+2. For date night, prioritize films that create a shared emotional experience and can lead to interesting conversation
+3. For family viewing, prioritize films with positive themes, clear storylines, and appropriate content
 
 Return the requested number of films that match the criteria:
 - Half should be mainstream/popular films
@@ -145,7 +151,12 @@ ${preferences.country
   : `- User location: Unknown`
 }
 ${preferences.viewingParty && preferences.viewingParty.length > 0
-  ? `- IMPORTANT: This is a ${preferences.audience === "date" ? "date night" : "group viewing"} with ${preferences.viewingParty.length} other ${preferences.viewingParty.length === 1 ? "person" : "people"}. Recommend films that work well for shared viewing experiences.`
+  ? `- IMPORTANT: This is a ${preferences.audience === "date" ? "date night" : "group viewing"} with ${preferences.viewingParty.length} other ${preferences.viewingParty.length === 1 ? "person" : "people"}. 
+  - For this group viewing, make sure the recommendations:
+    * Are broadly appealing rather than niche
+    * Find common ground in the film preferences of everyone in the group
+    * Balance entertainment value with the group's taste preferences
+    * Consider that the ratings above include EVERYONE'S preferences combined`
   : ""
 }
 ${preferences.audience === "family"
