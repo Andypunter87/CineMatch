@@ -10,6 +10,7 @@ import adminRoutes from "./admin";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { sendFriendInvitationEmail, sendFriendRequestAcceptedEmails } from "./services/email";
+import { safelyParseRecommendations } from "./services/recommendation-helper";
 
 const scryptAsync = promisify(scrypt);
 
