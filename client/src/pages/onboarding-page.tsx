@@ -142,15 +142,40 @@ const OnboardingPage = () => {
   };
 
   // Handle completion
+  const completeOnboardingMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/onboarding/complete');
+      return await response.json();
+    },
+    onSuccess: () => {
+      // Update the user data in the cache to reflect onboarding completion
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      
+      // Go to recommendations
+      setLocation('/');
+      
+      // Show welcome toast
+      toast({
+        title: 'Welcome to CineMatch!',
+        description: 'Your personalized film recommendations are ready',
+      });
+    },
+    onError: (error) => {
+      console.error('Error completing onboarding:', error);
+      // Still redirect the user to the main page even if there's an error
+      setLocation('/');
+      
+      toast({
+        title: 'Welcome to CineMatch!',
+        description: 'Your personalized film recommendations are ready',
+        variant: 'default',
+      });
+    }
+  });
+
   const handleComplete = () => {
-    // Go to recommendations
-    setLocation('/');
-    
-    // Show welcome toast
-    toast({
-      title: 'Welcome to CineMatch!',
-      description: 'Your personalized film recommendations are ready',
-    });
+    // Mark onboarding as complete in the database
+    completeOnboardingMutation.mutate();
   };
 
   return (

@@ -176,4 +176,35 @@ router.post('/track-progress', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Mark onboarding as complete
+ * This endpoint is called when a user completes the onboarding process
+ */
+router.post('/complete', async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    
+    // Update user to mark onboarding as complete
+    const updatedUser = await storage.updateOnboardingStatus(userId, false);
+    
+    // Track completion in analytics
+    await storage.trackEvent({
+      userId,
+      eventType: 'onboarding_completed',
+      data: {
+        date: [new Date().toISOString()]
+      },
+      timestamp: new Date(),
+    });
+    
+    res.json({ 
+      success: true,
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Error completing onboarding:', error);
+    res.status(500).json({ message: 'Failed to complete onboarding' });
+  }
+});
+
 export default router;

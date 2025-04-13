@@ -337,6 +337,27 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Failed to update user password");
     }
   }
+  
+  /**
+   * Update the onboarding status for a user
+   * @param userId The ID of the user to update
+   * @param needsOnboarding Whether the user needs onboarding
+   * @returns The updated user
+   */
+  async updateOnboardingStatus(userId: number, needsOnboarding: boolean): Promise<User> {
+    try {
+      const [updatedUser] = await db
+        .update(users)
+        .set({ needsOnboarding })
+        .where(eq(users.id, userId))
+        .returning();
+      
+      return updatedUser;
+    } catch (error) {
+      console.error("Error updating user onboarding status:", error);
+      throw new Error("Failed to update user onboarding status");
+    }
+  }
 
   async getRecommendations(preferences: RecommendationRequest): Promise<Film[]> {
     try {
