@@ -40,8 +40,9 @@ export function ProtectedRoute({
         }
         
         // Redirect to onboarding if the user needs it and isn't already there
+        // Note: We check explicitly for false to handle older users who might not have the field set
         if (
-          user.needsOnboarding && 
+          user.needsOnboarding !== false && 
           path !== "/onboarding" && 
           !path.startsWith("/auth") && 
           !path.startsWith("/terms") && 
