@@ -87,7 +87,7 @@ export default function Home() {
     localStorage.setItem('dislikedFilmIds', JSON.stringify(dislikedFilmIds));
   }, [dislikedFilmIds]);
   
-  const { data: recommendations, isLoading } = useQuery<Film[]>({
+  const { data: recommendations, isLoading, isFetching } = useQuery<Film[]>({
     // Remove dislikedFilmIds from the queryKey to prevent automatic refetching when films are disliked
     // The dislikedFilmIds will still be used in the query function but won't trigger a refetch
     queryKey: ['/api/recommendations', preferences, seenFilmIds],
@@ -182,8 +182,8 @@ export default function Home() {
         requestedBatchSize: batchSize
       };
       
-      // Make the API request to get more recommendations
-      const response = await apiRequest('POST', '/api/recommendations', requestBody);
+      // Make the API request to get more recommendations using the special "more" endpoint
+      const response = await apiRequest('POST', '/api/recommendations/more', requestBody);
       const newRecommendations = await response.json();
       
       // Update the React Query cache by appending the new recommendations to existing ones
@@ -288,7 +288,7 @@ export default function Home() {
             )}
             <Recommendations 
               recommendations={recommendations || []} 
-              isLoading={isLoading || isLoadingMore} 
+              isLoading={isLoading || isFetching || isLoadingMore} 
               preferences={preferences!} 
               onReset={handleReset}
               onGenerateMore={getMoreSuggestions}
