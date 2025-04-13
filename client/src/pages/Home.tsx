@@ -167,10 +167,15 @@ export default function Home() {
       setSeenFilmIds(allSeenIds);
       
       // Determine batch size for consistent results
-      const batchSize = initialBatchSize > 0 ? initialBatchSize : 6; // Default to 6 if initial size not set yet
+      // For "Show More" requests, we want at least the same number as the initial load
+      // Adding +2 to ensure we get enough even if some get filtered out
+      const batchSize = initialBatchSize > 0 ? initialBatchSize + 2 : 8; 
       
       // Create a complete preferences object with all exclusions
       const combinedExclusions = Array.from(new Set([...allSeenIds, ...dislikedFilmIds]));
+      
+      console.log(`Requesting ${batchSize} more recommendations, excluding ${combinedExclusions.length} previously seen films`);
+      
       const requestBody = {
         ...preferences,
         excludeFilmIds: combinedExclusions,

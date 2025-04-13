@@ -23,7 +23,12 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
   
   // Create a cache key based on the preferences
   // Exclude excludeFilmIds from the cache key as these change frequently
-  const { excludeFilmIds, viewingParty, userRatedFilms, ...cacheablePreferences } = preferences;
+  const { excludeFilmIds, viewingParty, userRatedFilms, requestedBatchSize, ...cacheablePreferences } = preferences;
+  
+  // Create a consistent batch size for caching - we'll filter results post-cache
+  // This way, the cache works consistently regardless of different batch sizes for the same preferences
+  const standardBatchSize = 6; // Always cache a standard number of items
+  
   const cacheKey = JSON.stringify({
     location: cacheablePreferences.location,
     audience: cacheablePreferences.audience,
@@ -31,8 +36,8 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
     timeOfDay: cacheablePreferences.timeOfDay,
     runtime: cacheablePreferences.runtime,
     country: cacheablePreferences.country,
-    // Include the requested batch size
-    requestedBatchSize: cacheablePreferences.requestedBatchSize || 6,
+    // Use a standard batch size for caching
+    batchSize: standardBatchSize,
     // Include a summarized version of streaming services (sorted to ensure consistent keys)
     streamingServices: cacheablePreferences.streamingServices?.sort() || [],
     // Include information about viewing party
@@ -50,12 +55,21 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
   if (cachedResult && (now - cachedResult.timestamp) < CACHE_TTL) {
     console.log('Using cached recommendation results');
     
-    // If there are excludeFilmIds, filter the cached results
+    // First, filter by excluded film IDs
+    let filteredResults = cachedResult.data;
     if (excludeFilmIds?.length) {
-      return cachedResult.data.filter(film => !excludeFilmIds.includes(film.id));
+      filteredResults = filteredResults.filter(film => !excludeFilmIds.includes(film.id));
+      console.log(`Filtered ${cachedResult.data.length - filteredResults.length} excluded films from cache results`);
     }
     
-    return cachedResult.data;
+    // Apply the requested batch size
+    const actualBatchSize = requestedBatchSize || 6;
+    if (filteredResults.length > actualBatchSize) {
+      console.log(`Limiting cached results to requested batch size of ${actualBatchSize}`);
+      filteredResults = filteredResults.slice(0, actualBatchSize);
+    }
+    
+    return filteredResults;
   }
   
   // Create a promise that rejects after the timeout
