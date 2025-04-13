@@ -88,8 +88,8 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
   // State to track which set of 3 films we're viewing
   const [currentPage, setCurrentPage] = useState(0);
   
-  // Show only 3 films at a time
-  const filmsPerPage = 3;
+  // Show only 1 film at a time
+  const filmsPerPage = 1;
   const totalPages = Math.ceil(films.length / filmsPerPage);
   
   // Get the current set of films to display
@@ -141,14 +141,15 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="flex justify-center">
             {getCurrentFilms().map((film) => (
-              <FilmRatingCard
-                key={film.id}
-                film={film}
-                currentRating={ratings[film.id]?.rating}
-                onRateFilm={handleRateFilm}
-              />
+              <div className="w-full max-w-xs sm:max-w-sm md:max-w-md" key={film.id}>
+                <FilmRatingCard
+                  film={film}
+                  currentRating={ratings[film.id]?.rating}
+                  onRateFilm={handleRateFilm}
+                />
+              </div>
             ))}
           </div>
           
@@ -207,7 +208,7 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
 
   return (
-    <Card className="overflow-hidden transition-all duration-200 border-2 border-gray-200">
+    <Card className="overflow-hidden transition-all duration-200 shadow-lg hover:shadow-xl border-2 border-gray-300 rounded-xl">
       <CardContent className="p-0">
         <div className="aspect-[2/3] relative">
           {/* Film poster */}
@@ -232,14 +233,14 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
             </div>
             
             {/* Star Rating - Make sure all 5 stars are visible */}
-            <div className="flex justify-center mb-2">
+            <div className="flex justify-center mb-4 space-x-2 sm:space-x-3">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   onClick={() => onRateFilm(film.id, star)}
                   onMouseEnter={() => setHoveredStar(star)}
                   onMouseLeave={() => setHoveredStar(null)}
-                  className={`mx-1 transition-all duration-150 ${
+                  className={`transition-all duration-150 transform hover:scale-110 ${
                     (hoveredStar && star <= hoveredStar) || (currentRating && currentRating >= star)
                       ? 'text-yellow-300'
                       : 'text-gray-400'
@@ -247,7 +248,7 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
                   aria-label={`Rate ${star} stars`}
                 >
                   <Star 
-                    className={`w-6 h-6 ${
+                    className={`w-8 h-8 sm:w-10 sm:h-10 filter drop-shadow-md ${
                       (hoveredStar && star <= hoveredStar) || (currentRating && currentRating >= star)
                         ? 'fill-yellow-300 stroke-yellow-300'
                         : 'stroke-white'
@@ -258,9 +259,9 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
             </div>
             
             {/* Rating description */}
-            <div className="text-center mb-2 h-5">
+            <div className="text-center mb-4 bg-black/30 py-1.5 rounded-md">
               {hoveredStar && (
-                <span className="text-xs text-yellow-300 font-medium">
+                <span className="text-sm sm:text-base text-yellow-300 font-medium">
                   {hoveredStar === 1 && "Didn't like it"}
                   {hoveredStar === 2 && "It was OK"}
                   {hoveredStar === 3 && "Liked it"}
@@ -269,7 +270,7 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
                 </span>
               )}
               {!hoveredStar && currentRating && (
-                <span className="text-xs text-yellow-300 font-medium">
+                <span className="text-sm sm:text-base text-yellow-300 font-medium">
                   {currentRating === 1 && "Didn't like it"}
                   {currentRating === 2 && "It was OK"}
                   {currentRating === 3 && "Liked it"}
@@ -277,18 +278,23 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
                   {currentRating === 5 && "Loved it!"}
                 </span>
               )}
+              {!hoveredStar && !currentRating && (
+                <span className="text-sm sm:text-base text-gray-300 font-medium">
+                  Tap a star to rate
+                </span>
+              )}
             </div>
             
             {/* Haven't Seen Button */}
             <button
               onClick={() => onRateFilm(film.id, null)}
-              className={`w-full flex items-center justify-center py-1 px-2 rounded text-sm font-medium ${
+              className={`w-full flex items-center justify-center py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                 currentRating === undefined
-                  ? 'bg-gray-800 text-white'
-                  : 'bg-gray-800/70 text-white/90 hover:bg-gray-800'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-800/80 text-white/90 hover:bg-gray-800 hover:text-white'
               }`}
             >
-              <EyeOff className="h-3 w-3 mr-1" />
+              <EyeOff className="h-4 w-4 mr-2" />
               Haven't Seen It
             </button>
           </div>
