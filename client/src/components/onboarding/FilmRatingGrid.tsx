@@ -223,87 +223,89 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
             className="w-full h-full object-cover"
           />
           
-          {/* Film Title */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 text-white">
-            <h3 className="text-sm font-medium line-clamp-2">{film.title}</h3>
-            <p className="text-xs opacity-80">{film.year}</p>
-          </div>
-
-          {/* Rating Overlay - Always visible for better UX */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 p-3">
-            <div className="text-white text-center mb-3 text-sm font-medium">Rate this movie:</div>
-            
-            {/* Star Rating System with Hover Effect */}
-            <div className="flex items-center justify-center gap-1 mb-4">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => onRateFilm(film.id, star)}
-                  onMouseEnter={() => setHoveredStar(star)}
-                  onMouseLeave={() => setHoveredStar(null)}
-                  // Add touch events for mobile devices
-                  onTouchStart={() => setHoveredStar(star)}
-                  onTouchEnd={() => {
-                    // Don't immediately clear hover state on touch devices
-                    // to give visual feedback before the click happens
-                    setTimeout(() => setHoveredStar(null), 300);
-                  }}
-                  className={`text-2xl transition-all duration-150 transform hover:scale-110 ${
-                    // If hovering, highlight this star and all stars below it
-                    hoveredStar && star <= hoveredStar
-                      ? 'text-yellow-300' 
-                      // If already rated, show filled stars up to the rating
-                      : currentRating && currentRating >= star 
-                        ? 'text-yellow-400' 
-                        // Otherwise, show gray stars
-                        : 'text-gray-400'
-                  }`}
-                  aria-label={`Rate ${star} stars`}
-                >
-                  <Star className={`h-8 w-8 ${
-                    // If hovering or rated, fill the star
-                    (hoveredStar && star <= hoveredStar) || (currentRating && currentRating >= star)
-                      ? 'fill-current' 
-                      : ''
-                  }`} />
-                </button>
-              ))}
+          {/* Rating Overlay with Film Info - Always visible for better UX */}
+          <div className="absolute inset-0 flex flex-col bg-black/80 p-3">
+            {/* Film title and year prominently at the top */}
+            <div className="text-white text-center mb-2">
+              <h3 className="text-base sm:text-lg font-semibold mb-1">{film.title}</h3>
+              <p className="text-sm opacity-90">{film.year}</p>
             </div>
             
-            {/* Rating Description - Show what the current hover/selection means */}
-            <div className="text-center h-6 mb-2">
-              {hoveredStar && (
-                <span className="text-sm text-yellow-300 font-medium">
-                  {hoveredStar === 1 && "Didn't like it"}
-                  {hoveredStar === 2 && "It was OK"}
-                  {hoveredStar === 3 && "Liked it"}
-                  {hoveredStar === 4 && "Really liked it"}
-                  {hoveredStar === 5 && "Loved it!"}
-                </span>
-              )}
-              {!hoveredStar && currentRating && (
-                <span className="text-sm text-yellow-400 font-medium">
-                  {currentRating === 1 && "Didn't like it"}
-                  {currentRating === 2 && "It was OK"}
-                  {currentRating === 3 && "Liked it"}
-                  {currentRating === 4 && "Really liked it"}
-                  {currentRating === 5 && "Loved it!"}
-                </span>
-              )}
+            <div className="flex-grow flex flex-col items-center justify-center">
+              <div className="text-white text-center mb-3 text-sm font-medium">Rate this movie:</div>
+              
+              {/* Star Rating System with Hover Effect */}
+              <div className="flex items-center justify-center gap-2 mb-4">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => onRateFilm(film.id, star)}
+                    onMouseEnter={() => setHoveredStar(star)}
+                    onMouseLeave={() => setHoveredStar(null)}
+                    // Add touch events for mobile devices
+                    onTouchStart={() => setHoveredStar(star)}
+                    onTouchEnd={() => {
+                      // Don't immediately clear hover state on touch devices
+                      // to give visual feedback before the click happens
+                      setTimeout(() => setHoveredStar(null), 300);
+                    }}
+                    className={`text-2xl transition-all duration-150 transform hover:scale-110 ${
+                      // If hovering, highlight this star and all stars below it
+                      hoveredStar && star <= hoveredStar
+                        ? 'text-yellow-300' 
+                        // If already rated, show filled stars up to the rating
+                        : currentRating && currentRating >= star 
+                          ? 'text-yellow-400' 
+                          // Otherwise, show gray stars
+                          : 'text-gray-400'
+                    }`}
+                    aria-label={`Rate ${star} stars`}
+                  >
+                    <Star className={`h-8 w-8 ${
+                      // If hovering or rated, fill the star
+                      (hoveredStar && star <= hoveredStar) || (currentRating && currentRating >= star)
+                        ? 'fill-current' 
+                        : ''
+                    }`} />
+                  </button>
+                ))}
+              </div>
+              
+              {/* Rating Description - Show what the current hover/selection means */}
+              <div className="text-center h-6 mb-2">
+                {hoveredStar && (
+                  <span className="text-sm text-yellow-300 font-medium">
+                    {hoveredStar === 1 && "Didn't like it"}
+                    {hoveredStar === 2 && "It was OK"}
+                    {hoveredStar === 3 && "Liked it"}
+                    {hoveredStar === 4 && "Really liked it"}
+                    {hoveredStar === 5 && "Loved it!"}
+                  </span>
+                )}
+                {!hoveredStar && currentRating && (
+                  <span className="text-sm text-yellow-400 font-medium">
+                    {currentRating === 1 && "Didn't like it"}
+                    {currentRating === 2 && "It was OK"}
+                    {currentRating === 3 && "Liked it"}
+                    {currentRating === 4 && "Really liked it"}
+                    {currentRating === 5 && "Loved it!"}
+                  </span>
+                )}
+              </div>
+              
+              {/* Haven't Seen Button */}
+              <button
+                onClick={() => onRateFilm(film.id, null)}
+                className={`mt-1 flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  currentRating === undefined
+                    ? 'bg-gray-700 text-white'
+                    : 'bg-gray-600/50 text-gray-200 hover:bg-gray-600'
+                }`}
+              >
+                <EyeOff className="h-4 w-4 mr-1.5" />
+                Haven't Seen It
+              </button>
             </div>
-            
-            {/* Haven't Seen Button */}
-            <button
-              onClick={() => onRateFilm(film.id, null)}
-              className={`mt-1 flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                currentRating === undefined
-                  ? 'bg-gray-700 text-white'
-                  : 'bg-gray-600/50 text-gray-200 hover:bg-gray-600'
-              }`}
-            >
-              <EyeOff className="h-4 w-4 mr-1.5" />
-              Haven't Seen It
-            </button>
           </div>
         </div>
       </CardContent>
