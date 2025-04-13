@@ -166,7 +166,7 @@ export default function Home() {
       // Update seen film IDs
       setSeenFilmIds(allSeenIds);
       
-      // Directly use the API to get more recommendations
+      // Determine batch size for consistent results
       const batchSize = initialBatchSize > 0 ? initialBatchSize : 6; // Default to 6 if initial size not set yet
       
       // Create a complete preferences object with all exclusions
@@ -177,13 +177,29 @@ export default function Home() {
         requestedBatchSize: batchSize
       };
       
-      // Make the direct API request instead of going through React Query's cache
+      // Make the API request to get more recommendations
       const response = await apiRequest('POST', '/api/recommendations', requestBody);
       const newRecommendations = await response.json();
       
-      // Update the React Query cache with the new recommendations
+      // Update the React Query cache by appending the new recommendations to existing ones
       if (newRecommendations.length > 0) {
-        queryClient.setQueryData(['/api/recommendations', preferences, seenFilmIds], newRecommendations);
+        queryClient.setQueryData(
+          ['/api/recommendations', preferences, seenFilmIds], 
+          (oldData: Film[] | undefined) => {
+            // If we have existing data, append new recommendations to it
+            if (oldData && Array.isArray(oldData)) {
+              // Filter out any duplicates that might exist in both sets
+              const existingIds = new Set(oldData.map(film => film.id));
+              const uniqueNewRecommendations = newRecommendations.filter(
+                (film: Film) => !existingIds.has(film.id)
+              );
+              
+              return [...oldData, ...uniqueNewRecommendations];
+            }
+            // If we don't have existing data, just use the new recommendations
+            return newRecommendations;
+          }
+        );
       }
       
       // Calculate total exclusions for analytics 

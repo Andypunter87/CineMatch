@@ -69,6 +69,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requestedBatchSize // Pass through the requested batch size
       });
       
+      // Check if this is a request for more recommendations (has requestedBatchSize)
+      const isMoreRequest = !!preferences.requestedBatchSize;
+      console.log(`Recommendation request with batch size: ${preferences.requestedBatchSize || "default"}`);
+      
       // Get recommendations based on user preferences
       let recommendations = await storage.getRecommendations(preferences);
       

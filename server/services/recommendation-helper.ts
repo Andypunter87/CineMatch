@@ -1,4 +1,5 @@
-import { Film } from "@shared/schema";
+import { Film, RecommendationRequest } from "@shared/schema";
+import { getAIRecommendations } from "./openai";
 
 /**
  * Safely parses recommendations from storage which could be either JSON strings or objects
@@ -24,4 +25,28 @@ export function safelyParseRecommendations(recommendations: string | any): Film[
   }
   
   return result;
+}
+
+/**
+ * Helper function to request additional batch of films while preventing duplicates
+ * @param preferences User preferences
+ * @param excludeFilmIds Film IDs to exclude from recommendations
+ * @param batchSize Desired number of films to return
+ */
+export async function getAdditionalRecommendations(
+  preferences: RecommendationRequest,
+  excludeFilmIds: number[] = [],
+  batchSize: number = 6
+): Promise<Film[]> {
+  console.log(`Requesting additional batch of ${batchSize} recommendations, excluding ${excludeFilmIds.length} films`);
+  
+  // Create a new preferences object with the exclusions and batch size
+  const requestWithExclusions: RecommendationRequest = {
+    ...preferences,
+    excludeFilmIds: excludeFilmIds,
+    requestedBatchSize: batchSize
+  };
+  
+  // Call the AI recommendation service with our updated preferences
+  return getAIRecommendations(requestWithExclusions);
 }
