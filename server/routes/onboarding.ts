@@ -102,7 +102,7 @@ router.post('/save-ratings', async (req: Request, res: Response) => {
         if (existingItem) {
           // Update existing item
           result = await storage.updateWatchlistItem(existingItem.id, {
-            watched: status === 'watched',
+            watched: isWatched,
             userRating: rating.rating,
           });
         } else {
@@ -112,7 +112,7 @@ router.post('/save-ratings', async (req: Request, res: Response) => {
             filmId: rating.filmId,
             filmTitle: film.title,
             filmGenres: film.genres,
-            watched: status === 'watched',
+            watched: isWatched,
             userRating: rating.rating,
             dateAdded: new Date(),
             filmType: film.type,
