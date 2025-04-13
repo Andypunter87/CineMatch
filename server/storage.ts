@@ -47,6 +47,7 @@ export interface IStorage {
   updateUserStreamingServices(userId: number, streamingServices: string[]): Promise<User>;
   updateUserCountry(userId: number, country: string): Promise<User>;
   updateUserPassword(userId: number, passwordHash: string): Promise<User>;
+  updateOnboardingStatus(userId: number, needsOnboarding: boolean): Promise<User>;
   
   // Friend operations
   getFriends(userId: number): Promise<User[]>;

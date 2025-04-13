@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   authProvider: text("auth_provider").default("local"),
   providerId: text("provider_id"),
   isAdmin: boolean("is_admin").default(false),
+  needsOnboarding: boolean("needs_onboarding").default(true),
 });
 
 // Friend requests table
@@ -114,6 +115,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   authProvider: true,
   providerId: true,
   isAdmin: true,
+  needsOnboarding: true,
 });
 
 // Define the film schema types

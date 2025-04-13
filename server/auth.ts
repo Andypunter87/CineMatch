@@ -121,7 +121,8 @@ export function setupAuth(app: Express) {
         password: await hashPassword(password),
         streamingServices: streamingServices || [],
         country,
-        authProvider: "local"
+        authProvider: "local",
+        needsOnboarding: true // Flag to direct new users to onboarding
       };
       
       const user = await storage.createUser(userToCreate);
@@ -344,6 +345,7 @@ export function setupAuth(app: Express) {
           authProvider: 'google',
           streamingServices: [],
           country: '',
+          needsOnboarding: true // Flag for Google sign-in users to go through onboarding
         });
         
         // Send welcome email for new Google-authenticated users
