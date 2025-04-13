@@ -10,7 +10,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Star, StarHalf, StarOff, Eye, EyeOff } from 'lucide-react';
 
 interface Film {
   id: number;
@@ -40,25 +40,29 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
 }) => {
   const [ratings, setRatings] = useState<Record<number, FilmRating>>({});
 
-  const handleRateFilm = (filmId: number, status: FilmRating['status']) => {
-    // Convert status to rating
+  const handleRateFilm = (filmId: number, stars: number | null) => {
+    // Convert stars to status and rating
+    let status: FilmRating['status'];
     let rating: number | undefined;
     
-    switch (status) {
-      case 'loved':
-        rating = 5;
-        break;
-      case 'liked':
-        rating = 4;
-        break;
-      case 'meh':
-        rating = 3;
-        break;
-      case 'hated':
-        rating = 1;
-        break;
-      default:
-        rating = undefined;
+    if (stars === null) {
+      status = 'not_seen';
+      rating = undefined;
+    } else if (stars === 0) {
+      status = 'not_interested';
+      rating = 0;
+    } else if (stars === 5) {
+      status = 'loved';
+      rating = 5;
+    } else if (stars >= 4) {
+      status = 'liked';
+      rating = stars;
+    } else if (stars >= 2) {
+      status = 'meh';
+      rating = stars;
+    } else {
+      status = 'hated';
+      rating = stars;
     }
     
     setRatings(prev => ({
@@ -121,7 +125,7 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold mb-2">Rate some movies</h2>
         <p className="text-muted-foreground">
-          Tap to tell us what you've watched and enjoyed.
+          Give stars to movies you've seen, or mark them as "Haven't Seen"
         </p>
         <div className="mt-4 flex items-center justify-center gap-2">
           <div className="h-2 w-full max-w-md bg-gray-200 rounded-full overflow-hidden">
@@ -148,7 +152,7 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
               <FilmRatingCard
                 key={film.id}
                 film={film}
-                selectedStatus={ratings[film.id]?.status}
+                currentRating={ratings[film.id]?.rating}
                 onRateFilm={handleRateFilm}
               />
             ))}
@@ -197,35 +201,26 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
 
 interface FilmRatingCardProps {
   film: Film;
-  selectedStatus?: FilmRating['status'];
-  onRateFilm: (filmId: number, status: FilmRating['status']) => void;
+  currentRating?: number;
+  onRateFilm: (filmId: number, stars: number | null) => void;
 }
 
 const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
   film,
-  selectedStatus,
+  currentRating,
   onRateFilm,
 }) => {
-  const [isHovering, setIsHovering] = useState(false);
-
-  // Display options when hovering or when a rating is already selected
-  const showOptions = isHovering || selectedStatus;
+  const [hoveredStar, setHoveredStar] = useState<number | null>(null);
 
   return (
-    <Card
-      className="overflow-hidden relative transition-all duration-200"
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
-    >
+    <Card className="overflow-hidden relative transition-all duration-200">
       <CardContent className="p-0">
         {/* Film Poster */}
         <div className="aspect-[2/3] relative">
           <img
             src={film.posterUrl}
             alt={`${film.title} (${film.year})`}
-            className={`w-full h-full object-cover transition-opacity duration-200 ${
-              showOptions ? 'opacity-30' : 'opacity-100'
-            }`}
+            className="w-full h-full object-cover"
           />
           
           {/* Film Title */}
@@ -234,134 +229,85 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
             <p className="text-xs opacity-80">{film.year}</p>
           </div>
 
-          {/* Rating Options - Now with a better layout */}
-          {(showOptions || true) && ( // Always show options on mobile for better UX
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-2 bg-black/60">
-              <div className="text-white text-center mb-1 text-sm font-medium">Rate this movie:</div>
-              <div className="flex flex-col gap-2 w-full max-w-[90%]">
-                <div className="flex justify-between gap-2">
-                  <RatingButton
-                    status="loved"
-                    label="Loved It"
-                    selected={selectedStatus === 'loved'}
-                    onClick={() => onRateFilm(film.id, 'loved')}
-                    fullWidth={true}
-                  />
-                  <RatingButton
-                    status="liked"
-                    label="Liked It"
-                    selected={selectedStatus === 'liked'}
-                    onClick={() => onRateFilm(film.id, 'liked')}
-                    fullWidth={true}
-                  />
-                </div>
-                <div className="flex justify-between gap-2">
-                  <RatingButton
-                    status="meh"
-                    label="It was OK"
-                    selected={selectedStatus === 'meh'}
-                    onClick={() => onRateFilm(film.id, 'meh')}
-                    fullWidth={true}
-                  />
-                  <RatingButton
-                    status="hated"
-                    label="Disliked"
-                    selected={selectedStatus === 'hated'}
-                    onClick={() => onRateFilm(film.id, 'hated')}
-                    fullWidth={true}
-                  />
-                </div>
-                <div className="flex justify-between gap-2 mt-1">
-                  <RatingButton
-                    status="not_seen"
-                    label="Haven't Seen"
-                    selected={selectedStatus === 'not_seen'}
-                    onClick={() => onRateFilm(film.id, 'not_seen')}
-                    fullWidth={true}
-                    secondary={true}
-                  />
-                  <RatingButton
-                    status="not_interested"
-                    label="Not For Me"
-                    selected={selectedStatus === 'not_interested'}
-                    onClick={() => onRateFilm(film.id, 'not_interested')}
-                    fullWidth={true}
-                    secondary={true}
-                  />
-                </div>
-              </div>
+          {/* Rating Overlay - Always visible for better UX */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 p-3">
+            <div className="text-white text-center mb-3 text-sm font-medium">Rate this movie:</div>
+            
+            {/* Star Rating System with Hover Effect */}
+            <div className="flex items-center justify-center gap-1 mb-4">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => onRateFilm(film.id, star)}
+                  onMouseEnter={() => setHoveredStar(star)}
+                  onMouseLeave={() => setHoveredStar(null)}
+                  // Add touch events for mobile devices
+                  onTouchStart={() => setHoveredStar(star)}
+                  onTouchEnd={() => {
+                    // Don't immediately clear hover state on touch devices
+                    // to give visual feedback before the click happens
+                    setTimeout(() => setHoveredStar(null), 300);
+                  }}
+                  className={`text-2xl transition-all duration-150 transform hover:scale-110 ${
+                    // If hovering, highlight this star and all stars below it
+                    hoveredStar && star <= hoveredStar
+                      ? 'text-yellow-300' 
+                      // If already rated, show filled stars up to the rating
+                      : currentRating && currentRating >= star 
+                        ? 'text-yellow-400' 
+                        // Otherwise, show gray stars
+                        : 'text-gray-400'
+                  }`}
+                  aria-label={`Rate ${star} stars`}
+                >
+                  <Star className={`h-8 w-8 ${
+                    // If hovering or rated, fill the star
+                    (hoveredStar && star <= hoveredStar) || (currentRating && currentRating >= star)
+                      ? 'fill-current' 
+                      : ''
+                  }`} />
+                </button>
+              ))}
             </div>
-          )}
+            
+            {/* Rating Description - Show what the current hover/selection means */}
+            <div className="text-center h-6 mb-2">
+              {hoveredStar && (
+                <span className="text-sm text-yellow-300 font-medium">
+                  {hoveredStar === 1 && "Didn't like it"}
+                  {hoveredStar === 2 && "It was OK"}
+                  {hoveredStar === 3 && "Liked it"}
+                  {hoveredStar === 4 && "Really liked it"}
+                  {hoveredStar === 5 && "Loved it!"}
+                </span>
+              )}
+              {!hoveredStar && currentRating && (
+                <span className="text-sm text-yellow-400 font-medium">
+                  {currentRating === 1 && "Didn't like it"}
+                  {currentRating === 2 && "It was OK"}
+                  {currentRating === 3 && "Liked it"}
+                  {currentRating === 4 && "Really liked it"}
+                  {currentRating === 5 && "Loved it!"}
+                </span>
+              )}
+            </div>
+            
+            {/* Haven't Seen Button */}
+            <button
+              onClick={() => onRateFilm(film.id, null)}
+              className={`mt-1 flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                currentRating === undefined
+                  ? 'bg-gray-700 text-white'
+                  : 'bg-gray-600/50 text-gray-200 hover:bg-gray-600'
+              }`}
+            >
+              <EyeOff className="h-4 w-4 mr-1.5" />
+              Haven't Seen It
+            </button>
+          </div>
         </div>
       </CardContent>
     </Card>
-  );
-};
-
-interface RatingButtonProps {
-  status: FilmRating['status'];
-  label: string;
-  selected: boolean;
-  onClick: () => void;
-  fullWidth?: boolean;
-  secondary?: boolean;
-}
-
-const RatingButton: React.FC<RatingButtonProps> = ({
-  status,
-  label,
-  selected,
-  onClick,
-  fullWidth = false,
-  secondary = false,
-}) => {
-  // Define colors based on status and type
-  let bgColor;
-  
-  if (selected) {
-    bgColor = secondary 
-      ? 'bg-gray-700 text-white' 
-      : 'bg-primary text-primary-foreground';
-  } else {
-    bgColor = secondary 
-      ? 'bg-black/40 text-white hover:bg-black/60' 
-      : 'bg-black/50 text-white hover:bg-black/70';
-  }
-  
-  // Emoji mapping
-  const emoji = {
-    'not_seen': '👁️',
-    'not_interested': '🚫',
-    'loved': '❤️',
-    'liked': '👍',
-    'meh': '😐',
-    'hated': '👎',
-  }[status];
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            onClick={onClick}
-            className={`
-              ${bgColor} 
-              ${fullWidth ? 'flex-1' : ''} 
-              text-xs rounded px-2 py-1.5 
-              transition-colors duration-200 
-              flex items-center justify-center
-              shadow-md hover:shadow-lg
-            `}
-          >
-            <span className="inline-block mr-1">{emoji}</span>
-            <span className="text-xs font-medium">{label}</span>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{label}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
   );
 };
 
