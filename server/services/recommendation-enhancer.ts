@@ -323,10 +323,18 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       }
     }
     
-    // Post-process recommendations to ensure at least one film is available on user's streaming services
-    const finalRecommendations = await postProcessRecommendations(filteredRecommendations, preferences);
+    // Post-process recommendations for streaming services availability
+    let processedRecommendations = await postProcessRecommendations(filteredRecommendations, preferences);
     
-    return finalRecommendations;
+    // Apply additional filtering to ensure mood preferences are respected
+    processedRecommendations = filterRecommendationsByMood(processedRecommendations, preferences.mood);
+    
+    // Apply additional filtering to ensure runtime preferences are respected
+    if (preferences.runtime && preferences.runtime.length > 0) {
+      processedRecommendations = filterRecommendationsByRuntime(processedRecommendations, preferences.runtime);
+    }
+    
+    return processedRecommendations;
   } catch (error) {
     console.error("Error in enhanced recommendations:", error);
     // Fall back to just returning the AI recommendations
@@ -335,8 +343,107 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
 }
 
 /**
- * Post-process recommendations to ensure we have at least one film available on user's streaming services
+ * Filters recommendations to ensure they match the user's runtime preferences
+ * This provides an additional verification step after AI recommendations
  */
+function filterRecommendationsByRuntime(recommendations: Film[], runtimePrefs: string[]): Film[] {
+  if (!runtimePrefs || !runtimePrefs.length || recommendations.length === 0) {
+    return recommendations;
+  }
+
+  console.log(`Applying additional runtime filtering for preferences: ${runtimePrefs.join(', ')}`);
+  
+  // Define runtime ranges in minutes
+  const runtimeRanges: Record<string, [number, number]> = {
+    "short": [0, 100],       // Up to 1h40m
+    "medium": [80, 140],     // 1h20m to 2h20m
+    "long": [130, Infinity]  // 2h10m+
+  };
+  
+  // Filter films with matching runtime
+  const matchingRecommendations = recommendations.filter(film => {
+    // Skip films without runtime information
+    if (!film.runtime) {
+      return true; // Keep films without runtime data to maintain diversity
+    }
+    
+    // Check if the film's runtime falls within any of the user's preferred ranges
+    return runtimePrefs.some(prefRange => {
+      const [min, max] = runtimeRanges[prefRange] || [0, Infinity];
+      return film.runtime >= min && film.runtime <= max;
+    });
+  });
+  
+  console.log(`Found ${matchingRecommendations.length} of ${recommendations.length} films matching runtime preferences`);
+  
+  // If at least half of recommendations already match, return as is with matching films prioritized
+  if (matchingRecommendations.length >= Math.min(3, recommendations.length * 0.5)) {
+    // Prioritize matching films but keep all
+    return [
+      ...matchingRecommendations,
+      ...recommendations.filter(film => !matchingRecommendations.includes(film))
+    ];
+  }
+  
+  // If too few matches, return all recommendations but boost the matching ones to the top
+  console.log(`Too few runtime matches (${matchingRecommendations.length}), keeping all recommendations but prioritizing matches`);
+  return [
+    ...matchingRecommendations,
+    ...recommendations.filter(film => !matchingRecommendations.includes(film))
+  ];
+}
+
+function filterRecommendationsByMood(recommendations: Film[], mood: string): Film[] {
+  if (!mood || recommendations.length === 0) {
+    return recommendations;
+  }
+
+  console.log(`Applying additional mood filtering for mood: ${mood}`);
+  
+  // Define genre mappings for different moods
+  const moodGenreMappings: Record<string, string[]> = {
+    "laugh": ["Comedy", "Adventure", "Romance", "Family"],
+    "think": ["Mystery", "Sci-Fi", "Thriller", "Documentary", "Drama"],
+    "cry": ["Drama", "Romance", "Biography", "History"],
+    "thrill": ["Action", "Horror", "Thriller", "Adventure", "Crime"],
+    "escape": ["Fantasy", "Sci-Fi", "Adventure", "Animation"],
+    "inspire": ["Biography", "Documentary", "Drama", "History", "Sport"]
+  };
+
+  // Get the appropriate genres for the mood
+  const targetGenres = moodGenreMappings[mood] || [];
+  if (targetGenres.length === 0) {
+    console.log(`No genre mapping found for mood: ${mood}`);
+    return recommendations;
+  }
+
+  // Count how many recommendations have at least one matching genre
+  const matchingRecommendations = recommendations.filter(film => 
+    film.genres.some(genre => targetGenres.includes(genre))
+  );
+  
+  console.log(`Found ${matchingRecommendations.length} of ${recommendations.length} films matching mood ${mood}`);
+  
+  // If most recommendations already match, return as is
+  if (matchingRecommendations.length >= recommendations.length * 0.7) {
+    return recommendations;
+  }
+  
+  // If less than 70% match, sort to prioritize films matching the mood
+  // but keep some non-matching films to maintain diversity
+  const result = [
+    // First, include films that match the mood
+    ...matchingRecommendations,
+    // Then, add some of the non-matching films at the end (limiting to maintain at least 70% matching)
+    ...recommendations
+      .filter(film => !matchingRecommendations.includes(film))
+      .slice(0, Math.max(1, Math.floor(matchingRecommendations.length * 0.3)))
+  ];
+  
+  console.log(`After mood filtering: ${result.length} films (${matchingRecommendations.length} matching mood)`);
+  return result;
+}
+
 async function postProcessRecommendations(
   recommendations: Film[], 
   preferences: RecommendationRequest
