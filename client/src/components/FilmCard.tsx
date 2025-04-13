@@ -24,45 +24,33 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<'liked' | 'disliked' | null>(null);
   
-  // Use a more simple approach
+  // Use react-query to manage watchlist state instead of direct fetch
+  const { data: watchlistItems = [] } = useQuery<any[]>({
+    queryKey: ['/api/watchlist'],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: !!user, // Only run query if user is logged in
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+  });
+  
+  // Use a single state for tracking watchlist status
   const [isWatchlisted, setIsWatchlisted] = useState<boolean>(false);
   
-  // Use a directly fetched watchlist approach
-  const [watchlistItems, setWatchlistItems] = useState<any[]>([]);
-  
-  // Fetch the watchlist data when the component mounts and when user logs in
+  // Check if film is in watchlist once on initial render and when watchlist items change
   useEffect(() => {
-    if (!user) return;
+    if (!watchlistItems || !Array.isArray(watchlistItems)) return;
     
-    const fetchWatchlist = async () => {
-      try {
-        const response = await fetch('/api/watchlist', { credentials: 'include' });
-        if (response.ok) {
-          const data = await response.json();
-          console.log('DEBUG - Film ID:', film.id, 'Watchlist data:', data);
-          if (Array.isArray(data)) {
-            setWatchlistItems(data || []);
-          } else {
-            console.error('Unexpected watchlist data format:', data);
-            setWatchlistItems([]);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching watchlist:', error);
-      }
-    };
+    const inWatchlist = watchlistItems.some(
+      (item: any) => item && 
+        item.filmId === film.id && 
+        item.filmTitle.toLowerCase() === film.title.toLowerCase()
+    );
     
-    fetchWatchlist();
-    
-    // Setup a polling mechanism to check the watchlist periodically
-    const intervalId = setInterval(fetchWatchlist, 5000);
-    
-    // Cleanup on unmount
-    return () => clearInterval(intervalId);
-  }, [user, film.id]);
+    setIsWatchlisted(inWatchlist);
+  }, [watchlistItems, film.id, film.title]);
 
   // Check if this specific film is in the watchlist using BOTH id and title to be extra safe
-  const exactFilmInWatchlist = watchlistItems.some(
+  const exactFilmInWatchlist = Array.isArray(watchlistItems) && watchlistItems.some(
     (item: any) => {
       // Check if both filmId and filmTitle match to be absolutely certain
       return item && 
@@ -73,8 +61,8 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
   
   // Update state whenever watchlist items change
   useEffect(() => {
-    setIsWatchlisted(exactFilmInWatchlist);
-  }, [exactFilmInWatchlist, watchlistItems.length]);
+    setIsWatchlisted(!!exactFilmInWatchlist);
+  }, [exactFilmInWatchlist]);
   
   // Recommendation feedback mutation
   const recommendationFeedbackMutation = useMutation({
