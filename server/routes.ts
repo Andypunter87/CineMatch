@@ -87,7 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log("Similar preferences detected, ensuring variety in recommendations");
               
               // Parse the previous recommendations
-              const prevRecommendations: Film[] = JSON.parse(lastRecommendations.recommendations);
+              const prevRecommendations = safelyParseRecommendations(lastRecommendations.recommendations);
               const prevFilmIds = new Set(prevRecommendations.map(film => film.id));
               
               // Limit to at most one film from previous recommendations
@@ -213,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log("Similar preferences detected, ensuring variety in recommendations");
               
               // Parse the previous recommendations
-              const prevRecommendations: Film[] = JSON.parse(lastRecommendations.recommendations);
+              const prevRecommendations = safelyParseRecommendations(lastRecommendations.recommendations);
               const prevFilmIds = new Set(prevRecommendations.map(film => film.id));
               
               // Limit to at most one film from previous recommendations
