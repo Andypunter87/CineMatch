@@ -57,12 +57,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Extract requestedBatchSize if present
+      const requestedBatchSize = req.body.requestedBatchSize;
+      
       // Validate input
       const preferences = recommendationRequestSchema.parse({
         ...req.body,
         streamingServices,
         country,
-        userRatedFilms // Add user rated films to the preferences
+        userRatedFilms, // Add user rated films to the preferences
+        requestedBatchSize // Pass through the requested batch size
       });
       
       // Get recommendations based on user preferences

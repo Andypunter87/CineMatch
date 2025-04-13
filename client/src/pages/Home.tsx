@@ -166,29 +166,28 @@ export default function Home() {
       // Update seen film IDs
       setSeenFilmIds(allSeenIds);
       
-      // Force a refetch with the updated exclusion list
+      // Directly use the API to get more recommendations
       const batchSize = initialBatchSize > 0 ? initialBatchSize : 6; // Default to 6 if initial size not set yet
       
-      // Invalidate the query to clear the cache
-      queryClient.invalidateQueries({ 
-        queryKey: ['/api/recommendations'],
-        refetchType: 'active'
-      });
+      // Create a complete preferences object with all exclusions
+      const combinedExclusions = Array.from(new Set([...allSeenIds, ...dislikedFilmIds]));
+      const requestBody = {
+        ...preferences,
+        excludeFilmIds: combinedExclusions,
+        requestedBatchSize: batchSize
+      };
       
-      // Then force a refetch with our context
-      queryClient.fetchQuery({
-        queryKey: ['/api/recommendations', preferences, seenFilmIds],
-        queryFn: async () => {
-          return []; // This will be ignored as the real query function will be used
-        },
-        meta: {
-          requestedBatchSize: batchSize
-        }
-      });
+      // Make the direct API request instead of going through React Query's cache
+      const response = await apiRequest('POST', '/api/recommendations', requestBody);
+      const newRecommendations = await response.json();
+      
+      // Update the React Query cache with the new recommendations
+      if (newRecommendations.length > 0) {
+        queryClient.setQueryData(['/api/recommendations', preferences, seenFilmIds], newRecommendations);
+      }
       
       // Calculate total exclusions for analytics 
-      const allExclusionsWithDuplicates = [...allSeenIds, ...dislikedFilmIds];
-      const totalExclusions = Array.from(new Set(allExclusionsWithDuplicates)).length;
+      const totalExclusions = combinedExclusions.length;
       
       // Track analytics event
       trackEvent(AnalyticsEvents.MORE_RECOMMENDATIONS_REQUESTED, {
@@ -200,7 +199,7 @@ export default function Home() {
         batch_size: batchSize
       });
       
-      return true;
+      return newRecommendations;
     }
   });
 
