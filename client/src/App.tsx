@@ -11,6 +11,7 @@ import TermsPage from "@/pages/terms-page";
 import PrivacyPage from "@/pages/privacy-page";
 import AdminDashboard from "@/pages/admin-dashboard";
 import FriendsPage from "@/pages/friends-page";
+import OnboardingPage from "@/pages/onboarding-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import Layout from "@/components/Layout";
@@ -24,6 +25,7 @@ function Router() {
       <ProtectedRoute path="/watchlist" component={WatchlistPage} />
       <ProtectedRoute path="/friends" component={FriendsPage} />
       <ProtectedRoute path="/admin" component={AdminDashboard} adminOnly={true} />
+      <ProtectedRoute path="/onboarding" component={OnboardingPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />

@@ -63,9 +63,14 @@ export interface IStorage {
   getUserLastRecommendations(userId: number): Promise<UserRecommendations | undefined>;
   getUserRatedFilms(userId: number): Promise<{ filmId: number; title: string; genres: string[]; rating: number; filmType: string }[]>; // New method to get user's rated films
   
+  // Film operations
+  getFilmById(filmId: number): Promise<Film | undefined>;
+  getPopularFilmsForOnboarding(count: number): Promise<Film[]>;
+  
   // Watchlist operations
   getWatchlistItems(userId: number): Promise<WatchlistItem[]>;
   getWatchlistItem(userId: number, itemId: number): Promise<WatchlistItem | undefined>;
+  getWatchlistItemByFilmId(userId: number, filmId: number): Promise<WatchlistItem | undefined>;
   addToWatchlist(item: InsertWatchlistItem): Promise<WatchlistItem>;
   updateWatchlistItem(itemId: number, updates: Partial<InsertWatchlistItem>): Promise<WatchlistItem>;
   removeFromWatchlist(userId: number, itemId: number): Promise<void>;
@@ -876,6 +881,138 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error getting user's rated films:", error);
       return [];
+    }
+  }
+  
+  /**
+   * Get a film by its ID
+   */
+  async getFilmById(filmId: number): Promise<Film | undefined> {
+    try {
+      // First, check if it's in our static film list (faster)
+      const filmFromStatic = this.films.find(film => film.id === filmId);
+      if (filmFromStatic) {
+        return filmFromStatic;
+      }
+      
+      // If not found in static list, check if we have any watchlist entries for this film
+      // This can help with films added from external sources like TMDB
+      const [watchlistItem] = await db
+        .select()
+        .from(watchlist)
+        .where(eq(watchlist.filmId, filmId))
+        .limit(1);
+        
+      if (watchlistItem) {
+        // Construct a Film object from the watchlist item
+        return {
+          id: watchlistItem.filmId,
+          title: watchlistItem.filmTitle,
+          year: watchlistItem.filmYear || 2000,
+          director: watchlistItem.filmDirector || "Unknown",
+          actors: [], // We don't store actors in watchlist
+          synopsis: "No synopsis available", // We don't have synopsis in watchlist
+          genres: watchlistItem.filmGenres || [],
+          type: (watchlistItem.filmType as "mainstream" | "indie") || "mainstream",
+          posterUrl: watchlistItem.filmPosterUrl || "",
+          tmdbId: watchlistItem.tmdbId ? Number(watchlistItem.tmdbId) : undefined,
+          runtime: watchlistItem.runtime ? Number(watchlistItem.runtime) : undefined,
+          voteAverage: watchlistItem.voteAverage ? Number(watchlistItem.voteAverage) : undefined
+        };
+      }
+      
+      // If we still haven't found it, return undefined
+      return undefined;
+    } catch (error) {
+      console.error(`Error getting film with ID ${filmId}:`, error);
+      return undefined;
+    }
+  }
+  
+  /**
+   * Get a list of popular films for the onboarding process
+   */
+  async getPopularFilmsForOnboarding(count: number): Promise<Film[]> {
+    try {
+      // Create a mix of mainstream and indie films across different genres
+      const genreMix = [
+        "Comedy", "Drama", "Action", "Sci-Fi", 
+        "Romance", "Thriller", "Horror", "Animation", 
+        "Adventure", "Family", "Documentary", "Fantasy"
+      ];
+      
+      // Select films to ensure a mix of:
+      // 1. Genres (using the genreMix array)
+      // 2. Types (both mainstream and indie)
+      // 3. Years (a range of decades)
+      const selectedFilms: Film[] = [];
+      const usedIds = new Set<number>();
+      
+      // First, ensure we have at least one film from each primary genre if possible
+      for (const genre of genreMix) {
+        // Find films matching this genre that haven't been selected yet
+        const matchingFilms = this.films.filter(film => 
+          film.genres.includes(genre) && 
+          !usedIds.has(film.id) &&
+          // Prefer films with poster URLs and higher match potential
+          film.posterUrl && 
+          film.synopsis && 
+          film.synopsis.length > 20
+        );
+        
+        if (matchingFilms.length > 0) {
+          // Sort by year in descending order and take the first one
+          // This prioritizes newer films that are more likely to be recognized
+          const selectedFilm = matchingFilms.sort((a, b) => b.year - a.year)[0];
+          selectedFilms.push(selectedFilm);
+          usedIds.add(selectedFilm.id);
+          
+          // If we have enough films, stop
+          if (selectedFilms.length >= count) {
+            break;
+          }
+        }
+      }
+      
+      // If we don't have enough films yet, add more popular ones
+      if (selectedFilms.length < count) {
+        // Sort remaining films by recency and select enough to reach the count
+        const remainingFilms = this.films
+          .filter(film => !usedIds.has(film.id) && film.posterUrl && film.synopsis)
+          .sort((a, b) => b.year - a.year)
+          .slice(0, count - selectedFilms.length);
+          
+        selectedFilms.push(...remainingFilms);
+      }
+      
+      return selectedFilms;
+    } catch (error) {
+      console.error("Error getting popular films for onboarding:", error);
+      
+      // Fallback: return a subset of the static film list if there's an error
+      return this.films
+        .filter(film => film.posterUrl)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, count);
+    }
+  }
+  
+  /**
+   * Get a watchlist item by user ID and film ID
+   */
+  async getWatchlistItemByFilmId(userId: number, filmId: number): Promise<WatchlistItem | undefined> {
+    try {
+      const [item] = await db
+        .select()
+        .from(watchlist)
+        .where(and(
+          eq(watchlist.userId, userId),
+          eq(watchlist.filmId, filmId)
+        ));
+      return item;
+    } catch (error) {
+      console.error(`Error getting watchlist item for user ${userId} and film ${filmId}:`, error);
+      return undefined;
     }
   }
 }

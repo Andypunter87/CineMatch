@@ -7,6 +7,7 @@ import { ZodError } from "zod";
 import { setupAuth } from "./auth";
 import { initializeDatabase } from "./db";
 import adminRoutes from "./admin";
+import onboardingRoutes from "./routes/onboarding";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { sendFriendInvitationEmail, sendFriendRequestAcceptedEmails } from "./services/email";
@@ -31,6 +32,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register admin routes
   app.use('/api/admin', adminRoutes);
+  
+  // Register onboarding routes
+  app.use('/api/onboarding', onboardingRoutes);
   
   // Special endpoint specifically for "Show More Films" functionality
   app.post('/api/recommendations/more', async (req, res) => {

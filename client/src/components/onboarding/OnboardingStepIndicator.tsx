@@ -10,16 +10,18 @@ export const OnboardingStepIndicator: React.FC<OnboardingStepIndicatorProps> = (
   totalSteps 
 }) => {
   return (
-    <div className="flex justify-center items-center space-x-2 mt-6">
+    <div className="flex items-center justify-center gap-2 my-4">
       {Array.from({ length: totalSteps }).map((_, index) => (
         <div
           key={index}
-          className={`h-2 w-2 rounded-full transition-colors duration-200 ${
-            index === currentStep ? 'bg-primary' : 'bg-primary/20'
+          className={`h-2 rounded-full transition-all duration-300 ${
+            index === currentStep ? 'w-4 bg-primary' : 'w-2 bg-gray-300'
           }`}
-          aria-label={index === currentStep ? `Current step ${index + 1} of ${totalSteps}` : `Step ${index + 1} of ${totalSteps}`}
+          aria-label={index === currentStep ? 'Current step' : `Step ${index + 1}`}
         />
       ))}
     </div>
   );
 };
+
+export default OnboardingStepIndicator;
