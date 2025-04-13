@@ -57,8 +57,14 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     // Performance optimization: start timestamp
     const startTime = Date.now();
     
-    // First get the AI recommendations
-    const aiRecommendations = await getAIRecommendations(preferences);
+    // Ensure we have a requested batch size
+    const requestedBatchSize = preferences.requestedBatchSize || 6;
+    
+    // First get the AI recommendations with explicit batch size
+    const aiRecommendations = await getAIRecommendations({
+      ...preferences,
+      requestedBatchSize: requestedBatchSize
+    });
     
     console.log(`AI recommendations retrieved in ${Date.now() - startTime}ms`);
     
