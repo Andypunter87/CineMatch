@@ -168,8 +168,9 @@ export default function Home() {
       
       // Determine batch size for consistent results
       // For "Show More" requests, we want at least the same number as the initial load
-      // Adding +2 to ensure we get enough even if some get filtered out
-      const batchSize = initialBatchSize > 0 ? initialBatchSize + 2 : 8; 
+      // For more diverse recommendations, request a larger number (at least 8-10)
+      // This ensures we get at least 4-5 new films even after filtering
+      const batchSize = initialBatchSize > 0 ? Math.max(initialBatchSize + 4, 10) : 10; 
       
       // Create a complete preferences object with all exclusions
       const combinedExclusions = Array.from(new Set([...allSeenIds, ...dislikedFilmIds]));

@@ -48,13 +48,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Requesting ${batchSize} more recommendations, excluding ${excludeFilmIds.length} films`);
       
-      // Use our dedicated helper function that has special handling for additional recommendations
-      const { getAdditionalRecommendations } = require('./services/recommendation-helper');
-      const additionalRecommendations = await getAdditionalRecommendations(
-        preferences,
-        excludeFilmIds,
-        batchSize
-      );
+      // Use our helper function that has special handling for additional recommendations
+      // Import using ES modules syntax instead of require
+      const additionalRecommendations = await storage.getRecommendations({
+        ...preferences,
+        excludeFilmIds: excludeFilmIds,
+        requestedBatchSize: batchSize,
+        _bypassStreamingFilter: true  // Special flag to bypass streaming service filtering
+      });
       
       console.log(`Returning ${additionalRecommendations.length} additional recommendations`);
       
