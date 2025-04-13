@@ -87,6 +87,35 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
   const ratedCount = Object.keys(ratings).length;
   const totalFilms = films.length;
 
+  // State to track which set of 3 films we're viewing
+  const [currentPage, setCurrentPage] = useState(0);
+  
+  // Show only 3 films at a time
+  const filmsPerPage = 3;
+  const totalPages = Math.ceil(films.length / filmsPerPage);
+  
+  // Get the current set of films to display
+  const getCurrentFilms = () => {
+    const startIdx = currentPage * filmsPerPage;
+    return films.slice(startIdx, startIdx + filmsPerPage);
+  };
+  
+  // Navigation functions
+  const goToNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+  
+  const goToPrevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+  
+  // Calculate overall progress
+  const overallProgress = Math.round((ratedCount / totalFilms) * 100);
+  
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -94,8 +123,16 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
         <p className="text-muted-foreground">
           Tap to tell us what you've watched and enjoyed.
         </p>
-        <div className="mt-2 text-sm text-primary">
-          {ratedCount} of {totalFilms} rated
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <div className="h-2 w-full max-w-md bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary rounded-full transition-all duration-300"
+              style={{ width: `${overallProgress}%` }}
+            />
+          </div>
+          <span className="text-sm font-medium whitespace-nowrap">
+            {ratedCount}/{totalFilms}
+          </span>
         </div>
       </div>
 
@@ -106,8 +143,8 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {films.map((film) => (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {getCurrentFilms().map((film) => (
               <FilmRatingCard
                 key={film.id}
                 film={film}
@@ -115,6 +152,31 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
                 onRateFilm={handleRateFilm}
               />
             ))}
+          </div>
+          
+          {/* Page navigation */}
+          <div className="flex justify-between items-center mt-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToPrevPage}
+              disabled={currentPage === 0}
+            >
+              Previous
+            </Button>
+            
+            <div className="text-sm text-center">
+              Page {currentPage + 1} of {totalPages}
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages - 1}
+            >
+              Next
+            </Button>
           </div>
 
           <div className="flex justify-center mt-8">
@@ -124,7 +186,7 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
               className="w-full max-w-xs"
               disabled={ratedCount === 0}
             >
-              Continue
+              Complete Ratings
             </Button>
           </div>
         </>
@@ -172,46 +234,61 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
             <p className="text-xs opacity-80">{film.year}</p>
           </div>
 
-          {/* Rating Options */}
-          {showOptions && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-2">
-              <div className="grid grid-cols-2 gap-1 w-full">
-                <RatingButton
-                  status="not_seen"
-                  label="Not Seen"
-                  selected={selectedStatus === 'not_seen'}
-                  onClick={() => onRateFilm(film.id, 'not_seen')}
-                />
-                <RatingButton
-                  status="not_interested"
-                  label="Not Interested"
-                  selected={selectedStatus === 'not_interested'}
-                  onClick={() => onRateFilm(film.id, 'not_interested')}
-                />
-                <RatingButton
-                  status="loved"
-                  label="Loved It"
-                  selected={selectedStatus === 'loved'}
-                  onClick={() => onRateFilm(film.id, 'loved')}
-                />
-                <RatingButton
-                  status="liked"
-                  label="Liked It"
-                  selected={selectedStatus === 'liked'}
-                  onClick={() => onRateFilm(film.id, 'liked')}
-                />
-                <RatingButton
-                  status="meh"
-                  label="Meh"
-                  selected={selectedStatus === 'meh'}
-                  onClick={() => onRateFilm(film.id, 'meh')}
-                />
-                <RatingButton
-                  status="hated"
-                  label="Hated It"
-                  selected={selectedStatus === 'hated'}
-                  onClick={() => onRateFilm(film.id, 'hated')}
-                />
+          {/* Rating Options - Now with a better layout */}
+          {(showOptions || true) && ( // Always show options on mobile for better UX
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-2 bg-black/60">
+              <div className="text-white text-center mb-1 text-sm font-medium">Rate this movie:</div>
+              <div className="flex flex-col gap-2 w-full max-w-[90%]">
+                <div className="flex justify-between gap-2">
+                  <RatingButton
+                    status="loved"
+                    label="Loved It"
+                    selected={selectedStatus === 'loved'}
+                    onClick={() => onRateFilm(film.id, 'loved')}
+                    fullWidth={true}
+                  />
+                  <RatingButton
+                    status="liked"
+                    label="Liked It"
+                    selected={selectedStatus === 'liked'}
+                    onClick={() => onRateFilm(film.id, 'liked')}
+                    fullWidth={true}
+                  />
+                </div>
+                <div className="flex justify-between gap-2">
+                  <RatingButton
+                    status="meh"
+                    label="It was OK"
+                    selected={selectedStatus === 'meh'}
+                    onClick={() => onRateFilm(film.id, 'meh')}
+                    fullWidth={true}
+                  />
+                  <RatingButton
+                    status="hated"
+                    label="Disliked"
+                    selected={selectedStatus === 'hated'}
+                    onClick={() => onRateFilm(film.id, 'hated')}
+                    fullWidth={true}
+                  />
+                </div>
+                <div className="flex justify-between gap-2 mt-1">
+                  <RatingButton
+                    status="not_seen"
+                    label="Haven't Seen"
+                    selected={selectedStatus === 'not_seen'}
+                    onClick={() => onRateFilm(film.id, 'not_seen')}
+                    fullWidth={true}
+                    secondary={true}
+                  />
+                  <RatingButton
+                    status="not_interested"
+                    label="Not For Me"
+                    selected={selectedStatus === 'not_interested'}
+                    onClick={() => onRateFilm(film.id, 'not_interested')}
+                    fullWidth={true}
+                    secondary={true}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -226,6 +303,8 @@ interface RatingButtonProps {
   label: string;
   selected: boolean;
   onClick: () => void;
+  fullWidth?: boolean;
+  secondary?: boolean;
 }
 
 const RatingButton: React.FC<RatingButtonProps> = ({
@@ -233,9 +312,21 @@ const RatingButton: React.FC<RatingButtonProps> = ({
   label,
   selected,
   onClick,
+  fullWidth = false,
+  secondary = false,
 }) => {
-  // Define colors based on status
-  let bgColor = selected ? 'bg-primary text-primary-foreground' : 'bg-black/50 text-white hover:bg-black/70';
+  // Define colors based on status and type
+  let bgColor;
+  
+  if (selected) {
+    bgColor = secondary 
+      ? 'bg-gray-700 text-white' 
+      : 'bg-primary text-primary-foreground';
+  } else {
+    bgColor = secondary 
+      ? 'bg-black/40 text-white hover:bg-black/60' 
+      : 'bg-black/50 text-white hover:bg-black/70';
+  }
   
   // Emoji mapping
   const emoji = {
@@ -253,10 +344,17 @@ const RatingButton: React.FC<RatingButtonProps> = ({
         <TooltipTrigger asChild>
           <button
             onClick={onClick}
-            className={`${bgColor} text-xs rounded p-1 transition-colors duration-200 flex items-center justify-center`}
+            className={`
+              ${bgColor} 
+              ${fullWidth ? 'flex-1' : ''} 
+              text-xs rounded px-2 py-1.5 
+              transition-colors duration-200 
+              flex items-center justify-center
+              shadow-md hover:shadow-lg
+            `}
           >
-            <span className="hidden sm:inline">{emoji}</span>
-            <span className="sm:ml-1 text-[10px] sm:text-xs line-clamp-1">{label}</span>
+            <span className="inline-block mr-1">{emoji}</span>
+            <span className="text-xs font-medium">{label}</span>
           </button>
         </TooltipTrigger>
         <TooltipContent>

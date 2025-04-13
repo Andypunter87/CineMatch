@@ -22,8 +22,8 @@ router.use(isAuthenticated);
  */
 router.get('/popular-films', async (req: Request, res: Response) => {
   try {
-    // Get 10 popular films for the user to rate
-    const films = await storage.getPopularFilmsForOnboarding(10);
+    // Get 12 popular films for the user to rate (increased from 10)
+    const films = await storage.getPopularFilmsForOnboarding(12);
     res.json(films);
   } catch (error) {
     console.error('Error fetching popular films for onboarding:', error);
