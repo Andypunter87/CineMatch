@@ -45,11 +45,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         country = req.user.country;
       }
       
+      // Get user rated films if logged in
+      let userRatedFilms = [];
+      if (req.isAuthenticated() && req.user) {
+        try {
+          userRatedFilms = await storage.getUserRatedFilms(req.user.id);
+        } catch (error) {
+          console.error("Error getting user rated films:", error);
+          // Continue without user ratings if there's an error
+        }
+      }
+      
       // Validate input
       const preferences = recommendationRequestSchema.parse({
         ...req.body,
         streamingServices,
-        country
+        country,
+        userRatedFilms // Add user rated films to the preferences
       });
       
       // Get recommendations based on user preferences
