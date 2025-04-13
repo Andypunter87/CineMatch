@@ -86,38 +86,35 @@ router.post('/save-ratings', async (req: Request, res: Response) => {
         const existingItem = await storage.getWatchlistItemByFilmId(userId, rating.filmId);
         
         // Add to watchlist with appropriate status
-        let status = 'not_watched';
+        let isWatched = false;
         switch (rating.status) {
           case 'loved':
           case 'liked':
           case 'meh':
           case 'hated':
-            status = 'watched';
-            break;
-          case 'not_interested':
-            status = 'not_interested';
+            isWatched = true;
             break;
           default:
-            status = 'not_watched';
+            isWatched = false;
         }
         
         let result;
         if (existingItem) {
           // Update existing item
           result = await storage.updateWatchlistItem(existingItem.id, {
-            status,
-            rating: rating.rating,
+            watched: status === 'watched',
+            userRating: rating.rating,
           });
         } else {
           // Create new watchlist item
           result = await storage.addToWatchlist({
             userId,
             filmId: rating.filmId,
-            title: film.title,
-            genres: film.genres,
-            status,
-            rating: rating.rating,
-            added: new Date(),
+            filmTitle: film.title,
+            filmGenres: film.genres,
+            watched: status === 'watched',
+            userRating: rating.rating,
+            dateAdded: new Date(),
             filmType: film.type,
           });
         }
@@ -133,10 +130,10 @@ router.post('/save-ratings', async (req: Request, res: Response) => {
     await storage.trackEvent({
       userId,
       eventType: 'onboarding_ratings_saved',
-      eventData: JSON.stringify({
-        count: results.length,
-        date: new Date(),
-      }),
+      data: {
+        count: [results.length],
+        date: [new Date().toISOString()]
+      },
       timestamp: new Date(),
     });
     
@@ -165,10 +162,10 @@ router.post('/track-progress', async (req: Request, res: Response) => {
     await storage.trackEvent({
       userId: req.user!.id,
       eventType: 'onboarding_progress',
-      eventData: JSON.stringify({
-        step: step,
-        date: new Date().toISOString(),
-      }),
+      data: {
+        step: [step],
+        date: [new Date().toISOString()]
+      },
       timestamp: new Date(),
     });
     
