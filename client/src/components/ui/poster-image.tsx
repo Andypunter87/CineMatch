@@ -30,11 +30,21 @@ export const PosterImage: React.FC<PosterImageProps> = ({
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   
-  // Get the proxied URL for the poster
-  const proxiedPosterUrl = getPosterProxyUrl(posterUrl);
+  // Memoize the proxied URL to avoid recalculation on every render
+  const proxiedPosterUrl = React.useMemo(() => 
+    getPosterProxyUrl(posterUrl), 
+    [posterUrl]
+  );
   
-  // Check cache on mount
+  // Check cache and prefetch only once on mount or when url/priority changes
   useEffect(() => {
+    // Don't do anything if no poster URL
+    if (!posterUrl) {
+      setError(true);
+      return;
+    }
+    
+    // Check if already in cache
     const cachedStatus = getImageStatus(proxiedPosterUrl);
     if (cachedStatus) {
       if (cachedStatus.status === 'loaded') {
@@ -42,13 +52,17 @@ export const PosterImage: React.FC<PosterImageProps> = ({
       } else if (cachedStatus.status === 'error') {
         setError(true);
       }
+    } else {
+      // Reset state since we have a new image to load
+      setLoaded(false);
+      setError(false);
+      
+      // Prefetch the image
+      if (priority) {
+        prefetchImages([proxiedPosterUrl]);
+      }
     }
-    
-    // If not cached or priority image, prefetch immediately
-    if (!cachedStatus || priority) {
-      prefetchImages([proxiedPosterUrl]);
-    }
-  }, [proxiedPosterUrl, priority]);
+  }, [posterUrl, proxiedPosterUrl, priority]);
   
   // Handle image load and error events
   const handleLoad = () => {

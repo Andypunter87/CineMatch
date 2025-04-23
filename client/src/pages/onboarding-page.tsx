@@ -107,41 +107,60 @@ const OnboardingPage = () => {
   const [currentBatchFilms, setCurrentBatchFilms] = useState<Film[]>([]);
   const [isLoadingFilms, setIsLoadingFilms] = useState(true);
   
-  // Effect to process films when available or when batch changes
+  // Ref to track if we've already processed this batch
+  const processedBatchRef = React.useRef<number | null>(null);
+  
+  // Effect to process films when available or when batch offset changes
   useEffect(() => {
     // If we don't have films yet, wait for them
     if (!allPopularFilms || allPopularFilms.length === 0) {
       return;
     }
     
-    setIsLoadingFilms(true);
-    
-    // Filter out any films we've already shown
-    const unseenFilms = allPopularFilms.filter(film => !shownFilmIds.includes(film.id));
-    console.log(`Found ${unseenFilms.length} unseen films out of ${allPopularFilms.length} total`);
-    
-    // Take the next batch (up to 12 films)
-    const batchSize = 12;
-    const nextBatch = unseenFilms.slice(0, batchSize);
-    
-    if (nextBatch.length > 0) {
-      console.log(`Selected ${nextBatch.length} films for this batch. First film: ${nextBatch[0].title}`);
-      
-      // Update the list of shown film IDs
-      const newShownIds = [...shownFilmIds, ...nextBatch.map(film => film.id)];
-      setShownFilmIds(newShownIds);
-      
-      // Set the current batch
-      setCurrentBatchFilms(nextBatch);
-    } else {
-      console.warn("No more unseen films available!");
-      // If we've shown all films, cycle back to the beginning
-      setShownFilmIds([]);
-      setCurrentBatchFilms(allPopularFilms.slice(0, batchSize));
+    // Skip if we've already processed this batch (prevents loop)
+    if (processedBatchRef.current === batchOffset) {
+      return;
     }
     
+    // Mark this batch as being processed
+    processedBatchRef.current = batchOffset;
+    
+    setIsLoadingFilms(true);
+    
+    // Create a function to select the next batch
+    const selectNextBatch = () => {
+      // Filter out any films we've already shown
+      const unseenFilms = allPopularFilms.filter(film => !shownFilmIds.includes(film.id));
+      console.log(`Found ${unseenFilms.length} unseen films out of ${allPopularFilms.length} total`);
+      
+      // Take the next batch (up to 12 films)
+      const batchSize = 12;
+      const nextBatch = unseenFilms.slice(0, batchSize);
+      
+      if (nextBatch.length > 0) {
+        console.log(`Selected ${nextBatch.length} films for this batch. First film: ${nextBatch[0].title}`);
+        
+        // Update the list of shown film IDs (outside of render)
+        const newShownIds = [...shownFilmIds, ...nextBatch.map(film => film.id)];
+        setShownFilmIds(newShownIds);
+        
+        // Set the current batch
+        return nextBatch;
+      } else {
+        console.warn("No more unseen films available!");
+        // If we've shown all films, reset and start from the beginning
+        setShownFilmIds([]);
+        return allPopularFilms.slice(0, batchSize);
+      }
+    };
+    
+    // Execute the batch selection
+    const selectedBatch = selectNextBatch();
+    setCurrentBatchFilms(selectedBatch);
+    
+    // Complete the loading process
     setIsLoadingFilms(false);
-  }, [allPopularFilms, batchOffset, shownFilmIds]);
+  }, [allPopularFilms, batchOffset]);
 
   // Explainer screens data
   const explainerScreens: ExplainerScreenData[] = [
