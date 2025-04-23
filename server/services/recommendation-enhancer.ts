@@ -191,11 +191,53 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
               availableOn = tmdbFilm.availableStreamingByCountry[countryCode].filter(
                 service => preferences.streamingServices!.some(
                   userService => {
-                    // Make comparison more flexible by checking both ways
-                    const serviceLower = service.toLowerCase();
-                    const userServiceLower = userService.toLowerCase();
-                    // Check if either is a substring of the other
-                    return serviceLower.includes(userServiceLower) || userServiceLower.includes(serviceLower);
+                    // Standardize service names for more accurate comparison
+                    const serviceLower = service.toLowerCase().trim();
+                    const userServiceLower = userService.toLowerCase().trim();
+                    
+                    // Create normalized versions of service names
+                    const normalizedService = serviceLower
+                      .replace(/\s+/g, '')
+                      .replace('amazon', 'prime')
+                      .replace('primevideo', 'prime')
+                      .replace('netflix', 'netflix')
+                      .replace('hbo', 'hbo')
+                      .replace('disney+', 'disney')
+                      .replace('disneyplus', 'disney')
+                      .replace('apple', 'apple')
+                      .replace('appletvplus', 'apple')
+                      .replace('hulu', 'hulu')
+                      .replace('paramount+', 'paramount')
+                      .replace('paramountplus', 'paramount')
+                      .replace('bbc', 'bbc')
+                      .replace('bbciplayer', 'bbc')
+                      .replace('mubi', 'mubi');
+                      
+                    const normalizedUserService = userServiceLower
+                      .replace(/\s+/g, '')
+                      .replace('amazon', 'prime')
+                      .replace('primevideo', 'prime')
+                      .replace('netflix', 'netflix')
+                      .replace('hbo', 'hbo')
+                      .replace('disney+', 'disney')
+                      .replace('disneyplus', 'disney')
+                      .replace('apple', 'apple')
+                      .replace('appletvplus', 'apple')
+                      .replace('hulu', 'hulu')
+                      .replace('paramount+', 'paramount')
+                      .replace('paramountplus', 'paramount')
+                      .replace('bbc', 'bbc')
+                      .replace('bbciplayer', 'bbc')
+                      .replace('mubi', 'mubi');
+                    
+                    // Check for exact matches in normalized names first
+                    if (normalizedService === normalizedUserService) {
+                      return true;
+                    }
+                    
+                    // Then check if one contains the other as a fallback for unusual service names
+                    return normalizedService.includes(normalizedUserService) || 
+                           normalizedUserService.includes(normalizedService);
                   }
                 )
               );

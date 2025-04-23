@@ -304,6 +304,7 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
             <h3 className="text-lg md:text-xl font-bold text-white">{title}</h3>
             <p className="text-gray-200 text-xs md:text-sm mb-2">
               {year} • {director}
+              {film.runtime && <span> • {Math.floor(film.runtime / 60)}h {film.runtime % 60}m</span>}
             </p>
             <p className="text-xs md:text-sm text-white leading-snug line-clamp-4">{synopsis}</p>
             <div className="mt-3 flex flex-wrap gap-1">
