@@ -24,6 +24,9 @@ export const AnalyticsEvents = {
   USER_LOGGED_IN: 'user_logged_in',
   USER_UPDATED_PROFILE: 'user_updated_profile',
   
+  // Onboarding events
+  ONBOARDING_PREFERENCES_SET: 'onboarding_preferences_set',
+  
   // Questionnaire events
   MOOD_SELECTED: 'mood_selected',
   TIME_SELECTED: 'time_selected',

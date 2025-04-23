@@ -85,7 +85,7 @@ const OnboardingPage = () => {
       if (!response.ok) throw new Error('Failed to fetch popular films');
       return response.json();
     },
-    enabled: currentStep === 3 || showMoreFilms, // Only fetch when we need films
+    enabled: currentStep === 4 || showMoreFilms, // Only fetch when we need films (step 4 after preferences)
   });
 
   // Explainer screens data
@@ -110,12 +110,12 @@ const OnboardingPage = () => {
   // Handle skip button
   const handleSkip = () => {
     // If we're on the film rating step, still save any ratings the user has made
-    if (currentStep === 3 && filmsRated.length > 0) {
+    if (currentStep === 4 && filmsRated.length > 0) {
       saveRatingsMutation.mutate(filmsRated);
     }
     
     // Skip to completion
-    setCurrentStep(4);
+    setCurrentStep(5);
     trackProgressMutation.mutate('skipped');
   };
 
@@ -138,7 +138,7 @@ const OnboardingPage = () => {
       setShowMoreFilms(true);
     } else {
       // If they've already done a second batch, go to completion
-      setCurrentStep(4);
+      setCurrentStep(5);
     }
   };
 
@@ -235,8 +235,17 @@ const OnboardingPage = () => {
             </>
           )}
 
+          {/* User Preferences Form */}
+          {currentStep === 3 && (
+            <div className="py-4">
+              <UserPreferencesForm 
+                onComplete={handleNext}
+              />
+            </div>
+          )}
+
           {/* Film Rating Grid */}
-          {currentStep === 3 && !showMoreFilms && (
+          {currentStep === 4 && !showMoreFilms && (
             <div className="py-4">
               <div className="absolute top-2 right-2">
                 <Button 
@@ -259,7 +268,7 @@ const OnboardingPage = () => {
           )}
 
           {/* Ask for More Ratings */}
-          {currentStep === 3 && showMoreFilms && (
+          {currentStep === 4 && showMoreFilms && (
             <>
               {saveRatingsMutation.isPending ? (
                 <div className="py-8 text-center">
@@ -288,7 +297,7 @@ const OnboardingPage = () => {
                     <Button 
                       variant="outline"
                       className="w-full"
-                      onClick={() => setCurrentStep(4)}
+                      onClick={() => setCurrentStep(5)}
                     >
                       No, I'm done
                     </Button>
@@ -299,7 +308,7 @@ const OnboardingPage = () => {
           )}
 
           {/* Completion Screen */}
-          {currentStep === 4 && (
+          {currentStep === 5 && (
             <WelcomeComplete 
               userName={user?.name || 'there'} 
               onComplete={handleComplete} 
