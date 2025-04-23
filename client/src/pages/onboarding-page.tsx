@@ -128,16 +128,23 @@ const OnboardingPage = () => {
     trackProgressMutation.mutate(`step_${nextStep}`);
   };
 
+  // Track how many batches of films the user has rated
+  const [batchesRated, setBatchesRated] = useState(0);
+  
   // Handle rating completion
   const handleRatingComplete = (ratings: FilmRating[]) => {
     setFilmsRated([...filmsRated, ...ratings]);
     saveRatingsMutation.mutate(ratings);
     
-    // Ask if they want to rate more films
-    if (!showMoreFilms) {
+    // Increment the number of batches rated
+    const newBatchCount = batchesRated + 1;
+    setBatchesRated(newBatchCount);
+    
+    // Ask if they want to rate more films after first batch
+    if (newBatchCount === 1) {
       setShowMoreFilms(true);
-    } else {
-      // If they've already done a second batch, go to completion
+    } else if (newBatchCount >= 2) {
+      // If they've already rated 2+ batches, go to completion
       setCurrentStep(5);
     }
   };
@@ -285,44 +292,74 @@ const OnboardingPage = () => {
           )}
 
           {/* Ask for More Ratings */}
-          {currentStep === 4 && showMoreFilms && (
-            <>
-              {saveRatingsMutation.isPending ? (
-                <div className="py-8 text-center">
-                  <p>Saving your preferences...</p>
-                </div>
-              ) : (
-                <div className="py-6 text-center">
-                  <h2 className="text-xl font-bold mb-4">
-                    Want even better recommendations?
-                  </h2>
-                  <p className="text-muted-foreground mb-6">
-                    Rate 10 more films to further improve your personalized picks
-                  </p>
-                  
-                  <div className="space-y-3">
-                    <Button 
-                      className="w-full"
-                      onClick={() => {
-                        // Reset to fetch new films
-                        queryClient.invalidateQueries({ queryKey: ['/api/onboarding/popular-films'] });
-                        setShowMoreFilms(true);
-                      }}
-                    >
-                      Yes, rate more films
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => setCurrentStep(5)}
-                    >
-                      No, I'm done
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+          {currentStep === 4 && showMoreFilms && !isLoadingFilms && !saveRatingsMutation.isPending && popularFilms && popularFilms.length > 0 ? (
+            // When films are loaded, show the rating grid 
+            <div className="py-4">
+              <div className="absolute top-2 right-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleSkip}
+                  className="h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Skip</span>
+                </Button>
+              </div>
+              
+              <FilmRatingGrid 
+                films={popularFilms}
+                onRatingComplete={handleRatingComplete}
+                isLoading={isLoadingFilms}
+              />
+            </div>
+          ) : currentStep === 4 && showMoreFilms && (saveRatingsMutation.isPending || isLoadingFilms) ? (
+            // Show loading state
+            <div className="py-8 text-center">
+              <p>Loading more films to rate...</p>
+            </div>
+          ) : currentStep === 4 && showMoreFilms ? (
+            // Show the option to rate more films if no films are loaded yet
+            <div className="py-6 text-center">
+              <h2 className="text-xl font-bold mb-4">
+                Want even better recommendations?
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                Rate 10 more films to further improve your personalized picks
+              </p>
+              
+              <div className="space-y-3">
+                <Button 
+                  className="w-full"
+                  onClick={() => {
+                    // Reset state to prepare for new films
+                    setFilmsRated([]);
+                    
+                    // Set a temporary state flag to handle loading transition
+                    const tempShowMoreFlag = showMoreFilms;
+                    setShowMoreFilms(false);
+                    
+                    // Force refetch of popular films
+                    queryClient.invalidateQueries({ queryKey: ['/api/onboarding/popular-films'] });
+                    
+                    // Use setTimeout to ensure React state update completes
+                    setTimeout(() => {
+                      setShowMoreFilms(tempShowMoreFlag);
+                    }, 100);
+                  }}
+                >
+                  Yes, rate more films
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setCurrentStep(5)}
+                >
+                  No, I'm done
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
           {/* Completion Screen */}
           {currentStep === 5 && (
