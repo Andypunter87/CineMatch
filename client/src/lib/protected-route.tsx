@@ -41,13 +41,25 @@ export function ProtectedRoute({
         
         // Redirect to onboarding if the user needs it and isn't already there
         // Note: We check explicitly for false to handle older users who might not have the field set
+        console.log("Protected route check - user:", JSON.stringify({
+          id: user.id,
+          name: user.name,
+          needsOnboarding: user.needsOnboarding
+        }));
+        
+        // If URL includes 'just_completed_onboarding', we know they just finished onboarding
+        // so we should never redirect back to onboarding
+        const justCompletedOnboarding = window.location.search.includes('just_completed_onboarding');
+        
         if (
+          !justCompletedOnboarding && // Skip redirect check if user just completed onboarding
           user.needsOnboarding !== false && 
           path !== "/onboarding" && 
           !path.startsWith("/auth") && 
           !path.startsWith("/terms") && 
           !path.startsWith("/privacy")
         ) {
+          console.log("Redirecting to onboarding");
           return <Redirect to="/onboarding" />;
         }
         
