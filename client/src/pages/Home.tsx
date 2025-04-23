@@ -7,6 +7,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecommendationHistory } from "@/hooks/use-recommendation-history";
 import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
+import { Loader2 } from "lucide-react";
 
 // Local storage key for saving preferences
 const PREFERENCES_STORAGE_KEY = "cinematch_preferences";
@@ -311,15 +312,26 @@ export default function Home() {
                 <span className="font-medium text-indigo-700">Welcome back!</span> We've loaded your previous recommendations.
               </div>
             )}
-            <Recommendations 
-              recommendations={recommendations || []} 
-              isLoading={isLoading || isFetching || isLoadingMore} 
-              preferences={preferences!} 
-              onReset={handleReset}
-              onGenerateMore={getMoreSuggestions}
-              hasMoreToGenerate={recommendations && recommendations.length > 0}
-              onDisliked={handleFilmDisliked}
-            />
+            {/* Only show recommendations if we have preferences */}
+            {preferences ? (
+              <Recommendations 
+                recommendations={recommendations || []} 
+                isLoading={isLoading || isFetching || isLoadingMore} 
+                preferences={preferences} 
+                onReset={handleReset}
+                onGenerateMore={getMoreSuggestions}
+                hasMoreToGenerate={recommendations && recommendations.length > 0}
+                onDisliked={handleFilmDisliked}
+              />
+            ) : (
+              // If we don't have preferences yet, show a simple loading state
+              <div className="text-center py-10">
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  <div className="animate-spin h-10 w-10 rounded-full border-4 border-primary border-t-transparent"></div>
+                  <p className="text-lg text-primary">Preparing your recommendations...</p>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
