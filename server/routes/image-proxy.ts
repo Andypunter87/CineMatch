@@ -4,8 +4,13 @@ import { URL } from 'url';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+import { fileURLToPath } from 'url';
 
 const router = express.Router();
+
+// Get directory info in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Directory to store cached images
 const CACHE_DIR = path.join(__dirname, '../..', 'tmp', 'image-cache');
@@ -42,6 +47,7 @@ function isImageCached(filename: string): boolean {
  * Particularly useful for TMDB poster images to ensure reliability
  */
 router.get('/poster', async (req: Request, res: Response) => {
+  console.log('Image proxy endpoint called with query:', req.query);
   const { url } = req.query;
   
   if (!url || typeof url !== 'string') {

@@ -5,6 +5,8 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Star, EyeOff, Film as FilmIcon } from 'lucide-react';
+import PosterImage from '@/components/ui/poster-image';
+import { prefetchImages } from '@/lib/imageCache';
 
 interface Film {
   id: number;
@@ -84,6 +86,19 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
   // Calculate how many films have been rated
   const ratedCount = Object.keys(ratings).length;
   const totalFilms = films.length;
+  
+  // Prefetch all film poster images on component mount
+  useEffect(() => {
+    if (films.length > 0) {
+      // Create a list of all poster URLs with proxy URLs
+      const posterUrls = films.map(film => 
+        film.posterUrl ? `/api/image/poster?url=${encodeURIComponent(film.posterUrl)}` : ''
+      ).filter(url => url !== '');
+      
+      // Prefetch all poster images
+      prefetchImages(posterUrls);
+    }
+  }, [films]);
 
   // State to track which set of 3 films we're viewing
   const [currentPage, setCurrentPage] = useState(0);
@@ -233,8 +248,6 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
   onRateFilm,
 }) => {
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
   const [haventSeenClicked, setHaventSeenClicked] = useState(false);
   const [starClickedAnimation, setStarClickedAnimation] = useState(false);
   
@@ -256,38 +269,22 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
     setTimeout(() => setStarClickedAnimation(false), 1000);
   };
 
+  // Proxy the image through our server-side proxy for better reliability
+  const proxyPosterUrl = film.posterUrl ? `/api/image/poster?url=${encodeURIComponent(film.posterUrl)}` : '';
+
   return (
     <Card className="overflow-hidden transition-all duration-200 shadow-lg hover:shadow-xl border-2 border-gray-300 rounded-xl">
       <CardContent className="p-0">
         <div className="aspect-[2/3] relative">
-          {/* Film poster with loading/error states */}
+          {/* Film poster with loading/error states using enhanced PosterImage component */}
           <div className="absolute inset-0 z-10 bg-gray-900">
-            {!imageLoaded && !imageError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                <Loader2 className="h-12 w-12 animate-spin text-gray-400" />
-              </div>
-            )}
-            
-            {imageError && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800">
-                <FilmIcon className="h-16 w-16 mb-2 text-gray-500" />
-                <span className="text-gray-400 text-sm text-center px-4">
-                  Poster not available
-                </span>
-              </div>
-            )}
-            
-            <img 
-              src={film.posterUrl} 
-              alt={`${film.title} poster`} 
-              onLoad={() => setImageLoaded(true)}
-              onError={() => {
-                setImageLoaded(true);
-                setImageError(true);
-              }}
-              className={`w-full h-full object-cover transition-opacity duration-300 ${
-                imageLoaded && !imageError ? 'opacity-100' : 'opacity-0'
-              }`}
+            <PosterImage 
+              posterUrl={proxyPosterUrl} 
+              title={film.title}
+              className="w-full h-full" 
+              showLoadingState={true}
+              showErrorState={true}
+              priority={true}
             />
           </div>
           
