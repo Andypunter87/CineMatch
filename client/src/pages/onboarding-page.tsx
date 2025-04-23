@@ -148,9 +148,15 @@ const OnboardingPage = () => {
       const response = await apiRequest('POST', '/api/onboarding/complete');
       return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       // Update the user data in the cache to reflect onboarding completion
-      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      if (data.user) {
+        // Directly update the cache with the user data from the response
+        queryClient.setQueryData(['/api/user'], data.user);
+      } else {
+        // Fall back to invalidating the cache if user data isn't provided
+        queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      }
       
       // Go to recommendations
       setLocation('/');
@@ -163,6 +169,17 @@ const OnboardingPage = () => {
     },
     onError: (error) => {
       console.error('Error completing onboarding:', error);
+      
+      // Even if the API call fails, consider onboarding complete
+      // Create a modified user object with needsOnboarding set to false
+      if (user) {
+        const updatedUser = {
+          ...user,
+          needsOnboarding: false
+        };
+        queryClient.setQueryData(['/api/user'], updatedUser);
+      }
+      
       // Still redirect the user to the main page even if there's an error
       setLocation('/');
       
