@@ -27,11 +27,17 @@ router.get('/popular-films', async (req: Request, res: Response) => {
     const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
     
     // Generate a cache-busting random seed to ensure we get varied films
-    // This is especially useful for testing during development
+    // Use the current timestamp as a seed
     const randomSeed = req.query.seed ? parseInt(req.query.seed as string) : Date.now();
+    
+    console.log(`Fetching popular films with offset=${offset}, seed=${randomSeed}`);
     
     // Get 12 popular films for the user to rate, with potential offset for second batch
     const films = await storage.getPopularFilmsForOnboarding(12, offset, randomSeed);
+    
+    // Log the first 3 film titles to verify we're getting different films
+    console.log(`Returning ${films.length} films. First few titles: ${films.slice(0, 3).map(f => f.title).join(', ')}`);
+    
     res.json(films);
   } catch (error) {
     console.error('Error fetching popular films for onboarding:', error);

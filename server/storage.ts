@@ -959,6 +959,14 @@ export class DatabaseStorage implements IStorage {
    */
   async getPopularFilmsForOnboarding(count: number, offset = 0, seed = 0): Promise<Film[]> {
     try {
+      // For second or later batches, use a completely separate algorithm
+      // This ensures we get different films regardless of the number of films available
+      if (offset > 0) {
+        console.log(`Using alternate selection strategy for batch with offset ${offset}`);
+        return this.getSecondBatchFilms(count, seed);
+      }
+      
+      // First batch - standard selection
       // Create a mix of mainstream and indie films across different genres
       const genreMix = [
         "Comedy", "Drama", "Action", "Sci-Fi", 
@@ -969,28 +977,21 @@ export class DatabaseStorage implements IStorage {
       // Create a seeded random function for deterministic shuffling
       const seededRandom = (max: number) => {
         // Simple seeded random function
-        const x = Math.sin(seed + offset) * 10000;
+        const x = Math.sin(seed) * 10000;
         return Math.floor((x - Math.floor(x)) * max);
       };
       
-      // Shuffle the genre mix based on the seed to get different genre priorities each time
+      // Shuffle the genre mix based on the seed
       const shuffledGenreMix = [...genreMix].sort(() => seededRandom(100) / 50 - 1);
       
-      // Prepare a list of all films with good metadata that we can select from
+      // Prepare a list of all films with good metadata
       const eligibleFilms = this.films.filter(film => 
         film.posterUrl && 
         film.synopsis && 
         film.synopsis.length > 20
       );
       
-      // If we have an offset, exclude films from the first batch
-      // We'll create a pool that is much larger than needed so we can skip the offset
-      const totalPoolSize = count * 3 + offset; 
-      
-      // Select films to ensure a mix of:
-      // 1. Genres (using the shuffledGenreMix array)
-      // 2. Types (both mainstream and indie)
-      // 3. Years (a range of decades)
+      // Select films to ensure a mix of genres
       const selectedFilms: Film[] = [];
       const usedIds = new Set<number>();
       
@@ -1011,37 +1012,110 @@ export class DatabaseStorage implements IStorage {
           selectedFilms.push(selectedFilm);
           usedIds.add(selectedFilm.id);
           
-          // If we have enough films for the pool, stop
-          if (selectedFilms.length >= totalPoolSize) {
+          // If we have enough films, stop
+          if (selectedFilms.length >= count) {
             break;
           }
         }
       }
       
       // If we don't have enough films yet, add more
-      if (selectedFilms.length < totalPoolSize) {
+      if (selectedFilms.length < count) {
         // Get remaining films and sort them randomly based on the seed
         const remainingFilms = eligibleFilms
           .filter(film => !usedIds.has(film.id))
           .sort(() => seededRandom(100) / 50 - 1)
-          .slice(0, totalPoolSize - selectedFilms.length);
+          .slice(0, count - selectedFilms.length);
           
         selectedFilms.push(...remainingFilms);
       }
       
-      // Now apply the offset and take only the requested count
-      return selectedFilms.slice(offset, offset + count);
+      // Return the selected films
+      return selectedFilms;
     } catch (error) {
       console.error("Error getting popular films for onboarding:", error);
       
       // Fallback: return a subset of the static film list if there's an error
-      // Still respect the offset parameter to avoid showing the same films
       const eligibleFilms = this.films.filter(film => film.posterUrl);
       const shuffledFilms = eligibleFilms.sort(() => Math.random() - 0.5);
       
-      // Apply offset and count
-      return shuffledFilms.slice(offset, offset + count);
+      // Apply count
+      return shuffledFilms.slice(0, count);
     }
+  }
+  
+  /**
+   * Get a second batch of films that's distinctly different from the first batch
+   * This method applies different criteria to ensure variety
+   */
+  private async getSecondBatchFilms(count: number, seed: number): Promise<Film[]> {
+    // Create a seeded random function with a different approach than the first batch
+    const seededRandom = () => {
+      // Use a different algorithm than the first batch
+      const x = Math.cos(seed) * 10000;
+      return (x - Math.floor(x));
+    };
+    
+    // Create a different genre focus for second batch
+    // Focus on different genres than the first batch to increase variety
+    const secondaryGenreFocus = [
+      "Mystery", "History", "Biography", "War", 
+      "Western", "Musical", "Sport", "Crime"
+    ];
+    
+    // Prepare a list of all films with good metadata
+    const eligibleFilms = this.films.filter(film => 
+      film.posterUrl && 
+      film.type === "indie" // Prefer indie films for second batch if first was mainstream
+    );
+    
+    // Weight the films by different criteria than the first batch
+    const weightedFilms = eligibleFilms.map(film => {
+      let weight = 0;
+      
+      // Different weighting strategy
+      // Prefer older films for variety
+      weight += (2023 - film.year) / 10; // Older films get higher weight
+      
+      // Prefer films from secondary genre focus
+      const matchesSecondaryGenre = film.genres.some(g => secondaryGenreFocus.includes(g));
+      if (matchesSecondaryGenre) {
+        weight += 5;
+      }
+      
+      // Prefer films with longer synopses (more detail)
+      if (film.synopsis && film.synopsis.length > 100) {
+        weight += 3;
+      }
+      
+      return { film, weight, random: seededRandom() };
+    });
+    
+    // Sort by a combination of weight and randomness
+    const sortedFilms = weightedFilms.sort((a, b) => 
+      // Sort primarily by weight, but with a random factor for variety
+      (b.weight + b.random * 5) - (a.weight + a.random * 5)
+    );
+    
+    // Take the top films
+    const selectedFilms = sortedFilms.slice(0, count).map(item => item.film);
+    
+    // If we need more films, include some mainstream ones too
+    if (selectedFilms.length < count) {
+      const remainingNeeded = count - selectedFilms.length;
+      const mainstreamFilms = this.films
+        .filter(film => 
+          film.posterUrl && 
+          film.type === "mainstream" &&
+          !selectedFilms.some(s => s.id === film.id)
+        )
+        .sort(() => seededRandom() - 0.5)
+        .slice(0, remainingNeeded);
+      
+      selectedFilms.push(...mainstreamFilms);
+    }
+    
+    return selectedFilms;
   }
   
   /**
