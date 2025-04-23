@@ -31,8 +31,12 @@ export const loginSchema = z.object({
 export const registerSchema = insertUserSchema.omit({ username: true }).extend({
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
-  streamingServices: z.array(z.string()).default([]),
-  country: z.string().min(1, "Please select your country"),
+  
+  // Make streaming services and country optional, with empty defaults
+  // This will be set during onboarding instead
+  streamingServices: z.array(z.string()).default([]).optional(),
+  country: z.string().default("").optional(),
+  
   acceptTerms: z.boolean().refine(val => val === true, {
     message: "You must accept the Terms of Service and Privacy Policy"
   }),
