@@ -17,9 +17,9 @@ const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
 const recommendationCache = new Map<string, {timestamp: number, data: Film[]}>();
 
 export async function getAIRecommendations(preferences: RecommendationRequest): Promise<Film[]> {
-  // Set timeout to 15 seconds - balance between reliability and speed
-  const TIMEOUT_MS = 15000;
-  const MAX_RETRIES = 2;
+  // Set timeout to 8 seconds - prioritize speed over unlimited options
+  const TIMEOUT_MS = 8000;
+  const MAX_RETRIES = 1;
   
   // Create a cache key based on the preferences
   // Exclude excludeFilmIds from the cache key as these change frequently
@@ -210,7 +210,7 @@ DO NOT include a posterUrl field in your response.`;
         ],
         response_format: { type: "json_object" },
         temperature: 0.7,
-        max_tokens: 1200 // Increased token limit to handle more recommendations
+        max_tokens: 1000 // Adjusted token limit for better performance
       });
 
       // Race between the API call and the timeout
