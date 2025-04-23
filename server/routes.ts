@@ -95,10 +95,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get user rated films if logged in
       let userRatedFilms: { filmId: number; title: string; genres: string[]; rating: number; filmType: string }[] = [];
+      let ratedFilmIds: number[] = []; // Array to collect film IDs that should not be recommended again
       if (req.isAuthenticated() && req.user) {
         try {
           // Get the user's own rated films
           userRatedFilms = await storage.getUserRatedFilms(req.user.id);
+          
+          // Add all rated film IDs to exclusion list to prevent recommending films the user has already seen
+          if (userRatedFilms && userRatedFilms.length > 0) {
+            console.log(`Found ${userRatedFilms.length} rated films from user to exclude from recommendations`);
+            ratedFilmIds = userRatedFilms.map(film => film.filmId);
+          }
           
           // If this is a group viewing (with friends), include friends' rated films too
           if (req.body.audience === "friends" && req.body.viewingParty && Array.isArray(req.body.viewingParty) && req.body.viewingParty.length > 0) {
@@ -112,6 +119,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   if (friendRatings && friendRatings.length > 0) {
                     console.log(`Adding ${friendRatings.length} rated films from friend ID ${friendId}`);
                     userRatedFilms = [...userRatedFilms, ...friendRatings];
+                    
+                    // Also add friend's rated film IDs to exclusion list
+                    ratedFilmIds = [...ratedFilmIds, ...friendRatings.map(film => film.filmId)];
                   }
                 } catch (error) {
                   console.error(`Error getting rated films for friend ID ${friendId}:`, error);
@@ -121,6 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             
             console.log(`Total group preferences: ${userRatedFilms.length} rated films`);
+            console.log(`Total films to exclude from recommendations: ${ratedFilmIds.length}`);
           }
         } catch (error) {
           console.error("Error getting user rated films:", error);
@@ -137,7 +148,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         streamingServices,
         country,
         userRatedFilms, // Add user rated films to the preferences
-        requestedBatchSize // Pass through the requested batch size
+        requestedBatchSize, // Pass through the requested batch size
+        // Add the film IDs to exclude - combine any existing excludeFilmIds with rated film IDs
+        excludeFilmIds: [...(req.body.excludeFilmIds || []), ...ratedFilmIds]
       });
       
       // Check if this is a request for more recommendations (has requestedBatchSize)
@@ -271,10 +284,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get user rated films if logged in
       let userRatedFilms: { filmId: number; title: string; genres: string[]; rating: number; filmType: string }[] = [];
+      let ratedFilmIds: number[] = []; // Array to collect film IDs that should not be recommended again
       if (req.isAuthenticated() && req.user) {
         try {
           // Get the user's own rated films
           userRatedFilms = await storage.getUserRatedFilms(req.user.id);
+          
+          // Add all rated film IDs to exclusion list to prevent recommending films the user has already seen
+          if (userRatedFilms && userRatedFilms.length > 0) {
+            console.log(`Found ${userRatedFilms.length} rated films from user to exclude from recommendations (GET route)`);
+            ratedFilmIds = userRatedFilms.map(film => film.filmId);
+          }
           
           // If this is a group viewing (with friends), include friends' rated films too
           const audience = req.query.audience as string;
@@ -294,6 +314,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (friendRatings && friendRatings.length > 0) {
                   console.log(`Adding ${friendRatings.length} rated films from friend ID ${friendId}`);
                   userRatedFilms = [...userRatedFilms, ...friendRatings];
+                  
+                  // Also add friend's rated film IDs to exclusion list
+                  ratedFilmIds = [...ratedFilmIds, ...friendRatings.map(film => film.filmId)];
                 }
               } catch (error) {
                 console.error(`Error getting rated films for friend ID ${friendId}:`, error);
@@ -302,6 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             
             console.log(`Total group preferences: ${userRatedFilms.length} rated films`);
+            console.log(`Total films to exclude from recommendations: ${ratedFilmIds.length} (GET route)`);
           }
         } catch (error) {
           console.error("Error getting user rated films:", error);
@@ -316,7 +340,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mood,
         streamingServices,
         country,
-        userRatedFilms
+        userRatedFilms,
+        // Add the film IDs to exclude - combine any existing excludeFilmIds with rated film IDs
+        excludeFilmIds: [...(req.query.excludeFilmIds ? 
+          (Array.isArray(req.query.excludeFilmIds) ? 
+            req.query.excludeFilmIds.map(id => parseInt(id as string)).filter(id => !isNaN(id)) : 
+            [parseInt(req.query.excludeFilmIds as string)].filter(id => !isNaN(id))) : 
+          []), ...ratedFilmIds]
       });
       
       // Get recommendations
