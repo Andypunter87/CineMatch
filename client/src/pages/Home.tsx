@@ -24,9 +24,15 @@ export default function Home() {
   const [showQuestionnaire, setShowQuestionnaire] = useState(() => {
     // Check for a "just_completed_onboarding" flag in the URL
     const params = new URLSearchParams(window.location.search);
-    if (params.has('just_completed_onboarding')) {
-      // Always show questionnaire when coming from onboarding
-      return true;
+    const justCompletedOnboarding = params.has('just_completed_onboarding');
+    
+    // If user just completed onboarding, we should NOT show the questionnaire
+    // Instead we should show their initial recommendations
+    if (justCompletedOnboarding) {
+      // Clean up the URL by removing the parameter (prevents questionnaire from showing if page is refreshed)
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+      return false; // Don't show questionnaire immediately after onboarding
     }
     
     // First check if we have a saved history from the server
