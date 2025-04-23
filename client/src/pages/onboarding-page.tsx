@@ -155,16 +155,10 @@ const OnboardingPage = () => {
         
         console.log("Rating batch completed:", newBatchCount);
         
-        // Always show the "want to rate more" screen between batches
-        if (!showMoreFilms) {
-          // First batch - now show the "rate more?" screen
-          setShowMoreFilms(true);
-        } else {
-          // They already rated extra films - now ask again or proceed
-          // For simplicity, this resets to batch selection screen instead of completing
-          // Reset the flow to allow choosing to rate more or complete
-          queryClient.invalidateQueries({ queryKey: ['/api/onboarding/popular-films'] });
-        }
+        // Always show the "want to rate more" screen between batches, regardless of current stage
+        // This ensures the user always gets a choice after completing a batch
+        setIsRatingMore(false); // Reset this flag to show choice screen
+        setShowMoreFilms(true); // Show the "want to rate more?" screen
       }
     });
   };
@@ -355,8 +349,9 @@ const OnboardingPage = () => {
                     // Clear current ratings for the next batch
                     setFilmsRated([]);
                     
-                    // Set the batch offset to get different films (12 films per batch)
-                    const newOffset = 12;
+                    // Increment the batch offset to get different films
+                    // Each batch has 12 films, so offset increases by 12 each time
+                    const newOffset = (batchOffset || 0) + 12;
                     setBatchOffset(newOffset);
                     
                     // Set flag to indicate we're rating more films, 
