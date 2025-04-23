@@ -290,13 +290,32 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
             <Star className="w-3 h-3 mr-0.5 sm:mr-1 inline flex-shrink-0" />
             <span className="truncate">{matchPercentage}% Match</span>
           </Badge>
+          
+          {/* Runtime badge - below the match percentage */}
+          {film.runtime && (
+            <div className="mt-1">
+              <Badge variant="outline" className="bg-blue-50/90 text-blue-700 border-blue-200 px-1.5 py-0.5 text-[10px] sm:text-xs sm:px-2 sm:py-0.5 max-w-full truncate">
+                <Clock className="w-3 h-3 mr-0.5 sm:mr-1 inline flex-shrink-0" />
+                <span className="truncate">{Math.floor(film.runtime / 60)}h {film.runtime % 60}m</span>
+              </Badge>
+            </div>
+          )}
         </div>
         
-        {/* Film type badge */}
-        <div className="absolute top-2 left-2 z-10 max-w-[42%]">
+        {/* Film type and TMDB rating badges */}
+        <div className="absolute top-2 left-2 z-10 max-w-[42%] flex flex-col gap-1">
+          {/* Film type */}
           <Badge variant="outline" className="bg-white/90 text-gray-700 border-blue-200 px-1.5 py-0.5 text-[10px] sm:text-xs sm:px-2 sm:py-0.5 max-w-full truncate">
             <span className="truncate">{film.type === "indie" ? "Independent" : "Mainstream"}</span>
           </Badge>
+          
+          {/* TMDB rating */}
+          {film.voteAverage && (
+            <Badge variant="outline" className="bg-amber-50/90 text-amber-700 border-amber-200 px-1.5 py-0.5 text-[10px] sm:text-xs sm:px-2 sm:py-0.5 max-w-full truncate">
+              <Star className="w-3 h-3 mr-0.5 sm:mr-1 text-amber-500 inline flex-shrink-0" />
+              <span className="truncate">{film.voteAverage.toFixed(1)}/10</span>
+            </Badge>
+          )}
         </div>
         
         <div className="recommendation-details absolute inset-0 bg-gradient-to-t from-gray-900/90 to-transparent p-3 md:p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -342,29 +361,34 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
         </div>
         
         <div className="mt-auto pt-3 border-t border-gray-100 space-y-2">
-          {/* TMDB Additional Info */}
-          {(film.runtime || film.voteAverage || film.originalLanguage) && (
-            <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-              {film.runtime && (
-                <div className="flex items-center">
-                  <Clock className="w-3 h-3 mr-1 text-gray-400" />
-                  <span>{Math.floor(film.runtime / 60)}h {film.runtime % 60}m</span>
-                </div>
-              )}
-              {film.voteAverage && (
-                <div className="flex items-center">
-                  <Star className="w-3 h-3 mr-1 text-amber-400" />
-                  <span>{film.voteAverage.toFixed(1)}/10</span>
-                </div>
-              )}
-              {film.originalLanguage && (
-                <div className="flex items-center">
-                  <Globe className="w-3 h-3 mr-1 text-gray-400" />
-                  <span>{film.originalLanguage.toUpperCase()}</span>
-                </div>
-              )}
-            </div>
-          )}
+          {/* TMDB Additional Info - Always show this section */}
+          <div className="flex flex-wrap gap-3 text-xs text-gray-500 mb-2">
+            {film.runtime ? (
+              <div className="flex items-center bg-blue-50 p-1 rounded">
+                <Clock className="w-3 h-3 mr-1 text-blue-500" />
+                <span className="font-medium">{Math.floor(film.runtime / 60)}h {film.runtime % 60}m</span>
+              </div>
+            ) : (
+              <div className="flex items-center p-1">
+                <Clock className="w-3 h-3 mr-1 text-gray-300" />
+                <span className="text-gray-400">Runtime N/A</span>
+              </div>
+            )}
+            
+            {film.voteAverage ? (
+              <div className="flex items-center bg-amber-50 p-1 rounded">
+                <Star className="w-3 h-3 mr-1 text-amber-500" />
+                <span className="font-medium">{film.voteAverage.toFixed(1)}/10</span>
+              </div>
+            ) : null}
+            
+            {film.originalLanguage && (
+              <div className="flex items-center bg-gray-50 p-1 rounded">
+                <Globe className="w-3 h-3 mr-1 text-gray-500" />
+                <span>{film.originalLanguage.toUpperCase()}</span>
+              </div>
+            )}
+          </div>
           
           <p className="text-sm text-gray-700 leading-snug">
             <Award className="inline-block w-4 h-4 mr-1 text-primary" />
