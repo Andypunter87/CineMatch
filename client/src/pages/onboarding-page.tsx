@@ -242,14 +242,13 @@ const OnboardingPage = () => {
         queryClient.invalidateQueries({ queryKey: ['/api/user'] });
       }
       
-      // Go to recommendations with a flag to show questionnaire
-      setLocation('/?just_completed_onboarding=true');
+      // Go to home page with a flag to indicate onboarding completion
+      // Use window.location.href to avoid React's state update during render issues
+      // This is a more reliable navigation method for this specific case
+      window.location.href = '/?just_completed_onboarding=true';
       
-      // Show welcome toast
-      toast({
-        title: 'Welcome to CineMatch!',
-        description: 'Your personalized film recommendations are ready',
-      });
+      // Don't need toast here as the redirect will cause a page refresh
+      // and we'll lose the toast notification anyway
     },
     onError: (error) => {
       console.error('Error completing onboarding:', error);
@@ -265,13 +264,8 @@ const OnboardingPage = () => {
       }
       
       // Still redirect the user to the main page with flag even if there's an error
-      setLocation('/?just_completed_onboarding=true');
-      
-      toast({
-        title: 'Welcome to CineMatch!',
-        description: 'Your personalized film recommendations are ready',
-        variant: 'default',
-      });
+      // Use the same consistent approach as in the success handler
+      window.location.href = '/?just_completed_onboarding=true';
     }
   });
 

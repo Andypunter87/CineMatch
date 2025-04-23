@@ -20,18 +20,16 @@ export default function Home() {
     hasHistory
   } = useRecommendationHistory();
   
+  // Check for a "just_completed_onboarding" flag in the URL
+  const justCompletedOnboarding = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.has('just_completed_onboarding');
+  };
+  
   // Initialize from localStorage or recommendation history
   const [showQuestionnaire, setShowQuestionnaire] = useState(() => {
-    // Check for a "just_completed_onboarding" flag in the URL
-    const params = new URLSearchParams(window.location.search);
-    const justCompletedOnboarding = params.has('just_completed_onboarding');
-    
-    // If user just completed onboarding, we should NOT show the questionnaire
-    // Instead we should show their initial recommendations
-    if (justCompletedOnboarding) {
-      // Clean up the URL by removing the parameter (prevents questionnaire from showing if page is refreshed)
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
+    // If user just completed onboarding, don't show questionnaire
+    if (justCompletedOnboarding()) {
       return false; // Don't show questionnaire immediately after onboarding
     }
     
@@ -44,6 +42,15 @@ export default function Home() {
     const savedPreferences = localStorage.getItem(PREFERENCES_STORAGE_KEY);
     return !savedPreferences; // Show questionnaire if no saved preferences
   });
+  
+  // Clean up URL parameters after component mounts
+  useEffect(() => {
+    if (justCompletedOnboarding()) {
+      // Clean up the URL by removing the parameter (prevents questionnaire from showing if page is refreshed)
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, []);
   
   // Keep track of which film IDs we've already shown
   const [seenFilmIds, setSeenFilmIds] = useState<number[]>([]);
