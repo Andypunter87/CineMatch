@@ -22,6 +22,13 @@ export default function Home() {
   
   // Initialize from localStorage or recommendation history
   const [showQuestionnaire, setShowQuestionnaire] = useState(() => {
+    // Check for a "just_completed_onboarding" flag in the URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('just_completed_onboarding')) {
+      // Always show questionnaire when coming from onboarding
+      return true;
+    }
+    
     // First check if we have a saved history from the server
     if (user && hasHistory) {
       return false;

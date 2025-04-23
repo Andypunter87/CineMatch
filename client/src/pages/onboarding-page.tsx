@@ -158,8 +158,8 @@ const OnboardingPage = () => {
         queryClient.invalidateQueries({ queryKey: ['/api/user'] });
       }
       
-      // Go to recommendations
-      setLocation('/');
+      // Go to recommendations with a flag to show questionnaire
+      setLocation('/?just_completed_onboarding=true');
       
       // Show welcome toast
       toast({
@@ -180,8 +180,8 @@ const OnboardingPage = () => {
         queryClient.setQueryData(['/api/user'], updatedUser);
       }
       
-      // Still redirect the user to the main page even if there's an error
-      setLocation('/');
+      // Still redirect the user to the main page with flag even if there's an error
+      setLocation('/?just_completed_onboarding=true');
       
       toast({
         title: 'Welcome to CineMatch!',
