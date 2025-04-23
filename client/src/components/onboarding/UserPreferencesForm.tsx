@@ -1,0 +1,234 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { CheckIcon, ChevronRight } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { trackEvent, AnalyticsEvents } from '@/lib/analytics';
+
+// Same streaming services and countries arrays as in profile-page
+const streamingServices = [
+  "Netflix",
+  "Amazon Prime",
+  "Disney+",
+  "Hulu",
+  "HBO Max",
+  "Apple TV+",
+  "Peacock",
+  "Paramount+",
+  "Crunchyroll",
+  "MUBI",
+  "Criterion Channel",
+  "BBC iPlayer",
+  "ITVx",
+  "Channel 4",
+];
+
+const countries = [
+  "United States",
+  "United Kingdom",
+  "Canada",
+  "Australia",
+  "Egypt",
+  "France",
+  "Germany",
+  "Japan",
+  "Brazil",
+  "Mexico",
+  "India",
+  "South Korea",
+  "Italy",
+  "Spain",
+  "Netherlands",
+  "Sweden",
+];
+
+// Map country names to country codes for the API
+const countryCodeMap: Record<string, string> = {
+  "United States": "us",
+  "United Kingdom": "uk",
+  "Canada": "ca",
+  "Australia": "au",
+  "Egypt": "eg",
+  "France": "fr",
+  "Germany": "de",
+  "Japan": "jp",
+  "Brazil": "br",
+  "Mexico": "mx",
+  "India": "in",
+  "South Korea": "kr",
+  "Italy": "it",
+  "Spain": "es",
+  "Netherlands": "nl",
+  "Sweden": "se",
+};
+
+interface UserPreferencesFormProps {
+  onComplete: () => void;
+}
+
+const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete }) => {
+  const { user, updateStreamingMutation, updateCountryMutation } = useAuth();
+  const { toast } = useToast();
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState('');
+
+  useEffect(() => {
+    // Initialize with user's existing preferences if available
+    if (user?.streamingServices) {
+      setSelectedServices(user.streamingServices);
+    }
+    if (user?.country) {
+      // Find the full country name
+      const countryEntry = Object.entries(countryCodeMap).find(
+        ([_, code]) => code === user.country
+      );
+      if (countryEntry) {
+        setSelectedCountry(countryEntry[0]);
+      }
+    }
+  }, [user]);
+
+  const toggleService = (service: string) => {
+    setSelectedServices(prev => 
+      prev.includes(service) 
+        ? prev.filter(s => s !== service) 
+        : [...prev, service]
+    );
+    setValidationError('');
+  };
+
+  const handleCountryChange = (value: string) => {
+    setSelectedCountry(value);
+    setValidationError('');
+  };
+
+  const handleSubmit = async () => {
+    // Validation
+    if (!selectedCountry) {
+      setValidationError('Please select your country');
+      return;
+    }
+    
+    if (selectedServices.length === 0) {
+      setValidationError('Please select at least one streaming service');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      // Map the full country name to country code
+      const countryCode = countryCodeMap[selectedCountry];
+      
+      // Convert streaming service names to lowercase codes (as used in the API)
+      const servicesCodes = selectedServices.map(service => {
+        return service.toLowerCase().replace(/\+/g, 'plus').replace(/\s/g, '');
+      });
+      
+      // Update both preferences
+      await Promise.all([
+        updateCountryMutation.mutateAsync(countryCode),
+        updateStreamingMutation.mutateAsync(servicesCodes)
+      ]);
+      
+      // Track event
+      trackEvent(AnalyticsEvents.ONBOARDING_PREFERENCES_SET, {
+        user_id: user?.id,
+        country: countryCode,
+        streaming_services_count: servicesCodes.length,
+        streaming_services: servicesCodes
+      });
+      
+      // Proceed to next step
+      onComplete();
+    } catch (error) {
+      console.error('Error updating preferences:', error);
+      toast({
+        title: 'Error saving preferences',
+        description: 'Please try again',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="py-6">
+      <h2 className="text-2xl font-bold mb-6 text-center">Your Movie Preferences</h2>
+      
+      {/* Country Selection */}
+      <div className="mb-8">
+        <Label className="block mb-2 font-medium">Where are you watching from?</Label>
+        <p className="text-sm text-muted-foreground mb-3">
+          This helps us show you movies available in your country
+        </p>
+        <Select value={selectedCountry} onValueChange={handleCountryChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select your country" />
+          </SelectTrigger>
+          <SelectContent>
+            {countries.map((country) => (
+              <SelectItem key={country} value={country}>
+                {country}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      
+      {/* Streaming Services */}
+      <div className="mb-8">
+        <Label className="block mb-2 font-medium">Which streaming services do you use?</Label>
+        <p className="text-sm text-muted-foreground mb-3">
+          We'll only recommend films available on your services
+        </p>
+        <div className="flex flex-wrap gap-2 mt-3">
+          {streamingServices.map((service) => (
+            <Badge
+              key={service}
+              variant={selectedServices.includes(service) ? "default" : "outline"}
+              className={`cursor-pointer ${
+                selectedServices.includes(service) ? "bg-primary" : ""
+              }`}
+              onClick={() => toggleService(service)}
+            >
+              {selectedServices.includes(service) && (
+                <CheckIcon className="mr-1 h-3 w-3" />
+              )}
+              {service}
+            </Badge>
+          ))}
+        </div>
+      </div>
+      
+      {/* Validation Error */}
+      {validationError && (
+        <p className="text-destructive text-sm mb-4">{validationError}</p>
+      )}
+      
+      {/* Submit Button */}
+      <Button 
+        className="w-full mt-2" 
+        onClick={handleSubmit}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? 'Saving...' : 'Continue'}
+        <ChevronRight className="ml-2 h-4 w-4" />
+      </Button>
+    </div>
+  );
+};
+
+export default UserPreferencesForm;
