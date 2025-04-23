@@ -55,6 +55,18 @@ router.get('/poster', async (req: Request, res: Response) => {
   }
   
   try {
+    // Check if this is a TMDB URL, and if so, convert it to the standard format
+    if (url.includes('themoviedb.org')) {
+      // Extract the filename portion from the URL
+      const match = url.match(/\/([^\/]+)\.jpg$/);
+      if (match && match[1]) {
+        // Construct the URL to use the TMDB image API directly
+        const filename = match[1];
+        url = `https://image.tmdb.org/t/p/w500/${filename}.jpg`;
+        console.log('Converted TMDB URL to:', url);
+      }
+    }
+    
     // Verify the URL is a valid image URL (allow only specific domains for security)
     const imageUrl = new URL(url);
     const allowedDomains = ['www.themoviedb.org', 'image.tmdb.org'];
@@ -82,7 +94,9 @@ router.get('/poster', async (req: Request, res: Response) => {
     }
     
     // If not cached, fetch the image
+    console.log('Fetching image from URL:', url);
     const response = await fetch(url);
+    console.log('Fetch response status:', response.status, response.statusText);
     
     if (!response.ok) {
       return res.status(response.status).send(`Error fetching image: ${response.statusText}`);
