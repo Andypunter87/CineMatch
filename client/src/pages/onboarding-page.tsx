@@ -10,7 +10,7 @@ import FilmRatingGrid from '../components/onboarding/FilmRatingGrid';
 import OnboardingStepIndicator from '../components/onboarding/OnboardingStepIndicator';
 import WelcomeComplete from '../components/onboarding/WelcomeComplete';
 import UserPreferencesForm from '../components/onboarding/UserPreferencesForm';
-import { SmilePlus, Award, Users, ChevronRight, X } from 'lucide-react';
+import { SmilePlus, Award, Users, ChevronRight, X, Loader2 } from 'lucide-react';
 
 interface ExplainerScreenData {
   title: string;
@@ -80,24 +80,68 @@ const OnboardingPage = () => {
   // Define state variables for different stages within the onboarding flow
   const [isRatingMore, setIsRatingMore] = useState(false);
   
-  // Track how many batches we've seen for offset calculation
+  // Track which film IDs we've already shown to the user
+  const [shownFilmIds, setShownFilmIds] = useState<number[]>([]);
+  
+  // Track how many batches we've seen
   const [batchOffset, setBatchOffset] = useState(0);
 
-  // Fetch popular films
-  const { data: popularFilms, isLoading: isLoadingFilms } = useQuery<Film[]>({
-    queryKey: ['/api/onboarding/popular-films', batchOffset],
+  // Fetch a large batch of films once
+  const { data: allPopularFilms, isLoading: isLoadingAllFilms } = useQuery<Film[]>({
+    queryKey: ['/api/onboarding/popular-films'],
     queryFn: async ({ signal }) => {
-      // Request different films for second batch by using offset parameter
-      const url = `/api/onboarding/popular-films?offset=${batchOffset}&seed=${Date.now()}`;
-      console.log(`Fetching films with offset ${batchOffset}`);
+      // Request a large batch (100) of films that we can filter on the client side
+      // We'll avoid using offset on server-side since it's not working as expected
+      const url = `/api/onboarding/popular-films?count=100&seed=${Date.now()}`;
+      console.log(`Fetching large batch of films`);
       
       const response = await fetch(url, { signal });
       if (!response.ok) throw new Error('Failed to fetch popular films');
       return response.json();
     },
-    enabled: currentStep === 4 || (showMoreFilms && isRatingMore), // Only fetch when we need films
-    staleTime: 0, // Don't cache results
+    enabled: currentStep === 4, // Only fetch once when we reach the rating step
+    staleTime: Infinity, // Cache permanently for this session
   });
+  
+  // Process films to get only the ones we haven't shown yet
+  const [currentBatchFilms, setCurrentBatchFilms] = useState<Film[]>([]);
+  const [isLoadingFilms, setIsLoadingFilms] = useState(true);
+  
+  // Effect to process films when available or when batch changes
+  useEffect(() => {
+    // If we don't have films yet, wait for them
+    if (!allPopularFilms || allPopularFilms.length === 0) {
+      return;
+    }
+    
+    setIsLoadingFilms(true);
+    
+    // Filter out any films we've already shown
+    const unseenFilms = allPopularFilms.filter(film => !shownFilmIds.includes(film.id));
+    console.log(`Found ${unseenFilms.length} unseen films out of ${allPopularFilms.length} total`);
+    
+    // Take the next batch (up to 12 films)
+    const batchSize = 12;
+    const nextBatch = unseenFilms.slice(0, batchSize);
+    
+    if (nextBatch.length > 0) {
+      console.log(`Selected ${nextBatch.length} films for this batch. First film: ${nextBatch[0].title}`);
+      
+      // Update the list of shown film IDs
+      const newShownIds = [...shownFilmIds, ...nextBatch.map(film => film.id)];
+      setShownFilmIds(newShownIds);
+      
+      // Set the current batch
+      setCurrentBatchFilms(nextBatch);
+    } else {
+      console.warn("No more unseen films available!");
+      // If we've shown all films, cycle back to the beginning
+      setShownFilmIds([]);
+      setCurrentBatchFilms(allPopularFilms.slice(0, batchSize));
+    }
+    
+    setIsLoadingFilms(false);
+  }, [allPopularFilms, batchOffset, shownFilmIds]);
 
   // Explainer screens data
   const explainerScreens: ExplainerScreenData[] = [
@@ -298,15 +342,15 @@ const OnboardingPage = () => {
               </div>
               
               <FilmRatingGrid 
-                films={popularFilms || []}
+                films={currentBatchFilms || []}
                 onRatingComplete={handleRatingComplete}
-                isLoading={isLoadingFilms}
+                isLoading={isLoadingFilms || isLoadingAllFilms}
               />
             </div>
           )}
 
           {/* Ask for More Ratings */}
-          {currentStep === 4 && showMoreFilms && isRatingMore && !isLoadingFilms && !saveRatingsMutation.isPending && popularFilms && popularFilms.length > 0 ? (
+          {currentStep === 4 && showMoreFilms && isRatingMore && !isLoadingFilms && !saveRatingsMutation.isPending && currentBatchFilms && currentBatchFilms.length > 0 ? (
             // When films are loaded and user chose to rate more, show the rating grid
             <div className="py-4">
               <div className="absolute top-2 right-2">
@@ -322,15 +366,18 @@ const OnboardingPage = () => {
               </div>
               
               <FilmRatingGrid 
-                films={popularFilms}
+                films={currentBatchFilms}
                 onRatingComplete={handleRatingComplete}
-                isLoading={isLoadingFilms}
+                isLoading={isLoadingFilms || isLoadingAllFilms}
               />
             </div>
-          ) : currentStep === 4 && showMoreFilms && (saveRatingsMutation.isPending || (isRatingMore && isLoadingFilms)) ? (
+          ) : currentStep === 4 && showMoreFilms && (saveRatingsMutation.isPending || isLoadingFilms || isLoadingAllFilms) ? (
             // Show loading state when rating more films
             <div className="py-8 text-center">
-              <p>Loading more films to rate...</p>
+              <div className="flex flex-col items-center justify-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p>Loading more films to rate...</p>
+              </div>
             </div>
           ) : currentStep === 4 && showMoreFilms ? (
             // Show the option to rate more films after completing first batch

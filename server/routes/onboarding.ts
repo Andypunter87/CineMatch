@@ -19,23 +19,24 @@ router.use(isAuthenticated);
 /**
  * Get popular films for onboarding rating
  * Returns a list of popular films with a mix of genres for the user to rate
- * Supports an "offset" query parameter to get a different batch of films
+ * Supports a "count" parameter to get a larger batch of films for client-side filtering
  */
 router.get('/popular-films', async (req: Request, res: Response) => {
   try {
-    // Check if we're requesting a second batch
-    const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+    // Allow requesting a larger count for client-side filtering
+    const count = req.query.count ? parseInt(req.query.count as string) : 12;
+    const maxCount = 100; // Set a reasonable maximum
     
     // Generate a cache-busting random seed to ensure we get varied films
-    // Use the current timestamp as a seed
     const randomSeed = req.query.seed ? parseInt(req.query.seed as string) : Date.now();
     
-    console.log(`Fetching popular films with offset=${offset}, seed=${randomSeed}`);
+    console.log(`Fetching popular films, count=${Math.min(count, maxCount)}, seed=${randomSeed}`);
     
-    // Get 12 popular films for the user to rate, with potential offset for second batch
-    const films = await storage.getPopularFilmsForOnboarding(12, offset, randomSeed);
+    // Get popular films for the user to rate
+    // Pass 0 for offset since we're handling batching on the client
+    const films = await storage.getPopularFilmsForOnboarding(Math.min(count, maxCount), 0, randomSeed);
     
-    // Log the first 3 film titles to verify we're getting different films
+    // Log the first 3 film titles
     console.log(`Returning ${films.length} films. First few titles: ${films.slice(0, 3).map(f => f.title).join(', ')}`);
     
     res.json(films);
