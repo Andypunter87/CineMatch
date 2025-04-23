@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import fetch from 'node-fetch';
+import fetch, { Response as FetchResponse } from 'node-fetch';
 import { URL } from 'url';
 import path from 'path';
 import fs from 'fs';
@@ -29,7 +29,26 @@ if (!fs.existsSync(FALLBACK_DIR)) {
 }
 
 // Path to the default fallback image
-const FALLBACK_IMAGE_PATH = path.join(FALLBACK_DIR, 'poster-placeholder.jpg');
+const FALLBACK_IMAGE_PATH = path.join(FALLBACK_DIR, 'poster-placeholder.svg');
+
+/**
+ * Serve the fallback placeholder image
+ * @param res Express response object
+ */
+function serveFallbackImage(res: Response): void {
+  // Check if fallback exists
+  if (fs.existsSync(FALLBACK_IMAGE_PATH)) {
+    // Set appropriate content-type based on the extension
+    const contentType = 'image/svg+xml';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
+    
+    // Stream the fallback image
+    fs.createReadStream(FALLBACK_IMAGE_PATH).pipe(res);
+  } else {
+    res.status(404).send('Image not found and fallback image not available');
+  }
+}
 
 /**
  * Generate a filename for caching based on the URL
@@ -116,41 +135,56 @@ router.get('/poster', async (req: Request, res: Response) => {
     
     // If not cached, fetch the image
     console.log('Fetching image from URL:', fetchUrl);
-    const response = await fetch(fetchUrl);
-    console.log('Fetch response status:', response.status, response.statusText);
     
-    if (!response.ok) {
-      return res.status(response.status).send(`Error fetching image: ${response.statusText}`);
+    let response: FetchResponse;
+    try {
+      response = await fetch(fetchUrl, { timeout: 5000 }); // Add a timeout
+      console.log('Fetch response status:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        console.log('Error fetching image, using fallback');
+        return serveFallbackImage(res);
+      }
+    } catch (error: any) {
+      console.log('Network error fetching image, using fallback:', error?.message || 'Unknown error');
+      return serveFallbackImage(res);
     }
     
-    // Get content type and verify it's an image
-    const contentType = response.headers.get('content-type') || '';
-    if (!contentType.startsWith('image/')) {
-      return res.status(400).send('URL does not point to an image');
+    // If we get here, we have a valid response
+    try {
+      // Get content type and verify it's an image
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.startsWith('image/')) {
+        console.log('Invalid content type, using fallback:', contentType);
+        return serveFallbackImage(res);
+      }
+      
+      // Stream to both the cache file and the response
+      const fileStream = fs.createWriteStream(cachePath);
+      
+      // Set response headers
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
+      
+      // Stream the response to both the client and the cache file
+      if (response.body) {
+        response.body.pipe(fileStream);
+        response.body.pipe(res);
+      } else {
+        // Fallback for older fetch implementations
+        const buffer = await response.buffer();
+        fileStream.write(buffer);
+        res.send(buffer);
+        fileStream.end();
+      }
+    } catch (error: any) {
+      console.log('Error processing response, using fallback:', error?.message || 'Unknown error');
+      return serveFallbackImage(res);
     }
     
-    // Stream to both the cache file and the response
-    const fileStream = fs.createWriteStream(cachePath);
-    
-    // Set response headers
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
-    
-    // Stream the response to both the client and the cache file
-    if (response.body) {
-      response.body.pipe(fileStream);
-      response.body.pipe(res);
-    } else {
-      // Fallback for older fetch implementations
-      const buffer = await response.buffer();
-      fileStream.write(buffer);
-      res.send(buffer);
-      fileStream.end();
-    }
-    
-  } catch (error) {
-    console.error('Image proxy error:', error);
-    res.status(500).send('Error processing image request');
+  } catch (error: any) {
+    console.error('Image proxy error:', error?.message || 'Unknown error');
+    return serveFallbackImage(res);
   }
 });
 
