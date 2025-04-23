@@ -5,7 +5,23 @@
  * - Prefetching images before they're rendered
  * - Caching loaded images in memory
  * - Providing fallback URLs when images fail to load
+ * - Proxying images through server for better reliability
  */
+
+/**
+ * Converts a movie poster URL to use our proxy service
+ * This improves reliability by handling network errors and providing fallbacks
+ */
+export function getPosterProxyUrl(url: string): string {
+  if (!url) return '/fallback/poster-placeholder.svg';
+  
+  // If it's already using our proxy, return as is
+  if (url.startsWith('/api/image/poster')) return url;
+  
+  // Encode the URL properly
+  const encodedUrl = encodeURIComponent(url);
+  return `/api/image/poster?url=${encodedUrl}`;
+}
 
 interface CacheEntry {
   status: 'loading' | 'loaded' | 'error';
@@ -69,8 +85,8 @@ export const getImageStatus = (url: string): CacheEntry | undefined => {
  * @returns A generated placeholder URL based on the title
  */
 export const getPlaceholderPosterUrl = (title: string): string => {
-  // Generate a URL for the placeholder image with the title text
-  return `https://placehold.co/300x450/1a1a2e/ffffff?text=${encodeURIComponent(title)}`;
+  // Use our local SVG placeholder image
+  return '/fallback/poster-placeholder.svg';
 };
 
 /**

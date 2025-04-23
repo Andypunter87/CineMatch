@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Film as FilmIcon, Loader2 } from 'lucide-react';
-import { prefetchImages, getImageStatus, getPlaceholderPosterUrl } from '@/lib/imageCache';
+import { 
+  prefetchImages, 
+  getImageStatus, 
+  getPlaceholderPosterUrl,
+  getPosterProxyUrl
+} from '@/lib/imageCache';
 
 interface PosterImageProps {
   posterUrl: string;
@@ -25,9 +30,12 @@ export const PosterImage: React.FC<PosterImageProps> = ({
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   
+  // Get the proxied URL for the poster
+  const proxiedPosterUrl = getPosterProxyUrl(posterUrl);
+  
   // Check cache on mount
   useEffect(() => {
-    const cachedStatus = getImageStatus(posterUrl);
+    const cachedStatus = getImageStatus(proxiedPosterUrl);
     if (cachedStatus) {
       if (cachedStatus.status === 'loaded') {
         setLoaded(true);
@@ -38,9 +46,9 @@ export const PosterImage: React.FC<PosterImageProps> = ({
     
     // If not cached or priority image, prefetch immediately
     if (!cachedStatus || priority) {
-      prefetchImages([posterUrl]);
+      prefetchImages([proxiedPosterUrl]);
     }
-  }, [posterUrl, priority]);
+  }, [proxiedPosterUrl, priority]);
   
   // Handle image load and error events
   const handleLoad = () => {
@@ -73,7 +81,7 @@ export const PosterImage: React.FC<PosterImageProps> = ({
       
       {/* The actual image */}
       <img 
-        src={error ? getPlaceholderPosterUrl(title) : posterUrl} 
+        src={error ? getPlaceholderPosterUrl(title) : proxiedPosterUrl} 
         alt={`${title} poster`} 
         onLoad={handleLoad}
         onError={handleError}
