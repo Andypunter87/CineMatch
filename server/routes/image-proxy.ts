@@ -15,10 +15,21 @@ const __dirname = path.dirname(__filename);
 // Directory to store cached images
 const CACHE_DIR = path.join(__dirname, '../..', 'tmp', 'image-cache');
 
+// Directory for fallback images
+const FALLBACK_DIR = path.join(__dirname, '../..', 'client', 'public', 'fallback');
+
 // Ensure cache directory exists
 if (!fs.existsSync(CACHE_DIR)) {
   fs.mkdirSync(CACHE_DIR, { recursive: true });
 }
+
+// Ensure fallback directory exists
+if (!fs.existsSync(FALLBACK_DIR)) {
+  fs.mkdirSync(FALLBACK_DIR, { recursive: true });
+}
+
+// Path to the default fallback image
+const FALLBACK_IMAGE_PATH = path.join(FALLBACK_DIR, 'poster-placeholder.jpg');
 
 /**
  * Generate a filename for caching based on the URL
@@ -48,27 +59,37 @@ function isImageCached(filename: string): boolean {
  */
 router.get('/poster', async (req: Request, res: Response) => {
   console.log('Image proxy endpoint called with query:', req.query);
-  const { url } = req.query;
+  const originalUrl = req.query.url as string;
   
-  if (!url || typeof url !== 'string') {
+  if (!originalUrl || typeof originalUrl !== 'string') {
     return res.status(400).send('URL parameter is required');
   }
   
+  // Create a variable to hold potentially modified URL
+  let fetchUrl = originalUrl;
+  
   try {
     // Check if this is a TMDB URL, and if so, convert it to the standard format
-    if (url.includes('themoviedb.org')) {
-      // Extract the filename portion from the URL
-      const match = url.match(/\/([^\/]+)\.jpg$/);
+    if (fetchUrl.includes('themoviedb.org')) {
+      // This is the standard TMDB image path format at the end of URLs
+      // Example: /w3LxiVE8TvCkSSJ3L5LY23mpvzb.jpg
+      const tmdbFilePathPattern = /\/([a-zA-Z0-9]{20,})\.(jpg|png|jpeg)$/i;
+      const match = fetchUrl.match(tmdbFilePathPattern);
+      
       if (match && match[1]) {
-        // Construct the URL to use the TMDB image API directly
-        const filename = match[1];
-        url = `https://image.tmdb.org/t/p/w500/${filename}.jpg`;
-        console.log('Converted TMDB URL to:', url);
+        const imageId = match[1];
+        const extension = match[2] || 'jpg';
+        
+        // Construct the URL using the direct TMDB image API format
+        fetchUrl = `https://image.tmdb.org/t/p/w500/${imageId}.${extension}`;
+        console.log('Converted TMDB URL to:', fetchUrl);
+      } else {
+        console.log('Could not extract image ID from TMDB URL:', fetchUrl);
       }
     }
     
     // Verify the URL is a valid image URL (allow only specific domains for security)
-    const imageUrl = new URL(url);
+    const imageUrl = new URL(fetchUrl);
     const allowedDomains = ['www.themoviedb.org', 'image.tmdb.org'];
     
     if (!allowedDomains.some(domain => imageUrl.hostname.includes(domain))) {
@@ -76,7 +97,7 @@ router.get('/poster', async (req: Request, res: Response) => {
     }
     
     // Create a cache filename based on the URL
-    const cacheFilename = getCacheFilename(url);
+    const cacheFilename = getCacheFilename(fetchUrl);
     const cachePath = path.join(CACHE_DIR, cacheFilename);
     
     // Check if the image is already cached
@@ -94,8 +115,8 @@ router.get('/poster', async (req: Request, res: Response) => {
     }
     
     // If not cached, fetch the image
-    console.log('Fetching image from URL:', url);
-    const response = await fetch(url);
+    console.log('Fetching image from URL:', fetchUrl);
+    const response = await fetch(fetchUrl);
     console.log('Fetch response status:', response.status, response.statusText);
     
     if (!response.ok) {
