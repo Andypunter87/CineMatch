@@ -19,11 +19,19 @@ router.use(isAuthenticated);
 /**
  * Get popular films for onboarding rating
  * Returns a list of popular films with a mix of genres for the user to rate
+ * Supports an "offset" query parameter to get a different batch of films
  */
 router.get('/popular-films', async (req: Request, res: Response) => {
   try {
-    // Get 12 popular films for the user to rate (increased from 10)
-    const films = await storage.getPopularFilmsForOnboarding(12);
+    // Check if we're requesting a second batch
+    const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+    
+    // Generate a cache-busting random seed to ensure we get varied films
+    // This is especially useful for testing during development
+    const randomSeed = req.query.seed ? parseInt(req.query.seed as string) : Date.now();
+    
+    // Get 12 popular films for the user to rate, with potential offset for second batch
+    const films = await storage.getPopularFilmsForOnboarding(12, offset, randomSeed);
     res.json(films);
   } catch (error) {
     console.error('Error fetching popular films for onboarding:', error);

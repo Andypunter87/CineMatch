@@ -66,7 +66,7 @@ export interface IStorage {
   
   // Film operations
   getFilmById(filmId: number): Promise<Film | undefined>;
-  getPopularFilmsForOnboarding(count: number): Promise<Film[]>;
+  getPopularFilmsForOnboarding(count: number, offset?: number, seed?: number): Promise<Film[]>;
   
   // Watchlist operations
   getWatchlistItems(userId: number): Promise<WatchlistItem[]>;
@@ -953,8 +953,11 @@ export class DatabaseStorage implements IStorage {
   
   /**
    * Get a list of popular films for the onboarding process
+   * @param count Number of films to return
+   * @param offset Offset to skip films (used for getting a second batch)
+   * @param seed Random seed for shuffling (for consistent randomness in a session)
    */
-  async getPopularFilmsForOnboarding(count: number): Promise<Film[]> {
+  async getPopularFilmsForOnboarding(count: number, offset = 0, seed = 0): Promise<Film[]> {
     try {
       // Create a mix of mainstream and indie films across different genres
       const genreMix = [
@@ -963,59 +966,81 @@ export class DatabaseStorage implements IStorage {
         "Adventure", "Family", "Documentary", "Fantasy"
       ];
       
+      // Create a seeded random function for deterministic shuffling
+      const seededRandom = (max: number) => {
+        // Simple seeded random function
+        const x = Math.sin(seed + offset) * 10000;
+        return Math.floor((x - Math.floor(x)) * max);
+      };
+      
+      // Shuffle the genre mix based on the seed to get different genre priorities each time
+      const shuffledGenreMix = [...genreMix].sort(() => seededRandom(100) / 50 - 1);
+      
+      // Prepare a list of all films with good metadata that we can select from
+      const eligibleFilms = this.films.filter(film => 
+        film.posterUrl && 
+        film.synopsis && 
+        film.synopsis.length > 20
+      );
+      
+      // If we have an offset, exclude films from the first batch
+      // We'll create a pool that is much larger than needed so we can skip the offset
+      const totalPoolSize = count * 3 + offset; 
+      
       // Select films to ensure a mix of:
-      // 1. Genres (using the genreMix array)
+      // 1. Genres (using the shuffledGenreMix array)
       // 2. Types (both mainstream and indie)
       // 3. Years (a range of decades)
       const selectedFilms: Film[] = [];
       const usedIds = new Set<number>();
       
       // First, ensure we have at least one film from each primary genre if possible
-      for (const genre of genreMix) {
+      for (const genre of shuffledGenreMix) {
         // Find films matching this genre that haven't been selected yet
-        const matchingFilms = this.films.filter(film => 
+        const matchingFilms = eligibleFilms.filter(film => 
           film.genres.includes(genre) && 
-          !usedIds.has(film.id) &&
-          // Prefer films with poster URLs and higher match potential
-          film.posterUrl && 
-          film.synopsis && 
-          film.synopsis.length > 20
+          !usedIds.has(film.id)
         );
         
         if (matchingFilms.length > 0) {
-          // Sort by year in descending order and take the first one
-          // This prioritizes newer films that are more likely to be recognized
-          const selectedFilm = matchingFilms.sort((a, b) => b.year - a.year)[0];
+          // Sort pseudorandomly based on the seed
+          const sortedFilms = matchingFilms.sort(() => seededRandom(100) / 50 - 1);
+          
+          // Take the first one from the shuffled list
+          const selectedFilm = sortedFilms[0];
           selectedFilms.push(selectedFilm);
           usedIds.add(selectedFilm.id);
           
-          // If we have enough films, stop
-          if (selectedFilms.length >= count) {
+          // If we have enough films for the pool, stop
+          if (selectedFilms.length >= totalPoolSize) {
             break;
           }
         }
       }
       
-      // If we don't have enough films yet, add more popular ones
-      if (selectedFilms.length < count) {
-        // Sort remaining films by recency and select enough to reach the count
-        const remainingFilms = this.films
-          .filter(film => !usedIds.has(film.id) && film.posterUrl && film.synopsis)
-          .sort((a, b) => b.year - a.year)
-          .slice(0, count - selectedFilms.length);
+      // If we don't have enough films yet, add more
+      if (selectedFilms.length < totalPoolSize) {
+        // Get remaining films and sort them randomly based on the seed
+        const remainingFilms = eligibleFilms
+          .filter(film => !usedIds.has(film.id))
+          .sort(() => seededRandom(100) / 50 - 1)
+          .slice(0, totalPoolSize - selectedFilms.length);
           
         selectedFilms.push(...remainingFilms);
       }
       
-      return selectedFilms;
+      // Now apply the offset and take only the requested count
+      return selectedFilms.slice(offset, offset + count);
     } catch (error) {
       console.error("Error getting popular films for onboarding:", error);
       
       // Fallback: return a subset of the static film list if there's an error
-      return this.films
-        .filter(film => film.posterUrl)
-        .sort(() => Math.random() - 0.5)
-        .slice(0, count);
+      // Still respect the offset parameter to avoid showing the same films
+      const eligibleFilms = this.films.filter(film => film.posterUrl);
+      const shuffledFilms = eligibleFilms.sort(() => Math.random() - 0.5);
+      
+      // Apply offset and count
+      return shuffledFilms.slice(offset, offset + count);
     }
   }
   

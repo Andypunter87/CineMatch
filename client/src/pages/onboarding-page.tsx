@@ -79,17 +79,24 @@ const OnboardingPage = () => {
 
   // Define state variables for different stages within the onboarding flow
   const [isRatingMore, setIsRatingMore] = useState(false);
+  
+  // Track how many batches we've seen for offset calculation
+  const [batchOffset, setBatchOffset] = useState(0);
 
   // Fetch popular films
   const { data: popularFilms, isLoading: isLoadingFilms } = useQuery<Film[]>({
-    queryKey: ['/api/onboarding/popular-films'],
+    queryKey: ['/api/onboarding/popular-films', batchOffset],
     queryFn: async ({ signal }) => {
-      const response = await fetch('/api/onboarding/popular-films', { signal });
+      // Request different films for second batch by using offset parameter
+      const url = `/api/onboarding/popular-films?offset=${batchOffset}&seed=${Date.now()}`;
+      console.log(`Fetching films with offset ${batchOffset}`);
+      
+      const response = await fetch(url, { signal });
       if (!response.ok) throw new Error('Failed to fetch popular films');
       return response.json();
     },
     enabled: currentStep === 4 || (showMoreFilms && isRatingMore), // Only fetch when we need films
-    staleTime: 0, // Don't cache results for too long
+    staleTime: 0, // Don't cache results
   });
 
   // Explainer screens data
@@ -348,12 +355,15 @@ const OnboardingPage = () => {
                     // Clear current ratings for the next batch
                     setFilmsRated([]);
                     
-                    // Force refetch by invalidating the cache
-                    queryClient.invalidateQueries({ queryKey: ['/api/onboarding/popular-films'] });
+                    // Set the batch offset to get different films (12 films per batch)
+                    const newOffset = 12;
+                    setBatchOffset(newOffset);
                     
                     // Set flag to indicate we're rating more films, 
                     // which enables fetching new films
                     setIsRatingMore(true);
+                    
+                    console.log("Requesting more films with offset:", newOffset);
                   }}
                 >
                   Yes, rate more films
