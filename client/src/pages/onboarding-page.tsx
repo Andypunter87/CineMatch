@@ -77,6 +77,9 @@ const OnboardingPage = () => {
     }
   });
 
+  // Define state variables for different stages within the onboarding flow
+  const [isRatingMore, setIsRatingMore] = useState(false);
+
   // Fetch popular films
   const { data: popularFilms, isLoading: isLoadingFilms } = useQuery<Film[]>({
     queryKey: ['/api/onboarding/popular-films'],
@@ -85,7 +88,8 @@ const OnboardingPage = () => {
       if (!response.ok) throw new Error('Failed to fetch popular films');
       return response.json();
     },
-    enabled: currentStep === 4 || showMoreFilms, // Only fetch when we need films (step 4 after preferences)
+    enabled: currentStep === 4 || (showMoreFilms && isRatingMore), // Only fetch when we need films
+    staleTime: 0, // Don't cache results for too long
   });
 
   // Explainer screens data
@@ -134,19 +138,28 @@ const OnboardingPage = () => {
   // Handle rating completion
   const handleRatingComplete = (ratings: FilmRating[]) => {
     setFilmsRated([...filmsRated, ...ratings]);
-    saveRatingsMutation.mutate(ratings);
     
-    // Increment the number of batches rated
-    const newBatchCount = batchesRated + 1;
-    setBatchesRated(newBatchCount);
-    
-    // Ask if they want to rate more films after first batch
-    if (newBatchCount === 1) {
-      setShowMoreFilms(true);
-    } else if (newBatchCount >= 2) {
-      // If they've already rated 2+ batches, go to completion
-      setCurrentStep(5);
-    }
+    // Add save ratings mutation
+    saveRatingsMutation.mutate(ratings, {
+      onSuccess: () => {
+        // Increment the number of batches rated
+        const newBatchCount = batchesRated + 1;
+        setBatchesRated(newBatchCount);
+        
+        console.log("Rating batch completed:", newBatchCount);
+        
+        // Always show the "want to rate more" screen between batches
+        if (!showMoreFilms) {
+          // First batch - now show the "rate more?" screen
+          setShowMoreFilms(true);
+        } else {
+          // They already rated extra films - now ask again or proceed
+          // For simplicity, this resets to batch selection screen instead of completing
+          // Reset the flow to allow choosing to rate more or complete
+          queryClient.invalidateQueries({ queryKey: ['/api/onboarding/popular-films'] });
+        }
+      }
+    });
   };
 
   // Handle completion
@@ -292,8 +305,8 @@ const OnboardingPage = () => {
           )}
 
           {/* Ask for More Ratings */}
-          {currentStep === 4 && showMoreFilms && !isLoadingFilms && !saveRatingsMutation.isPending && popularFilms && popularFilms.length > 0 ? (
-            // When films are loaded, show the rating grid 
+          {currentStep === 4 && showMoreFilms && isRatingMore && !isLoadingFilms && !saveRatingsMutation.isPending && popularFilms && popularFilms.length > 0 ? (
+            // When films are loaded and user chose to rate more, show the rating grid
             <div className="py-4">
               <div className="absolute top-2 right-2">
                 <Button 
@@ -313,13 +326,13 @@ const OnboardingPage = () => {
                 isLoading={isLoadingFilms}
               />
             </div>
-          ) : currentStep === 4 && showMoreFilms && (saveRatingsMutation.isPending || isLoadingFilms) ? (
-            // Show loading state
+          ) : currentStep === 4 && showMoreFilms && (saveRatingsMutation.isPending || (isRatingMore && isLoadingFilms)) ? (
+            // Show loading state when rating more films
             <div className="py-8 text-center">
               <p>Loading more films to rate...</p>
             </div>
           ) : currentStep === 4 && showMoreFilms ? (
-            // Show the option to rate more films if no films are loaded yet
+            // Show the option to rate more films after completing first batch
             <div className="py-6 text-center">
               <h2 className="text-xl font-bold mb-4">
                 Want even better recommendations?
@@ -332,20 +345,15 @@ const OnboardingPage = () => {
                 <Button 
                   className="w-full"
                   onClick={() => {
-                    // Reset state to prepare for new films
+                    // Clear current ratings for the next batch
                     setFilmsRated([]);
                     
-                    // Set a temporary state flag to handle loading transition
-                    const tempShowMoreFlag = showMoreFilms;
-                    setShowMoreFilms(false);
-                    
-                    // Force refetch of popular films
+                    // Force refetch by invalidating the cache
                     queryClient.invalidateQueries({ queryKey: ['/api/onboarding/popular-films'] });
                     
-                    // Use setTimeout to ensure React state update completes
-                    setTimeout(() => {
-                      setShowMoreFilms(tempShowMoreFlag);
-                    }, 100);
+                    // Set flag to indicate we're rating more films, 
+                    // which enables fetching new films
+                    setIsRatingMore(true);
                   }}
                 >
                   Yes, rate more films
