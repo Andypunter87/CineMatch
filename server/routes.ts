@@ -9,6 +9,7 @@ import { initializeDatabase } from "./db";
 import adminRoutes from "./admin";
 import onboardingRoutes from "./routes/onboarding";
 import imageProxyRoutes from "./routes/image-proxy";
+import testApiRoutes from "./routes/test-api";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { sendFriendInvitationEmail, sendFriendRequestAcceptedEmails } from "./services/email";
@@ -40,6 +41,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register image proxy routes
   app.use('/api/image', imageProxyRoutes);
   console.log('Image proxy routes registered at /api/image');
+  
+  // Register test API routes
+  app.use('/api/test', testApiRoutes);
   
   // Special endpoint specifically for "Show More Films" functionality
   app.post('/api/recommendations/more', async (req, res) => {

@@ -292,9 +292,32 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     let filteredByExclusions = enhancedRecommendations;
     if (preferences.excludeFilmIds && preferences.excludeFilmIds.length > 0) {
       console.log(`Excluding ${preferences.excludeFilmIds.length} film IDs from recommendations`);
-      filteredByExclusions = enhancedRecommendations.filter(film => 
-        !preferences.excludeFilmIds?.includes(film.id)
-      );
+      
+      // Log the IDs being excluded for debugging
+      console.log(`Exclude film IDs: ${preferences.excludeFilmIds.join(', ')}`);
+      
+      // First log the current film IDs in the recommendations for debugging
+      const beforeExcludeFilmIds = enhancedRecommendations.map(film => film.id);
+      console.log(`Film IDs before exclusion: ${beforeExcludeFilmIds.join(', ')}`);
+      
+      // More robust exclusion filter that handles type mismatches
+      filteredByExclusions = enhancedRecommendations.filter(film => {
+        // Convert film ID to number to ensure consistent comparison
+        const filmId = Number(film.id);
+        
+        // Check if this ID should be excluded
+        const shouldExclude = preferences.excludeFilmIds?.some(excludeId => 
+          Number(excludeId) === filmId
+        );
+        
+        // Keep the film if it shouldn't be excluded
+        return !shouldExclude;
+      });
+      
+      // Log the remaining film IDs after exclusion for debugging
+      const afterExcludeFilmIds = filteredByExclusions.map(film => film.id);
+      console.log(`Film IDs after exclusion: ${afterExcludeFilmIds.join(', ')}`);
+      
       console.log(`After exclusions: ${filteredByExclusions.length} films remain`);
     }
     
