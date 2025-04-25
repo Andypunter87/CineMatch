@@ -138,8 +138,43 @@ router.get('/poster', async (req: Request, res: Response) => {
     
     let response: FetchResponse;
     try {
-      response = await fetch(fetchUrl, { timeout: 5000 }); // Add a timeout
-      console.log('Fetch response status:', response.status, response.statusText);
+      // Follow up to 5 redirects manually
+      let redirectCount = 0;
+      const maxRedirects = 5;
+      let currentUrl = fetchUrl;
+      
+      while (redirectCount < maxRedirects) {
+        console.log(`Fetching image (redirect ${redirectCount}):`, currentUrl);
+        response = await fetch(currentUrl, { 
+          timeout: 8000, // Increased timeout
+          redirect: 'manual' // Handle redirects manually
+        });
+        
+        console.log('Fetch response status:', response.status, response.statusText);
+        
+        // Check if it's a redirect
+        if (response.status >= 300 && response.status < 400) {
+          const redirectUrl = response.headers.get('location');
+          if (!redirectUrl) {
+            console.log('Redirect without location header, using fallback');
+            return serveFallbackImage(res);
+          }
+          
+          // Resolve relative URLs
+          currentUrl = new URL(redirectUrl, currentUrl).toString();
+          redirectCount++;
+          console.log(`Following redirect (${redirectCount}/${maxRedirects}) to:`, currentUrl);
+          continue;
+        }
+        
+        // Not a redirect, break the loop
+        break;
+      }
+      
+      if (redirectCount >= maxRedirects) {
+        console.log('Too many redirects, using fallback');
+        return serveFallbackImage(res);
+      }
       
       if (!response.ok) {
         console.log('Error fetching image, using fallback');
