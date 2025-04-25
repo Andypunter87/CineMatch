@@ -292,32 +292,37 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     if (preferences.excludeFilmIds && preferences.excludeFilmIds.length > 0) {
       console.log(`Excluding ${preferences.excludeFilmIds.length} film IDs from recommendations`);
       
-      // Log the IDs being excluded for debugging
-      console.log(`Exclude film IDs: ${preferences.excludeFilmIds.join(', ')}`);
+      // Log a sample of the IDs being excluded for debugging (avoid excessive logging)
+      const excludeSample = preferences.excludeFilmIds.slice(0, 5);
+      console.log(`Sample of film IDs to exclude: ${excludeSample.join(', ')}${preferences.excludeFilmIds.length > 5 ? ` (and ${preferences.excludeFilmIds.length - 5} more)` : ''}`);
       
-      // First log the current film IDs in the recommendations for debugging
-      const beforeExcludeFilmIds = enhancedRecommendations.map(film => film.id);
-      console.log(`Film IDs before exclusion: ${beforeExcludeFilmIds.join(', ')}`);
+      // Create a Set for faster lookups
+      const excludeSet = new Set(preferences.excludeFilmIds.map(id => Number(id)));
+      
+      // Log the current film IDs in the recommendations for debugging
+      const beforeExcludeCount = enhancedRecommendations.length;
       
       // More robust exclusion filter that handles type mismatches
       filteredByExclusions = enhancedRecommendations.filter(film => {
         // Convert film ID to number to ensure consistent comparison
         const filmId = Number(film.id);
         
-        // Check if this ID should be excluded
-        const shouldExclude = preferences.excludeFilmIds?.some(excludeId => 
-          Number(excludeId) === filmId
-        );
-        
         // Keep the film if it shouldn't be excluded
-        return !shouldExclude;
+        return !excludeSet.has(filmId);
       });
       
-      // Log the remaining film IDs after exclusion for debugging
-      const afterExcludeFilmIds = filteredByExclusions.map(film => film.id);
-      console.log(`Film IDs after exclusion: ${afterExcludeFilmIds.join(', ')}`);
+      // Log the count after exclusion for debugging
+      const afterExcludeCount = filteredByExclusions.length;
+      const excludedCount = beforeExcludeCount - afterExcludeCount;
       
-      console.log(`After exclusions: ${filteredByExclusions.length} films remain`);
+      console.log(`Excluded ${excludedCount} films, ${afterExcludeCount} films remain`);
+      
+      // If we excluded films, log a sample of what was excluded
+      if (excludedCount > 0) {
+        const excludedFilms = enhancedRecommendations.filter(film => filteredByExclusions.every(f => f.id !== film.id));
+        const excludedSample = excludedFilms.slice(0, 3).map(film => `"${film.title}" (ID: ${film.id})`);
+        console.log(`Sample of excluded films: ${excludedSample.join(', ')}${excludedFilms.length > 3 ? ` (and ${excludedFilms.length - 3} more)` : ''}`);
+      }
     }
     
     // Count films with complete data

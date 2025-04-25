@@ -109,6 +109,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (userRatedFilms && userRatedFilms.length > 0) {
             console.log(`Found ${userRatedFilms.length} rated films from user to exclude from recommendations`);
             ratedFilmIds = userRatedFilms.map(film => film.filmId);
+            
+            // Log the first few film IDs being excluded for debugging
+            const filmSample = userRatedFilms.slice(0, 5).map(film => `${film.title} (ID: ${film.filmId})`);
+            console.log(`Sample of excluded films: ${filmSample.join(', ')}`);
           }
           
           // If this is a group viewing (with friends), include friends' rated films too
@@ -298,6 +302,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (userRatedFilms && userRatedFilms.length > 0) {
             console.log(`Found ${userRatedFilms.length} rated films from user to exclude from recommendations (GET route)`);
             ratedFilmIds = userRatedFilms.map(film => film.filmId);
+            
+            // Log the first few film IDs being excluded for debugging
+            const filmSample = userRatedFilms.slice(0, 5).map(film => `${film.title} (ID: ${film.filmId})`);
+            console.log(`Sample of excluded films (GET route): ${filmSample.join(', ')}`);
           }
           
           // If this is a group viewing (with friends), include friends' rated films too

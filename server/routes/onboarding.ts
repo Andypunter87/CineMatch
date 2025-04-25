@@ -152,6 +152,15 @@ router.post('/save-ratings', async (req: Request, res: Response) => {
       timestamp: new Date(),
     });
     
+    // Mark user as having completed onboarding
+    try {
+      await storage.updateOnboardingStatus(userId, false);
+      console.log(`User ${userId} onboarding marked as completed`);
+    } catch (error) {
+      console.error('Error updating onboarding status:', error);
+      // Continue anyway since the ratings were saved
+    }
+    
     res.json({
       message: 'Ratings saved successfully',
       count: results.length,
