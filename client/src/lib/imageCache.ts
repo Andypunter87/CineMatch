@@ -13,7 +13,10 @@
  * This improves reliability by handling network errors and providing fallbacks
  */
 export function getPosterProxyUrl(url: string): string {
-  if (!url) return '/fallback/poster-placeholder.svg';
+  // More thorough validation of poster URLs
+  if (!url || url.trim() === '' || url.length < 10 || !isValidUrl(url)) {
+    return ''; // Return empty string instead of a fallback to trigger the fallback UI
+  }
   
   // If it's already using our proxy, return as is
   if (url.startsWith('/api/image/poster')) return url;
@@ -21,6 +24,19 @@ export function getPosterProxyUrl(url: string): string {
   // Encode the URL properly
   const encodedUrl = encodeURIComponent(url);
   return `/api/image/poster?url=${encodedUrl}`;
+}
+
+// Helper function to validate URLs
+function isValidUrl(urlString: string): boolean {
+  try {
+    // Simple validation - check if string looks like a URL
+    return urlString.startsWith('http://') || 
+           urlString.startsWith('https://') || 
+           urlString.startsWith('//');
+  } catch (error) {
+    console.error('URL validation error:', error);
+    return false;
+  }
 }
 
 interface CacheEntry {

@@ -6,7 +6,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2, Star, EyeOff, Film as FilmIcon } from 'lucide-react';
 import PosterImage from '@/components/ui/poster-image';
-import { prefetchImages } from '@/lib/imageCache';
+import { prefetchImages, getPosterProxyUrl } from '@/lib/imageCache';
 
 interface Film {
   id: number;
@@ -92,7 +92,7 @@ export const FilmRatingGrid: React.FC<FilmRatingGridProps> = ({
     if (films.length > 0) {
       // Create a list of all poster URLs with proxy URLs
       const posterUrls = films.map(film => 
-        film.posterUrl ? `/api/image/poster?url=${encodeURIComponent(film.posterUrl)}` : ''
+        getPosterProxyUrl(film.posterUrl)
       ).filter(url => url !== '');
       
       // Prefetch all poster images
@@ -270,7 +270,7 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
   };
 
   // Proxy the image through our server-side proxy for better reliability
-  const proxyPosterUrl = film.posterUrl ? `/api/image/poster?url=${encodeURIComponent(film.posterUrl)}` : '';
+  const proxyPosterUrl = getPosterProxyUrl(film.posterUrl);
 
   return (
     <Card className="overflow-hidden transition-all duration-200 shadow-lg hover:shadow-xl border-2 border-gray-300 rounded-xl">
@@ -278,14 +278,23 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
         <div className="aspect-[2/3] relative">
           {/* Film poster with loading/error states using enhanced PosterImage component */}
           <div className="absolute inset-0 z-10 bg-gray-900">
-            <PosterImage 
-              posterUrl={proxyPosterUrl} 
-              title={film.title}
-              className="w-full h-full" 
-              showLoadingState={true}
-              showErrorState={true}
-              priority={true}
-            />
+            {proxyPosterUrl ? (
+              <PosterImage 
+                posterUrl={proxyPosterUrl} 
+                title={film.title}
+                className="w-full h-full" 
+                showLoadingState={true}
+                showErrorState={true}
+                priority={true}
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-gray-800">
+                <FilmIcon className="h-16 w-16 mb-2 text-gray-500" />
+                <span className="text-gray-400 text-sm text-center px-4">
+                  {film.title || 'Poster not available'}
+                </span>
+              </div>
+            )}
           </div>
           
           {/* Film title and year overlay at top - increased padding and z-index */}

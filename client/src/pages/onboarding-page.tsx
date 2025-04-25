@@ -129,12 +129,19 @@ const OnboardingPage = () => {
     
     // Create a function to select the next batch
     const selectNextBatch = () => {
-      // Filter out any films we've already shown AND any films without poster images
+      // More thorough validation of poster URLs
+      function isValidPosterUrl(url: string): boolean {
+        if (!url || url.trim() === '' || url.length < 10) return false;
+        return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//');
+      }
+      
+      // Filter out any films we've already shown AND any films without proper poster images
       const unseenFilms = allPopularFilms.filter(film => 
         !shownFilmIds.includes(film.id) && 
-        !!film.posterUrl // Ensure the film has a poster URL
+        !!film.posterUrl && 
+        isValidPosterUrl(film.posterUrl) // Ensure the film has a valid poster URL
       );
-      console.log(`Found ${unseenFilms.length} unseen films with posters out of ${allPopularFilms.length} total`);
+      console.log(`Found ${unseenFilms.length} unseen films with valid posters out of ${allPopularFilms.length} total`);
       
       // Take the next batch (up to 12 films)
       const batchSize = 12;
