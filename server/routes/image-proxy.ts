@@ -81,30 +81,29 @@ router.get('/poster', async (req: Request, res: Response) => {
   const originalUrl = req.query.url as string;
   
   if (!originalUrl || typeof originalUrl !== 'string') {
-    return res.status(400).send('URL parameter is required');
+    console.log('No URL parameter, serving fallback image');
+    return serveFallbackImage(res);
   }
   
   // Create a variable to hold potentially modified URL
   let fetchUrl = originalUrl;
   
   try {
-    // Check if this is a TMDB URL, and if so, convert it to the standard format
-    if (fetchUrl.includes('themoviedb.org')) {
-      // This is the standard TMDB image path format at the end of URLs
-      // Example: /w3LxiVE8TvCkSSJ3L5LY23mpvzb.jpg
-      const tmdbFilePathPattern = /\/([a-zA-Z0-9]{20,})\.(jpg|png|jpeg)$/i;
-      const match = fetchUrl.match(tmdbFilePathPattern);
-      
-      if (match && match[1]) {
-        const imageId = match[1];
-        const extension = match[2] || 'jpg';
-        
-        // Construct the URL using the direct TMDB image API format
-        fetchUrl = `https://image.tmdb.org/t/p/w500/${imageId}.${extension}`;
-        console.log('Converted TMDB URL to:', fetchUrl);
-      } else {
-        console.log('Could not extract image ID from TMDB URL:', fetchUrl);
-      }
+    // Extract the TMDB image path directly if possible
+    const pathRegex = /\/([a-zA-Z0-9]{20,})\.(jpg|jpeg|png)$/i;
+    const match = originalUrl.match(pathRegex);
+    
+    if (match) {
+      // If it's a TMDB path, use it directly with image.tmdb.org
+      const imageId = match[1];
+      const extension = match[2] || 'jpg';
+      fetchUrl = `https://image.tmdb.org/t/p/w500/${imageId}.${extension}`;
+      console.log('Using direct TMDB image URL:', fetchUrl);
+    } else if (originalUrl.includes('themoviedb.org')) {
+      // For themoviedb.org URLs that don't match our regex, convert to image.tmdb.org
+      // This is just a fallback
+      console.log('Converting themoviedb URL to image.tmdb.org');
+      fetchUrl = originalUrl.replace('www.themoviedb.org', 'image.tmdb.org');
     }
     
     // Verify the URL is a valid image URL (allow only specific domains for security)
@@ -136,57 +135,21 @@ router.get('/poster', async (req: Request, res: Response) => {
     // If not cached, fetch the image
     console.log('Fetching image from URL:', fetchUrl);
     
-    let response: FetchResponse;
     try {
-      // Follow up to 5 redirects manually
-      let redirectCount = 0;
-      const maxRedirects = 5;
-      let currentUrl = fetchUrl;
+      // Just use the node-fetch default redirect behavior for simplicity
+      const response = await fetch(fetchUrl, { 
+        timeout: 8000, // Increased timeout
+        redirect: 'follow' // Let fetch handle redirects automatically 
+      });
       
-      while (redirectCount < maxRedirects) {
-        console.log(`Fetching image (redirect ${redirectCount}):`, currentUrl);
-        response = await fetch(currentUrl, { 
-          timeout: 8000, // Increased timeout
-          redirect: 'manual' // Handle redirects manually
-        });
-        
-        console.log('Fetch response status:', response.status, response.statusText);
-        
-        // Check if it's a redirect
-        if (response.status >= 300 && response.status < 400) {
-          const redirectUrl = response.headers.get('location');
-          if (!redirectUrl) {
-            console.log('Redirect without location header, using fallback');
-            return serveFallbackImage(res);
-          }
-          
-          // Resolve relative URLs
-          currentUrl = new URL(redirectUrl, currentUrl).toString();
-          redirectCount++;
-          console.log(`Following redirect (${redirectCount}/${maxRedirects}) to:`, currentUrl);
-          continue;
-        }
-        
-        // Not a redirect, break the loop
-        break;
-      }
-      
-      if (redirectCount >= maxRedirects) {
-        console.log('Too many redirects, using fallback');
-        return serveFallbackImage(res);
-      }
+      console.log('Fetch response status:', response.status, response.statusText);
       
       if (!response.ok) {
         console.log('Error fetching image, using fallback');
         return serveFallbackImage(res);
       }
-    } catch (error: any) {
-      console.log('Network error fetching image, using fallback:', error?.message || 'Unknown error');
-      return serveFallbackImage(res);
-    }
-    
-    // If we get here, we have a valid response
-    try {
+      
+      // If we get here, we have a valid response
       // Get content type and verify it's an image
       const contentType = response.headers.get('content-type') || '';
       if (!contentType.startsWith('image/')) {
@@ -213,7 +176,7 @@ router.get('/poster', async (req: Request, res: Response) => {
         fileStream.end();
       }
     } catch (error: any) {
-      console.log('Error processing response, using fallback:', error?.message || 'Unknown error');
+      console.log('Network error fetching image, using fallback:', error?.message || 'Unknown error');
       return serveFallbackImage(res);
     }
     
