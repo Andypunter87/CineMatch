@@ -19,28 +19,43 @@ interface CacheEntry {
 const imageCache: Record<string, CacheEntry> = {};
 
 /**
- * Standardize TMDB image URLs to always use the direct format
- * This makes caching more reliable
+ * Standardize TMDB image URLs to always use the working format
+ * This makes caching more reliable and fixes outdated URL formats
  */
 function standardizeTmdbUrl(url: string): string {
   if (!url) return url;
   
-  // Check if this is already a direct TMDB image URL
-  if (url.includes('image.tmdb.org/t/p/')) {
+  // Check if this is already a direct TMDB image URL with w500 size
+  if (url.includes('image.tmdb.org/t/p/w500/')) {
     return url;
   }
   
-  // Extract the image ID from a TMDB URL
-  const tmdbFilePathPattern = /\/([a-zA-Z0-9]{20,})\.(jpg|jpeg|png)$/i;
-  const match = url.match(tmdbFilePathPattern);
+  // Special case for the problematic w600_and_h900_bestv2 format
+  if (url.includes('w600_and_h900_bestv2')) {
+    // Extract just the file name at the end
+    const parts = url.split('/');
+    const fileName = parts[parts.length - 1];
+    return `https://image.tmdb.org/t/p/w500/${fileName}`;
+  }
+  
+  // Extract the image ID from a TMDB URL - handle both old and new formats
+  const imageIdPattern = /\/(?:w\d+|w\d+_and_h\d+_bestv2)?\/?([a-zA-Z0-9]+)\.(jpg|jpeg|png)$/i;
+  const match = url.match(imageIdPattern);
   
   if (match && match[1]) {
     const imageId = match[1];
     const extension = match[2] || 'jpg';
+    // Use the w500 size which we've confirmed works
     return `https://image.tmdb.org/t/p/w500/${imageId}.${extension}`;
   }
   
-  // If we couldn't extract the ID, return the original URL
+  // If we couldn't extract the ID, return the original URL but replace any themoviedb URLs
+  // with image.tmdb.org and use w500 size
+  if (url.includes('themoviedb.org')) {
+    return url.replace('www.themoviedb.org', 'image.tmdb.org')
+              .replace('w600_and_h900_bestv2', 'w500');
+  }
+  
   return url;
 }
 

@@ -89,11 +89,18 @@ router.get('/poster', async (req: Request, res: Response) => {
   let fetchUrl = originalUrl;
   
   try {
-    // Extract the TMDB image path directly if possible
-    const pathRegex = /\/([a-zA-Z0-9]{20,})\.(jpg|jpeg|png)$/i;
+    // Extract the TMDB image ID using a more flexible regex
+    const pathRegex = /\/(?:w\d+|w\d+_and_h\d+_bestv2)?\/?([a-zA-Z0-9]+)\.(jpg|jpeg|png)$/i;
     const match = originalUrl.match(pathRegex);
     
-    if (match) {
+    // Special case for the problematic w600_and_h900_bestv2 format
+    if (originalUrl.includes('w600_and_h900_bestv2')) {
+      // Extract just the file name at the end
+      const parts = originalUrl.split('/');
+      const fileName = parts[parts.length - 1];
+      fetchUrl = `https://image.tmdb.org/t/p/w500/${fileName}`;
+      console.log('Converting from w600_and_h900_bestv2 format to w500:', fetchUrl);
+    } else if (match && match[1]) {
       // If it's a TMDB path, use it directly with image.tmdb.org
       const imageId = match[1];
       const extension = match[2] || 'jpg';
@@ -101,9 +108,9 @@ router.get('/poster', async (req: Request, res: Response) => {
       console.log('Using direct TMDB image URL:', fetchUrl);
     } else if (originalUrl.includes('themoviedb.org')) {
       // For themoviedb.org URLs that don't match our regex, convert to image.tmdb.org
-      // This is just a fallback
       console.log('Converting themoviedb URL to image.tmdb.org');
-      fetchUrl = originalUrl.replace('www.themoviedb.org', 'image.tmdb.org');
+      fetchUrl = originalUrl.replace('www.themoviedb.org', 'image.tmdb.org')
+                           .replace('w600_and_h900_bestv2', 'w500');
     }
     
     // Verify the URL is a valid image URL (allow only specific domains for security)
