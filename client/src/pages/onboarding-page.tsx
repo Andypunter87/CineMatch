@@ -129,9 +129,12 @@ const OnboardingPage = () => {
     
     // Create a function to select the next batch
     const selectNextBatch = () => {
-      // Filter out any films we've already shown
-      const unseenFilms = allPopularFilms.filter(film => !shownFilmIds.includes(film.id));
-      console.log(`Found ${unseenFilms.length} unseen films out of ${allPopularFilms.length} total`);
+      // Filter out any films we've already shown AND any films without poster images
+      const unseenFilms = allPopularFilms.filter(film => 
+        !shownFilmIds.includes(film.id) && 
+        !!film.posterUrl // Ensure the film has a poster URL
+      );
+      console.log(`Found ${unseenFilms.length} unseen films with posters out of ${allPopularFilms.length} total`);
       
       // Take the next batch (up to 12 films)
       const batchSize = 12;
@@ -149,8 +152,10 @@ const OnboardingPage = () => {
       } else {
         console.warn("No more unseen films available!");
         // If we've shown all films, reset and start from the beginning
+        // But still filter for films with poster images
         setShownFilmIds([]);
-        return allPopularFilms.slice(0, batchSize);
+        const filmsWithPosters = allPopularFilms.filter(film => !!film.posterUrl);
+        return filmsWithPosters.slice(0, batchSize);
       }
     };
     

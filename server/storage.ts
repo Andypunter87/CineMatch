@@ -987,6 +987,7 @@ export class DatabaseStorage implements IStorage {
       // Prepare a list of all films with good metadata
       const eligibleFilms = this.films.filter(film => 
         film.posterUrl && 
+        film.posterUrl.trim() !== '' && // Ensure it's not just an empty string
         film.synopsis && 
         film.synopsis.length > 20
       );
@@ -1036,7 +1037,11 @@ export class DatabaseStorage implements IStorage {
       console.error("Error getting popular films for onboarding:", error);
       
       // Fallback: return a subset of the static film list if there's an error
-      const eligibleFilms = this.films.filter(film => film.posterUrl);
+      // Make sure we only include films with valid poster URLs
+      const eligibleFilms = this.films.filter(film => 
+        film.posterUrl && 
+        film.posterUrl.trim() !== ''
+      );
       const shuffledFilms = eligibleFilms.sort(() => Math.random() - 0.5);
       
       // Apply count
@@ -1064,8 +1069,10 @@ export class DatabaseStorage implements IStorage {
     ];
     
     // Prepare a list of all films with good metadata
+    // We MUST have a posterUrl, it's a critical requirement
     const eligibleFilms = this.films.filter(film => 
       film.posterUrl && 
+      film.posterUrl.trim() !== '' && // Ensure it's not just an empty string
       film.type === "indie" // Prefer indie films for second batch if first was mainstream
     );
     
@@ -1106,6 +1113,7 @@ export class DatabaseStorage implements IStorage {
       const mainstreamFilms = this.films
         .filter(film => 
           film.posterUrl && 
+          film.posterUrl.trim() !== '' && // Ensure it's not just an empty string
           film.type === "mainstream" &&
           !selectedFilms.some(s => s.id === film.id)
         )
