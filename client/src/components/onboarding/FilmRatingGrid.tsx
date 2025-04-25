@@ -288,9 +288,9 @@ const FilmRatingCard: React.FC<FilmRatingCardProps> = ({
             />
           </div>
           
-          {/* Film title and year overlay at top */}
-          <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/90 to-transparent p-3 text-center">
-            <h3 className="text-base sm:text-lg font-bold text-white">{film.title}</h3>
+          {/* Film title and year overlay at top - increased padding and z-index */}
+          <div className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/90 to-transparent p-4 pt-5 text-center">
+            <h3 className="text-base sm:text-lg font-bold text-white leading-tight mb-1">{film.title}</h3>
             <p className="text-sm text-white/90">{film.year}</p>
           </div>
           

@@ -38,9 +38,10 @@ export const PosterImage: React.FC<PosterImageProps> = ({
   
   // Check cache and prefetch only once on mount or when url/priority changes
   useEffect(() => {
-    // Don't do anything if no poster URL
-    if (!posterUrl) {
+    // Don't do anything if no poster URL or it's an empty string
+    if (!posterUrl || posterUrl.trim() === '') {
       setError(true);
+      setLoaded(true); // Mark as loaded so we show the error state right away
       return;
     }
     
@@ -51,6 +52,7 @@ export const PosterImage: React.FC<PosterImageProps> = ({
         setLoaded(true);
       } else if (cachedStatus.status === 'error') {
         setError(true);
+        setLoaded(true); // Mark as loaded so we show the error state
       }
     } else {
       // Reset state since we have a new image to load
@@ -58,9 +60,7 @@ export const PosterImage: React.FC<PosterImageProps> = ({
       setError(false);
       
       // Prefetch the image
-      if (priority) {
-        prefetchImages([proxiedPosterUrl]);
-      }
+      prefetchImages([proxiedPosterUrl]); // Always prefetch, not just for priority images
     }
   }, [posterUrl, proxiedPosterUrl, priority]);
   

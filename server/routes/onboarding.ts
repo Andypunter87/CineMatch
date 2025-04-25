@@ -34,7 +34,15 @@ router.get('/popular-films', async (req: Request, res: Response) => {
     
     // Get popular films for the user to rate
     // Pass 0 for offset since we're handling batching on the client
-    const films = await storage.getPopularFilmsForOnboarding(Math.min(count, maxCount), 0, randomSeed);
+    let films = await storage.getPopularFilmsForOnboarding(Math.min(count, maxCount), 0, randomSeed);
+    
+    // Additional validation to ensure all films have valid poster URLs
+    // This is a redundant check in addition to the filters in the storage layer
+    films = films.filter(film => 
+      film.posterUrl && 
+      film.posterUrl.trim() !== '' && 
+      film.posterUrl.length > 10 // Basic validation - real URLs should be longer than this
+    );
     
     // Log the first 3 film titles
     console.log(`Returning ${films.length} films. First few titles: ${films.slice(0, 3).map(f => f.title).join(', ')}`);
