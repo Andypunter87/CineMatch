@@ -243,9 +243,9 @@ const OnboardingPage = () => {
       }
       
       // Go to home page with a flag to indicate onboarding completion
-      // Use window.location.href to avoid React's state update during render issues
-      // This is a more reliable navigation method for this specific case
-      window.location.href = '/?just_completed_onboarding=true';
+      // Add show_questionnaire=true to ensure the questionnaire appears immediately
+      // This gives users a chance to pick their current mood right away
+      window.location.href = '/?just_completed_onboarding=true&show_questionnaire=true';
       
       // Don't need toast here as the redirect will cause a page refresh
       // and we'll lose the toast notification anyway
@@ -265,7 +265,7 @@ const OnboardingPage = () => {
       
       // Still redirect the user to the main page with flag even if there's an error
       // Use the same consistent approach as in the success handler
-      window.location.href = '/?just_completed_onboarding=true';
+      window.location.href = '/?just_completed_onboarding=true&show_questionnaire=true';
     }
   });
 

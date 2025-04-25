@@ -27,11 +27,22 @@ export default function Home() {
     return params.has('just_completed_onboarding');
   };
   
+  // Check for show_questionnaire parameter in the URL
+  const shouldShowQuestionnaire = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.has('show_questionnaire');
+  };
+  
   // Initialize from localStorage or recommendation history
   const [showQuestionnaire, setShowQuestionnaire] = useState(() => {
-    // If user just completed onboarding, don't show questionnaire
-    if (justCompletedOnboarding()) {
-      return false; // Don't show questionnaire immediately after onboarding
+    // If URL explicitly requests showing the questionnaire, honor that request
+    if (shouldShowQuestionnaire()) {
+      return true; // Always show questionnaire when requested via URL
+    }
+    
+    // If user just completed onboarding but didn't request questionnaire, don't show it
+    if (justCompletedOnboarding() && !shouldShowQuestionnaire()) {
+      return false;
     }
     
     // First check if we have a saved history from the server
@@ -46,8 +57,10 @@ export default function Home() {
   
   // Clean up URL parameters after component mounts
   useEffect(() => {
-    if (justCompletedOnboarding()) {
-      // Clean up the URL by removing the parameter (prevents questionnaire from showing if page is refreshed)
+    // Check if we need to clean up any URL parameters
+    if (justCompletedOnboarding() || shouldShowQuestionnaire()) {
+      // Clean up the URL by removing all parameters 
+      // This prevents unwanted behavior if page is refreshed
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
     }
