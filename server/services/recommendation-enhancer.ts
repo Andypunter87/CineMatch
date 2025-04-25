@@ -74,17 +74,16 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     
     console.log(`AI recommendations retrieved in ${Date.now() - startTime}ms`);
     
-    // Enhance each recommendation with TMDB data - use Promise.all for parallel processing
-    const enhancedRecommendations = await Promise.all(
-      aiRecommendations.map(async (film) => {
-        try {
-          // Create a more precise search query with both title and year
-          let searchQuery = `${film.title} ${film.year}`;
-          
-          // Check if we have this film in the cache
-          const cacheKey = `search:${searchQuery}`;
-          const cachedSearch = tmdbMovieCache.get(cacheKey);
-          let searchResults;
+    // Enhance each recommendation with TMDB data - use individual promise handling for better resilience
+    const enhancedRecommendations = await Promise.all(aiRecommendations.map(async (film) => {
+      try {
+        // Create a more precise search query with both title and year
+        let searchQuery = `${film.title} ${film.year}`;
+        
+        // Check if we have this film in the cache
+        const cacheKey = `search:${searchQuery}`;
+        const cachedSearch = tmdbMovieCache.get(cacheKey);
+        let searchResults;
           
           if (cachedSearch && (Date.now() - cachedSearch.timestamp) < TMDB_CACHE_TTL) {
             // Use cached results

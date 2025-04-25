@@ -17,9 +17,9 @@ const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
 const recommendationCache = new Map<string, {timestamp: number, data: Film[]}>();
 
 export async function getAIRecommendations(preferences: RecommendationRequest): Promise<Film[]> {
-  // Set timeout to 8 seconds - prioritize speed over unlimited options
-  const TIMEOUT_MS = 8000;
-  const MAX_RETRIES = 1;
+  // Set timeout to 20 seconds to ensure we get quality recommendations
+  const TIMEOUT_MS = 20000;
+  const MAX_RETRIES = 2;
   
   // Create a cache key based on the preferences
   // Exclude excludeFilmIds from the cache key as these change frequently
