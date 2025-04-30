@@ -1,268 +1,232 @@
-import express, { Request, Response, NextFunction } from 'express';
-import { z } from 'zod';
-import { storage } from '../storage';
-import { analytics } from '@shared/schema';
-
-// Middleware to check if the user is authenticated
-const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  return res.status(401).json({ message: "You must be logged in to access this resource" });
-};
+import express from "express";
+import { onboardingService } from "../services/onboarding-service";
+import { z } from "zod";
 
 const router = express.Router();
 
 // Middleware to ensure user is authenticated
-router.use(isAuthenticated);
+const isAuthenticated = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  next();
+};
 
-/**
- * Get popular films for onboarding rating
- * Returns a list of popular films with a mix of genres for the user to rate
- * Supports a "count" parameter to get a larger batch of films for client-side filtering
- */
-router.get('/popular-films', async (req: Request, res: Response) => {
+// Schema for user preferences
+const preferencesSchema = z.object({
+  country: z.string().min(2).max(2),
+  streamingServices: z.array(z.string()).min(1),
+});
+
+// Schema for film rating
+const ratingSchema = z.object({
+  filmId: z.number(),
+  filmTitle: z.string(),
+  filmPosterUrl: z.string(),
+  rating: z.number().min(1).max(5).nullable(),
+  status: z.string().default("not_seen"),
+});
+
+// Schema for batch ratings
+const batchRatingsSchema = z.object({
+  ratings: z.array(ratingSchema),
+  batchNumber: z.number().default(1),
+});
+
+// Get onboarding state
+router.get("/state", isAuthenticated, async (req, res) => {
   try {
-    // Allow requesting a larger count for client-side filtering
-    const count = req.query.count ? parseInt(req.query.count as string) : 12;
-    const maxCount = 100; // Set a reasonable maximum
+    const user = req.user!;
     
-    // Generate a cache-busting random seed to ensure we get varied films
-    const randomSeed = req.query.seed ? parseInt(req.query.seed as string) : Date.now();
+    // Get the user's onboarding state directly from the user object
+    if (user.onboardingState) {
+      return res.json({ onboardingState: user.onboardingState });
+    }
     
-    console.log(`Fetching popular films, count=${Math.min(count, maxCount)}, seed=${randomSeed}`);
+    // If not present in the user object, default to a starting state
+    const defaultState = {
+      completed: false,
+      currentStep: "intro" as "intro", // Type assertion to match expected enum type
+      progress: 0
+    };
     
-    // Get popular films for the user to rate
-    // Pass 0 for offset since we're handling batching on the client
-    let films = await storage.getPopularFilmsForOnboarding(Math.min(count, maxCount), 0, randomSeed);
+    // Update the user with the default state
+    await onboardingService.updateOnboardingState(user.id, defaultState);
     
-    // Additional validation to ensure all films have valid poster URLs
-    // This is a redundant check in addition to the filters in the storage layer
-    films = films.filter(film => 
-      film.posterUrl && 
-      film.posterUrl.trim() !== '' && 
-      film.posterUrl.length > 10 // Basic validation - real URLs should be longer than this
+    return res.json({ onboardingState: defaultState });
+  } catch (error) {
+    console.error("Error getting onboarding state:", error);
+    res.status(500).json({ error: "Failed to get onboarding state" });
+  }
+});
+
+// Update onboarding state
+router.put("/state", isAuthenticated, async (req, res) => {
+  try {
+    const user = req.user!;
+    const { completed, currentStep, progress } = req.body;
+    
+    const updatedState = await onboardingService.updateOnboardingState(user.id, {
+      completed,
+      currentStep,
+      progress,
+    });
+    
+    res.json({ onboardingState: updatedState });
+  } catch (error) {
+    console.error("Error updating onboarding state:", error);
+    res.status(500).json({ error: "Failed to update onboarding state" });
+  }
+});
+
+// Save user preferences (streaming services and country)
+router.post("/preferences", isAuthenticated, async (req, res) => {
+  try {
+    const user = req.user!;
+    
+    // Validate request body
+    const validation = preferencesSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ error: "Invalid preferences data", details: validation.error.format() });
+    }
+    
+    const { country, streamingServices } = validation.data;
+    
+    // Save preferences and update onboarding state
+    const updatedUser = await onboardingService.saveUserPreferences(
+      user.id, 
+      country, 
+      streamingServices
     );
     
-    // Log the first 3 film titles
-    console.log(`Returning ${films.length} films. First few titles: ${films.slice(0, 3).map(f => f.title).join(', ')}`);
-    
-    res.json(films);
-  } catch (error) {
-    console.error('Error fetching popular films for onboarding:', error);
-    res.status(500).json({ message: 'Failed to fetch popular films' });
-  }
-});
-
-/**
- * Schema for film rating data
- */
-const filmRatingSchema = z.object({
-  filmId: z.number(),
-  status: z.enum(['not_seen', 'not_interested', 'loved', 'liked', 'meh', 'hated']),
-  rating: z.number().optional(),
-});
-
-/**
- * Save user ratings from onboarding
- * Accepts an array of film ratings and saves them to the user's watchlist
- */
-router.post('/save-ratings', async (req: Request, res: Response) => {
-  try {
-    const { ratings } = req.body;
-    
-    // Validate ratings array
-    if (!Array.isArray(ratings)) {
-      return res.status(400).json({ message: 'Ratings must be an array' });
-    }
-    
-    // Parse and validate each rating
-    const validatedRatings = [];
-    for (const rating of ratings) {
-      try {
-        const validRating = filmRatingSchema.parse(rating);
-        validatedRatings.push(validRating);
-      } catch (error) {
-        console.warn('Invalid rating format:', rating, error);
-        // Skip invalid ratings
+    res.json({ 
+      success: true, 
+      user: updatedUser,
+      onboardingState: {
+        completed: false,
+        currentStep: "ratings" as "ratings",
+        progress: 50
       }
-    }
-    
-    if (validatedRatings.length === 0) {
-      return res.status(400).json({ message: 'No valid ratings provided' });
-    }
-    
-    // Process each validated rating
-    const userId = req.user!.id;
-    const results = [];
-    
-    for (const rating of validatedRatings) {
-      try {
-        // Check if film exists
-        const film = await storage.getFilmById(rating.filmId);
-        if (!film) {
-          console.warn(`Film with ID ${rating.filmId} not found, skipping`);
-          continue;
-        }
-        
-        // Get existing watchlist item if any
-        const existingItem = await storage.getWatchlistItemByFilmId(userId, rating.filmId);
-        
-        // Add to watchlist with appropriate status
-        let isWatched = false;
-        switch (rating.status) {
-          case 'loved':
-          case 'liked':
-          case 'meh':
-          case 'hated':
-            isWatched = true;
-            break;
-          default:
-            isWatched = false;
-        }
-        
-        let result;
-        if (existingItem) {
-          // Update existing item
-          result = await storage.updateWatchlistItem(existingItem.id, {
-            watched: isWatched,
-            userRating: rating.rating,
-          });
-        } else {
-          // Create new watchlist item
-          result = await storage.addToWatchlist({
-            userId,
-            filmId: rating.filmId,
-            filmTitle: film.title,
-            filmGenres: film.genres,
-            watched: isWatched,
-            userRating: rating.rating,
-            dateAdded: new Date(),
-            filmType: film.type,
-          });
-        }
-        
-        results.push(result);
-      } catch (error) {
-        console.error('Error processing rating:', rating, error);
-        // Continue with other ratings even if one fails
-      }
-    }
-    
-    // Track onboarding completion event for analytics
-    await storage.trackEvent({
-      userId,
-      eventType: 'onboarding_ratings_saved',
-      data: {
-        count: [results.length],
-        date: [new Date().toISOString()]
-      },
-      timestamp: new Date(),
-    });
-    
-    // Mark user as having completed onboarding
-    try {
-      await storage.updateOnboardingStatus(userId, false);
-      console.log(`User ${userId} onboarding marked as completed`);
-    } catch (error) {
-      console.error('Error updating onboarding status:', error);
-      // Continue anyway since the ratings were saved
-    }
-    
-    res.json({
-      message: 'Ratings saved successfully',
-      count: results.length,
     });
   } catch (error) {
-    console.error('Error saving ratings:', error);
-    res.status(500).json({ message: 'Failed to save ratings' });
+    console.error("Error saving preferences:", error);
+    res.status(500).json({ error: "Failed to save preferences" });
   }
 });
 
-/**
- * Track onboarding progress for analytics
- */
-router.post('/track-progress', async (req: Request, res: Response) => {
+// Get films for rating during onboarding
+router.get("/films", isAuthenticated, async (req, res) => {
   try {
-    const { step } = req.body;
+    const count = parseInt(req.query.count as string) || 12;
+    const offset = parseInt(req.query.offset as string) || 0;
+    const batchNumber = parseInt(req.query.batchNumber as string) || 1;
     
-    if (!step || typeof step !== 'string') {
-      return res.status(400).json({ message: 'Valid step is required' });
-    }
+    const films = await onboardingService.getFilmsForOnboardingRatings(
+      count,
+      offset,
+      batchNumber
+    );
     
-    // Track the step in analytics
-    await storage.trackEvent({
-      userId: req.user!.id,
-      eventType: 'onboarding_progress',
-      data: {
-        step: [step],
-        date: [new Date().toISOString()]
-      },
-      timestamp: new Date(),
-    });
-    
-    res.json({ success: true });
+    res.json({ films });
   } catch (error) {
-    console.error('Error tracking onboarding progress:', error);
-    res.status(500).json({ message: 'Failed to track progress' });
+    console.error("Error fetching films for onboarding:", error);
+    res.status(500).json({ error: "Failed to fetch films" });
   }
 });
 
-/**
- * Mark onboarding as complete
- * This endpoint is called when a user completes the onboarding process
- */
-router.post('/complete', async (req: Request, res: Response) => {
+// Save a single film rating
+router.post("/rate", isAuthenticated, async (req, res) => {
   try {
-    const userId = req.user!.id;
+    const user = req.user!;
     
-    // Update user to mark onboarding as complete
-    const updatedUser = await storage.updateOnboardingStatus(userId, false);
+    // Validate request body
+    const validation = ratingSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ error: "Invalid rating data", details: validation.error.format() });
+    }
     
-    // Track completion in analytics
-    await storage.trackEvent({
-      userId,
-      eventType: 'onboarding_completed',
-      data: {
-        date: [new Date().toISOString()]
-      },
-      timestamp: new Date(),
-    });
+    const { filmId, filmTitle, filmPosterUrl, rating, status } = validation.data;
+    const batchNumber = req.body.batchNumber || 1;
+    
+    // Save the rating
+    const result = await onboardingService.saveFilmRating(
+      user.id,
+      filmId,
+      filmTitle,
+      filmPosterUrl,
+      rating,
+      status,
+      batchNumber
+    );
+    
+    res.json({ success: true, rating: result });
+  } catch (error) {
+    console.error("Error saving film rating:", error);
+    res.status(500).json({ error: "Failed to save film rating" });
+  }
+});
+
+// Save multiple film ratings at once
+router.post("/rate-batch", isAuthenticated, async (req, res) => {
+  try {
+    const user = req.user!;
+    
+    // Validate request body
+    const validation = batchRatingsSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ error: "Invalid batch rating data", details: validation.error.format() });
+    }
+    
+    const { ratings, batchNumber } = validation.data;
+    
+    // Save all ratings
+    const result = await onboardingService.saveMultipleRatings(
+      user.id,
+      ratings,
+      batchNumber
+    );
     
     res.json({ 
-      success: true,
-      user: updatedUser
+      success: true, 
+      result,
+      progress: result.progress,
+      complete: result.progress >= 100
     });
   } catch (error) {
-    console.error('Error completing onboarding:', error);
-    res.status(500).json({ message: 'Failed to complete onboarding' });
+    console.error("Error saving batch ratings:", error);
+    res.status(500).json({ error: "Failed to save batch ratings" });
   }
 });
 
-/**
- * For testing: Reset onboarding status
- * This endpoint allows testing the onboarding flow with existing users
- * It's for development purposes only and should be removed in production
- */
-router.post('/reset-status', async (req: Request, res: Response) => {
+// Complete onboarding
+router.post("/complete", isAuthenticated, async (req, res) => {
   try {
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(403).json({ message: 'This endpoint is not available in production' });
-    }
+    const user = req.user!;
     
-    const userId = req.user!.id;
-    
-    // Update user to reset onboarding status
-    const updatedUser = await storage.updateOnboardingStatus(userId, true);
+    // Mark onboarding as complete
+    const updatedState = await onboardingService.completeOnboarding(user.id);
     
     res.json({ 
-      success: true,
-      message: 'Onboarding status reset for testing',
-      user: updatedUser
+      success: true, 
+      onboardingState: updatedState
     });
   } catch (error) {
-    console.error('Error resetting onboarding status:', error);
-    res.status(500).json({ message: 'Failed to reset onboarding status' });
+    console.error("Error completing onboarding:", error);
+    res.status(500).json({ error: "Failed to complete onboarding" });
+  }
+});
+
+// Get all onboarding ratings for the current user
+router.get("/ratings", isAuthenticated, async (req, res) => {
+  try {
+    const user = req.user!;
+    
+    const ratings = await onboardingService.getUserOnboardingRatings(user.id);
+    
+    res.json({ ratings });
+  } catch (error) {
+    console.error("Error fetching onboarding ratings:", error);
+    res.status(500).json({ error: "Failed to fetch ratings" });
   }
 });
 

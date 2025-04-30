@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import FilmRatingGrid from '../components/onboarding/FilmRatingGrid';
+import { FilmRatingGrid } from '../components/onboarding/FilmRatingGrid';
 import OnboardingStepIndicator from '../components/onboarding/OnboardingStepIndicator';
 import WelcomeComplete from '../components/onboarding/WelcomeComplete';
 import UserPreferencesForm from '../components/onboarding/UserPreferencesForm';

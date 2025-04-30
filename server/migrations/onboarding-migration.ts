@@ -23,7 +23,7 @@ export async function setupOnboardingTables() {
       // Add onboarding_state column to users table
       await db.execute(sql`
         ALTER TABLE users 
-        ADD COLUMN IF NOT EXISTS onboarding_state JSONB DEFAULT '{"completed": false, "currentStep": "intro", "progress": 0, "lastUpdated": "${new Date().toISOString()}"}';
+        ADD COLUMN IF NOT EXISTS onboarding_state JSONB DEFAULT '{"completed": false, "currentStep": "intro", "progress": 0, "lastUpdated": "2023-01-01T00:00:00.000Z"}'::jsonb;
       `);
       
       // Copy data from needs_onboarding to onboarding_state if it exists

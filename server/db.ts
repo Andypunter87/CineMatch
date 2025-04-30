@@ -11,6 +11,7 @@ import { createFriendsTables } from "./migrations/create-friends-tables";
 import { addFriendNameField } from "./migrations/add-friend-name";
 import { createNotificationsTable } from "./migrations/create-notifications-table";
 import { createUserRecommendationsTable } from "./migrations/create-user-recommendations-table";
+import { setupOnboardingTables } from "./migrations/onboarding-migration";
 
 // Create postgres connection with proper error handling
 export const client = process.env.DATABASE_URL 
@@ -106,6 +107,9 @@ export async function initializeDatabase() {
     
     // Run migration to create the user recommendations table
     await createUserRecommendationsTable();
+    
+    // Run migration to setup onboarding tables
+    await setupOnboardingTables();
     
     console.log("Database initialized");
   } catch (error) {
