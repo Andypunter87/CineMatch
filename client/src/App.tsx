@@ -12,6 +12,7 @@ import PrivacyPage from "@/pages/privacy-page";
 import AdminDashboard from "@/pages/admin-dashboard";
 import FriendsPage from "@/pages/friends-page";
 import OnboardingPage from "@/pages/onboarding-page";
+import OnboardingTestPage from "@/pages/onboarding-test-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import Layout from "@/components/Layout";
@@ -26,6 +27,7 @@ function Router() {
       <ProtectedRoute path="/friends" component={FriendsPage} />
       <ProtectedRoute path="/admin" component={AdminDashboard} adminOnly={true} />
       <ProtectedRoute path="/onboarding" component={OnboardingPage} />
+      <ProtectedRoute path="/onboarding-test" component={OnboardingTestPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
