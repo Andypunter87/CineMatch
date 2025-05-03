@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Film } from "@shared/schema";
-import { FilmRating } from "@/hooks/use-onboarding";
+import { FilmRating } from "@/lib/types/film-rating";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Star, StarHalf } from "lucide-react";
@@ -47,7 +47,7 @@ export function FilmRatingGrid({
       return {
         filmId: film.id,
         filmTitle: film.title,
-        filmPosterUrl: film.posterPath,
+        filmPosterUrl: film.posterUrl || "",
         rating: rating.rating,
         status: rating.status,
       };
@@ -70,7 +70,7 @@ export function FilmRatingGrid({
           <Card key={film.id} className="overflow-hidden flex flex-col">
             <div className="relative aspect-[2/3] w-full">
               <PosterImage
-                posterUrl={film.posterPath || ""}
+                posterUrl={film.posterUrl || ""}
                 title={film.title}
                 className="object-cover w-full h-full"
               />
