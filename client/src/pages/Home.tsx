@@ -2,24 +2,17 @@ import { useState, useEffect } from "react";
 import Questionnaire from "@/components/Questionnaire";
 import Recommendations from "@/components/Recommendations";
 import { type RecommendationRequest, type Film } from "@shared/schema";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { useRecommendationHistory } from "@/hooks/use-recommendation-history";
-import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
 import { Loader2 } from "lucide-react";
+import { useRecommendationEngine } from "@/hooks/use-recommendation-engine";
 
-// Local storage key for saving preferences
-const PREFERENCES_STORAGE_KEY = "cinematch_preferences";
+// Local storage key is now managed in the recommendation engine hook
 
 export default function Home() {
   const { user } = useAuth();
-  const { 
-    recommendations: historyRecommendations, 
-    preferences: historyPreferences, 
-    isLoading: isLoadingHistory,
-    hasHistory
-  } = useRecommendationHistory();
+  
+  // Use our new recommendation engine hook that integrates with Firestore
+  const engine = useRecommendationEngine();
   
   // Check for a "just_completed_onboarding" flag in the URL
   const justCompletedOnboarding = () => {
@@ -33,7 +26,7 @@ export default function Home() {
     return params.has('show_questionnaire');
   };
   
-  // Initialize from localStorage or recommendation history
+  // Initialize questionnaire state
   const [showQuestionnaire, setShowQuestionnaire] = useState(() => {
     // If URL explicitly requests showing the questionnaire, honor that request
     if (shouldShowQuestionnaire()) {
@@ -45,14 +38,8 @@ export default function Home() {
       return false;
     }
     
-    // First check if we have a saved history from the server
-    if (user && hasHistory) {
-      return false;
-    }
-    
-    // Otherwise check local storage
-    const savedPreferences = localStorage.getItem(PREFERENCES_STORAGE_KEY);
-    return !savedPreferences; // Show questionnaire if no saved preferences
+    // Show questionnaire if no preferences exist
+    return !engine.currentPreferences;
   });
   
   // Clean up URL parameters after component mounts
@@ -64,236 +51,22 @@ export default function Home() {
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
     }
+    
+    // Make sure Firestore data is loaded on component mount
+    engine.ensureFirestoreDataLoaded();
   }, []);
   
-  // Keep track of which film IDs we've already shown
-  const [seenFilmIds, setSeenFilmIds] = useState<number[]>([]);
-  
-  // Keep track of the initial batch size to ensure consistent "Show More" behavior
-  const [initialBatchSize, setInitialBatchSize] = useState<number>(0);
-  
-  // Keep track of film IDs that received negative feedback
-  const [dislikedFilmIds, setDislikedFilmIds] = useState<number[]>(() => {
-    // Try to load disliked film IDs from localStorage
-    const savedDislikedFilms = localStorage.getItem('dislikedFilmIds');
-    if (savedDislikedFilms) {
-      try {
-        return JSON.parse(savedDislikedFilms);
-      } catch (e) {
-        return [];
-      }
-    }
-    return [];
-  });
-  
-  const [preferences, setPreferences] = useState<RecommendationRequest | null>(() => {
-    // First try to use history preferences if user is logged in and has history
-    if (user && historyPreferences) {
-      return historyPreferences;
-    }
-    
-    // Otherwise try to use localStorage
-    const savedPreferences = localStorage.getItem(PREFERENCES_STORAGE_KEY);
-    if (savedPreferences) {
-      const parsed = JSON.parse(savedPreferences);
-      
-      // Handle runtime conversion from string to array for backward compatibility
-      if (parsed.runtime && typeof parsed.runtime === 'string') {
-        parsed.runtime = [parsed.runtime];
-      }
-      
-      return parsed;
-    }
-    return null;
-  });
-  
-  // Save preferences to localStorage whenever they change
-  useEffect(() => {
-    if (preferences) {
-      localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(preferences));
-    } else {
-      localStorage.removeItem(PREFERENCES_STORAGE_KEY);
-    }
-  }, [preferences]);
-  
-  // Save disliked film IDs to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('dislikedFilmIds', JSON.stringify(dislikedFilmIds));
-  }, [dislikedFilmIds]);
-  
-  const { data: recommendations, isLoading, isFetching } = useQuery<Film[]>({
-    // Remove dislikedFilmIds from the queryKey to prevent automatic refetching when films are disliked
-    // The dislikedFilmIds will still be used in the query function but won't trigger a refetch
-    queryKey: ['/api/recommendations', preferences, seenFilmIds],
-    enabled: preferences !== null,
-    staleTime: Infinity,
-    queryFn: async ({ meta }) => {
-      if (!preferences) return [];
-      
-      // If this is a request for more films, get the requestedBatchSize from meta
-      // This ensures we return the same number of films each time
-      const requestedBatchSize = meta?.requestedBatchSize as number | undefined;
-      
-      // Combine seen film IDs and disliked film IDs for the exclusion list
-      // Use a more compatible approach to deduplicate the arrays
-      const allIdsWithDuplicates = [...seenFilmIds, ...dislikedFilmIds];
-      const allExcludedIds = Array.from(new Set(allIdsWithDuplicates));
-      
-      // If user is logged in, add their streaming services and country to preferences
-      const preferencesWithUserInfo = {
-        ...preferences,
-        // Add streaming services if user has selected them
-        streamingServices: user?.streamingServices?.length ? user.streamingServices : undefined,
-        // Add country if user has specified one
-        country: user?.country || undefined,
-        // Add exclusions list if applicable
-        excludeFilmIds: allExcludedIds.length > 0 ? allExcludedIds : undefined,
-        // Add requestedBatchSize if available to ensure consistent number of recommendations
-        requestedBatchSize: requestedBatchSize
-      };
-
-      // First check if we have history recommendations and preferences match
-      // Only use history if this isn't a "show more" request (no requestedBatchSize)
-      if (!requestedBatchSize && user && historyRecommendations && 
-          JSON.stringify(historyPreferences) === JSON.stringify(preferences)) {
-        console.log("Using saved recommendations from history");
-        return historyRecommendations;
-      }
-        
-      const response = await apiRequest('POST', '/api/recommendations', preferencesWithUserInfo);
-      const newRecommendations = await response.json();
-      
-      // If this is an initial request (not a "show more" request), save the batch size
-      if (!requestedBatchSize && newRecommendations.length > 0) {
-        // We don't set initialBatchSize directly here as it could cause a re-render loop
-        // The useEffect hook will handle this update
-      }
-      
-      return newRecommendations;
-    }
-  });
-  
-  // This effect will ensure history recommendations are available immediately
-  useEffect(() => {
-    if (user && historyRecommendations && !recommendations && preferences) {
-      // This helps pre-populate the query cache with history data
-      queryClient.setQueryData(['/api/recommendations', preferences, seenFilmIds], historyRecommendations);
-    }
-  }, [user, historyRecommendations, recommendations, preferences, seenFilmIds]);
-  
-  // Track the initial batch size when recommendations are first loaded
-  useEffect(() => {
-    if (recommendations && recommendations.length > 0 && initialBatchSize === 0) {
-      setInitialBatchSize(recommendations.length);
-    }
-  }, [recommendations, initialBatchSize]);
-  
-  // Mutation for getting more suggestions
-  const { mutate: getMoreSuggestions, isPending: isLoadingMore } = useMutation({
-    mutationFn: async () => {
-      if (!preferences || !recommendations) return [];
-      
-      // Track current films as seen
-      const currentIds = recommendations.map(film => film.id);
-      const allSeenIds = [...seenFilmIds, ...currentIds];
-      
-      // Update seen film IDs
-      setSeenFilmIds(allSeenIds);
-      
-      // Determine batch size for consistent results
-      // For "Show More" requests, we want at least the same number as the initial load
-      // For more diverse recommendations, request a larger number (at least 15-20)
-      // This ensures we get at least 8-10 new films even after filtering
-      const batchSize = initialBatchSize > 0 ? Math.max(initialBatchSize * 2, 15) : 15; 
-      
-      // Create a complete preferences object with all exclusions
-      const combinedExclusions = Array.from(new Set([...allSeenIds, ...dislikedFilmIds]));
-      
-      console.log(`Requesting ${batchSize} more recommendations, excluding ${combinedExclusions.length} previously seen films`);
-      
-      const requestBody = {
-        ...preferences,
-        excludeFilmIds: combinedExclusions,
-        requestedBatchSize: batchSize,
-        // Add special flags to bypass filters and get more diverse recommendations
-        _bypassStreamingFilter: true,
-        _disableMoodFilter: true,
-        _disableRuntimeFilter: true
-      };
-      
-      // Make the API request to get more recommendations using the special "more" endpoint
-      const response = await apiRequest('POST', '/api/recommendations/more', requestBody);
-      const newRecommendations = await response.json();
-      
-      // Update the React Query cache by appending the new recommendations to existing ones
-      if (newRecommendations.length > 0) {
-        queryClient.setQueryData(
-          ['/api/recommendations', preferences, seenFilmIds], 
-          (oldData: Film[] | undefined) => {
-            // If we have existing data, append new recommendations to it
-            if (oldData && Array.isArray(oldData)) {
-              // Filter out any duplicates that might exist in both sets
-              const existingIds = new Set(oldData.map(film => film.id));
-              const uniqueNewRecommendations = newRecommendations.filter(
-                (film: Film) => !existingIds.has(film.id)
-              );
-              
-              return [...oldData, ...uniqueNewRecommendations];
-            }
-            // If we don't have existing data, just use the new recommendations
-            return newRecommendations;
-          }
-        );
-      }
-      
-      // Calculate total exclusions for analytics 
-      const totalExclusions = combinedExclusions.length;
-      
-      // Track analytics event
-      trackEvent(AnalyticsEvents.MORE_RECOMMENDATIONS_REQUESTED, {
-        exclusion_count: totalExclusions,
-        disliked_count: dislikedFilmIds.length,
-        preference_location: preferences.location,
-        preference_mood: preferences.mood,
-        preference_timeOfDay: preferences.timeOfDay,
-        batch_size: batchSize
-      });
-      
-      return newRecommendations;
-    }
-  });
-
+  // Helper function to wrap the engine's submitQuestionnaire function
   const handleSubmitQuestionnaire = (data: RecommendationRequest) => {
-    // Reset seen films when starting a new search
-    setSeenFilmIds([]);
-    setPreferences(data);
+    engine.submitQuestionnaire(data);
     setShowQuestionnaire(false);
   };
-
+  
+  // Helper function to wrap the engine's reset function
   const handleReset = () => {
-    setPreferences(null);
-    setSeenFilmIds([]);
-    // Optionally clear disliked films when starting over
-    // Comment out the next line if you want disliked films to persist across sessions
-    setDislikedFilmIds([]);
-    localStorage.removeItem(PREFERENCES_STORAGE_KEY);
+    engine.reset();
     setShowQuestionnaire(true);
   };
-  
-  // Handler for when a user dislikes a film
-  const handleFilmDisliked = (filmId: number) => {
-    // Add this film ID to the disliked films list if it's not already there
-    if (!dislikedFilmIds.includes(filmId)) {
-      setDislikedFilmIds(prev => [...prev, filmId]);
-    }
-  };
-
-  // Determine if we're showing history recommendations
-  const isShowingHistory = 
-    user && 
-    historyRecommendations && 
-    recommendations && 
-    JSON.stringify(historyRecommendations) === JSON.stringify(recommendations);
 
   return (
     <div className="container mx-auto px-4 py-6 bg-white">
@@ -320,21 +93,21 @@ export default function Home() {
           </>
         ) : (
           <>
-            {isShowingHistory && (
+            {engine.isShowingHistory && (
               <div className="mb-4 text-center text-sm bg-indigo-50 border border-indigo-100 rounded-lg p-3 max-w-2xl mx-auto shadow-[0_4px_14px_0_rgba(79,70,229,0.2)]">
                 <span className="font-medium text-indigo-700">Welcome back!</span> We've loaded your previous recommendations.
               </div>
             )}
             {/* Only show recommendations if we have preferences */}
-            {preferences ? (
+            {engine.currentPreferences ? (
               <Recommendations 
-                recommendations={recommendations || []} 
-                isLoading={isLoading || isFetching || isLoadingMore} 
-                preferences={preferences} 
+                recommendations={engine.recommendations} 
+                isLoading={engine.isLoading} 
+                preferences={engine.currentPreferences} 
                 onReset={handleReset}
-                onGenerateMore={getMoreSuggestions}
-                hasMoreToGenerate={recommendations && recommendations.length > 0}
-                onDisliked={handleFilmDisliked}
+                onGenerateMore={engine.getMoreSuggestions}
+                hasMoreToGenerate={engine.hasMoreToGenerate}
+                onDisliked={engine.handleFilmDisliked}
               />
             ) : (
               // If we don't have preferences yet, show a simple loading state

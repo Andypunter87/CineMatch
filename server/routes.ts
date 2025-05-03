@@ -97,6 +97,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         country = req.user.country;
       }
       
+      // Check if user ratings were provided from Firestore
+      let userRatings = req.body.userRatings || [];
+      
       // Get user rated films if logged in
       let userRatedFilms: { filmId: number; title: string; genres: string[]; rating: number; filmType: string }[] = [];
       let ratedFilmIds: number[] = []; // Array to collect film IDs that should not be recommended again

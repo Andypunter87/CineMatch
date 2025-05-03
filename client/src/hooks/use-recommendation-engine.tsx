@@ -114,7 +114,7 @@ export function useRecommendationEngine() {
       // Add Firestore preferences (if available) or fall back to user profile data
       const userStreamingServices = preferences.preferences.streamingServices?.length > 0
         ? preferences.preferences.streamingServices
-        : user?.streamingServices?.length > 0
+        : user?.streamingServices && user.streamingServices.length > 0
           ? user.streamingServices
           : undefined;
           
@@ -220,7 +220,7 @@ export function useRecommendationEngine() {
       // Get user preferences from Firestore
       const userStreamingServices = preferences.preferences.streamingServices?.length > 0
         ? preferences.preferences.streamingServices
-        : user?.streamingServices?.length > 0
+        : user?.streamingServices && user.streamingServices.length > 0
           ? user.streamingServices
           : undefined;
           
