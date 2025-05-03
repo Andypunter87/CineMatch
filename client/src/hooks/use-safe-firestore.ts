@@ -46,6 +46,15 @@ export function useSafeFirestore() {
     console.log('Attempting anonymous authentication with Firebase...');
     const auth = getAuth();
     
+    // Check if Firebase is properly configured first
+    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+    const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+    
+    if (!apiKey || !projectId) {
+      console.error('Firebase not properly configured. Cannot authenticate anonymously.');
+      return false;
+    }
+    
     // Log the attempt with our new logger
     logAuthOperation(LogLevel.INFO, 'Attempting anonymous authentication', {
       operationType: 'test',
@@ -59,6 +68,8 @@ export function useSafeFirestore() {
     
     try {
       if (!auth.currentUser) {
+        // Try to authenticate anonymously
+        console.log('No current user, attempting anonymous sign-in...');
         const authResult = await signInAnonymously(auth);
         
         // Log success
@@ -91,18 +102,27 @@ export function useSafeFirestore() {
         console.log('User already authenticated:', auth.currentUser.uid);
         return true;
       }
-    } catch (authError) {
+    } catch (authError: any) {
+      // Special handling for common Firebase auth errors
+      if (authError.code === 'auth/configuration-not-found') {
+        console.error('Firebase authentication failed: Configuration not found. Check Firebase configuration.');
+      } else if (authError.code === 'auth/internal-error') {
+        console.error('Firebase authentication failed: Internal error. Firebase may not be properly initialized.');
+      } else {
+        console.error('Anonymous auth failed:', authError.code, authError.message);
+      }
+      
       // Log authentication failure
       logFirestoreError(LogCategory.AUTH, 'Anonymous authentication failed', authError as Error, {
         operationType: 'test',
         additionalInfo: {
           timestamp: new Date().toISOString(),
           operationId: `auth-${Date.now()}`,
-          attempted: 'anonymous-auth'
+          attempted: 'anonymous-auth',
+          errorCode: authError.code || 'unknown'
         }
       });
       
-      console.error('Anonymous auth failed:', authError);
       return false;
     }
   }, []);

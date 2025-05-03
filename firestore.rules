@@ -6,6 +6,25 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
+    // Allow access to user_preferences with matching user IDs
+    match /user_preferences/{documentId} {
+      allow read, write: if 
+        // Either authenticated with matching ID
+        (request.auth != null && documentId.matches('user-.*') && 
+        documentId.split('user-')[1] == resource.data.userId) || 
+        // Or allow anonymous auth for onboarding flow
+        request.auth != null && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+    
+    // Allow access to collections with a userId field that matches the user
+    match /{collection}/{documentId} {
+      allow read, write: if 
+        collection in ['onboarding_ratings', 'recommendation_ratings', 'watchlist', 'friends'] &&
+        request.auth != null && 
+        (resource.data.userId == request.auth.uid || 
+         request.resource.data.userId == request.auth.uid);
+    }
+    
     // For tests and debugging only - remove in production
     match /test/{document=**} {
       allow read, write: if request.auth != null;
