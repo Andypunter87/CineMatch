@@ -319,11 +319,12 @@ export function useRecommendationEngine() {
   };
   
   // Determine if we're showing history recommendations
-  const isShowingHistory = 
+  const isShowingHistory = !!(
     user && 
     historyRecommendations && 
     recommendations && 
-    JSON.stringify(historyRecommendations) === JSON.stringify(recommendations);
+    JSON.stringify(historyRecommendations) === JSON.stringify(recommendations)
+  );
   
   return {
     // Data

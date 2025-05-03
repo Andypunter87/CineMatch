@@ -54,7 +54,7 @@ export default function Home() {
     
     // Make sure Firestore data is loaded on component mount
     engine.ensureFirestoreDataLoaded();
-  }, []);
+  }, [engine]);
   
   // Helper function to wrap the engine's submitQuestionnaire function
   const handleSubmitQuestionnaire = (data: RecommendationRequest) => {
