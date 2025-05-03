@@ -7,6 +7,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User, User as SelectUser } from "@shared/schema";
 import { sendWelcomeEmail, sendAdminNewUserNotification } from "./services/email";
+import { createFirebaseToken } from './firebase-admin';
 
 declare global {
   namespace Express {
@@ -191,7 +192,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: Error | null, user: SelectUser | false, info: { message: string }) => {
+    passport.authenticate("local", async (err: Error | null, user: SelectUser | false, info: { message: string }) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ error: "Invalid credentials" });
       
@@ -206,11 +207,22 @@ export function setupAuth(app: Express) {
         userAgent: req.headers['user-agent'] as string || 'unknown'
       }).catch(err => console.error('Error tracking login event:', err));
       
+      // Generate Firebase token
+      let firebaseToken: string | null = null;
+      try {
+        firebaseToken = await createFirebaseToken(user.id);
+      } catch (tokenError) {
+        console.error('Error generating Firebase token during login:', tokenError);
+      }
+      
       req.login(user, (err) => {
         if (err) return next(err);
-        // Return user without password
+        // Return user without password but with Firebase token
         const { password, ...userWithoutPassword } = user;
-        return res.status(200).json(userWithoutPassword);
+        return res.status(200).json({
+          ...userWithoutPassword,
+          ...(firebaseToken ? { firebaseToken } : {}) // Only include token if available
+        });
       });
     })(req, res, next);
   });
@@ -235,13 +247,27 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req, res) => {
+  app.get("/api/user", async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: "Not authenticated" });
     }
-    // Return user without password
-    const { password, ...userWithoutPassword } = req.user as SelectUser;
-    res.json(userWithoutPassword);
+    
+    try {
+      // Generate a Firebase token for the user
+      const firebaseToken = await createFirebaseToken(req.user.id);
+      
+      // Return user without password but with Firebase token
+      const { password, ...userWithoutPassword } = req.user as SelectUser;
+      res.json({
+        ...userWithoutPassword,
+        firebaseToken // Include the token in the response
+      });
+    } catch (error) {
+      console.error('Error generating Firebase token:', error);
+      // Still return the user even if token generation fails
+      const { password, ...userWithoutPassword } = req.user as SelectUser;
+      res.json(userWithoutPassword);
+    }
   });
 
   app.put("/api/user/streaming", async (req, res, next) => {

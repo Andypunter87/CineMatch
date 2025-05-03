@@ -17,6 +17,7 @@ import ErrorHandlingDemo from "@/pages/error-handling-demo";
 import FirestoreDemoPage from "@/pages/firestore-demo";
 import FirestoreTestReport from "@/pages/firestore-test-report";
 import { AuthProvider } from "@/hooks/use-auth";
+import { FirebaseAuthProvider } from "@/components/FirebaseAuthProvider";
 import { ProtectedRoute } from "./lib/protected-route";
 import Layout from "@/components/Layout";
 import CookieConsent from "@/components/CookieConsent";
@@ -48,11 +49,13 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <Layout>
-            <Router />
-          </Layout>
-          <CookieConsent />
-          <Toaster />
+          <FirebaseAuthProvider>
+            <Layout>
+              <Router />
+            </Layout>
+            <CookieConsent />
+            <Toaster />
+          </FirebaseAuthProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
