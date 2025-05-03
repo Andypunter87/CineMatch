@@ -92,7 +92,7 @@ export function useRecommendationEngine() {
     isFetching,
     refetch: refetchRecommendations
   } = useQuery<Film[]>({
-    queryKey: ['/api/recommendations', currentPreferences, seenFilmIds],
+    queryKey: ['/api/recommendations', currentPreferences, seenFilmIds, dislikedFilmIds],
     enabled: currentPreferences !== null,
     staleTime: Infinity,
     queryFn: async ({ meta }) => {
@@ -181,11 +181,11 @@ export function useRecommendationEngine() {
     if (user && historyRecommendations && !recommendations && currentPreferences) {
       // This helps pre-populate the query cache with history data
       queryClient.setQueryData(
-        ['/api/recommendations', currentPreferences, seenFilmIds], 
+        ['/api/recommendations', currentPreferences, seenFilmIds, dislikedFilmIds], 
         historyRecommendations
       );
     }
-  }, [user, historyRecommendations, recommendations, currentPreferences, seenFilmIds]);
+  }, [user, historyRecommendations, recommendations, currentPreferences, seenFilmIds, dislikedFilmIds]);
   
   // Track the initial batch size when recommendations are first loaded
   useEffect(() => {
@@ -254,7 +254,7 @@ export function useRecommendationEngine() {
       // Update the React Query cache by appending the new recommendations to existing ones
       if (newRecommendations.length > 0) {
         queryClient.setQueryData(
-          ['/api/recommendations', currentPreferences, seenFilmIds], 
+          ['/api/recommendations', currentPreferences, seenFilmIds, dislikedFilmIds], 
           (oldData: Film[] | undefined) => {
             // If we have existing data, append new recommendations to it
             if (oldData && Array.isArray(oldData)) {
