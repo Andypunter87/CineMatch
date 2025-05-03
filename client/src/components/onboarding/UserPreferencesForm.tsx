@@ -13,15 +13,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { trackEvent, AnalyticsEvents } from '@/lib/analytics';
-import { db } from '@/lib/firebase';
-import { getAuth } from 'firebase/auth';
-import { 
-  doc, 
-  setDoc, 
-  serverTimestamp,
-  DocumentReference 
-} from 'firebase/firestore';
-import { FirebaseError } from 'firebase/app';
+import { useSafeFirestore } from '@/hooks/use-safe-firestore';
 
 // Same streaming services and countries arrays as in profile-page
 const streamingServices = [
@@ -173,73 +165,42 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
           throw new Error(errorData.error || 'Failed to save preferences');
         }
         
-        // Also save to Firestore for redundancy
-        try {
-          // Create a document in Firestore
-          if (user?.id) {
-            // Log detailed information for debugging
-            console.log('Attempting to save preferences to Firestore for user ID:', user.id);
-            
-            // Create a document reference 
-            const prefsDocRef = doc(db, 'user_preferences', `user-${user.id}`);
-            
-            // Prepare data for Firestore
-            const firestoreData = {
-              userId: user.id,
-              country: countryCode,
-              streamingServices: servicesCodes,
-              lastUpdated: new Date().toISOString(),
-              updatedAt: serverTimestamp()
-            };
-            
-            console.log('Firestore document path:', prefsDocRef.path);
-            console.log('Firestore data to save:', JSON.stringify(firestoreData));
-            
-            // Attempt to write to Firestore with detailed error capture
-            try {
-              await setDoc(prefsDocRef, firestoreData);
-              console.log('Preferences successfully saved to Firestore');
-            } catch (firestoreError: any) {
-              // Capture Firebase-specific error details
-              console.error('FIREBASE ERROR CODE:', firestoreError.code);
-              console.error('FIREBASE ERROR MESSAGE:', firestoreError.message);
-              
-              // Check if it's a permissions issue
-              if (firestoreError.code === 'permission-denied') {
-                const auth = getAuth();
-                console.error('FIREBASE SECURITY RULES ERROR: User lacks permission to write to this document');
-                console.error('Document path:', prefsDocRef.path);
-                console.error('Current user ID:', user.id);
-                console.error('Authentication state:', !!auth.currentUser);
-                if (auth.currentUser) {
-                  console.error('Firebase auth UID:', auth.currentUser.uid);
-                  console.error('UID/user.id match?', auth.currentUser.uid === String(user.id));
-                }
-              }
-              
-              // Rethrow to be caught by outer catch block
-              throw firestoreError;
-            }
-          } else {
-            console.warn('Cannot save to Firestore: User ID is undefined or null');
-          }
-        } catch (error: unknown) {
-          console.error('Failed to save to Firestore, but continuing:', error);
+        // Also save to Firestore for redundancy using our safe Firestore hook
+        if (user?.id) {
+          // Use the safe Firestore hook
+          const { createDocRef, safeSetDoc, attemptAnonymousAuth } = useSafeFirestore();
           
-          // Log any error details we can get
-          if (error instanceof Error) {
-            console.error('Firestore error details:', {
-              message: error.message,
-              name: error.name,
-              stack: error.stack,
-              // If it's a Firebase error, also log the code
-              code: 'code' in error ? (error as any).code : 'N/A'
-            });
-          } else {
-            console.error('Unknown Firestore error type:', typeof error);
-          }
+          // Log user is attempting to save preferences
+          console.log('Attempting to save preferences to Firestore for user ID:', user.id);
           
-          // Continue anyway since the main API call worked
+          // Create a document reference using the helper
+          const prefsDocRef = createDocRef('user_preferences', user.id);
+          
+          // Prepare data for Firestore
+          const firestoreData = {
+            userId: user.id,
+            country: countryCode,
+            streamingServices: servicesCodes,
+            lastUpdated: new Date().toISOString()
+          };
+          
+          console.log('Firestore document path:', prefsDocRef.path);
+          console.log('Firestore data to save:', JSON.stringify(firestoreData, null, 2));
+          
+          // Try to save data with retry and error handling built-in
+          const success = await safeSetDoc(prefsDocRef, firestoreData, {
+            retryWithAnonymousAuth: true,
+            suppressErrors: true, // We don't need to show errors since the API call worked
+            userFacingErrorMessage: 'Could not save preferences to Firestore, but your data is still saved on the server'
+          });
+          
+          if (success) {
+            console.log('Preferences successfully saved to Firestore');
+          } else {
+            console.warn('Failed to save preferences to Firestore, but continuing anyway since the API call worked');
+          }
+        } else {
+          console.warn('Cannot save to Firestore: User ID is undefined or null');
         }
       } else {
         // For non-onboarding pages, use the mutations from useAuth

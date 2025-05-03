@@ -1,14 +1,12 @@
 import { useCallback, useState } from 'react';
-import type { 
-  DocumentReference,
-  FirestoreError
-} from 'firebase/firestore';
 import { 
   doc, 
   setDoc, 
   getDoc,
   deleteDoc,
-  serverTimestamp
+  serverTimestamp,
+  DocumentReference,
+  FirestoreError
 } from 'firebase/firestore';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { db } from '@/lib/firebase';
