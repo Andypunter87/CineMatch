@@ -132,7 +132,13 @@ export function useSafeFirestore() {
           if (authFixed) {
             // Retry the write operation
             console.log('Retrying Firestore write after authentication...');
-            await setDoc(docRef, enhancedData);
+            // Re-create the enhanced data for the retry attempt
+            const retryData = {
+              ...data,
+              updatedAt: serverTimestamp()
+            } as T & { updatedAt: any };
+            
+            await setDoc(docRef, retryData);
             console.log(`Successfully wrote to ${docRef.path} after authentication fix`);
             return true;
           }

@@ -175,6 +175,13 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
         // This ensures we move to the next step regardless of what happens with Firestore
         onComplete();
         
+        // Show informative message about cloud sync status
+        toast({
+          title: "Preferences saved",
+          description: "Your preferences have been saved to the server",
+          variant: "default"
+        });
+        
         // Try to save to Firestore in the background without awaiting
         // This ensures the UI flow is not blocked by any Firestore errors
         try {
@@ -196,11 +203,18 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
             // Save to Firestore in the background (don't await)
             safeFirestore.safeSetDoc(prefsDocRef, firestoreData, {
               retryWithAnonymousAuth: true,
-              suppressErrors: true,
-              userFacingErrorMessage: 'Could not save to Firestore, but your preferences are still saved'
+              // Don't suppress errors so user gets feedback if cloud sync fails
+              suppressErrors: false,
+              userFacingErrorMessage: 'Cloud sync unavailable. Your preferences are saved on the server, but may not sync across devices.'
             }).then((success: boolean) => {
               if (success) {
                 console.log('Preferences successfully saved to Firestore');
+                // Optionally show a success toast for cloud sync
+                toast({
+                  title: "Cloud sync complete",
+                  description: "Your preferences are now synced to the cloud",
+                  variant: "default"
+                });
               } else {
                 console.warn('Failed to save preferences to Firestore, but this is non-blocking');
               }
