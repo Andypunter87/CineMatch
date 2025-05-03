@@ -46,16 +46,62 @@ export function useSafeFirestore() {
     console.log('Attempting anonymous authentication with Firebase...');
     const auth = getAuth();
     
+    // Log the attempt with our new logger
+    logAuthOperation(LogLevel.INFO, 'Attempting anonymous authentication', {
+      operationType: 'test',
+      additionalInfo: {
+        timestamp: new Date().toISOString(),
+        reason: 'No authenticated user',
+        currentAuthState: auth.currentUser ? 'already-authenticated' : 'not-authenticated',
+        operationId: `auth-${Date.now()}`
+      }
+    });
+    
     try {
       if (!auth.currentUser) {
         const authResult = await signInAnonymously(auth);
+        
+        // Log success
+        logSuccess(LogCategory.AUTH, 'Anonymous authentication successful', {
+          operationType: 'test',
+          additionalInfo: {
+            timestamp: new Date().toISOString(),
+            uid: authResult.user.uid,
+            isAnonymous: authResult.user.isAnonymous,
+            provider: 'anonymous',
+            operationId: `auth-${Date.now()}`
+          }
+        });
+        
         console.log('Anonymous auth successful:', authResult.user.uid);
         return true;
       } else {
+        // Log already authenticated
+        logAuthOperation(LogLevel.INFO, 'User already authenticated', {
+          operationType: 'test',
+          additionalInfo: {
+            timestamp: new Date().toISOString(),
+            uid: auth.currentUser.uid,
+            isAnonymous: auth.currentUser.isAnonymous,
+            provider: auth.currentUser.providerId || 'unknown',
+            operationId: `auth-${Date.now()}`
+          }
+        });
+        
         console.log('User already authenticated:', auth.currentUser.uid);
         return true;
       }
     } catch (authError) {
+      // Log authentication failure
+      logFirestoreError(LogCategory.AUTH, 'Anonymous authentication failed', authError as Error, {
+        operationType: 'test',
+        additionalInfo: {
+          timestamp: new Date().toISOString(),
+          operationId: `auth-${Date.now()}`,
+          attempted: 'anonymous-auth'
+        }
+      });
+      
       console.error('Anonymous auth failed:', authError);
       return false;
     }
@@ -151,10 +197,22 @@ export function useSafeFirestore() {
         }
       } as T & { updatedAt: any; _metadata: Record<string, any> };
       
-      // Log Firestore operation for debugging
-      console.log(`[Firestore Test] Writing to: ${docRef.path}`, {
-        dataKeys: Object.keys(data),
-        timestamp: new Date().toISOString()
+      // Create a unique test ID for this operation
+      const testId = `op-${Date.now()}`;
+      
+      // Log Firestore operation using enhanced logger
+      logPreferenceOperation(LogLevel.INFO, 'Firestore Test: Writing Data', {
+        documentPath: docRef.path,
+        operationType: 'write',
+        data: { keys: Object.keys(data) },
+        additionalInfo: {
+          testId,
+          timestamp: new Date().toISOString(),
+          authState: auth.currentUser ? {
+            uid: auth.currentUser.uid,
+            isAnonymous: auth.currentUser.isAnonymous
+          } : 'not_authenticated'
+        }
       });
       
       // Check auth if required
@@ -166,6 +224,18 @@ export function useSafeFirestore() {
       // Main write attempt
       await setDoc(docRef, enhancedData);
       console.log(`Successfully wrote to ${docRef.path}`);
+      
+      // Log success with the enhanced logger
+      logSuccess(LogCategory.PREFERENCE, 'Firestore Test: Write Operation Successful', {
+        documentPath: docRef.path,
+        operationType: 'write',
+        additionalInfo: {
+          testId,
+          timestamp: new Date().toISOString(),
+          documentId: docRef.id
+        }
+      });
+      
       return true;
     } catch (e) {
       const firestoreError = e as FirestoreError;
@@ -193,11 +263,18 @@ export function useSafeFirestore() {
               }
             } as T & { updatedAt: any; _metadata: Record<string, any> };
             
-            // Log retry attempt for debugging
-            console.log(`[Firestore Test] Retry writing to: ${docRef.path}`, {
-              dataKeys: Object.keys(data),
-              timestamp: new Date().toISOString(),
-              errorCode: firestoreError.code
+            // Log retry attempt using the enhanced logger
+            logPreferenceOperation(LogLevel.INFO, 'Firestore Test: Retrying Write Operation', {
+              documentPath: docRef.path,
+              operationType: 'write',
+              errorCode: firestoreError.code,
+              additionalInfo: {
+                testId: `retry-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                originalError: firestoreError.code,
+                dataKeys: Object.keys(data),
+                retryReason: 'authentication_fix'
+              }
             });
             
             await setDoc(docRef, retryData);
@@ -238,10 +315,23 @@ export function useSafeFirestore() {
     try {
       console.log(`Attempting to read from Firestore: ${docRef.path}`);
       
-      // Log read operation for debugging
-      console.log(`[Firestore Test] Reading from: ${docRef.path}`, {
-        timestamp: new Date().toISOString(),
-        operation: 'read'
+      // Create a unique test ID for this read operation
+      const readTestId = `read-${Date.now()}`;
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      
+      // Log read operation using enhanced logger
+      logPreferenceOperation(LogLevel.INFO, 'Firestore Test: Reading Data', {
+        documentPath: docRef.path,
+        operationType: 'read',
+        additionalInfo: {
+          testId: readTestId,
+          timestamp: new Date().toISOString(),
+          authState: currentUser ? {
+            uid: currentUser.uid,
+            isAnonymous: currentUser.isAnonymous
+          } : 'not_authenticated'
+        }
       });
       
       // Check auth if required
@@ -255,9 +345,34 @@ export function useSafeFirestore() {
       
       if (docSnap.exists()) {
         console.log(`Successfully read from ${docRef.path}`);
+        
+        // Log successful read with enhanced logger
+        logSuccess(LogCategory.PREFERENCE, 'Firestore Test: Read Operation Successful', {
+          documentPath: docRef.path,
+          operationType: 'read',
+          additionalInfo: {
+            testId: readTestId,
+            timestamp: new Date().toISOString(),
+            documentExists: true,
+            dataSize: JSON.stringify(docSnap.data()).length
+          }
+        });
+        
         return docSnap.data() as T;
       } else {
         console.log(`No document found at ${docRef.path}`);
+        
+        // Log document not found with enhanced logger
+        logPreferenceOperation(LogLevel.INFO, 'Firestore Test: Document Not Found', {
+          documentPath: docRef.path,
+          operationType: 'read',
+          additionalInfo: {
+            testId: readTestId,
+            timestamp: new Date().toISOString(),
+            documentExists: false
+          }
+        });
+        
         return null;
       }
     } catch (e) {
