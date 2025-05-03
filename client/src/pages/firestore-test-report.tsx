@@ -363,7 +363,8 @@ export default function FirestoreTestReport() {
     await runSharedRecommendationsTest();
     
     // Get logs
-    setTestLogs(getMemoryLog());
+    const logs = getMemoryLog();
+    setTestLogs(logs);
   };
   
   // Generate test report
