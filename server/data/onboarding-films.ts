@@ -287,7 +287,7 @@ export const onboardingFilms: Film[] = [
     synopsis: "The life of Mason, from early childhood to his arrival at college.",
     genres: ["Drama"],
     type: "indie",
-    posterUrl: "https://image.tmdb.org/t/p/w500/pxV8JIxKUEmQjfJ2oIMJEy3jSUV.jpg",
+    posterUrl: "https://image.tmdb.org/t/p/w500/2BvtvDUyxiMJ4dmKfiQf4qdOHQN.jpg",
     hasCompleteData: true,
     hasStreamingData: true
   },
@@ -300,7 +300,7 @@ export const onboardingFilms: Film[] = [
     synopsis: "In a post-apocalyptic wasteland, a woman rebels against a tyrannical ruler in search for her homeland with the aid of a group of female prisoners, a psychotic worshiper, and a drifter named Max.",
     genres: ["Action", "Adventure", "Sci-Fi"],
     type: "mainstream",
-    posterUrl: "https://image.tmdb.org/t/p/w500/hA2ple9q4qnwxv3gQ2iEVvTZjkR.jpg",
+    posterUrl: "https://image.tmdb.org/t/p/w500/hA2ple9q4qnwxp3hKVNhroipsir.jpg",
     hasCompleteData: true,
     hasStreamingData: true
   },
@@ -313,7 +313,7 @@ export const onboardingFilms: Film[] = [
     synopsis: "A young programmer is selected to participate in a ground-breaking experiment in synthetic intelligence by evaluating the human qualities of a highly advanced humanoid AI.",
     genres: ["Drama", "Sci-Fi", "Thriller"],
     type: "indie",
-    posterUrl: "https://image.tmdb.org/t/p/w500/btbRB7BrD887j5NrvjxceRDmaot.jpg",
+    posterUrl: "https://image.tmdb.org/t/p/w500/dmJW8IAKHKxFNiUnoDR7JfsK7Rp.jpg",
     hasCompleteData: true,
     hasStreamingData: true
   }
