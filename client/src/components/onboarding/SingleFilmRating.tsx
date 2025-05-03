@@ -1,13 +1,32 @@
 import { useState, useEffect } from "react";
-import { Film } from "@shared/schema";
-import { FilmRating } from "@/lib/types/film-rating";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star, ArrowRight, ArrowLeft, X } from "lucide-react";
 import { PosterImage } from "../ui/poster-image";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+
+// Interface for Film from the onboarding page - matches local type
+interface Film {
+  id: number;
+  title: string;
+  posterUrl: string;
+  year: number;
+  genres: string[];
+  type: 'mainstream' | 'indie';
+  director: string;
+  synopsis: string;
+  actors?: string[];
+}
+
+// Interface for FilmRating from the onboarding page - matches local type
+interface FilmRating {
+  filmId: number;
+  filmTitle: string;
+  filmPosterUrl: string;
+  rating: number | null;
+  status: string;
+}
 
 interface SingleFilmRatingProps {
   films: Film[];

@@ -365,26 +365,15 @@ const OnboardingPage = () => {
             </div>
           )}
 
-          {/* Ask for More Ratings */}
+          {/* Ask for More Ratings - Now using SingleFilmRating */}
           {currentStep === 4 && showMoreFilms && isRatingMore && !isLoadingFilms && !saveRatingsMutation.isPending && currentBatchFilms && currentBatchFilms.length > 0 ? (
-            // When films are loaded and user chose to rate more, show the rating grid
+            // When films are loaded and user chose to rate more, show the single film rating
             <div className="py-4">
-              <div className="absolute top-2 right-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={handleSkip}
-                  className="h-8 w-8"
-                >
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Skip</span>
-                </Button>
-              </div>
-              
-              <FilmRatingGrid 
+              <SingleFilmRating 
                 films={currentBatchFilms}
                 onRatingComplete={handleRatingComplete}
                 isLoading={isLoadingFilms || isLoadingAllFilms}
+                onSkip={handleSkip}
               />
             </div>
           ) : currentStep === 4 && showMoreFilms && (saveRatingsMutation.isPending || isLoadingFilms || isLoadingAllFilms) ? (
