@@ -166,39 +166,51 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
           throw new Error(errorData.error || 'Failed to save preferences');
         }
         
-        // Also save to Firestore for redundancy using our safe Firestore hook
-        if (user?.id) {
-          // Log user is attempting to save preferences
-          console.log('Attempting to save preferences to Firestore for user ID:', user.id);
-          
-          // Create a document reference using the helper
-          const prefsDocRef = safeFirestore.createDocRef('user_preferences', user.id);
-          
-          // Prepare data for Firestore
-          const firestoreData = {
-            userId: user.id,
-            country: countryCode,
-            streamingServices: servicesCodes,
-            lastUpdated: new Date().toISOString()
-          };
-          
-          console.log('Firestore document path:', prefsDocRef.path);
-          console.log('Firestore data to save:', JSON.stringify(firestoreData, null, 2));
-          
-          // Try to save data with retry and error handling built-in
-          const success = await safeFirestore.safeSetDoc(prefsDocRef, firestoreData, {
-            retryWithAnonymousAuth: true,
-            suppressErrors: true, // We don't need to show errors since the API call worked
-            userFacingErrorMessage: 'Could not save preferences to Firestore, but your data is still saved on the server'
-          });
-          
-          if (success) {
-            console.log('Preferences successfully saved to Firestore');
-          } else {
-            console.warn('Failed to save preferences to Firestore, but continuing anyway since the API call worked');
+        // Continue with onboarding flow immediately after API call succeeds
+        // This ensures we don't delay the user experience due to Firebase issues
+        
+        // Proceed to next step immediately after server confirms 
+        // the preferences have been saved
+        console.log('Preferences saved successfully, continuing to next step');
+        // This ensures we move to the next step regardless of what happens with Firestore
+        onComplete();
+        
+        // Try to save to Firestore in the background without awaiting
+        // This ensures the UI flow is not blocked by any Firestore errors
+        try {
+          if (user?.id) {
+            // Log user is attempting to save preferences
+            console.log('Attempting to save preferences to Firestore for user ID:', user.id);
+            
+            // Create a document reference using the helper
+            const prefsDocRef = safeFirestore.createDocRef('user_preferences', user.id);
+            
+            // Prepare data for Firestore
+            const firestoreData = {
+              userId: user.id,
+              country: countryCode,
+              streamingServices: servicesCodes,
+              lastUpdated: new Date().toISOString()
+            };
+            
+            // Save to Firestore in the background (don't await)
+            safeFirestore.safeSetDoc(prefsDocRef, firestoreData, {
+              retryWithAnonymousAuth: true,
+              suppressErrors: true,
+              userFacingErrorMessage: 'Could not save to Firestore, but your preferences are still saved'
+            }).then((success: boolean) => {
+              if (success) {
+                console.log('Preferences successfully saved to Firestore');
+              } else {
+                console.warn('Failed to save preferences to Firestore, but this is non-blocking');
+              }
+            }).catch((error: Error) => {
+              console.error('Firestore error (non-blocking):', error);
+            });
           }
-        } else {
-          console.warn('Cannot save to Firestore: User ID is undefined or null');
+        } catch (firestoreError) {
+          // Completely isolate any Firestore errors
+          console.error('Error setting up Firestore save (non-blocking):', firestoreError);
         }
       } else {
         // For non-onboarding pages, use the mutations from useAuth
@@ -216,8 +228,11 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
         streaming_services: servicesCodes
       });
       
-      // Proceed to next step
-      onComplete();
+      // If we're not in onboarding, then call onComplete here
+      // (for onboarding we call it immediately after the API success)
+      if (!window.location.pathname.includes('/onboarding')) {
+        onComplete();
+      }
     } catch (error: unknown) {
       console.error('Error updating preferences:', error);
       toast({
