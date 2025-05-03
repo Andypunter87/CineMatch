@@ -61,13 +61,48 @@ function standardizeTmdbUrl(url: string): string {
 
 /**
  * Validates URL string format
+ * @param urlString The URL to validate
+ * @returns true if URL is valid, false otherwise
  */
-function isValidUrl(urlString: string): boolean {
+export function isValidUrl(urlString: string): boolean {
+  if (!urlString || typeof urlString !== 'string') {
+    return false;
+  }
+  
   try {
-    // Simple validation - check if string looks like a URL
-    return urlString.startsWith('http://') || 
-           urlString.startsWith('https://') || 
-           urlString.startsWith('//');
+    // More thorough validation to ensure the URL is a valid TMDB or trusted URL
+    // 1. Check basic URL format
+    const hasValidProtocol = urlString.startsWith('http://') || 
+                            urlString.startsWith('https://') || 
+                            urlString.startsWith('//');
+    
+    // 2. Check minimum length to avoid obviously invalid URLs
+    const hasMinLength = urlString.length >= 10;
+    
+    // 3. Check if it's a valid TMDB URL format or another trusted domain
+    const isTmdbUrl = urlString.includes('tmdb.org') || 
+                     urlString.includes('themoviedb.org');
+    
+    // 4. Check if it has expected image file extension
+    const hasImageExtension = urlString.endsWith('.jpg') || 
+                            urlString.endsWith('.jpeg') || 
+                            urlString.endsWith('.png') ||
+                            urlString.includes('.jpg?') || 
+                            urlString.includes('.jpeg?') || 
+                            urlString.includes('.png?');
+    
+    // Allow our proxied URLs
+    if (urlString.startsWith('/api/image/poster')) {
+      return true;
+    }
+    
+    // For TMDB URLs, we require minimum length and valid protocol
+    if (isTmdbUrl) {
+      return hasValidProtocol && hasMinLength;
+    }
+    
+    // For non-TMDB URLs, we require more validation
+    return hasValidProtocol && hasMinLength && hasImageExtension;
   } catch (error) {
     console.error('URL validation error:', error);
     return false;
