@@ -79,6 +79,7 @@ interface UserPreferencesFormProps {
 const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete }) => {
   const { user, updateStreamingMutation, updateCountryMutation } = useAuth();
   const { toast } = useToast();
+  const safeFirestore = useSafeFirestore();
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -167,14 +168,11 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
         
         // Also save to Firestore for redundancy using our safe Firestore hook
         if (user?.id) {
-          // Use the safe Firestore hook
-          const { createDocRef, safeSetDoc, attemptAnonymousAuth } = useSafeFirestore();
-          
           // Log user is attempting to save preferences
           console.log('Attempting to save preferences to Firestore for user ID:', user.id);
           
           // Create a document reference using the helper
-          const prefsDocRef = createDocRef('user_preferences', user.id);
+          const prefsDocRef = safeFirestore.createDocRef('user_preferences', user.id);
           
           // Prepare data for Firestore
           const firestoreData = {
@@ -188,7 +186,7 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
           console.log('Firestore data to save:', JSON.stringify(firestoreData, null, 2));
           
           // Try to save data with retry and error handling built-in
-          const success = await safeSetDoc(prefsDocRef, firestoreData, {
+          const success = await safeFirestore.safeSetDoc(prefsDocRef, firestoreData, {
             retryWithAnonymousAuth: true,
             suppressErrors: true, // We don't need to show errors since the API call worked
             userFacingErrorMessage: 'Could not save preferences to Firestore, but your data is still saved on the server'

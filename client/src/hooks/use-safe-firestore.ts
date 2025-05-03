@@ -103,7 +103,7 @@ export function useSafeFirestore() {
       console.log(`Attempting to write to Firestore: ${docRef.path}`);
       
       // Add server timestamp to the data
-      const enhancedData = {
+      const enhancedData: T & { updatedAt: any } = {
         ...data,
         updatedAt: serverTimestamp()
       };
