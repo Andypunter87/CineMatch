@@ -76,21 +76,27 @@ export function useFilmRatings(isOnboarding = false) {
     if (!user) return false;
     
     try {
+      // Get the title from either the new or old property
+      const title = rating.title || rating.filmTitle || 'Unknown Film';
+      
+      // Rating can be null for "haven't seen" - default to 3 (neutral) in that case
+      const ratingValue = rating.rating !== null ? rating.rating : 3;
+      
       // Determine if this is an onboarding rating or a recommendation rating
       if (isOnboarding) {
         return await firestore.saveOnboardingRating(
           user.id,
           rating.filmId, 
-          rating.rating,
-          rating.title
+          ratingValue,
+          title
         );
       } else {
         // For recommendation ratings, we save it as good/bad
         return await firestore.saveRecommendationRating(
           user.id,
           rating.filmId,
-          rating.rating >= 3 ? 'good' : 'bad',
-          rating.title
+          ratingValue >= 3 ? 'good' : 'bad',
+          title
         );
       }
     } catch (error) {

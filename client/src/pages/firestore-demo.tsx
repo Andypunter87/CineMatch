@@ -1,5 +1,7 @@
 import React from 'react';
 import { FirestoreDemo } from '@/components/FirestoreDemo';
+import { FirestoreMigration } from '@/components/FirestoreMigration';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function FirestoreDemoPage() {
   return (
@@ -10,7 +12,20 @@ export default function FirestoreDemoPage() {
         It allows testing all the major data operations in the new schema.
       </p>
       
-      <FirestoreDemo />
+      <Tabs defaultValue="demo" className="w-full mb-8">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="demo">Test Operations</TabsTrigger>
+          <TabsTrigger value="migration">Data Migration</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="demo">
+          <FirestoreDemo />
+        </TabsContent>
+        
+        <TabsContent value="migration">
+          <FirestoreMigration />
+        </TabsContent>
+      </Tabs>
       
       <div className="mt-8 p-4 bg-muted rounded-md">
         <h2 className="text-lg font-semibold mb-2">Schema Structure:</h2>

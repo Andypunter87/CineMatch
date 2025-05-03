@@ -56,7 +56,7 @@ export function FirestoreDemo() {
     streamingServices: ['netflix', 'hulu', 'amazonprime']
   };
 
-  const testRating = {
+  const testRating: FilmRating = {
     filmId: Math.floor(Math.random() * 1000000),
     title: `Test Film ${Math.floor(Math.random() * 100)}`,
     rating: Math.floor(Math.random() * 5) + 1,
