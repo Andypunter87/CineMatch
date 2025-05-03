@@ -5,7 +5,8 @@ import {
   getImageStatus, 
   getPlaceholderPosterUrl,
   getPosterProxyUrl,
-  isValidUrl
+  isValidUrl,
+  preloadImage
 } from '@/lib/imageCache';
 
 interface PosterImageProps {
@@ -20,6 +21,7 @@ interface PosterImageProps {
 /**
  * Enhanced poster image component with loading states and fallbacks
  * Adds robust handling of invalid poster URLs and image loading errors
+ * Logs image loading process for debugging
  */
 export const PosterImage: React.FC<PosterImageProps> = ({
   posterUrl,
@@ -31,24 +33,33 @@ export const PosterImage: React.FC<PosterImageProps> = ({
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [imgSrc, setImgSrc] = useState<string>('');
   
   // Validate the URL before processing
-  const isValidPosterUrl = React.useMemo(() => 
-    posterUrl && posterUrl.trim() !== '' && isValidUrl(posterUrl),
-    [posterUrl]
-  );
+  const isValidPosterUrl = React.useMemo(() => {
+    const valid = posterUrl && posterUrl.trim() !== '' && isValidUrl(posterUrl);
+    if (!valid && posterUrl) {
+      console.warn(`Invalid poster URL for "${title}":`, posterUrl);
+    }
+    return valid;
+  }, [posterUrl, title]);
   
   // Memoize the proxied URL to avoid recalculation on every render
   // Only create a proxy URL if the original URL is valid
-  const proxiedPosterUrl = React.useMemo(() => 
-    isValidPosterUrl ? getPosterProxyUrl(posterUrl) : '',
-    [posterUrl, isValidPosterUrl]
-  );
+  const proxiedPosterUrl = React.useMemo(() => {
+    if (!isValidPosterUrl) return '';
+    const proxied = getPosterProxyUrl(posterUrl, title); // Pass title for better debugging
+    if (priority) {
+      console.log(`Proxied poster URL for "${title}":`, proxied);
+    }
+    return proxied;
+  }, [posterUrl, isValidPosterUrl, title, priority]);
   
   // Check cache and prefetch only once on mount or when url/priority changes
   useEffect(() => {
     // If the URL is invalid, show error state immediately
     if (!isValidPosterUrl) {
+      console.log(`Using fallback for invalid URL: "${title}"`);
       setError(true);
       setLoaded(true); // Mark as loaded so we show the error state right away
       return;
@@ -58,8 +69,11 @@ export const PosterImage: React.FC<PosterImageProps> = ({
     const cachedStatus = getImageStatus(proxiedPosterUrl);
     if (cachedStatus) {
       if (cachedStatus.status === 'loaded') {
+        if (priority) console.log(`Image for "${title}" already cached as loaded`);
         setLoaded(true);
+        setImgSrc(proxiedPosterUrl);
       } else if (cachedStatus.status === 'error') {
+        console.warn(`Image for "${title}" cached with error status`);
         setError(true);
         setLoaded(true); // Mark as loaded so we show the error state
       }
@@ -68,17 +82,36 @@ export const PosterImage: React.FC<PosterImageProps> = ({
       setLoaded(false);
       setError(false);
       
-      // Prefetch the image
-      prefetchImages([proxiedPosterUrl]); // Always prefetch, not just for priority images
+      // For priority images, wait for preloading to complete before setting
+      if (priority) {
+        console.log(`Preloading priority image for "${title}"...`);
+        preloadImage(proxiedPosterUrl)
+          .then(() => {
+            console.log(`Priority image preloaded successfully for "${title}"`);
+            setImgSrc(proxiedPosterUrl);
+            setLoaded(true);
+          })
+          .catch((err) => {
+            console.error(`Failed to preload priority image for "${title}":`, err);
+            setError(true);
+            setLoaded(true);
+          });
+      } else {
+        // For non-priority images, start loading immediately and prefetch in background
+        setImgSrc(proxiedPosterUrl);
+        prefetchImages([proxiedPosterUrl]);
+      }
     }
-  }, [posterUrl, proxiedPosterUrl, priority, isValidPosterUrl]);
+  }, [posterUrl, proxiedPosterUrl, priority, isValidPosterUrl, title]);
   
   // Handle image load and error events
   const handleLoad = () => {
+    if (priority) console.log(`Image loaded successfully for "${title}"`);
     setLoaded(true);
   };
   
-  const handleError = () => {
+  const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    console.error(`Image loading error for "${title}":`, e.currentTarget.src);
     setLoaded(true);
     setError(true);
   };
@@ -86,6 +119,9 @@ export const PosterImage: React.FC<PosterImageProps> = ({
   // Use a fallback placeholder if there's an error or the URL is invalid
   const shouldShowFallback = error || !isValidPosterUrl;
   const fallbackImageUrl = getPlaceholderPosterUrl(title);
+  
+  // Ensure we have a valid src value
+  const effectiveSrc = shouldShowFallback ? fallbackImageUrl : (imgSrc || proxiedPosterUrl);
   
   return (
     <div className={`relative ${className}`}>
@@ -106,9 +142,9 @@ export const PosterImage: React.FC<PosterImageProps> = ({
         </div>
       )}
       
-      {/* The actual image */}
+      {/* The actual image - shown even with fallback to support right-click etc. */}
       <img 
-        src={shouldShowFallback ? fallbackImageUrl : proxiedPosterUrl} 
+        src={effectiveSrc}
         alt={`${title} poster`} 
         onLoad={handleLoad}
         onError={handleError}

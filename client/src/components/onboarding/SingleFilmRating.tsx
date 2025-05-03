@@ -188,7 +188,7 @@ export function SingleFilmRating({
       <Card className="overflow-hidden mx-auto max-w-sm">
         <div className="relative aspect-[2/3] w-full h-auto">
           <PosterImage 
-            posterUrl={currentFilm.posterUrl} 
+            posterUrl={currentFilm.posterUrl || ''} // Ensure posterUrl is never undefined
             title={currentFilm.title} 
             priority={currentIndex < 3} // Prioritize loading the first few images
             className="w-full h-full object-cover"

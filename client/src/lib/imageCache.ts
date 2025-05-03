@@ -112,8 +112,11 @@ export function isValidUrl(urlString: string): boolean {
 /**
  * Converts a movie poster URL to use our proxy service
  * This improves reliability by handling network errors and providing fallbacks
+ * @param url The original poster URL
+ * @param title Optional film title to include in the proxy URL for better debugging
+ * @returns A URL that will be handled by our poster proxy endpoint
  */
-export function getPosterProxyUrl(url: string): string {
+export function getPosterProxyUrl(url: string, title?: string): string {
   // More thorough validation of poster URLs
   if (!url || url.trim() === '' || url.length < 10 || !isValidUrl(url)) {
     console.log('Invalid poster URL, returning empty string:', url);
@@ -128,7 +131,8 @@ export function getPosterProxyUrl(url: string): string {
   
   // Encode the URL properly
   const encodedUrl = encodeURIComponent(standardizedUrl);
-  return `/api/image/poster?url=${encodedUrl}`;
+  const titleParam = title ? `&title=${encodeURIComponent(title)}` : '';
+  return `/api/image/poster?url=${encodedUrl}${titleParam}`;
 }
 
 /**

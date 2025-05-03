@@ -77,11 +77,13 @@ function isImageCached(filename: string): boolean {
  * Particularly useful for TMDB poster images to ensure reliability
  */
 router.get('/poster', async (req: Request, res: Response) => {
-  console.log('Image proxy endpoint called with query:', req.query);
   const originalUrl = req.query.url as string;
+  const filmTitle = req.query.title as string || 'Unknown Film';
+  
+  console.log(`Image proxy request for "${filmTitle}":`, originalUrl?.substring(0, 100));
   
   if (!originalUrl || typeof originalUrl !== 'string') {
-    console.log('No URL parameter, serving fallback image');
+    console.log(`No URL parameter for "${filmTitle}", serving fallback image`);
     return serveFallbackImage(res);
   }
   
@@ -89,28 +91,50 @@ router.get('/poster', async (req: Request, res: Response) => {
   let fetchUrl = originalUrl;
   
   try {
-    // Extract the TMDB image ID using a more flexible regex
-    const pathRegex = /\/(?:w\d+|w\d+_and_h\d+_bestv2)?\/?([a-zA-Z0-9]+)\.(jpg|jpeg|png)$/i;
-    const match = originalUrl.match(pathRegex);
+    // Check if this is a TMDB URL with typical patterns
+    const isTmdbUrl = originalUrl.includes('tmdb.org') || originalUrl.includes('themoviedb.org');
     
-    // Special case for the problematic w600_and_h900_bestv2 format
-    if (originalUrl.includes('w600_and_h900_bestv2')) {
-      // Extract just the file name at the end
-      const parts = originalUrl.split('/');
-      const fileName = parts[parts.length - 1];
-      fetchUrl = `https://image.tmdb.org/t/p/w500/${fileName}`;
-      console.log('Converting from w600_and_h900_bestv2 format to w500:', fetchUrl);
-    } else if (match && match[1]) {
-      // If it's a TMDB path, use it directly with image.tmdb.org
-      const imageId = match[1];
-      const extension = match[2] || 'jpg';
-      fetchUrl = `https://image.tmdb.org/t/p/w500/${imageId}.${extension}`;
-      console.log('Using direct TMDB image URL:', fetchUrl);
-    } else if (originalUrl.includes('themoviedb.org')) {
-      // For themoviedb.org URLs that don't match our regex, convert to image.tmdb.org
-      console.log('Converting themoviedb URL to image.tmdb.org');
-      fetchUrl = originalUrl.replace('www.themoviedb.org', 'image.tmdb.org')
-                           .replace('w600_and_h900_bestv2', 'w500');
+    if (isTmdbUrl) {
+      // Extract the TMDB image ID using a more flexible regex that handles various formats
+      const pathRegex = /\/(?:w\d+|w\d+_and_h\d+_bestv2)?\/?([a-zA-Z0-9]+)\.(jpg|jpeg|png)(?:\?.*)?$/i;
+      const match = originalUrl.match(pathRegex);
+      
+      // For TMDB URLs, we'll always convert to the most reliable format
+      if (match && match[1]) {
+        // If it's a TMDB path with recognizable image ID, use the standard format
+        const imageId = match[1];
+        const extension = match[2] || 'jpg';
+        const oldUrl = fetchUrl;
+        fetchUrl = `https://image.tmdb.org/t/p/w500/${imageId}.${extension}`;
+        
+        if (oldUrl !== fetchUrl) {
+          console.log(`Standardized TMDB URL for "${filmTitle}":`, fetchUrl);
+        }
+      } else {
+        // Special case for the problematic w600_and_h900_bestv2 format or other unusual formats
+        if (originalUrl.includes('w600_and_h900_bestv2')) {
+          // Extract just the file name at the end
+          const parts = originalUrl.split('/');
+          const fileName = parts[parts.length - 1];
+          fetchUrl = `https://image.tmdb.org/t/p/w500/${fileName}`;
+          console.log(`Converting from w600_and_h900_bestv2 format for "${filmTitle}":`, fetchUrl);
+        } else {
+          // For themoviedb.org URLs that don't match our regex, convert to image.tmdb.org
+          console.log(`Converting non-standard TMDB URL for "${filmTitle}"`);
+          fetchUrl = originalUrl.replace('www.themoviedb.org', 'image.tmdb.org')
+                              .replace('w600_and_h900_bestv2', 'w500');
+          
+          // If we still don't have a standard format, make a best effort to extract the image ID
+          const lastSegment = fetchUrl.split('/').pop() || '';
+          if (lastSegment && !fetchUrl.includes('/w500/')) {
+            const possibleIdMatch = lastSegment.match(/^([a-zA-Z0-9]+)\.(jpg|jpeg|png)(?:\?.*)?$/i);
+            if (possibleIdMatch) {
+              fetchUrl = `https://image.tmdb.org/t/p/w500/${possibleIdMatch[1]}.${possibleIdMatch[2]}`;
+              console.log(`Extracted image ID for "${filmTitle}":`, fetchUrl);
+            }
+          }
+        }
+      }
     }
     
     // Verify the URL is a valid image URL (allow only specific domains for security)
