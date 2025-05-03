@@ -1,9 +1,29 @@
 // Import Jest DOM matchers
 import '@testing-library/jest-dom';
 
+// Import MSW server for API mocking
+import { server } from './client/src/test/mocks/server';
+
 // Set up fetch mock
 import fetchMock from 'jest-fetch-mock';
 fetchMock.enableMocks();
+
+// Setup MSW server before all tests
+beforeAll(() => {
+  // Start the MSW server
+  server.listen({ onUnhandledRequest: 'warn' });
+});
+
+// Reset handlers between tests
+afterEach(() => {
+  server.resetHandlers();
+});
+
+// Clean up after all tests
+afterAll(() => {
+  // Close the MSW server
+  server.close();
+});
 
 // Mock environment variables
 global.import = { meta: { env: {

@@ -5,91 +5,107 @@ export const mockFilms: Film[] = [
     id: 1,
     title: 'The Matrix',
     year: 1999,
-    runtime: 136,
-    genres: ['Action', 'Sci-Fi'],
     director: 'Lana Wachowski, Lilly Wachowski',
-    actors: 'Keanu Reeves, Laurence Fishburne, Carrie-Anne Moss',
-    plot: 'A computer hacker learns about the true nature of reality and his role in the war against its controllers.',
-    language: 'English',
-    country: 'USA',
+    actors: ['Keanu Reeves', 'Laurence Fishburne', 'Carrie-Anne Moss'],
+    synopsis: 'A computer hacker learns about the true nature of reality and his role in the war against its controllers.',
+    genres: ['Action', 'Sci-Fi'],
+    type: 'mainstream',
     posterUrl: 'https://example.com/matrix.jpg',
-    imdbRating: 8.7,
-    type: 'movie',
-    streamingInfo: {
-      netflix: { us: { link: 'https://www.netflix.com/title/1234' }},
-      prime: { us: { link: 'https://www.amazon.com/gp/video/detail/1234' }}
-    }
+    runtime: 136,
+    originalLanguage: 'English',
+    releaseDate: '1999-03-31',
+    voteAverage: 8.7,
+    tmdbId: 603,
+    availableStreamingByCountry: {
+      US: ['netflix', 'prime'],
+      UK: ['netflix']
+    },
+    hasStreamingData: true,
+    hasCompleteData: true
   },
   {
     id: 2,
     title: 'Inception',
     year: 2010,
-    runtime: 148,
-    genres: ['Action', 'Adventure', 'Sci-Fi'],
     director: 'Christopher Nolan',
-    actors: 'Leonardo DiCaprio, Joseph Gordon-Levitt, Ellen Page',
-    plot: 'A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.',
-    language: 'English',
-    country: 'USA',
+    actors: ['Leonardo DiCaprio', 'Joseph Gordon-Levitt', 'Elliot Page'],
+    synopsis: 'A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.',
+    genres: ['Action', 'Adventure', 'Sci-Fi'],
+    type: 'mainstream',
     posterUrl: 'https://example.com/inception.jpg',
-    imdbRating: 8.8,
-    type: 'movie',
-    streamingInfo: {
-      netflix: { us: { link: 'https://www.netflix.com/title/5678' }}
-    }
+    runtime: 148,
+    originalLanguage: 'English',
+    releaseDate: '2010-07-16',
+    voteAverage: 8.8,
+    tmdbId: 27205,
+    availableStreamingByCountry: {
+      US: ['netflix'],
+      UK: ['netflix']
+    },
+    hasStreamingData: true,
+    hasCompleteData: true
   },
   {
     id: 3,
     title: 'The Shawshank Redemption',
     year: 1994,
-    runtime: 142,
-    genres: ['Drama'],
     director: 'Frank Darabont',
-    actors: 'Tim Robbins, Morgan Freeman, Bob Gunton',
-    plot: 'Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.',
-    language: 'English',
-    country: 'USA',
+    actors: ['Tim Robbins', 'Morgan Freeman', 'Bob Gunton'],
+    synopsis: 'Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.',
+    genres: ['Drama'],
+    type: 'mainstream',
     posterUrl: 'https://example.com/shawshank.jpg',
-    imdbRating: 9.3,
-    type: 'movie',
-    streamingInfo: {
-      hulu: { us: { link: 'https://www.hulu.com/title/9012' }}
-    }
+    runtime: 142,
+    originalLanguage: 'English',
+    releaseDate: '1994-09-23',
+    voteAverage: 9.3,
+    tmdbId: 278,
+    availableStreamingByCountry: {
+      US: ['hulu']
+    },
+    hasStreamingData: true,
+    hasCompleteData: true
   },
   {
     id: 4,
     title: 'The Godfather',
     year: 1972,
-    runtime: 175,
-    genres: ['Crime', 'Drama'],
     director: 'Francis Ford Coppola',
-    actors: 'Marlon Brando, Al Pacino, James Caan',
-    plot: 'The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.',
-    language: 'English',
-    country: 'USA',
+    actors: ['Marlon Brando', 'Al Pacino', 'James Caan'],
+    synopsis: 'The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.',
+    genres: ['Crime', 'Drama'],
+    type: 'mainstream',
     posterUrl: 'https://example.com/godfather.jpg',
-    imdbRating: 9.2,
-    type: 'movie',
-    streamingInfo: {
-      prime: { us: { link: 'https://www.amazon.com/gp/video/detail/3456' }}
-    }
+    runtime: 175,
+    originalLanguage: 'English',
+    releaseDate: '1972-03-24',
+    voteAverage: 9.2,
+    tmdbId: 238,
+    availableStreamingByCountry: {
+      US: ['prime']
+    },
+    hasStreamingData: true,
+    hasCompleteData: true
   },
   {
     id: 5,
-    title: 'Pulp Fiction',
-    year: 1994,
-    runtime: 154,
-    genres: ['Crime', 'Drama'],
-    director: 'Quentin Tarantino',
-    actors: 'John Travolta, Uma Thurman, Samuel L. Jackson',
-    plot: 'The lives of two mob hitmen, a boxer, a gangster and his wife, and a pair of diner bandits intertwine in four tales of violence and redemption.',
-    language: 'English',
-    country: 'USA',
-    posterUrl: 'https://example.com/pulpfiction.jpg',
-    imdbRating: 8.9,
-    type: 'movie',
-    streamingInfo: {
-      netflix: { us: { link: 'https://www.netflix.com/title/7890' }}
-    }
+    title: 'Lost in Translation',
+    year: 2003,
+    director: 'Sofia Coppola',
+    actors: ['Bill Murray', 'Scarlett Johansson', 'Giovanni Ribisi'],
+    synopsis: 'A faded movie star and a neglected young woman form an unlikely bond after crossing paths in Tokyo.',
+    genres: ['Drama', 'Romance'],
+    type: 'indie',
+    posterUrl: 'https://example.com/lostintranslation.jpg',
+    runtime: 102,
+    originalLanguage: 'English',
+    releaseDate: '2003-10-03',
+    voteAverage: 7.8,
+    tmdbId: 597,
+    availableStreamingByCountry: {
+      US: ['netflix']
+    },
+    hasStreamingData: true,
+    hasCompleteData: true
   }
 ];
