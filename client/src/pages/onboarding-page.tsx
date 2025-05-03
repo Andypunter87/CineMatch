@@ -88,16 +88,17 @@ const OnboardingPage = () => {
 
   // Fetch a large batch of films once
   const { data: allPopularFilms, isLoading: isLoadingAllFilms } = useQuery<Film[]>({
-    queryKey: ['/api/onboarding/popular-films'],
+    queryKey: ['/api/onboarding/films'],
     queryFn: async ({ signal }) => {
       // Request a large batch (100) of films that we can filter on the client side
       // We'll avoid using offset on server-side since it's not working as expected
-      const url = `/api/onboarding/popular-films?count=100&seed=${Date.now()}`;
+      const url = `/api/onboarding/films?count=100&seed=${Date.now()}`;
       console.log(`Fetching large batch of films`);
       
       const response = await fetch(url, { signal });
       if (!response.ok) throw new Error('Failed to fetch popular films');
-      return response.json();
+      const data = await response.json();
+      return data.films; // The API returns { films: [...] } so we need to extract the films
     },
     enabled: currentStep === 4, // Only fetch once when we reach the rating step
     staleTime: Infinity, // Cache permanently for this session

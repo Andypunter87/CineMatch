@@ -43,6 +43,8 @@ export function FilmRatingGrid({
 
   // Submit all ratings
   const handleSubmit = () => {
+    setIsRating(true);
+    
     const formattedRatings: FilmRating[] = films.map(film => {
       const rating = ratings[film.id] || { rating: null, status: "not_seen" };
       return {
@@ -54,7 +56,8 @@ export function FilmRatingGrid({
       };
     });
     
-    onRateFilms(formattedRatings);
+    onRatingComplete(formattedRatings);
+    setIsRating(false);
   };
 
   // Determine if enough films have been rated to proceed
@@ -63,6 +66,33 @@ export function FilmRatingGrid({
     const ratedCount = Object.values(ratings).filter(r => r.rating !== null).length;
     return ratedCount >= 5; // Require at least 5 ratings
   };
+
+  // Show loading state when films are loading
+  if (isLoading) {
+    return (
+      <div className="py-8 text-center">
+        <div className="flex flex-col items-center justify-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p>Loading films to rate...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no films are available
+  if (!films || films.length === 0) {
+    return (
+      <div className="py-8 text-center">
+        <p className="text-muted-foreground">No films available to rate at this time.</p>
+        <Button 
+          className="mt-4" 
+          onClick={() => window.location.reload()}
+        >
+          Refresh
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
