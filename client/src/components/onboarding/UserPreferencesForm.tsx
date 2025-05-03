@@ -13,6 +13,13 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { trackEvent, AnalyticsEvents } from '@/lib/analytics';
+import { db } from '@/lib/firebase';
+import { 
+  doc, 
+  setDoc, 
+  serverTimestamp,
+  DocumentReference 
+} from 'firebase/firestore';
 
 // Same streaming services and countries arrays as in profile-page
 const streamingServices = [
@@ -168,18 +175,40 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
         try {
           // Create a document in Firestore
           if (user?.id) {
+            console.log('Attempting to save preferences to Firestore for user ID:', user.id);
             const prefsDocRef = doc(db, 'user_preferences', `user-${user.id}`);
-            await setDoc(prefsDocRef, {
+            
+            // Prepare data for Firestore
+            const firestoreData = {
               userId: user.id,
               country: countryCode,
               streamingServices: servicesCodes,
               lastUpdated: new Date().toISOString(),
               updatedAt: serverTimestamp()
-            });
-            console.log('Preferences also saved to Firestore');
+            };
+            
+            console.log('Firestore document path:', prefsDocRef.path);
+            console.log('Firestore data to save:', JSON.stringify(firestoreData));
+            
+            await setDoc(prefsDocRef, firestoreData);
+            console.log('Preferences successfully saved to Firestore');
+          } else {
+            console.warn('Cannot save to Firestore: User ID is undefined or null');
           }
-        } catch (firestoreError) {
-          console.error('Failed to save to Firestore, but continuing:', firestoreError);
+        } catch (error: unknown) {
+          console.error('Failed to save to Firestore, but continuing:', error);
+          
+          // Log any error details we can get
+          if (error instanceof Error) {
+            console.error('Firestore error details:', {
+              message: error.message,
+              name: error.name,
+              stack: error.stack
+            });
+          } else {
+            console.error('Unknown Firestore error type:', typeof error);
+          }
+          
           // Continue anyway since the main API call worked
         }
       } else {
@@ -200,7 +229,7 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
       
       // Proceed to next step
       onComplete();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error updating preferences:', error);
       toast({
         title: 'Error saving preferences',
