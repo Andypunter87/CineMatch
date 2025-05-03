@@ -21,13 +21,13 @@ export enum LogLevel {
 }
 
 interface FirestoreLogOptions {
-  userId?: number | string;
+  userId?: number | string | null;
   errorCode?: string;
   errorMessage?: string;
   documentPath?: string;
   collectionPath?: string;
   data?: any;
-  operationType?: 'read' | 'write' | 'delete' | 'update' | 'query';
+  operationType?: 'read' | 'write' | 'delete' | 'update' | 'query' | 'setup' | 'test';
   additionalInfo?: Record<string, any>;
 }
 

@@ -11,6 +11,14 @@ import {
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  logFirestoreError, 
+  logPreferenceOperation, 
+  LogLevel, 
+  LogCategory, 
+  logSuccess, 
+  logAuthOperation
+} from '@/lib/firestore-test-logger';
 
 interface FirestoreOperationOptions {
   requireAuth?: boolean;
@@ -61,12 +69,14 @@ export function useSafeFirestore() {
     docPath: string
   ) => {
     const auth = getAuth();
+    const isAuthenticated = !!auth.currentUser;
     
+    // Create standard console output for backward compatibility
     console.error('FIREBASE ERROR DIAGNOSIS:');
     console.error('Error code:', error.code);
     console.error('Error message:', error.message);
     console.error('Document path:', docPath);
-    console.error('Auth state:', auth.currentUser ? 'Authenticated' : 'Not authenticated');
+    console.error('Auth state:', isAuthenticated ? 'Authenticated' : 'Not authenticated');
     
     if (auth.currentUser) {
       console.error('Auth user ID:', auth.currentUser.uid);
@@ -74,14 +84,42 @@ export function useSafeFirestore() {
       console.error('Is anonymous:', auth.currentUser.isAnonymous);
     }
     
+    // Determine root cause
+    let rootCause = 'Unknown error';
     if (error.code === 'permission-denied') {
-      console.error('ROOT CAUSE: FIREBASE SECURITY RULES ERROR - User lacks permission');
+      rootCause = 'FIREBASE SECURITY RULES ERROR - User lacks permission';
+      console.error('ROOT CAUSE: ' + rootCause);
       console.error('Recommended action: Check Firestore security rules');
     } else if (error.code === 'unauthenticated') {
-      console.error('ROOT CAUSE: FIREBASE AUTHENTICATION ISSUE - User not authenticated');
+      rootCause = 'FIREBASE AUTHENTICATION ISSUE - User not authenticated';
+      console.error('ROOT CAUSE: ' + rootCause);
     } else if (error.code === 'unavailable') {
-      console.error('ROOT CAUSE: FIREBASE CONNECTIVITY ISSUE - Service may be unavailable');
+      rootCause = 'FIREBASE CONNECTIVITY ISSUE - Service may be unavailable';
+      console.error('ROOT CAUSE: ' + rootCause);
+    } else if (error.code === 'cancelled') {
+      rootCause = 'FIREBASE OPERATION CANCELLED';
+      console.error('ROOT CAUSE: ' + rootCause);
+    } else if (error.code === 'invalid-argument') {
+      rootCause = 'FIREBASE INVALID ARGUMENT - Check data structure';
+      console.error('ROOT CAUSE: ' + rootCause);
     }
+    
+    // Use enhanced logger for detailed logging
+    logFirestoreError(LogCategory.CONFIG, 'Firestore Error Diagnosis', error, {
+      documentPath: docPath,
+      operationType: 'test',
+      additionalInfo: {
+        authState: isAuthenticated ? 'authenticated' : 'not_authenticated',
+        authDetails: auth.currentUser ? {
+          uid: auth.currentUser.uid,
+          provider: auth.currentUser.providerId,
+          isAnonymous: auth.currentUser.isAnonymous
+        } : null,
+        rootCause,
+        timestamp: new Date().toISOString(),
+        diagnosisId: `diag-${Date.now()}`
+      }
+    });
     
     setError(error);
   }, []);
