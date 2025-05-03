@@ -186,14 +186,67 @@ export function SingleFilmRating({
       </div>
       
       <Card className="overflow-hidden mx-auto max-w-sm">
-        <div className="relative aspect-[2/3] w-full h-auto">
+        <div className="relative aspect-[2/3] w-full h-auto group">
           <PosterImage 
             posterUrl={currentFilm.posterUrl || ''} // Ensure posterUrl is never undefined
             title={currentFilm.title} 
             priority={currentIndex < 3} // Prioritize loading the first few images
             className="w-full h-full object-cover"
           />
+          
+          {/* Subtle prompt to indicate poster is interactive */}
+          {!ratings[currentFilm.id] && (
+            <div className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/80 to-transparent flex justify-center">
+              <p className="text-xs text-white opacity-80">Click poster to rate</p>
+            </div>
+          )}
+          
+          {/* Overlay with Star Ratings */}
+          <div className={`absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-200 ${
+            ratings[currentFilm.id] ? 'opacity-100' : 'opacity-0 group-hover:opacity-90'
+          }`}>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+            
+            <div className="relative z-10 p-4 flex flex-col items-center space-y-4">
+              {/* Star Rating */}
+              <div className="p-3 rounded-lg bg-black/50 backdrop-blur-sm">
+                <p className="font-medium text-white text-sm mb-2 text-center">Rate this film:</p>
+                <div className="flex space-x-2">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <Button
+                      key={star}
+                      variant="ghost"
+                      size="sm"
+                      className={`p-1 h-10 w-10 ${
+                        ratings[currentFilm.id]?.rating === star 
+                          ? 'text-yellow-400 bg-yellow-500/20 ring-2 ring-yellow-400 scale-110' 
+                          : 'text-gray-300 hover:text-yellow-400 hover:bg-yellow-500/10'
+                      }`}
+                      onClick={() => rateFilm(currentFilm.id, star)}
+                    >
+                      <Star className="h-6 w-6" fill={ratings[currentFilm.id]?.rating === star ? "currentColor" : "none"} />
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Haven't Seen Button */}
+              <Button
+                variant={ratings[currentFilm.id]?.rating === null ? "default" : "outline"}
+                size="sm"
+                className={`text-sm ${
+                  ratings[currentFilm.id]?.rating === null 
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-black/50 text-white hover:bg-black/70"
+                }`}
+                onClick={() => rateFilm(currentFilm.id, null)}
+              >
+                Haven't seen it
+              </Button>
+            </div>
+          </div>
         </div>
+        
         <CardContent className="p-4">
           <div className="flex flex-col space-y-4">
             <div>
@@ -215,36 +268,21 @@ export function SingleFilmRating({
               <p className="text-sm line-clamp-3">{currentFilm.synopsis}</p>
             </div>
             
-            <div className="pt-2">
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Have you seen this film?</p>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={ratings[currentFilm.id]?.rating === null ? "bg-secondary" : ""}
-                    onClick={() => rateFilm(currentFilm.id, null)}
-                  >
-                    Haven't seen it
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="space-y-2 mt-4">
-                <p className="text-sm font-medium">Or rate it:</p>
-                <div className="flex space-x-1">
-                  {[1, 2, 3, 4, 5].map(star => (
-                    <Button
-                      key={star}
-                      variant="ghost"
-                      size="sm"
-                      className={`p-1 h-8 w-8 ${ratings[currentFilm.id]?.rating === star ? 'text-yellow-500 bg-yellow-100 dark:bg-yellow-900/20' : 'text-muted-foreground'}`}
-                      onClick={() => rateFilm(currentFilm.id, star)}
-                    >
-                      <Star className="h-4 w-4" />
-                    </Button>
-                  ))}
-                </div>
+            {/* Rating indicator - shows which rating was selected */}
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">Your rating:</p>
+              <div className="flex items-center">
+                {ratings[currentFilm.id]?.rating === null ? (
+                  <span className="text-sm text-muted-foreground">Haven't seen it</span>
+                ) : ratings[currentFilm.id]?.rating ? (
+                  <div className="flex">
+                    {Array.from({ length: ratings[currentFilm.id]?.rating || 0 }).map((_, i) => (
+                      <Star key={i} className="h-4 w-4 text-yellow-500" fill="currentColor" />
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Not rated</span>
+                )}
               </div>
             </div>
           </div>
