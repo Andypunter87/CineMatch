@@ -1,10 +1,8 @@
-import { FirebaseError } from 'firebase/app';
-import { trackEvent } from './analytics';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from "@/hooks/use-toast";
+import { useState, useCallback } from "react";
+import { FirebaseError } from "firebase/app";
 
-/**
- * Standard error categories to help with consistent messaging
- */
+// Error categories for consistent handling
 export enum ErrorCategory {
   AUTHENTICATION = 'authentication',
   NETWORK = 'network',
@@ -15,199 +13,180 @@ export enum ErrorCategory {
   UNKNOWN = 'unknown'
 }
 
-/**
- * Standard error object with additional context properties
- */
-export interface AppError extends Error {
+// Custom error class with additional context
+export class AppError extends Error {
   category: ErrorCategory;
   code?: string;
   action?: string;
   context?: Record<string, any>;
-  timestamp: number;
+
+  constructor(
+    message: string,
+    category: ErrorCategory = ErrorCategory.UNKNOWN,
+    action?: string,
+    code?: string,
+    context?: Record<string, any>
+  ) {
+    super(message);
+    this.name = 'AppError';
+    this.category = category;
+    this.code = code;
+    this.action = action;
+    this.context = context;
+    
+    // Ensure the stack trace includes this constructor
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, AppError);
+    }
+  }
 }
 
-/**
- * Creates a standardized AppError
- */
+// Factory function to create AppError from any error
 export function createAppError(
-  error: Error | string,
+  message: string,
   category: ErrorCategory = ErrorCategory.UNKNOWN,
   action?: string,
   context?: Record<string, any>
 ): AppError {
-  const message = typeof error === 'string' ? error : error.message;
-  const code = typeof error === 'object' && 'code' in error ? (error as any).code : undefined;
-  
-  return {
-    name: typeof error === 'object' ? error.name : 'Error',
-    message,
-    category,
-    code,
-    action,
-    context,
-    timestamp: Date.now(),
-    stack: typeof error === 'object' ? error.stack : new Error().stack
-  } as AppError;
+  return new AppError(message, category, action, undefined, context);
 }
 
-/**
- * Parse Firebase errors into standardized app errors
- */
-export function parseFirebaseError(error: FirebaseError, action?: string): AppError {
-  // Map Firebase error codes to error categories
-  let category = ErrorCategory.UNKNOWN;
-  
-  if (error.code.startsWith('auth/')) {
-    category = ErrorCategory.AUTHENTICATION;
-  } else if (error.code.startsWith('firestore/')) {
-    category = ErrorCategory.FIRESTORE;
-  } else if (error.code.startsWith('permission-denied')) {
-    category = ErrorCategory.PERMISSION;
-  } else if (error.code.includes('network')) {
-    category = ErrorCategory.NETWORK;
+// Convert any error to AppError for consistent handling
+export function normalizeError(error: unknown): AppError {
+  // If it's already an AppError, return it as is
+  if (error instanceof AppError) {
+    return error;
   }
   
-  // Get human-readable error message
-  let message = error.message;
-  
-  // Clean up common Firebase error messages
-  message = message.replace('Firebase: ', '');
-  if (message.includes('Error (auth/')) {
-    message = message.replace(/Error \(auth\/[^)]+\): /, '');
-  }
-  
-  // Special case handling for common errors
-  if (error.code === 'auth/invalid-credential') {
-    message = 'The login credentials are invalid or expired.';
-  } else if (error.code === 'auth/too-many-requests') {
-    message = 'Too many unsuccessful login attempts. Please try again later.';
-  } else if (error.code === 'firestore/permission-denied') {
-    message = 'You don\'t have permission to access this data.';
-  } else if (error.code === 'firestore/unavailable') {
-    message = 'The service is currently unavailable. Please try again later.';
-  } else if (error.code === 'auth/network-request-failed') {
-    message = 'Network connection is unavailable. Check your internet connection.';
-  }
-  
-  return createAppError(
-    message,
-    category,
-    action,
-    { 
-      firebaseCode: error.code,
-      firebaseMessage: error.message,
+  // Handle Firebase errors
+  if (error instanceof FirebaseError) {
+    let category = ErrorCategory.UNKNOWN;
+    
+    // Determine category based on Firebase error code
+    if (error.code.startsWith('auth/')) {
+      category = ErrorCategory.AUTHENTICATION;
+    } else if (error.code.startsWith('firestore/')) {
+      category = ErrorCategory.FIRESTORE;
+    } else if (error.code.startsWith('permission-denied')) {
+      category = ErrorCategory.PERMISSION;
+    } else if (error.code.startsWith('unavailable') || error.code.startsWith('network-request-failed')) {
+      category = ErrorCategory.NETWORK;
     }
-  );
-}
-
-/**
- * Parse network errors into standardized app errors
- */
-export function parseNetworkError(error: Error, action?: string): AppError {
-  let message = error.message;
-  
-  if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
-    message = 'Network connection error. Please check your internet connection and try again.';
-  } else if (message.includes('timeout')) {
-    message = 'Request timed out. Please try again.';
+    
+    return new AppError(
+      error.message,
+      category,
+      undefined,
+      error.code,
+      { originalError: error }
+    );
   }
   
-  return createAppError(
-    message,
-    ErrorCategory.NETWORK,
-    action
-  );
+  // Handle standard Error objects
+  if (error instanceof Error) {
+    let category = ErrorCategory.UNKNOWN;
+    
+    // Try to determine category from error message
+    const message = error.message.toLowerCase();
+    if (message.includes('network') || message.includes('connection') || message.includes('offline')) {
+      category = ErrorCategory.NETWORK;
+    } else if (message.includes('permission') || message.includes('unauthorized') || message.includes('forbidden')) {
+      category = ErrorCategory.PERMISSION;
+    } else if (message.includes('auth') || message.includes('login')) {
+      category = ErrorCategory.AUTHENTICATION;
+    } else if (message.includes('database') || message.includes('sql')) {
+      category = ErrorCategory.DATABASE;
+    }
+    
+    return new AppError(
+      error.message,
+      category,
+      undefined,
+      undefined,
+      { originalError: error, stack: error.stack }
+    );
+  }
+  
+  // For string errors
+  if (typeof error === 'string') {
+    return new AppError(error);
+  }
+  
+  // For unknown errors
+  return new AppError('An unknown error occurred');
 }
 
-/**
- * Standard error handler that logs, tracks, and optionally shows a toast
- */
+// Centralized error handling function
 export function handleError(
-  error: Error | string,
-  category: ErrorCategory = ErrorCategory.UNKNOWN,
+  error: unknown,
+  category?: ErrorCategory,
   action?: string,
   context?: Record<string, any>,
   showToast = false
 ): AppError {
-  // Create standardized error
-  let appError: AppError;
+  // Normalize the error
+  const normalizedError = normalizeError(error);
   
-  // Parse specific error types
-  if (error instanceof FirebaseError) {
-    appError = parseFirebaseError(error, action);
-  } else if (error instanceof Error) {
-    if (error.message.includes('network') || error.message.includes('fetch') || error.message.includes('timeout')) {
-      appError = parseNetworkError(error, action);
-    } else {
-      appError = createAppError(error, category, action, context);
-    }
-  } else {
-    appError = createAppError(error, category, action, context);
-  }
+  // Override with provided information if available
+  if (category) normalizedError.category = category;
+  if (action) normalizedError.action = action;
+  if (context) normalizedError.context = { ...normalizedError.context, ...context };
   
-  // Log error to console
-  console.error('Application error:', appError);
+  // Log the error with additional context
+  console.error(`[${normalizedError.category}] ${normalizedError.action ? `(${normalizedError.action}) ` : ''}Error:`, 
+    normalizedError.message, 
+    normalizedError.context || ''
+  );
   
-  // Track error for analytics
-  trackEvent('error_occurred', {
-    error_message: appError.message,
-    error_category: appError.category,
-    error_code: appError.code,
-    error_action: appError.action,
-    error_stack: appError.stack
-  });
+  // Track the error (could be extended with analytics)
   
-  return appError;
+  return normalizedError;
 }
 
-/**
- * Hook for displaying standardized error toasts
- */
+// Custom hook for showing error toasts with proper categorization
 export function useErrorToast() {
   const { toast } = useToast();
+  const [lastError, setLastError] = useState<AppError | null>(null);
   
-  // Show error toast with standardized styling based on category
-  const showErrorToast = (error: AppError | Error | string, title?: string) => {
-    let appError: AppError;
+  const showErrorToast = useCallback((error: unknown, title?: string) => {
+    const normalizedError = normalizeError(error);
+    setLastError(normalizedError);
     
-    if (typeof error === 'string') {
-      appError = createAppError(error);
-    } else if ('category' in error) {
-      appError = error as AppError;
-    } else {
-      appError = createAppError(error);
-    }
+    // Customize toast based on error category
+    let variant: 'default' | 'destructive' = 'destructive';
+    let defaultTitle = 'Error';
     
-    let toastTitle = title || 'Error';
-    
-    // Set title based on category if not provided
-    if (!title) {
-      switch (appError.category) {
-        case ErrorCategory.AUTHENTICATION:
-          toastTitle = 'Authentication Error';
-          break;
-        case ErrorCategory.NETWORK:
-          toastTitle = 'Network Error';
-          break;
-        case ErrorCategory.DATABASE:
-        case ErrorCategory.FIRESTORE:
-          toastTitle = 'Data Error';
-          break;
-        case ErrorCategory.PERMISSION:
-          toastTitle = 'Permission Error';
-          break;
-        case ErrorCategory.USER_INPUT:
-          toastTitle = 'Invalid Input';
-          break;
-      }
+    switch (normalizedError.category) {
+      case ErrorCategory.NETWORK:
+        defaultTitle = 'Network Error';
+        break;
+      case ErrorCategory.AUTHENTICATION:
+        defaultTitle = 'Authentication Error';
+        break;
+      case ErrorCategory.PERMISSION:
+        defaultTitle = 'Permission Error';
+        break;
+      case ErrorCategory.FIRESTORE:
+        defaultTitle = 'Database Error';
+        break;
+      case ErrorCategory.USER_INPUT:
+        defaultTitle = 'Input Error';
+        variant = 'default';
+        break;
     }
     
     toast({
-      title: toastTitle,
-      description: appError.message,
-      variant: 'destructive',
+      title: title || defaultTitle,
+      description: normalizedError.message,
+      variant
     });
-  };
+    
+    return normalizedError;
+  }, [toast]);
   
-  return { showErrorToast };
+  return {
+    showErrorToast,
+    lastError,
+    clearLastError: () => setLastError(null)
+  };
 }

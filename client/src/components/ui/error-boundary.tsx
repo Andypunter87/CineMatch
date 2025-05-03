@@ -1,98 +1,68 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { trackEvent } from '@/lib/analytics';
+import { ErrorFallback } from '@/components/ui/error-fallback';
+import { ErrorCategory, normalizeError } from '@/lib/error-utils';
 
-interface Props {
+interface ErrorBoundaryProps {
   children: ReactNode;
-  fallback?: ReactNode;
+  fallback?: ReactNode | ((props: { error: Error; resetError: () => void }) => ReactNode);
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
-  resetOnPropsChange?: boolean;
 }
 
-interface State {
+interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
+/**
+ * A React component that catches JavaScript errors anywhere in its child component tree,
+ * logs those errors, and displays a fallback UI instead of the component tree that crashed.
+ */
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = {
-      hasError: false,
-      error: null
-    };
+    this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    return {
-      hasError: true,
-      error
-    };
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    // Update state so the next render will show the fallback UI
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log the error to an error reporting service
-    console.error('UI Error caught by ErrorBoundary:', error, errorInfo);
+    // Log the error
+    console.error('Error caught by ErrorBoundary:', error);
+    console.error('Component stack:', errorInfo.componentStack);
     
-    // Track the error event
-    trackEvent('error_boundary_triggered', {
-      error_message: error.message,
-      error_stack: error.stack,
-      component_stack: errorInfo.componentStack
-    });
-    
-    // Call the onError callback if provided
+    // Call the optional onError callback
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
   }
 
-  componentDidUpdate(prevProps: Props): void {
-    // Reset the error state if props change and resetOnPropsChange is true
-    if (
-      this.state.hasError &&
-      this.props.resetOnPropsChange &&
-      prevProps.children !== this.props.children
-    ) {
-      this.setState({
-        hasError: false,
-        error: null
-      });
-    }
-  }
-
-  resetErrorBoundary = (): void => {
-    this.setState({
-      hasError: false,
-      error: null
-    });
+  resetError = (): void => {
+    this.setState({ hasError: false, error: null });
   };
 
   render(): ReactNode {
-    if (this.state.hasError) {
-      // You can render any custom fallback UI
+    if (this.state.hasError && this.state.error) {
+      // Handle custom fallback
       if (this.props.fallback) {
+        if (typeof this.props.fallback === 'function') {
+          return this.props.fallback({
+            error: this.state.error,
+            resetError: this.resetError,
+          });
+        }
         return this.props.fallback;
       }
 
+      // Default fallback
+      const normalizedError = normalizeError(this.state.error);
       return (
-        <div className="p-4 rounded-lg bg-background border">
-          <Alert variant="destructive" className="mb-4">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Something went wrong</AlertTitle>
-            <AlertDescription>
-              {this.state.error?.message || 'An unexpected error occurred'}
-            </AlertDescription>
-          </Alert>
-          <div className="flex justify-end">
-            <Button onClick={this.resetErrorBoundary} variant="outline" size="sm">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
-            </Button>
-          </div>
-        </div>
+        <ErrorFallback
+          error={normalizedError}
+          resetError={this.resetError}
+        />
       );
     }
 

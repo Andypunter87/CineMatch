@@ -13,10 +13,12 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import FriendsPage from "@/pages/friends-page";
 import OnboardingPage from "@/pages/onboarding-page";
 import OnboardingTestPage from "@/pages/onboarding-test-page";
+import ErrorHandlingDemo from "@/pages/error-handling-demo";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import Layout from "@/components/Layout";
 import CookieConsent from "@/components/CookieConsent";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 function Router() {
   return (
@@ -31,6 +33,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/error-handling-demo" component={ErrorHandlingDemo} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -38,15 +41,17 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Layout>
-          <Router />
-        </Layout>
-        <CookieConsent />
-        <Toaster />
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Layout>
+            <Router />
+          </Layout>
+          <CookieConsent />
+          <Toaster />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

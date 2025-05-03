@@ -1,72 +1,162 @@
-import { useCallback, useState } from 'react';
 import { 
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
+  collection, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  addDoc, 
+  getDocs, 
+  deleteDoc, 
+  query, 
+  where, 
+  writeBatch, 
   updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
-  limit,
-  startAfter,
-  endBefore,
-  writeBatch,
-  onSnapshot,
-  DocumentData,
-  QueryConstraint,
+  Firestore,
   DocumentReference,
-  CollectionReference,
-  Query,
-  Unsubscribe,
+  DocumentData,
   WhereFilterOp,
+  QueryConstraint
 } from 'firebase/firestore';
+import { useCallback, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { useAuth } from '@/hooks/use-auth';
-import { useFirestoreErrorHandler } from '@/hooks/use-firestore-error-handler';
-import { useToast } from '@/hooks/use-toast';
+import { createAppError, ErrorCategory, useErrorToast } from '@/lib/error-utils';
+
+type BatchOperation<T> = {
+  type: 'set' | 'update' | 'delete';
+  documentId: string;
+  data?: T;
+};
 
 /**
- * Custom hook for safe Firestore operations with built-in error handling
+ * Hook for safe Firestore operations with comprehensive error handling
+ * @param collectionPath The Firestore collection path
  */
-export function useSafeFirestore<T = DocumentData>(collectionPath?: string) {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const { isError, error, resetError, handleFirestoreError, withErrorHandling } = useFirestoreErrorHandler();
+export function useSafeFirestore<T extends Record<string, any>>(collectionPath: string) {
   const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState<T[]>([]);
-  
-  // Get a document reference
-  const getDocRef = useCallback((docId: string, cPath = collectionPath) => {
-    if (!cPath) {
-      throw new Error('Collection path is required');
+  const [lastError, setLastError] = useState<Error | null>(null);
+  const { showErrorToast } = useErrorToast();
+
+  // Helper to handle errors consistently
+  const handleFirestoreError = useCallback((error: unknown, operation: string) => {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const appError = createAppError(
+      `Firestore operation failed: ${errorMessage}`,
+      ErrorCategory.FIRESTORE,
+      operation
+    );
+    
+    console.error(`[Firestore Error] ${operation}:`, error);
+    setLastError(appError);
+    return appError;
+  }, []);
+
+  // Check if Firestore is available and collection path is valid
+  const validateRequest = useCallback(() => {
+    if (!collectionPath) {
+      const error = createAppError(
+        'Collection path is required',
+        ErrorCategory.FIRESTORE,
+        'validateRequest'
+      );
+      setLastError(error);
+      return { valid: false, error };
     }
-    return doc(db, cPath, docId) as DocumentReference<T>;
-  }, [collectionPath]);
-  
-  // Get a collection reference
-  const getCollectionRef = useCallback((cPath = collectionPath) => {
-    if (!cPath) {
-      throw new Error('Collection path is required');
+    
+    if (!db) {
+      const error = createAppError(
+        'Firestore is not initialized',
+        ErrorCategory.FIRESTORE,
+        'validateRequest'
+      );
+      setLastError(error);
+      return { valid: false, error };
     }
-    return collection(db, cPath) as CollectionReference<T>;
+    
+    return { valid: true, error: null };
   }, [collectionPath]);
-  
-  // Safely get a document by ID
-  const getDocumentById = useCallback(async (
-    docId: string, 
-    cPath = collectionPath
-  ): Promise<T | null> => {
-    if (!cPath) {
-      throw new Error('Collection path is required');
+
+  // Save a document with a specific ID
+  const saveDocument = useCallback(async (documentId: string, data: T): Promise<boolean> => {
+    const validation = validateRequest();
+    if (!validation.valid) {
+      return false;
     }
     
     setIsLoading(true);
+    setLastError(null);
+    
     try {
-      const docRef = getDocRef(docId, cPath);
+      const docRef = doc(db, collectionPath, documentId);
+      await setDoc(docRef, data);
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      const appError = handleFirestoreError(error, 'saveDocument');
+      showErrorToast(appError, 'Failed to Save Data');
+      setIsLoading(false);
+      return false;
+    }
+  }, [collectionPath, validateRequest, handleFirestoreError, showErrorToast]);
+
+  // Update a document with partial data
+  const updateDocument = useCallback(async (documentId: string, data: Partial<T>): Promise<boolean> => {
+    const validation = validateRequest();
+    if (!validation.valid) {
+      return false;
+    }
+    
+    setIsLoading(true);
+    setLastError(null);
+    
+    try {
+      const docRef = doc(db, collectionPath, documentId);
+      await updateDoc(docRef, data as DocumentData);
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      const appError = handleFirestoreError(error, 'updateDocument');
+      showErrorToast(appError, 'Failed to Update Data');
+      setIsLoading(false);
+      return false;
+    }
+  }, [collectionPath, validateRequest, handleFirestoreError, showErrorToast]);
+
+  // Add a new document with auto-generated ID
+  const addDocument = useCallback(async (data: T): Promise<string | null> => {
+    const validation = validateRequest();
+    if (!validation.valid) {
+      return null;
+    }
+    
+    setIsLoading(true);
+    setLastError(null);
+    
+    try {
+      const collectionRef = collection(db, collectionPath);
+      const docRef = await addDoc(collectionRef, data);
+      setIsLoading(false);
+      return docRef.id;
+    } catch (error) {
+      const appError = handleFirestoreError(error, 'addDocument');
+      showErrorToast(appError, 'Failed to Add Document');
+      setIsLoading(false);
+      return null;
+    }
+  }, [collectionPath, validateRequest, handleFirestoreError, showErrorToast]);
+
+  // Get a document by ID
+  const getDocument = useCallback(async (documentId: string): Promise<T | null> => {
+    const validation = validateRequest();
+    if (!validation.valid) {
+      return null;
+    }
+    
+    setIsLoading(true);
+    setLastError(null);
+    
+    try {
+      const docRef = doc(db, collectionPath, documentId);
       const docSnap = await getDoc(docRef);
+      
       setIsLoading(false);
       
       if (docSnap.exists()) {
@@ -74,304 +164,164 @@ export function useSafeFirestore<T = DocumentData>(collectionPath?: string) {
       } else {
         return null;
       }
-    } catch (err) {
+    } catch (error) {
+      const appError = handleFirestoreError(error, 'getDocument');
+      showErrorToast(appError, 'Failed to Load Document');
       setIsLoading(false);
-      handleFirestoreError(err as Error, 'getDocumentById', { docId, collectionPath: cPath });
       return null;
     }
-  }, [collectionPath, getDocRef, handleFirestoreError]);
-  
-  // Safely query documents
-  const queryDocuments = useCallback(async (
-    queryConstraints: QueryConstraint[] = [],
-    cPath = collectionPath
-  ): Promise<T[]> => {
-    if (!cPath) {
-      throw new Error('Collection path is required');
+  }, [collectionPath, validateRequest, handleFirestoreError, showErrorToast]);
+
+  // Delete a document by ID
+  const deleteDocument = useCallback(async (documentId: string): Promise<boolean> => {
+    const validation = validateRequest();
+    if (!validation.valid) {
+      return false;
     }
     
     setIsLoading(true);
-    resetError();
+    setLastError(null);
     
     try {
-      const q = query(getCollectionRef(cPath), ...queryConstraints);
-      const querySnapshot = await getDocs(q);
-      
-      const documents: T[] = [];
-      querySnapshot.forEach((doc) => {
-        documents.push({ id: doc.id, ...doc.data() } as unknown as T);
-      });
-      
-      setData(documents);
+      const docRef = doc(db, collectionPath, documentId);
+      await deleteDoc(docRef);
       setIsLoading(false);
-      return documents;
-    } catch (err) {
+      return true;
+    } catch (error) {
+      const appError = handleFirestoreError(error, 'deleteDocument');
+      showErrorToast(appError, 'Failed to Delete Document');
       setIsLoading(false);
-      handleFirestoreError(err as Error, 'queryDocuments', { queryConstraints, collectionPath: cPath });
+      return false;
+    }
+  }, [collectionPath, validateRequest, handleFirestoreError, showErrorToast]);
+
+  // Query documents with where clauses
+  const queryDocuments = useCallback(async (
+    conditions: Array<[string, WhereFilterOp, any]> = []
+  ): Promise<T[]> => {
+    const validation = validateRequest();
+    if (!validation.valid) {
       return [];
     }
-  }, [collectionPath, getCollectionRef, handleFirestoreError, resetError]);
-  
-  // Helper for creating common queries
-  const createQueryConstraints = useCallback((
-    filters: Array<[string, WhereFilterOp, any]> = [],
-    sortBy?: [string, 'asc' | 'desc'],
-    limitTo?: number,
-    startAfterDoc?: any,
-    endBeforeDoc?: any
-  ): QueryConstraint[] => {
-    const constraints: QueryConstraint[] = [];
-    
-    // Add filters
-    filters.forEach(([field, operator, value]) => {
-      constraints.push(where(field, operator, value));
-    });
-    
-    // Add sorting
-    if (sortBy) {
-      constraints.push(orderBy(sortBy[0], sortBy[1]));
-    }
-    
-    // Add pagination
-    if (startAfterDoc) {
-      constraints.push(startAfter(startAfterDoc));
-    }
-    
-    if (endBeforeDoc) {
-      constraints.push(endBefore(endBeforeDoc));
-    }
-    
-    // Add limit
-    if (limitTo) {
-      constraints.push(limit(limitTo));
-    }
-    
-    return constraints;
-  }, []);
-  
-  // Safely save a document
-  const saveDocument = useCallback(async (
-    documentId: string,
-    data: Partial<T>,
-    cPath = collectionPath,
-    options = { merge: true }
-  ): Promise<boolean> => {
-    if (!cPath) {
-      throw new Error('Collection path is required');
-    }
     
     setIsLoading(true);
-    resetError();
+    setLastError(null);
     
     try {
-      const docRef = getDocRef(documentId, cPath);
-      await setDoc(docRef, data, options);
+      const collectionRef = collection(db, collectionPath);
       
-      setIsLoading(false);
-      return true;
-    } catch (err) {
-      setIsLoading(false);
-      handleFirestoreError(err as Error, 'saveDocument', { documentId, collectionPath: cPath });
-      return false;
-    }
-  }, [collectionPath, getDocRef, handleFirestoreError, resetError]);
-  
-  // Safely update a document
-  const updateDocument = useCallback(async (
-    documentId: string,
-    data: Partial<T>,
-    cPath = collectionPath
-  ): Promise<boolean> => {
-    if (!cPath) {
-      throw new Error('Collection path is required');
-    }
-    
-    setIsLoading(true);
-    resetError();
-    
-    try {
-      const docRef = getDocRef(documentId, cPath);
-      await updateDoc(docRef, data as any);
+      let queryRef;
+      if (conditions.length > 0) {
+        const queryConstraints: QueryConstraint[] = conditions.map(
+          ([field, operator, value]) => where(field, operator, value)
+        );
+        queryRef = query(collectionRef, ...queryConstraints);
+      } else {
+        queryRef = query(collectionRef);
+      }
       
+      const querySnapshot = await getDocs(queryRef);
       setIsLoading(false);
-      return true;
-    } catch (err) {
-      setIsLoading(false);
-      handleFirestoreError(err as Error, 'updateDocument', { documentId, collectionPath: cPath });
-      return false;
-    }
-  }, [collectionPath, getDocRef, handleFirestoreError, resetError]);
-  
-  // Safely delete a document
-  const deleteDocument = useCallback(async (
-    documentId: string,
-    cPath = collectionPath
-  ): Promise<boolean> => {
-    if (!cPath) {
-      throw new Error('Collection path is required');
-    }
-    
-    setIsLoading(true);
-    resetError();
-    
-    try {
-      const docRef = getDocRef(documentId, cPath);
-      await deleteDoc(docRef);
       
-      setIsLoading(false);
-      toast({
-        title: 'Success',
-        description: 'Document successfully deleted',
+      return querySnapshot.docs.map(doc => {
+        // Create a data object with the document data and ID
+        const data = doc.data() as Record<string, any>;
+        return {
+          ...data,
+          id: doc.id
+        } as unknown as T;
       });
-      return true;
-    } catch (err) {
+    } catch (error) {
+      const appError = handleFirestoreError(error, 'queryDocuments');
+      showErrorToast(appError, 'Failed to Query Documents');
       setIsLoading(false);
-      handleFirestoreError(err as Error, 'deleteDocument', { documentId, collectionPath: cPath });
+      return [];
+    }
+  }, [collectionPath, validateRequest, handleFirestoreError, showErrorToast]);
+
+  // Perform batch operations
+  const performBatchOperation = useCallback(async (
+    operations: Array<BatchOperation<T>>
+  ): Promise<boolean> => {
+    const validation = validateRequest();
+    if (!validation.valid) {
       return false;
     }
-  }, [collectionPath, getDocRef, handleFirestoreError, resetError, toast]);
-  
-  // Safely perform batch operations
-  const performBatchOperation = useCallback(async (
-    operations: Array<{
-      type: 'set' | 'update' | 'delete';
-      documentId: string;
-      data?: Partial<T>;
-      collectionPath?: string;
-      options?: { merge: boolean };
-    }>
-  ): Promise<boolean> => {
+    
     if (operations.length === 0) {
       return true;
     }
     
     setIsLoading(true);
-    resetError();
+    setLastError(null);
     
     try {
-      // Split into batches of 500 operations
-      const batchSize = 450; // Buffer for safety
-      const batches = [];
+      const batch = writeBatch(db);
       
-      for (let i = 0; i < operations.length; i += batchSize) {
-        const batch = writeBatch(db);
-        const currentBatch = operations.slice(i, i + batchSize);
+      for (const operation of operations) {
+        const docRef = doc(db, collectionPath, operation.documentId);
         
-        currentBatch.forEach((operation) => {
-          const cPath = operation.collectionPath || collectionPath;
-          if (!cPath) {
-            throw new Error('Collection path is required');
-          }
-          
-          const docRef = doc(db, cPath, operation.documentId);
-          
-          if (operation.type === 'set') {
-            batch.set(docRef, operation.data || {}, operation.options);
-          } else if (operation.type === 'update') {
-            batch.update(docRef, operation.data || {});
-          } else if (operation.type === 'delete') {
+        switch (operation.type) {
+          case 'set':
+            if (operation.data) {
+              batch.set(docRef, operation.data);
+            }
+            break;
+          case 'update':
+            if (operation.data) {
+              batch.update(docRef, operation.data as DocumentData);
+            }
+            break;
+          case 'delete':
             batch.delete(docRef);
-          }
-        });
-        
-        batches.push(batch.commit());
+            break;
+        }
       }
       
-      await Promise.all(batches);
+      await batch.commit();
       setIsLoading(false);
       return true;
-    } catch (err) {
+    } catch (error) {
+      const appError = handleFirestoreError(error, 'performBatchOperation');
+      showErrorToast(appError, 'Failed to Perform Batch Operation');
       setIsLoading(false);
-      handleFirestoreError(err as Error, 'performBatchOperation');
       return false;
     }
-  }, [collectionPath, handleFirestoreError, resetError]);
-  
-  // Set up a real-time listener
-  const subscribeToQuery = useCallback((
-    queryConstraints: QueryConstraint[] = [],
-    callback: (items: T[]) => void,
-    onError?: (error: Error) => void,
-    cPath = collectionPath
-  ): Unsubscribe => {
-    if (!cPath) {
-      throw new Error('Collection path is required');
+  }, [collectionPath, validateRequest, handleFirestoreError, showErrorToast]);
+
+  // Check if a document exists
+  const documentExists = useCallback(async (documentId: string): Promise<boolean> => {
+    const validation = validateRequest();
+    if (!validation.valid) {
+      return false;
     }
     
-    const q = query(getCollectionRef(cPath), ...queryConstraints);
-    
-    return onSnapshot(
-      q,
-      (snapshot) => {
-        const items: T[] = [];
-        snapshot.forEach((doc) => {
-          items.push({ id: doc.id, ...doc.data() } as unknown as T);
-        });
-        callback(items);
-      },
-      (err) => {
-        handleFirestoreError(err as Error, 'subscribeToQuery', { collectionPath: cPath });
-        if (onError) {
-          onError(err as Error);
-        }
-      }
-    );
-  }, [collectionPath, getCollectionRef, handleFirestoreError]);
-  
-  // Set up a real-time listener for a single document
-  const subscribeToDocument = useCallback((
-    documentId: string,
-    callback: (item: T | null) => void,
-    onError?: (error: Error) => void,
-    cPath = collectionPath
-  ): Unsubscribe => {
-    if (!cPath) {
-      throw new Error('Collection path is required');
+    try {
+      const docRef = doc(db, collectionPath, documentId);
+      const docSnap = await getDoc(docRef);
+      return docSnap.exists();
+    } catch (error) {
+      handleFirestoreError(error, 'documentExists');
+      return false;
     }
-    
-    const docRef = getDocRef(documentId, cPath);
-    
-    return onSnapshot(
-      docRef,
-      (doc) => {
-        if (doc.exists()) {
-          callback({ id: doc.id, ...doc.data() } as unknown as T);
-        } else {
-          callback(null);
-        }
-      },
-      (err) => {
-        handleFirestoreError(err as Error, 'subscribeToDocument', { documentId, collectionPath: cPath });
-        if (onError) {
-          onError(err as Error);
-        }
-      }
-    );
-  }, [collectionPath, getDocRef, handleFirestoreError]);
-  
+  }, [collectionPath, validateRequest, handleFirestoreError]);
+
   return {
-    // Data and loading states
-    data,
+    // Methods
+    saveDocument,
+    updateDocument,
+    addDocument,
+    getDocument,
+    deleteDocument,
+    queryDocuments,
+    performBatchOperation,
+    documentExists,
+    
+    // State
     isLoading,
-    isError,
-    error,
-    resetError,
+    lastError,
     
-    // Firestore operations
-    getDocumentById: withErrorHandling(getDocumentById, 'getDocumentById'),
-    queryDocuments: withErrorHandling(queryDocuments, 'queryDocuments'),
-    saveDocument: withErrorHandling(saveDocument, 'saveDocument'),
-    updateDocument: withErrorHandling(updateDocument, 'updateDocument'),
-    deleteDocument: withErrorHandling(deleteDocument, 'deleteDocument'),
-    performBatchOperation: withErrorHandling(performBatchOperation, 'performBatchOperation'),
-    
-    // Helpers
-    createQueryConstraints,
-    getCollectionRef,
-    getDocRef,
-    
-    // Real-time subscriptions
-    subscribeToQuery,
-    subscribeToDocument,
+    // Clear error state
+    clearError: () => setLastError(null),
   };
 }

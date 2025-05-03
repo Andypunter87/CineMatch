@@ -1,48 +1,60 @@
-import React from 'react';
-import { useQueryErrorResetBoundary } from '@tanstack/react-query';
+import React, { ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
-import { ErrorFallback, DataErrorFallback } from '@/components/ui/error-fallback';
-import { ErrorCategory, AppError } from '@/lib/error-utils';
+import { ErrorFallback, EmptyStateFallback } from '@/components/ui/error-fallback';
+import { Loader2 } from 'lucide-react';
+import { ErrorCategory, AppError, normalizeError } from '@/lib/error-utils';
 
 interface QueryErrorBoundaryProps {
-  children: React.ReactNode;
-  fallbackRender?: (props: {
-    error: Error;
-    resetErrorBoundary: () => void;
-  }) => React.ReactNode;
+  children: ReactNode;
+  onError?: (error: Error) => void;
+  fallback?: ReactNode | ((props: { error: Error; resetError: () => void }) => ReactNode);
+}
+
+interface QueryStateHandlerProps {
+  children: ReactNode;
+  isLoading: boolean;
+  isError: boolean;
+  error: Error | null;
+  isEmpty: boolean;
+  onReset?: () => void;
+  emptyComponent?: ReactNode;
+  loadingComponent?: ReactNode;
+  errorComponent?: ReactNode;
 }
 
 /**
- * Error boundary specifically designed for React Query errors
- * Automatically resets query cache on retry
+ * Error boundary specifically for React Query with cache invalidation on error
  */
-export function QueryErrorBoundary({
-  children,
-  fallbackRender,
-}: QueryErrorBoundaryProps) {
-  const { reset } = useQueryErrorResetBoundary();
+export function QueryErrorBoundary({ children, onError, fallback }: QueryErrorBoundaryProps) {
+  const queryClient = useQueryClient();
+
+  const handleError = (error: Error) => {
+    // Call the provided onError handler if available
+    if (onError) {
+      onError(error);
+    }
+    
+    // Log the error
+    console.error('Query Error:', error);
+    
+    // Reset any failed queries
+    queryClient.resetQueries();
+  };
 
   return (
-    <ErrorBoundary
-      onError={(error) => {
-        console.error('React Query Error:', error);
-      }}
-      fallback={
-        fallbackRender ? (
-          // Custom fallback if provided
-          // @ts-ignore type issues with ErrorBoundary props
-          (props) => fallbackRender({ ...props, resetErrorBoundary: reset })
-        ) : (
-          // Default fallback for query errors
-          <ErrorFallback
-            title="Data Fetch Error"
-            description="There was an error loading the data."
-            resetError={reset}
-            variant="card"
-          />
-        )
-      }
-      resetOnPropsChange={false}
+    <ErrorBoundary 
+      onError={handleError}
+      fallback={fallback || ((props) => (
+        <ErrorFallback 
+          error={props.error} 
+          resetError={() => {
+            // Clear the query cache and reset the error boundary
+            queryClient.resetQueries();
+            props.resetError();
+          }} 
+        />
+      ))}
     >
       {children}
     </ErrorBoundary>
@@ -50,27 +62,20 @@ export function QueryErrorBoundary({
 }
 
 /**
- * Component to handle data loading states in one component
+ * Component that handles all query states (loading, error, empty, success)
+ * This can be used to wrap any component that depends on query data
  */
 export function QueryStateHandler({
+  children,
   isLoading,
   isError,
   error,
-  children,
+  isEmpty,
   onReset,
-  loadingComponent,
   emptyComponent,
-  isEmpty = false,
-}: {
-  isLoading: boolean;
-  isError: boolean;
-  error: Error | null;
-  children: React.ReactNode;
-  onReset?: () => void;
-  loadingComponent?: React.ReactNode;
-  emptyComponent?: React.ReactNode;
-  isEmpty?: boolean;
-}) {
+  loadingComponent,
+  errorComponent,
+}: QueryStateHandlerProps) {
   // Handle loading state
   if (isLoading) {
     if (loadingComponent) {
@@ -78,30 +83,60 @@ export function QueryStateHandler({
     }
     
     return (
-      <div className="flex items-center justify-center p-8 min-h-[200px]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin h-10 w-10 rounded-full border-4 border-primary border-t-transparent"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
-
+  
   // Handle error state
   if (isError && error) {
+    if (errorComponent) {
+      return <>{errorComponent}</>;
+    }
+    
+    const normalizedError = normalizeError(error);
+    
+    // Show specialized error UI based on error category
+    if (normalizedError.category === ErrorCategory.NETWORK) {
+      return (
+        <div className="p-4">
+          <ErrorFallback 
+            error={normalizedError} 
+            resetError={onReset} 
+            variant="card" 
+          />
+        </div>
+      );
+    }
+    
     return (
-      <DataErrorFallback
-        error={error}
-        resetError={onReset}
-      />
+      <div className="p-4">
+        <ErrorFallback 
+          error={normalizedError} 
+          resetError={onReset} 
+          variant="minimal" 
+        />
+      </div>
     );
   }
-
+  
   // Handle empty state
-  if (isEmpty && emptyComponent) {
-    return <>{emptyComponent}</>;
+  if (isEmpty) {
+    if (emptyComponent) {
+      return <>{emptyComponent}</>;
+    }
+    
+    return (
+      <div className="p-4">
+        <EmptyStateFallback
+          title="No data available"
+          description="There is no data to display at this time."
+        />
+      </div>
+    );
   }
-
-  // Render children when data is available and there are no errors
+  
+  // Render children if not loading, not error, and not empty
   return <>{children}</>;
 }
