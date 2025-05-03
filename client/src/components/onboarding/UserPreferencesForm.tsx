@@ -136,11 +136,59 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
         return service.toLowerCase().replace(/\+/g, 'plus').replace(/\s/g, '');
       });
       
-      // Update both preferences
-      await Promise.all([
-        updateCountryMutation.mutateAsync(countryCode),
-        updateStreamingMutation.mutateAsync(servicesCodes)
-      ]);
+      // Log what we're trying to save
+      console.log('Saving preferences:', {
+        country: countryCode,
+        streamingServices: servicesCodes
+      });
+      
+      // For onboarding, use a different approach than the profile page
+      // to ensure compatibility with the server schema validation
+      if (window.location.pathname.includes('/onboarding')) {
+        // Use /api/onboarding/preferences endpoint directly
+        const response = await fetch('/api/onboarding/preferences', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            country: countryCode,
+            streamingServices: servicesCodes,
+            lastUpdated: new Date().toISOString()
+          }),
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to save preferences');
+        }
+        
+        // Also save to Firestore for redundancy
+        try {
+          // Create a document in Firestore
+          if (user?.id) {
+            const prefsDocRef = doc(db, 'user_preferences', `user-${user.id}`);
+            await setDoc(prefsDocRef, {
+              userId: user.id,
+              country: countryCode,
+              streamingServices: servicesCodes,
+              lastUpdated: new Date().toISOString(),
+              updatedAt: serverTimestamp()
+            });
+            console.log('Preferences also saved to Firestore');
+          }
+        } catch (firestoreError) {
+          console.error('Failed to save to Firestore, but continuing:', firestoreError);
+          // Continue anyway since the main API call worked
+        }
+      } else {
+        // For non-onboarding pages, use the mutations from useAuth
+        await Promise.all([
+          updateCountryMutation.mutateAsync(countryCode),
+          updateStreamingMutation.mutateAsync(servicesCodes)
+        ]);
+      }
       
       // Track event
       trackEvent(AnalyticsEvents.ONBOARDING_PREFERENCES_SET, {
@@ -156,7 +204,7 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
       console.error('Error updating preferences:', error);
       toast({
         title: 'Error saving preferences',
-        description: 'Please try again',
+        description: error instanceof Error ? error.message : 'Please try again',
         variant: 'destructive',
       });
     } finally {
