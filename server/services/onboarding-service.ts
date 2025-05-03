@@ -97,17 +97,36 @@ export class OnboardingService {
   }
   
   /**
-   * Fetches popular films for the onboarding rating step
+   * Fetches films for the onboarding rating step from a curated list
+   * Uses a static, curated list with verified metadata and poster images
+   * for a more reliable onboarding experience
+   * 
    * @param count Number of films to retrieve
    * @param offset Pagination offset
    * @param batchNumber Which batch of films this is (for tracking)
    */
   async getFilmsForOnboardingRatings(count: number = 12, offset: number = 0, batchNumber: number = 1) {
     try {
-      return await storage.getPopularFilmsForOnboarding(count, offset, batchNumber);
+      // Import is done inside the function to avoid circular dependencies
+      const { getCuratedOnboardingFilms } = await import('../data/onboarding-films');
+      
+      // Get films from curated list rather than dynamic TMDB data
+      const films = getCuratedOnboardingFilms(count, offset, batchNumber);
+      
+      console.log(`Fetched ${films.length} curated films for onboarding (batch ${batchNumber})`);
+      
+      return films;
     } catch (error) {
-      console.error("Error fetching films for onboarding:", error);
-      throw error;
+      console.error("Error fetching curated films for onboarding:", error);
+      
+      // Fallback to dynamic data in case of error
+      try {
+        console.log("Falling back to dynamic film data");
+        return await storage.getPopularFilmsForOnboarding(count, offset, batchNumber);
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+        throw error; // Throw the original error
+      }
     }
   }
   
