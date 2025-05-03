@@ -81,25 +81,41 @@ router.put("/state", isAuthenticated, async (req, res) => {
 
 // Save user preferences (streaming services and country)
 router.post("/preferences", isAuthenticated, async (req, res) => {
+  console.log("Received onboarding preferences request:", JSON.stringify({
+    body: req.body,
+    user: req.user ? { id: req.user.id, name: req.user.name } : null
+  }));
+  
   try {
     const user = req.user!;
+    console.log("Processing preferences for user:", user.id, user.name || user.username);
     
     // Validate request body
+    console.log("Validating preferences schema for:", req.body);
     const validation = preferencesSchema.safeParse(req.body);
     if (!validation.success) {
-      return res.status(400).json({ error: "Invalid preferences data", details: validation.error.format() });
+      console.error("Validation error:", validation.error.format());
+      return res.status(400).json({ 
+        error: "Invalid preferences data", 
+        details: validation.error.format(),
+        received: req.body
+      });
     }
     
     const { country, streamingServices } = validation.data;
+    console.log(`Valid preferences: country=${country}, streamingServices=${streamingServices.join(",")}`);
     
     // Save preferences and update onboarding state
+    console.log("Calling onboardingService.saveUserPreferences for user:", user.id);
     const updatedUser = await onboardingService.saveUserPreferences(
       user.id, 
       country, 
       streamingServices
     );
+    console.log("User preferences saved successfully, user:", updatedUser.id);
     
-    res.json({ 
+    // Create response with updated onboarding state
+    const response = { 
       success: true, 
       user: updatedUser,
       onboardingState: {
@@ -107,10 +123,18 @@ router.post("/preferences", isAuthenticated, async (req, res) => {
         currentStep: "ratings" as "ratings",
         progress: 50
       }
-    });
+    };
+    console.log("Sending successful preferences response");
+    res.json(response);
   } catch (error) {
     console.error("Error saving preferences:", error);
-    res.status(500).json({ error: "Failed to save preferences" });
+    if (error instanceof Error) {
+      console.error("Error details:", error.message, error.stack);
+    }
+    res.status(500).json({ 
+      error: "Failed to save preferences",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 

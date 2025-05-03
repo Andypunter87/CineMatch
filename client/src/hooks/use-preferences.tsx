@@ -79,30 +79,52 @@ export function usePreferences(isOnboarding = false) {
     loadFromFirestore();
   }, [user?.id]);
 
-  // Save preferences to Firestore
+  // Save preferences to Firestore with enhanced error handling
   const saveToFirestore = async (preferences: UserPreferences) => {
-    if (!user) return;
+    if (!user) {
+      console.warn("Cannot save to Firestore: No authenticated user");
+      return false;
+    }
+    
+    console.log("Saving preferences to Firestore for user:", user.id);
+    setIsLoadingFirestore(true);
     
     try {
       const docRef = getPreferencesDocRef();
-      if (!docRef) return;
+      if (!docRef) {
+        console.warn("Cannot save to Firestore: Document reference is null");
+        setIsLoadingFirestore(false);
+        return false;
+      }
+      
+      // Sanitize preferences object
+      const sanitizedPreferences = {
+        streamingServices: Array.isArray(preferences.streamingServices) ? preferences.streamingServices : [],
+        country: preferences.country || "",
+        lastUpdated: preferences.lastUpdated || new Date().toISOString()
+      };
       
       // Add timestamp to preferences
       const prefWithTimestamp = {
-        ...preferences,
+        ...sanitizedPreferences,
         userId: user.id,
         updatedAt: serverTimestamp(),
       };
       
+      console.log("Attempting to save to Firestore document:", docRef.path);
       await setDoc(docRef, prefWithTimestamp);
-      console.log("Preferences saved to Firestore:", preferences);
+      console.log("Preferences successfully saved to Firestore");
       
       // Update local copy
-      setLocalPreferences(preferences);
-      
+      setLocalPreferences(sanitizedPreferences);
+      setIsLoadingFirestore(false);
       return true;
     } catch (error) {
       console.error("Error saving preferences to Firestore:", error);
+      if (error instanceof Error) {
+        console.error("Error details:", error.message, error.name, error.stack);
+      }
+      setIsLoadingFirestore(false);
       return false;
     }
   };
@@ -110,16 +132,33 @@ export function usePreferences(isOnboarding = false) {
   // Save preferences mutation - persists to both API and Firestore
   const savePreferencesMutation = useMutation({
     mutationFn: async (preferences: UserPreferences) => {
-      // First save to API
-      const res = await apiRequest('POST', apiEndpoint, preferences);
-      const apiResponse = await res.json();
+      console.log("Saving preferences:", preferences);
       
-      // Then save to Firestore
-      await saveToFirestore(preferences);
-      
-      return apiResponse;
+      try {
+        // First save to API
+        const res = await apiRequest('POST', apiEndpoint, preferences);
+        console.log("API response status:", res.status);
+        
+        const apiResponse = await res.json();
+        console.log("API response data:", apiResponse);
+        
+        // Then save to Firestore (but don't fail if Firestore fails)
+        try {
+          await saveToFirestore(preferences);
+          console.log("Firestore save successful");
+        } catch (firestoreError) {
+          console.error("Firestore save failed but continuing:", firestoreError);
+          // Don't throw here, we'll continue with the API response
+        }
+        
+        return apiResponse;
+      } catch (error) {
+        console.error("Error in savePreferencesMutation:", error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
+      console.log("Preferences save successful:", data);
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: [apiEndpoint] });
       
@@ -134,9 +173,10 @@ export function usePreferences(isOnboarding = false) {
       });
     },
     onError: (error: Error) => {
+      console.error("Preferences save error:", error);
       toast({
         title: "Failed to save preferences",
-        description: error.message,
+        description: error.message || "An unknown error occurred",
         variant: "destructive",
       });
     },

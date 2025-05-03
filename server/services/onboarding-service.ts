@@ -79,19 +79,46 @@ export class OnboardingService {
    * @param streamingServices Array of streaming service IDs
    */
   async saveUserPreferences(userId: number, country: string, streamingServices: string[]) {
+    console.log(`OnboardingService.saveUserPreferences - userId: ${userId}, country: ${country}, streamingServices: ${streamingServices.join(',')}`);
+    
     try {
+      // Data validation
+      if (!userId || isNaN(userId)) {
+        throw new Error(`Invalid user ID: ${userId}`);
+      }
+      
+      if (!country || typeof country !== 'string' || country.length !== 2) {
+        throw new Error(`Invalid country code: ${country}`);
+      }
+      
+      if (!Array.isArray(streamingServices) || streamingServices.length === 0) {
+        console.warn(`Empty or invalid streaming services array: ${JSON.stringify(streamingServices)}`);
+        // Providing a default instead of failing
+        streamingServices = ['netflix'];
+      }
+      
+      console.log(`Calling storage.updateUserCountry - userId: ${userId}, country: ${country}`);
       const user = await storage.updateUserCountry(userId, country);
+      console.log(`Country updated successfully for user ${userId}`);
+      
+      console.log(`Calling storage.updateUserStreamingServices - userId: ${userId}, services: ${streamingServices.join(',')}`);
       const updatedUser = await storage.updateUserStreamingServices(userId, streamingServices);
+      console.log(`Streaming services updated successfully for user ${userId}`);
       
       // Update onboarding state to mark preferences step as completed
+      console.log(`Updating onboarding state for user ${userId} to ratings step (50% progress)`);
       await this.updateOnboardingState(userId, {
         currentStep: "ratings",
         progress: 50,
       });
+      console.log(`Onboarding state updated successfully for user ${userId}`);
       
       return updatedUser;
     } catch (error) {
-      console.error("Error saving user preferences:", error);
+      console.error(`Error saving user preferences for userId ${userId}:`, error);
+      if (error instanceof Error) {
+        console.error("Error details:", error.message, error.stack);
+      }
       throw error;
     }
   }
