@@ -19,6 +19,7 @@ interface ExplainerScreenData {
   icon: React.ReactNode;
 }
 
+// Make sure the Film interface matches the one in SingleFilmRating.tsx
 interface Film {
   id: number;
   title: string;
@@ -26,12 +27,18 @@ interface Film {
   year: number;
   genres: string[];
   type: 'mainstream' | 'indie';
+  director: string;
+  synopsis: string;
+  actors?: string[];
 }
 
+// Make sure the FilmRating interface matches the one in SingleFilmRating.tsx and server schema
 interface FilmRating {
   filmId: number;
-  status: 'not_seen' | 'not_interested' | 'loved' | 'liked' | 'meh' | 'hated';
-  rating?: number;
+  filmTitle: string;
+  filmPosterUrl: string;
+  rating: number | null;
+  status: string;
 }
 
 const OnboardingPage = () => {
@@ -59,10 +66,16 @@ const OnboardingPage = () => {
   // Save ratings
   const saveRatingsMutation = useMutation({
     mutationFn: async (ratings: FilmRating[]) => {
-      const response = await apiRequest('POST', '/api/onboarding/save-ratings', { ratings });
+      // Use the proper endpoint - 'rate-batch' instead of 'save-ratings'
+      console.log('Saving batch of ratings:', ratings.length);
+      const response = await apiRequest('POST', '/api/onboarding/rate-batch', { 
+        ratings,
+        batchNumber: batchOffset > 0 ? 2 : 1 // Use batchNumber to track which set this is
+      });
       return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Ratings saved successfully:', data);
       toast({
         title: 'Preferences saved',
         description: "We'll use these to find great films for you",
@@ -70,6 +83,10 @@ const OnboardingPage = () => {
     },
     onError: (error) => {
       console.error('Error saving ratings:', error);
+      // Log more details about the error to help debugging
+      if (error instanceof Error) {
+        console.error('Error details:', error.message, error.stack);
+      }
       toast({
         title: 'Failed to save preferences',
         description: 'Please try again',

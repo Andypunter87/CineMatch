@@ -59,16 +59,22 @@ export function SingleFilmRating({
 
   // Set a rating for a film
   const rateFilm = (filmId: number, rating: number | null) => {
+    // Make sure status matches server-side schema requirements 
+    // (matches the values in server/routes/onboarding.ts ratingSchema)
     let status = "not_seen";
     if (rating === null) {
       status = "not_seen";
-    } else if (rating <= 2) {
-      status = "seen";
-    } else if (rating <= 4) {
+    } else if (rating === 1) {
+      status = "hated";
+    } else if (rating === 2) {
+      status = "meh";
+    } else if (rating === 3 || rating === 4) {
       status = "liked";
     } else {
       status = "loved";
     }
+    
+    console.log(`Rating film ${filmId} with rating ${rating}, status: ${status}`);
     
     setRatings(prev => ({
       ...prev,
