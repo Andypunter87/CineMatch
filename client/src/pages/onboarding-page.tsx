@@ -7,6 +7,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { FilmRatingGrid } from '../components/onboarding/FilmRatingGrid';
+import { SingleFilmRating } from '../components/onboarding/SingleFilmRating';
 import OnboardingStepIndicator from '../components/onboarding/OnboardingStepIndicator';
 import WelcomeComplete from '../components/onboarding/WelcomeComplete';
 import UserPreferencesForm from '../components/onboarding/UserPreferencesForm';
@@ -352,25 +353,14 @@ const OnboardingPage = () => {
             </div>
           )}
 
-          {/* Film Rating Grid */}
+          {/* Single Film Rating (cards one at a time) */}
           {currentStep === 4 && !showMoreFilms && (
             <div className="py-4">
-              <div className="absolute top-2 right-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={handleSkip}
-                  className="h-8 w-8"
-                >
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Skip</span>
-                </Button>
-              </div>
-              
-              <FilmRatingGrid 
+              <SingleFilmRating
                 films={currentBatchFilms || []}
                 onRatingComplete={handleRatingComplete}
                 isLoading={isLoadingFilms || isLoadingAllFilms}
+                onSkip={handleSkip}
               />
             </div>
           )}
