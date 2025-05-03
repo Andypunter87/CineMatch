@@ -14,6 +14,7 @@ import FriendsPage from "@/pages/friends-page";
 import OnboardingPage from "@/pages/onboarding-page";
 import OnboardingTestPage from "@/pages/onboarding-test-page";
 import ErrorHandlingDemo from "@/pages/error-handling-demo";
+import FirestoreDemoPage from "@/pages/firestore-demo";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import Layout from "@/components/Layout";
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/error-handling-demo" component={ErrorHandlingDemo} />
+      <ProtectedRoute path="/firestore-demo" component={FirestoreDemoPage} />
       <Route component={NotFound} />
     </Switch>
   );
