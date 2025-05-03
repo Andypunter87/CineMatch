@@ -93,6 +93,13 @@ export default function Header() {
                       </DropdownMenuItem>
                     </Link>
                   )}
+                  {/* Debug menu options for Firebase auth */}
+                  <Link href="/firebase-auth-debug">
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => setIsMenuOpen(false)}>
+                      <Bug className="mr-2 h-4 w-4" />
+                      <span>Firebase Debug</span>
+                    </DropdownMenuItem>
+                  </Link>
                   <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Logout</span>
