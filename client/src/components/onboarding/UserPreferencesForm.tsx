@@ -14,12 +14,14 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { trackEvent, AnalyticsEvents } from '@/lib/analytics';
 import { db } from '@/lib/firebase';
+import { getAuth } from 'firebase/auth';
 import { 
   doc, 
   setDoc, 
   serverTimestamp,
   DocumentReference 
 } from 'firebase/firestore';
+import { FirebaseError } from 'firebase/app';
 
 // Same streaming services and countries arrays as in profile-page
 const streamingServices = [
@@ -175,7 +177,10 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
         try {
           // Create a document in Firestore
           if (user?.id) {
+            // Log detailed information for debugging
             console.log('Attempting to save preferences to Firestore for user ID:', user.id);
+            
+            // Create a document reference 
             const prefsDocRef = doc(db, 'user_preferences', `user-${user.id}`);
             
             // Prepare data for Firestore
@@ -190,8 +195,31 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
             console.log('Firestore document path:', prefsDocRef.path);
             console.log('Firestore data to save:', JSON.stringify(firestoreData));
             
-            await setDoc(prefsDocRef, firestoreData);
-            console.log('Preferences successfully saved to Firestore');
+            // Attempt to write to Firestore with detailed error capture
+            try {
+              await setDoc(prefsDocRef, firestoreData);
+              console.log('Preferences successfully saved to Firestore');
+            } catch (firestoreError: any) {
+              // Capture Firebase-specific error details
+              console.error('FIREBASE ERROR CODE:', firestoreError.code);
+              console.error('FIREBASE ERROR MESSAGE:', firestoreError.message);
+              
+              // Check if it's a permissions issue
+              if (firestoreError.code === 'permission-denied') {
+                const auth = getAuth();
+                console.error('FIREBASE SECURITY RULES ERROR: User lacks permission to write to this document');
+                console.error('Document path:', prefsDocRef.path);
+                console.error('Current user ID:', user.id);
+                console.error('Authentication state:', !!auth.currentUser);
+                if (auth.currentUser) {
+                  console.error('Firebase auth UID:', auth.currentUser.uid);
+                  console.error('UID/user.id match?', auth.currentUser.uid === String(user.id));
+                }
+              }
+              
+              // Rethrow to be caught by outer catch block
+              throw firestoreError;
+            }
           } else {
             console.warn('Cannot save to Firestore: User ID is undefined or null');
           }
@@ -203,7 +231,9 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
             console.error('Firestore error details:', {
               message: error.message,
               name: error.name,
-              stack: error.stack
+              stack: error.stack,
+              // If it's a Firebase error, also log the code
+              code: 'code' in error ? (error as any).code : 'N/A'
             });
           } else {
             console.error('Unknown Firestore error type:', typeof error);
