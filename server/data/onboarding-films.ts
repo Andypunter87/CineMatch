@@ -27,7 +27,7 @@ export const onboardingFilms: Film[] = [
     synopsis: "A quirky young woman decides to change the lives of those around her for the better, while struggling with her own isolation.",
     genres: ["Comedy", "Romance"],
     type: "indie",
-    posterUrl: "https://image.tmdb.org/t/p/w500/fayp6O3uvfkFVGYJfA0no1ZJLiG.jpg",
+    posterUrl: "https://image.tmdb.org/t/p/w500/oTKduWL2tpIKEmkAqF4mFEAWAsv.jpg",
     hasCompleteData: true,
     hasStreamingData: true
   },
@@ -79,7 +79,7 @@ export const onboardingFilms: Film[] = [
     synopsis: "A writer encounters the owner of an aging high-class hotel, who tells him of his early years serving as a lobby boy in the hotel's glorious years under an exceptional concierge.",
     genres: ["Comedy", "Drama"],
     type: "indie",
-    posterUrl: "https://image.tmdb.org/t/p/w500/eWdyYQreja6JGCzqHWXpWHDrrOo.jpg",
+    posterUrl: "https://image.tmdb.org/t/p/w500/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg",
     hasCompleteData: true,
     hasStreamingData: true
   },
@@ -92,7 +92,7 @@ export const onboardingFilms: Film[] = [
     synopsis: "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
     genres: ["Action", "Sci-Fi", "Thriller"],
     type: "mainstream",
-    posterUrl: "https://image.tmdb.org/t/p/w500/edv5CZvWj09upOsy71SPObV4TQr.jpg",
+    posterUrl: "https://image.tmdb.org/t/p/w500/ljsZTbVsrQSqZgWeep2B1QiDKuh.jpg",
     hasCompleteData: true,
     hasStreamingData: true
   },
@@ -170,7 +170,7 @@ export const onboardingFilms: Film[] = [
     synopsis: "A young African-American man grapples with his identity and sexuality while experiencing the everyday struggles of childhood, adolescence, and burgeoning adulthood.",
     genres: ["Drama"],
     type: "indie",
-    posterUrl: "https://image.tmdb.org/t/p/w500/qAwFbszz0kc7eqp7bTmBVEKiHkx.jpg",
+    posterUrl: "https://image.tmdb.org/t/p/w500/rcICfiL9fvwRjoWHxW8QeroLYrJ.jpg",
     hasCompleteData: true,
     hasStreamingData: true
   },
@@ -209,7 +209,7 @@ export const onboardingFilms: Film[] = [
     synopsis: "A promising young drummer enrolls at a cut-throat music conservatory where his dreams of greatness are mentored by an instructor who will stop at nothing to realize a student's potential.",
     genres: ["Drama", "Music"],
     type: "indie",
-    posterUrl: "https://image.tmdb.org/t/p/w500/lIv1QinFqz4dlp5U4lQ6HaiskOZ.jpg",
+    posterUrl: "https://image.tmdb.org/t/p/w500/7fn624j5lj3xTme2SgiLCeuedmO.jpg",
     hasCompleteData: true,
     hasStreamingData: true
   },
@@ -222,7 +222,7 @@ export const onboardingFilms: Film[] = [
     synopsis: "Harvard student Mark Zuckerberg creates the social networking site that would become known as Facebook, but is later sued by two brothers who claimed he stole their idea, and the co-founder who was later squeezed out of the business.",
     genres: ["Biography", "Drama"],
     type: "mainstream",
-    posterUrl: "https://image.tmdb.org/t/p/w500/n0ybibhJtQ5icDqTp8eRslj4y4K.jpg",
+    posterUrl: "https://image.tmdb.org/t/p/w500/n0ybibhJtQ5icDqTp8eRytcIHJx.jpg",
     hasCompleteData: true,
     hasStreamingData: true
   },
@@ -235,7 +235,7 @@ export const onboardingFilms: Film[] = [
     synopsis: "In 2002, an artistically inclined seventeen-year-old girl comes of age in Sacramento, California.",
     genres: ["Comedy", "Drama"],
     type: "indie",
-    posterUrl: "https://image.tmdb.org/t/p/w500/qZ0hQ54K9H1zDQHKjQsIQzUgaJB.jpg",
+    posterUrl: "https://image.tmdb.org/t/p/w500/gl66K7zRdtNYGrxyS2YDUP5ASZd.jpg",
     hasCompleteData: true,
     hasStreamingData: true
   },
@@ -248,7 +248,7 @@ export const onboardingFilms: Film[] = [
     synopsis: "A young African-American visits his white girlfriend's parents for the weekend, where his simmering uneasiness about their reception of him eventually reaches a boiling point.",
     genres: ["Horror", "Mystery", "Thriller"],
     type: "mainstream",
-    posterUrl: "https://image.tmdb.org/t/p/w500/qbaIHiSh4T5UIUHzwbXxAnlQlil.jpg",
+    posterUrl: "https://image.tmdb.org/t/p/w500/tFXcEccSQMf3lfhfXKSU9iRBpa3.jpg",
     hasCompleteData: true,
     hasStreamingData: true
   },
