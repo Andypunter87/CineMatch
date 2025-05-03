@@ -102,11 +102,22 @@ export function useSafeFirestore() {
     try {
       console.log(`Attempting to write to Firestore: ${docRef.path}`);
       
-      // Add server timestamp to the data
+      // Add server timestamp and tracking data to the document
       const enhancedData = {
         ...data,
-        updatedAt: serverTimestamp()
-      } as T & { updatedAt: any };
+        updatedAt: serverTimestamp(),
+        _metadata: {
+          operationTimestamp: new Date().toISOString(),
+          source: 'cinematch-onboarding',
+          operationType: 'write'
+        }
+      } as T & { updatedAt: any; _metadata: Record<string, any> };
+      
+      // Log Firestore operation for debugging
+      console.log(`[Firestore Test] Writing to: ${docRef.path}`, {
+        dataKeys: Object.keys(data),
+        timestamp: new Date().toISOString()
+      });
       
       // Check auth if required
       if (mergedOptions.requireAuth && !auth.currentUser && mergedOptions.retryWithAnonymousAuth) {
@@ -135,8 +146,21 @@ export function useSafeFirestore() {
             // Re-create the enhanced data for the retry attempt
             const retryData = {
               ...data,
-              updatedAt: serverTimestamp()
-            } as T & { updatedAt: any };
+              updatedAt: serverTimestamp(),
+              _metadata: {
+                operationTimestamp: new Date().toISOString(),
+                source: 'cinematch-onboarding',
+                operationType: 'write-retry',
+                retryReason: firestoreError.code
+              }
+            } as T & { updatedAt: any; _metadata: Record<string, any> };
+            
+            // Log retry attempt for debugging
+            console.log(`[Firestore Test] Retry writing to: ${docRef.path}`, {
+              dataKeys: Object.keys(data),
+              timestamp: new Date().toISOString(),
+              errorCode: firestoreError.code
+            });
             
             await setDoc(docRef, retryData);
             console.log(`Successfully wrote to ${docRef.path} after authentication fix`);
@@ -175,6 +199,12 @@ export function useSafeFirestore() {
     
     try {
       console.log(`Attempting to read from Firestore: ${docRef.path}`);
+      
+      // Log read operation for debugging
+      console.log(`[Firestore Test] Reading from: ${docRef.path}`, {
+        timestamp: new Date().toISOString(),
+        operation: 'read'
+      });
       
       // Check auth if required
       if (mergedOptions.requireAuth && !getAuth().currentUser && mergedOptions.retryWithAnonymousAuth) {

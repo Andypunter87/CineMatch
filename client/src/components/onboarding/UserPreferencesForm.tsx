@@ -14,6 +14,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { trackEvent, AnalyticsEvents } from '@/lib/analytics';
 import { useSafeFirestore } from '@/hooks/use-safe-firestore';
+import { logPreferenceOperation, LogLevel, logSuccess, logFirestoreError, LogCategory } from '@/lib/firestore-test-logger';
 
 // Same streaming services and countries arrays as in profile-page
 const streamingServices = [
