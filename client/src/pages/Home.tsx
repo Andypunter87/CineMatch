@@ -5,6 +5,7 @@ import { type RecommendationRequest, type Film } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { useRecommendationEngine } from "@/hooks/use-recommendation-engine";
+import { FirebaseAuthStatus } from "@/components/FirebaseAuthStatus";
 
 // Local storage key is now managed in the recommendation engine hook
 
@@ -77,6 +78,11 @@ export default function Home() {
         <p className="text-center text-gray-600 max-w-2xl mx-auto">
           Tell us about your mood and preferences, and we'll recommend the perfect films for you to watch.
         </p>
+      </div>
+      
+      {/* Display Firebase Auth Status */}
+      <div className="max-w-4xl mx-auto">
+        <FirebaseAuthStatus />
       </div>
       
       <div className="max-w-4xl mx-auto">

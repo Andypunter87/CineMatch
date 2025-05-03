@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, User, LogOut, Settings, Bookmark, Home, BarChart, Users } from "lucide-react";
+import { Loader2, User, LogOut, Settings, Bookmark, Home, BarChart, Users, Bug } from "lucide-react";
 import { NotificationBell } from "./notifications/NotificationBell";
 
 export default function Header() {

@@ -16,6 +16,7 @@ import OnboardingTestPage from "@/pages/onboarding-test-page";
 import ErrorHandlingDemo from "@/pages/error-handling-demo";
 import FirestoreDemoPage from "@/pages/firestore-demo";
 import FirestoreTestReport from "@/pages/firestore-test-report";
+import FirebaseAuthDebug from "@/pages/firebase-auth-debug";
 import { AuthProvider } from "@/hooks/use-auth";
 import { FirebaseAuthProvider } from "@/components/FirebaseAuthProvider";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/error-handling-demo" component={ErrorHandlingDemo} />
       <ProtectedRoute path="/firestore-demo" component={FirestoreDemoPage} />
       <ProtectedRoute path="/firestore-test-report" component={FirestoreTestReport} />
+      <ProtectedRoute path="/firebase-auth-debug" component={FirebaseAuthDebug} />
       <Route component={NotFound} />
     </Switch>
   );
