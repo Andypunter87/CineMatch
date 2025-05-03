@@ -876,10 +876,6 @@ export function useFirestoreCollections() {
     const userDocPath = getUserDocPath(userId);
     if (!userDocPath) return null;
     
-    const sessionPath = sessionId 
-      ? `${userDocPath}/sharedRecommendations/${sessionId}`
-      : null;
-    
     const sessionDocument = {
       friends: sessionData.friendIds,
       recommendedFilms: sessionData.filmIds,
@@ -887,7 +883,10 @@ export function useFirestoreCollections() {
       context: sessionData.context || {}
     };
     
-    if (sessionPath) {
+    // If we have a sessionId, update the existing document
+    if (sessionId) {
+      const sessionPath = `${userDocPath}/sharedRecommendations/${sessionId}`;
+      
       // Update existing session
       const success = await updateDocument(
         sessionPath,
@@ -898,8 +897,9 @@ export function useFirestoreCollections() {
         }
       );
       return success ? sessionId : null;
-    } else {
-      // Create new session
+    } 
+    // Otherwise create a new session document
+    else {
       const sharedRecommendationsCollection = `${userDocPath}/sharedRecommendations`;
       return addToCollection(
         sharedRecommendationsCollection,
