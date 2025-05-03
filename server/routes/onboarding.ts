@@ -114,19 +114,31 @@ router.post("/preferences", isAuthenticated, async (req, res) => {
   }
 });
 
-// Get films for rating during onboarding
+// Get films for rating during onboarding from curated static list
 router.get("/films", isAuthenticated, async (req, res) => {
   try {
     const count = parseInt(req.query.count as string) || 12;
     const offset = parseInt(req.query.offset as string) || 0;
     const batchNumber = parseInt(req.query.batchNumber as string) || 1;
+    const seed = parseInt(req.query.seed as string) || Date.now();
     
+    console.log(`Fetching ${count} onboarding films with offset ${offset}, batch ${batchNumber}, seed ${seed}`);
+    
+    // Get films from curated list in onboarding service
     const films = await onboardingService.getFilmsForOnboardingRatings(
       count,
       offset,
-      batchNumber
+      batchNumber,
+      seed
     );
     
+    // Check if we have films with proper poster URLs
+    const filmsWithPosters = films.filter(film => film.posterUrl && film.posterUrl.trim() !== '');
+    if (filmsWithPosters.length < films.length) {
+      console.warn(`Warning: ${films.length - filmsWithPosters.length} films missing valid poster URLs`);
+    }
+    
+    console.log(`Returning ${films.length} curated films for onboarding, first film: ${films[0]?.title || 'none'}`);
     res.json({ films });
   } catch (error) {
     console.error("Error fetching films for onboarding:", error);

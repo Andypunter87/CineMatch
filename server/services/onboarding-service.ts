@@ -104,16 +104,27 @@ export class OnboardingService {
    * @param count Number of films to retrieve
    * @param offset Pagination offset
    * @param batchNumber Which batch of films this is (for tracking)
+   * @param seed Random seed for consistent shuffling
    */
-  async getFilmsForOnboardingRatings(count: number = 12, offset: number = 0, batchNumber: number = 1) {
+  async getFilmsForOnboardingRatings(count: number = 12, offset: number = 0, batchNumber: number = 1, seed: number = Date.now()) {
     try {
       // Import is done inside the function to avoid circular dependencies
       const { getCuratedOnboardingFilms } = await import('../data/onboarding-films');
       
       // Get films from curated list rather than dynamic TMDB data
-      const films = getCuratedOnboardingFilms(count, offset, batchNumber);
+      // Using the seed ensures consistent random ordering within a session
+      const films = getCuratedOnboardingFilms(count, offset, seed);
       
       console.log(`Fetched ${films.length} curated films for onboarding (batch ${batchNumber})`);
+      
+      if (films.length === 0) {
+        throw new Error("No curated films available");
+      }
+      
+      // Log the first film for debugging
+      if (films.length > 0) {
+        console.log(`Selected ${films.length} films for this batch. First film: ${films[0].title}`);
+      }
       
       return films;
     } catch (error) {
@@ -122,7 +133,7 @@ export class OnboardingService {
       // Fallback to dynamic data in case of error
       try {
         console.log("Falling back to dynamic film data");
-        return await storage.getPopularFilmsForOnboarding(count, offset, batchNumber);
+        return await storage.getPopularFilmsForOnboarding(count, offset, seed);
       } catch (fallbackError) {
         console.error("Fallback also failed:", fallbackError);
         throw error; // Throw the original error
