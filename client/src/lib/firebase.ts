@@ -1,5 +1,5 @@
-import { initializeApp, FirebaseApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, Auth } from "firebase/auth";
+import { initializeApp, getApps, FirebaseApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider, Auth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 
 // Validate Firebase API key
@@ -46,12 +46,48 @@ let googleProvider: GoogleAuthProvider;
 
 try {
   if (isValidFirebaseConfig()) {
-    console.log("Initializing Firebase with valid configuration");
-    app = initializeApp(firebaseConfig);
+    console.log("Initializing Firebase with valid configuration", {
+      projectId: firebaseConfig.projectId,
+      authDomain: firebaseConfig.authDomain,
+      apiKeyFirstChars: firebaseConfig.apiKey.substring(0, 5) + '...',
+      appIdFirstChars: firebaseConfig.appId.split(':')[0] + ':...'
+    });
+    
+    // Check if firebase is already initialized
+    try {
+      const existingApps = getApps();
+      if (existingApps.length > 0) {
+        console.log("Firebase already initialized, reusing existing app");
+        app = existingApps[0];
+      } else {
+        console.log("No existing Firebase app found, creating new app");
+        app = initializeApp(firebaseConfig);
+      }
+    } catch (initError) {
+      console.error("Error checking existing apps:", initError);
+      app = initializeApp(firebaseConfig);
+    }
+    
+    console.log("Firebase app initialized, getting auth and Firestore");
     auth = getAuth(app);
     db = getFirestore(app);
     googleProvider = new GoogleAuthProvider();
+    console.log("Firebase services initialized successfully");
+    
+    // Log auth state for debugging
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log("Firebase user authenticated:", { 
+          uid: user.uid,
+          isAnonymous: user.isAnonymous,
+          provider: user.providerId || 'unknown'
+        });
+      } else {
+        console.log("No Firebase user authenticated");
+      }
+    });
   } else {
+    console.error("Invalid Firebase configuration, cannot initialize");
     throw new Error("Invalid Firebase configuration");
   }
 } catch (error) {
