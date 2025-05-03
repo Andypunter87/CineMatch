@@ -9,6 +9,9 @@ export enum LogCategory {
   RATING = 'ratings',
   AUTH = 'authentication',
   CONFIG = 'configuration',
+  WATCHLIST = 'watchlist',
+  FRIENDS = 'friends',
+  RECOMMENDATION = 'recommendations',
   OTHER = 'other'
 }
 
@@ -27,7 +30,7 @@ interface FirestoreLogOptions {
   documentPath?: string;
   collectionPath?: string;
   data?: any;
-  operationType?: 'read' | 'write' | 'delete' | 'update' | 'query' | 'setup' | 'test';
+  operationType?: 'read' | 'write' | 'delete' | 'update' | 'query' | 'setup' | 'test' | 'add' | 'access';
   additionalInfo?: Record<string, any>;
 }
 
@@ -173,6 +176,39 @@ export function logAuthOperation(
   options: FirestoreLogOptions = {}
 ) {
   return logFirestoreOperation(LogCategory.AUTH, level, message, options);
+}
+
+/**
+ * Convenience method for logging watchlist operations
+ */
+export function logWatchlistOperation(
+  level: LogLevel,
+  message: string,
+  options: FirestoreLogOptions = {}
+) {
+  return logFirestoreOperation(LogCategory.WATCHLIST, level, message, options);
+}
+
+/**
+ * Convenience method for logging friends operations
+ */
+export function logFriendsOperation(
+  level: LogLevel,
+  message: string,
+  options: FirestoreLogOptions = {}
+) {
+  return logFirestoreOperation(LogCategory.FRIENDS, level, message, options);
+}
+
+/**
+ * Convenience method for logging recommendation operations
+ */
+export function logRecommendationOperation(
+  level: LogLevel,
+  message: string,
+  options: FirestoreLogOptions = {}
+) {
+  return logFirestoreOperation(LogCategory.RECOMMENDATION, level, message, options);
 }
 
 /**

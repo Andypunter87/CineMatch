@@ -1,0 +1,77 @@
+Absolutely, Duncan! Here’s the fully combined, polished Replit prompt — integrating the Firestore schema changes, onboarding ratings, recommendation ratings, watchlist, and the new friends + shared recommendations layer.
+
+⸻
+
+💻 Final Combined Replit Prompt (copy this straight into Replit)
+
+Please update the CineMatch app code and Firestore integration to implement the following unified schema:
+
+⸻
+
+🔧 Firestore Structure:
+	•	Collection: users
+	•	Document: {userId}
+	•	Document fields:
+	•	preferences: { country, streamingServices }
+	•	onboardingStatus: { step, progress }
+	•	Subcollection: onboardingRatings
+	•	Document {filmId}: { filmId, title, rating (1–5), status, timestamp }
+	•	Subcollection: recommendationRatings
+	•	Document {filmId}: { filmId, title, rating (good/bad), timestamp }
+	•	Subcollection: watchlist
+	•	Document {filmId}: { filmId, title, posterUrl, addedAt }
+	•	Subcollection: friends
+	•	Document {friendUserId}: { friendSince, status ('accepted' | 'pending' | 'blocked') }
+	•	Subcollection: sharedRecommendations
+	•	Document {sessionId}: { friends: [userId], recommendedFilms: [filmId], createdAt, context }
+
+⸻
+
+✅ Tasks:
+
+1️⃣ Update the onboarding flow to save onboarding ratings to users/{userId}/onboardingRatings.
+
+2️⃣ Update the recommendation flow so that when a user marks a recommendation as good/bad, it’s saved under users/{userId}/recommendationRatings.
+
+3️⃣ Update the watchlist functionality to save watchlist entries under users/{userId}/watchlist.
+
+4️⃣ Implement a friends system:
+	•	Allow adding/removing friends.
+	•	Save friend connections under users/{userId}/friends/{friendUserId} with friendSince and status.
+
+5️⃣ Implement saving shared/group recommendations under users/{userId}/sharedRecommendations/{sessionId} with the friends involved and the list of recommended films.
+
+6️⃣ Provide clear error logging for all Firestore writes (including path and error code) for easier debugging.
+
+7️⃣ Review and update Firestore rules to allow authenticated users to read/write only to their own data:
+
+match /users/{userId}/{document=**} {  
+  allow read, write: if request.auth != null && request.auth.uid == userId;  
+}  
+
+8️⃣ After applying these changes, provide:
+	•	Example Firestore queries I can run in the Firebase Console to confirm data is saving.
+	•	Example test users and flows to validate the full data pipeline.
+
+⸻
+
+Important: Ensure the backend hooks, client-side hooks, and API endpoints align with this structure. Use subcollections for scalable storage, not bloated single documents.
+
+⸻
+
+🛠 What You Need to Do in Firebase
+
+✅ You do not need to manually create the collections or subcollections — Firestore will create them when the first write happens.
+
+✅ You do need to:
+	•	Check the Firestore Rules and ensure they match the schema above (we can write these fully if you want).
+	•	Confirm that your Firestore Database location (likely europe-west or us-central) matches your performance needs, but for now, the schema works across all regions.
+
+⸻
+
+Would you like me to draft:
+👉 The exact Firestore rules you can paste into the console,
+👉 The test queries you can run in the Firestore web console, or
+👉 The UX flow recommendations for how to expose these friend and group features to users?
+
+Just say the word! 🚀
