@@ -6,6 +6,7 @@ import { useWatchlist } from '@/hooks/use-watchlist';
 import { useFriends } from '@/hooks/use-friends';
 import { useSharedRecommendations } from '@/hooks/use-shared-recommendations';
 import { useUserPreferences } from '@/hooks/use-user-preferences';
+import { FilmRating } from '@/lib/types/film-rating';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';

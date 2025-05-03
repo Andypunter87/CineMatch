@@ -1,1051 +1,873 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { 
+  collection, 
   doc, 
-  collection,
+  getDoc, 
+  getDocs, 
   setDoc, 
-  addDoc,
-  getDoc,
-  getDocs,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
-  limit,
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where, 
+  limit, 
+  orderBy, 
   serverTimestamp,
+  QueryConstraint,
+  OrderByDirection, 
   Timestamp,
-  DocumentReference,
-  CollectionReference,
-  FirestoreError,
+  WithFieldValue,
   DocumentData,
-  WhereFilterOp,
-  QuerySnapshot,
-  DocumentSnapshot,
-  FieldPath
+  writeBatch,
+  WriteBatch,
+  DocumentReference
 } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+
 import { db } from '@/lib/firebase';
-import { useToast } from '@/hooks/use-toast';
 import { 
-  logFirestoreError, 
-  logPreferenceOperation, 
-  LogLevel, 
   LogCategory, 
-  logSuccess, 
-  logAuthOperation,
-  logRatingOperation,
-  logFriendsOperation,
-  logWatchlistOperation,
-  logRecommendationOperation
+  LogLevel, 
+  logDebug, 
+  logError, 
+  logQuery, 
+  logWrite, 
+  logSuccess 
 } from '@/lib/firestore-test-logger';
+import { OnboardingRating, RecommendationRating } from '@/lib/types/film-rating';
 
-interface FirestoreOperationOptions {
-  requireAuth?: boolean;
-  retryWithAnonymousAuth?: boolean;
-  suppressErrors?: boolean;
-  userFacingErrorMessage?: string;
+type FirestoreLog = {
   logCategory?: LogCategory;
-}
-
-const defaultOptions: FirestoreOperationOptions = {
-  requireAuth: true,
-  retryWithAnonymousAuth: true,
-  suppressErrors: false,
-  userFacingErrorMessage: 'Error accessing database',
-  logCategory: LogCategory.OTHER
+  additionalInfo?: Record<string, any>;
 };
 
-// Type for query conditions
-type QueryCondition = [string | FieldPath, WhereFilterOp, any];
-
-// Type for order conditions
-type OrderCondition = [string | FieldPath, 'asc' | 'desc'];
-
 /**
- * Hook for managing Firestore collections and subcollections with improved error handling
- * This supports the new unified schema with proper subcollections
+ * This hook provides a unified interface for interacting with Firestore collections
+ * following the new hierarchical schema with subcollections
  */
 export function useFirestoreCollections() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<FirestoreError | null>(null);
-  const { toast } = useToast();
+  // Track error state
+  const [error, setError] = useState<Error | null>(null);
   
   /**
-   * Create a path to a user document
+   * Get a document from Firestore by path and ID
    */
-  const getUserDocPath = useCallback((userId?: string | number): string | null => {
-    if (!userId) {
-      const auth = getAuth();
-      if (!auth.currentUser) return null;
-      userId = auth.currentUser.uid;
-    }
-    
-    return `users/${userId}`;
-  }, []);
-  
-  /**
-   * Diagnose a Firestore error and log detailed information
-   */
-  const diagnoseFirestoreError = useCallback((
-    error: FirestoreError, 
-    path: string,
-    category: LogCategory
-  ) => {
-    const auth = getAuth();
-    const isAuthenticated = !!auth.currentUser;
-    
-    // Create standard console output for backward compatibility
-    console.error('FIREBASE ERROR DIAGNOSIS:');
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
-    console.error('Path:', path);
-    console.error('Auth state:', isAuthenticated ? 'Authenticated' : 'Not authenticated');
-    
-    if (auth.currentUser) {
-      console.error('Auth user ID:', auth.currentUser.uid);
-      console.error('Auth provider:', auth.currentUser.providerId);
-      console.error('Is anonymous:', auth.currentUser.isAnonymous);
-    }
-    
-    // Determine root cause
-    let rootCause = 'Unknown error';
-    if (error.code === 'permission-denied') {
-      rootCause = 'FIREBASE SECURITY RULES ERROR - User lacks permission';
-      console.error('ROOT CAUSE: ' + rootCause);
-      console.error('Recommended action: Check Firestore security rules');
-    } else if (error.code === 'unauthenticated') {
-      rootCause = 'FIREBASE AUTHENTICATION ISSUE - User not authenticated';
-      console.error('ROOT CAUSE: ' + rootCause);
-    } else if (error.code === 'unavailable') {
-      rootCause = 'FIREBASE CONNECTIVITY ISSUE - Service may be unavailable';
-      console.error('ROOT CAUSE: ' + rootCause);
-    } else if (error.code === 'cancelled') {
-      rootCause = 'FIREBASE OPERATION CANCELLED';
-      console.error('ROOT CAUSE: ' + rootCause);
-    } else if (error.code === 'invalid-argument') {
-      rootCause = 'FIREBASE INVALID ARGUMENT - Check data structure';
-      console.error('ROOT CAUSE: ' + rootCause);
-    }
-    
-    // Use enhanced logger for detailed logging
-    logFirestoreError(category, 'Firestore Error Diagnosis', error, {
-      documentPath: path,
-      operationType: 'access',
-      additionalInfo: {
-        authState: isAuthenticated ? 'authenticated' : 'not_authenticated',
-        authDetails: auth.currentUser ? {
-          uid: auth.currentUser.uid,
-          provider: auth.currentUser.providerId,
-          isAnonymous: auth.currentUser.isAnonymous
-        } : null,
-        rootCause,
-        timestamp: new Date().toISOString(),
-        diagnosisId: `diag-${Date.now()}`
-      }
-    });
-    
-    setError(error);
-  }, []);
-  
-  /**
-   * Get a document from a specified path
-   */
-  const getDocument = useCallback(async <T = DocumentData>(
-    path: string,
-    options: FirestoreOperationOptions = {}
+  const getDocumentById = async <T>(
+    collection: string,
+    id: string | number,
+    options: FirestoreLog = {}
   ): Promise<T | null> => {
-    const mergedOptions = { ...defaultOptions, ...options };
-    const logCat = mergedOptions.logCategory || LogCategory.OTHER;
-    
-    setIsLoading(true);
-    setError(null);
+    const { logCategory = LogCategory.OTHER, additionalInfo = {} } = options;
     
     try {
-      console.log(`Getting document at path: ${path}`);
-      
-      // Create a unique operation ID
-      const opId = `get-${Date.now()}`;
-      
-      // Log operation attempt
-      logPreferenceOperation(LogLevel.INFO, 'Getting Firestore Document', {
-        documentPath: path,
-        operationType: 'read',
-        additionalInfo: {
-          operationId: opId,
-          timestamp: new Date().toISOString()
-        }
-      });
+      // Log the query operation
+      logQuery(logCategory, `Getting document from ${collection}/${id}`, { path: `${collection}/${id}`, ...additionalInfo });
       
       // Get the document
-      const docRef = doc(db, path);
+      const docRef = doc(db, collection, String(id));
       const docSnap = await getDoc(docRef);
       
-      if (!docSnap.exists()) {
-        console.log(`No document found at path: ${path}`);
+      if (docSnap.exists()) {
+        // Log success
+        logSuccess(logCategory, `Document retrieved from ${collection}/${id}`, { 
+          status: 'success', 
+          path: `${collection}/${id}`,
+          ...additionalInfo 
+        });
+        
+        return { id: docSnap.id, ...docSnap.data() } as T;
+      } else {
+        // Log not found
+        logDebug(LogLevel.INFO, `Document not found at ${collection}/${id}`, { 
+          status: 'not_found', 
+          path: `${collection}/${id}`,
+          ...additionalInfo 
+        });
+        
         return null;
       }
+    } catch (err) {
+      const error = err as Error;
       
-      // Log success
-      logSuccess(logCat, 'Retrieved Document Successfully', {
-        documentPath: path,
-        operationType: 'read',
-        additionalInfo: {
-          operationId: opId,
-          timestamp: new Date().toISOString(),
-          docId: docSnap.id
-        }
+      // Log error
+      logError(logCategory, `Error getting document from ${collection}/${id}`, { 
+        error: error.message, 
+        path: `${collection}/${id}`,
+        ...additionalInfo 
       });
       
-      const data = docSnap.data() as T;
-      return data;
-    } catch (error) {
-      const firestoreError = error as FirestoreError;
-      diagnoseFirestoreError(firestoreError, path, logCat);
-      
-      if (!mergedOptions.suppressErrors) {
-        toast({
-          title: "Error",
-          description: mergedOptions.userFacingErrorMessage || firestoreError.message,
-          variant: "destructive",
-        });
-      }
-      
+      setError(error);
       return null;
-    } finally {
-      setIsLoading(false);
     }
-  }, [diagnoseFirestoreError, toast]);
+  };
   
   /**
-   * Set a document at the specified path (overwrites existing data)
+   * Query a collection with filters, ordering, and limits
    */
-  const setDocument = useCallback(async <T extends DocumentData>(
-    path: string,
-    data: T,
-    options: FirestoreOperationOptions = {}
-  ): Promise<boolean> => {
-    const mergedOptions = { ...defaultOptions, ...options };
-    const logCat = mergedOptions.logCategory || LogCategory.OTHER;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      console.log(`Setting document at path: ${path}`);
-      
-      // Create a unique operation ID
-      const opId = `set-${Date.now()}`;
-      
-      // Log operation attempt
-      logPreferenceOperation(LogLevel.INFO, 'Setting Firestore Document', {
-        documentPath: path,
-        operationType: 'write',
-        data: { keys: Object.keys(data) },
-        additionalInfo: {
-          operationId: opId,
-          timestamp: new Date().toISOString()
-        }
-      });
-      
-      // Add metadata
-      const enhancedData = {
-        ...data,
-        updatedAt: serverTimestamp(),
-        _metadata: {
-          operationId: opId,
-          timestamp: new Date().toISOString()
-        }
-      };
-      
-      // Set the document
-      const docRef = doc(db, path);
-      await setDoc(docRef, enhancedData);
-      
-      // Log success
-      logSuccess(logCat, 'Document Set Successfully', {
-        documentPath: path,
-        operationType: 'write',
-        additionalInfo: {
-          operationId: opId,
-          timestamp: new Date().toISOString(),
-          docId: docRef.id
-        }
-      });
-      
-      return true;
-    } catch (error) {
-      const firestoreError = error as FirestoreError;
-      diagnoseFirestoreError(firestoreError, path, logCat);
-      
-      if (!mergedOptions.suppressErrors) {
-        toast({
-          title: "Error",
-          description: mergedOptions.userFacingErrorMessage || firestoreError.message,
-          variant: "destructive",
-        });
-      }
-      
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [diagnoseFirestoreError, toast]);
-  
-  /**
-   * Update a document at the specified path (merges with existing data)
-   */
-  const updateDocument = useCallback(async <T extends DocumentData>(
-    path: string,
-    data: Partial<T>,
-    options: FirestoreOperationOptions = {}
-  ): Promise<boolean> => {
-    const mergedOptions = { ...defaultOptions, ...options };
-    const logCat = mergedOptions.logCategory || LogCategory.OTHER;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      console.log(`Updating document at path: ${path}`);
-      
-      // Create a unique operation ID
-      const opId = `update-${Date.now()}`;
-      
-      // Log operation attempt
-      logPreferenceOperation(LogLevel.INFO, 'Updating Firestore Document', {
-        documentPath: path,
-        operationType: 'update',
-        data: { keys: Object.keys(data) },
-        additionalInfo: {
-          operationId: opId,
-          timestamp: new Date().toISOString()
-        }
-      });
-      
-      // Add metadata
-      const enhancedData = {
-        ...data,
-        updatedAt: serverTimestamp(),
-        '_metadata.operationId': opId,
-        '_metadata.timestamp': new Date().toISOString()
-      };
-      
-      // Update the document
-      const docRef = doc(db, path);
-      await updateDoc(docRef, enhancedData);
-      
-      // Log success
-      logSuccess(logCat, 'Document Updated Successfully', {
-        documentPath: path,
-        operationType: 'update',
-        additionalInfo: {
-          operationId: opId,
-          timestamp: new Date().toISOString(),
-          docId: docRef.id
-        }
-      });
-      
-      return true;
-    } catch (error) {
-      const firestoreError = error as FirestoreError;
-      diagnoseFirestoreError(firestoreError, path, logCat);
-      
-      if (!mergedOptions.suppressErrors) {
-        toast({
-          title: "Error",
-          description: mergedOptions.userFacingErrorMessage || firestoreError.message,
-          variant: "destructive",
-        });
-      }
-      
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [diagnoseFirestoreError, toast]);
-  
-  /**
-   * Delete a document at the specified path
-   */
-  const deleteDocument = useCallback(async (
-    path: string,
-    options: FirestoreOperationOptions = {}
-  ): Promise<boolean> => {
-    const mergedOptions = { ...defaultOptions, ...options };
-    const logCat = mergedOptions.logCategory || LogCategory.OTHER;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      console.log(`Deleting document at path: ${path}`);
-      
-      // Create a unique operation ID
-      const opId = `delete-${Date.now()}`;
-      
-      // Log operation attempt
-      logPreferenceOperation(LogLevel.INFO, 'Deleting Firestore Document', {
-        documentPath: path,
-        operationType: 'delete',
-        additionalInfo: {
-          operationId: opId,
-          timestamp: new Date().toISOString()
-        }
-      });
-      
-      // Delete the document
-      const docRef = doc(db, path);
-      await deleteDoc(docRef);
-      
-      // Log success
-      logSuccess(logCat, 'Document Deleted Successfully', {
-        documentPath: path,
-        operationType: 'delete',
-        additionalInfo: {
-          operationId: opId,
-          timestamp: new Date().toISOString(),
-          docId: docRef.id
-        }
-      });
-      
-      return true;
-    } catch (error) {
-      const firestoreError = error as FirestoreError;
-      diagnoseFirestoreError(firestoreError, path, logCat);
-      
-      if (!mergedOptions.suppressErrors) {
-        toast({
-          title: "Error",
-          description: mergedOptions.userFacingErrorMessage || firestoreError.message,
-          variant: "destructive",
-        });
-      }
-      
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [diagnoseFirestoreError, toast]);
-  
-  /**
-   * Add a document to a collection (auto-generates ID)
-   */
-  const addToCollection = useCallback(async <T extends DocumentData>(
+  const queryCollection = async <T>(
     collectionPath: string,
-    data: T,
-    options: FirestoreOperationOptions = {}
-  ): Promise<string | null> => {
-    const mergedOptions = { ...defaultOptions, ...options };
-    const logCat = mergedOptions.logCategory || LogCategory.OTHER;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      console.log(`Adding document to collection: ${collectionPath}`);
-      
-      // Create a unique operation ID
-      const opId = `add-${Date.now()}`;
-      
-      // Log operation attempt
-      logPreferenceOperation(LogLevel.INFO, 'Adding Document to Collection', {
-        collectionPath: collectionPath,
-        operationType: 'add',
-        data: { keys: Object.keys(data) },
-        additionalInfo: {
-          operationId: opId,
-          timestamp: new Date().toISOString()
-        }
-      });
-      
-      // Add metadata
-      const enhancedData = {
-        ...data,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        _metadata: {
-          operationId: opId,
-          timestamp: new Date().toISOString()
-        }
-      };
-      
-      // Add the document
-      const collectionRef = collection(db, collectionPath);
-      const docRef = await addDoc(collectionRef, enhancedData);
-      
-      // Log success
-      logSuccess(logCat, 'Document Added Successfully', {
-        collectionPath: collectionPath,
-        documentPath: `${collectionPath}/${docRef.id}`,
-        operationType: 'add',
-        additionalInfo: {
-          operationId: opId,
-          timestamp: new Date().toISOString(),
-          docId: docRef.id
-        }
-      });
-      
-      return docRef.id;
-    } catch (error) {
-      const firestoreError = error as FirestoreError;
-      diagnoseFirestoreError(firestoreError, collectionPath, logCat);
-      
-      if (!mergedOptions.suppressErrors) {
-        toast({
-          title: "Error",
-          description: mergedOptions.userFacingErrorMessage || firestoreError.message,
-          variant: "destructive",
-        });
-      }
-      
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [diagnoseFirestoreError, toast]);
-  
-  /**
-   * Query documents from a collection
-   */
-  const queryCollection = useCallback(async <T = DocumentData>(
-    collectionPath: string,
-    conditions: QueryCondition[] = [],
-    orderConditions: OrderCondition[] = [],
-    resultsLimit: number = 0,
-    options: FirestoreOperationOptions = {}
+    queryConstraints: QueryConstraint[] = [],
+    orderByFields: [string, OrderByDirection][] = [],
+    limitCount: number = 0,
+    options: FirestoreLog = {}
   ): Promise<T[]> => {
-    const mergedOptions = { ...defaultOptions, ...options };
-    const logCat = mergedOptions.logCategory || LogCategory.OTHER;
-    
-    setIsLoading(true);
-    setError(null);
+    const { logCategory = LogCategory.OTHER, additionalInfo = {} } = options;
     
     try {
-      console.log(`Querying collection: ${collectionPath}`);
+      // Build the query constraints
+      const constraints: QueryConstraint[] = [...queryConstraints];
       
-      // Create a unique operation ID
-      const opId = `query-${Date.now()}`;
-      
-      // Build the query
-      const collectionRef = collection(db, collectionPath);
-      let queryConstraints = [];
-      
-      // Add where conditions
-      for (const [field, operator, value] of conditions) {
-        queryConstraints.push(where(field, operator, value));
-      }
-      
-      // Add order conditions
-      for (const [field, direction] of orderConditions) {
-        queryConstraints.push(orderBy(field, direction));
+      // Add ordering if specified
+      if (orderByFields.length > 0) {
+        orderByFields.forEach(([field, direction]) => {
+          constraints.push(orderBy(field, direction));
+        });
       }
       
       // Add limit if specified
-      if (resultsLimit > 0) {
-        queryConstraints.push(limit(resultsLimit));
+      if (limitCount > 0) {
+        constraints.push(limit(limitCount));
       }
       
-      // Log operation attempt
-      logPreferenceOperation(LogLevel.INFO, 'Querying Collection', {
-        collectionPath: collectionPath,
-        operationType: 'query',
-        additionalInfo: {
-          operationId: opId,
-          timestamp: new Date().toISOString(),
-          conditions: conditions.map(c => `${c[0]} ${c[1]} ${c[2]}`),
-          orderBy: orderConditions.map(o => `${o[0]} ${o[1]}`),
-          limit: resultsLimit || 'none'
-        }
+      // Log the query operation
+      logQuery(logCategory, `Querying collection ${collectionPath}`, { 
+        path: collectionPath, 
+        constraints: JSON.stringify(constraints),
+        ...additionalInfo 
       });
       
-      // Execute the query
-      const q = query(collectionRef, ...queryConstraints);
+      // Get the collection reference and apply constraints
+      const collectionRef = collection(db, collectionPath);
+      const q = constraints.length > 0 ? query(collectionRef, ...constraints) : query(collectionRef);
+      
+      // Get the documents
       const querySnapshot = await getDocs(q);
       
-      // Convert to array of data
-      const results = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as T[];
+      // Extract and transform data
+      const results = querySnapshot.docs.map(doc => {
+        return { id: doc.id, ...doc.data() } as T;
+      });
       
       // Log success
-      logSuccess(logCat, 'Query Executed Successfully', {
-        collectionPath: collectionPath,
-        operationType: 'query',
-        additionalInfo: {
-          operationId: opId,
-          timestamp: new Date().toISOString(),
-          resultCount: results.length
-        }
+      logSuccess(logCategory, `Retrieved ${results.length} documents from ${collectionPath}`, { 
+        status: 'success', 
+        count: results.length,
+        path: collectionPath,
+        ...additionalInfo 
       });
       
       return results;
-    } catch (error) {
-      const firestoreError = error as FirestoreError;
-      diagnoseFirestoreError(firestoreError, collectionPath, logCat);
+    } catch (err) {
+      const error = err as Error;
       
-      if (!mergedOptions.suppressErrors) {
-        toast({
-          title: "Error",
-          description: mergedOptions.userFacingErrorMessage || firestoreError.message,
-          variant: "destructive",
-        });
-      }
+      // Log error
+      logError(logCategory, `Error querying collection ${collectionPath}`, { 
+        error: error.message, 
+        path: collectionPath,
+        ...additionalInfo 
+      });
       
+      setError(error);
       return [];
-    } finally {
-      setIsLoading(false);
     }
-  }, [diagnoseFirestoreError, toast]);
+  };
   
   /**
-   * ONBOARDING RATINGS
-   * Save/update a film rating during onboarding
+   * Add a document to a collection or subcollection
    */
-  const saveOnboardingRating = useCallback(async (
+  const addDocument = async <T extends DocumentData>(
+    collectionPath: string,
+    data: WithFieldValue<T>,
+    options: FirestoreLog = {}
+  ): Promise<string | null> => {
+    const { logCategory = LogCategory.OTHER, additionalInfo = {} } = options;
+    
+    try {
+      // Add server timestamp to the data
+      const dataWithTimestamp = {
+        ...data,
+        timestamp: serverTimestamp()
+      };
+      
+      // Log the write operation
+      logWrite(logCategory, `Adding document to ${collectionPath}`, { 
+        path: collectionPath, 
+        operation: 'add',
+        ...additionalInfo 
+      });
+      
+      // Add the document
+      const collectionRef = collection(db, collectionPath);
+      const docRef = await addDoc(collectionRef, dataWithTimestamp);
+      
+      // Log success
+      logSuccess(logCategory, `Document added to ${collectionPath} with ID ${docRef.id}`, { 
+        status: 'success', 
+        path: `${collectionPath}/${docRef.id}`,
+        operation: 'add',
+        ...additionalInfo 
+      });
+      
+      return docRef.id;
+    } catch (err) {
+      const error = err as Error;
+      
+      // Log error
+      logError(logCategory, `Error adding document to ${collectionPath}`, { 
+        error: error.message, 
+        path: collectionPath,
+        operation: 'add',
+        ...additionalInfo 
+      });
+      
+      setError(error);
+      return null;
+    }
+  };
+  
+  /**
+   * Set a document at a specific path (create or replace)
+   */
+  const setDocument = async <T extends DocumentData>(
+    documentPath: string,
+    data: WithFieldValue<T>,
+    merge: boolean = true,
+    options: FirestoreLog = {}
+  ): Promise<boolean> => {
+    const { logCategory = LogCategory.OTHER, additionalInfo = {} } = options;
+    
+    try {
+      // Add server timestamp to the data
+      const dataWithTimestamp = {
+        ...data,
+        timestamp: serverTimestamp()
+      };
+      
+      // Log the write operation
+      logWrite(logCategory, `Setting document at ${documentPath}`, { 
+        path: documentPath, 
+        operation: merge ? 'merge' : 'set',
+        ...additionalInfo 
+      });
+      
+      // Set the document
+      const docRef = doc(db, documentPath);
+      await setDoc(docRef, dataWithTimestamp, { merge });
+      
+      // Log success
+      logSuccess(logCategory, `Document set at ${documentPath}`, { 
+        status: 'success', 
+        path: documentPath,
+        operation: merge ? 'merge' : 'set',
+        ...additionalInfo 
+      });
+      
+      return true;
+    } catch (err) {
+      const error = err as Error;
+      
+      // Log error
+      logError(logCategory, `Error setting document at ${documentPath}`, { 
+        error: error.message, 
+        path: documentPath,
+        operation: merge ? 'merge' : 'set',
+        ...additionalInfo 
+      });
+      
+      setError(error);
+      return false;
+    }
+  };
+  
+  /**
+   * Update a document at a specific path (partial update)
+   */
+  const updateDocument = async (
+    documentPath: string,
+    data: WithFieldValue<DocumentData>,
+    options: FirestoreLog = {}
+  ): Promise<boolean> => {
+    const { logCategory = LogCategory.OTHER, additionalInfo = {} } = options;
+    
+    try {
+      // Add last updated timestamp
+      const dataWithTimestamp = {
+        ...data,
+        lastUpdated: serverTimestamp()
+      };
+      
+      // Log the write operation
+      logWrite(logCategory, `Updating document at ${documentPath}`, { 
+        path: documentPath, 
+        operation: 'update',
+        ...additionalInfo 
+      });
+      
+      // Update the document
+      const docRef = doc(db, documentPath);
+      await updateDoc(docRef, dataWithTimestamp);
+      
+      // Log success
+      logSuccess(logCategory, `Document updated at ${documentPath}`, { 
+        status: 'success', 
+        path: documentPath,
+        operation: 'update',
+        ...additionalInfo 
+      });
+      
+      return true;
+    } catch (err) {
+      const error = err as Error;
+      
+      // Log error
+      logError(logCategory, `Error updating document at ${documentPath}`, { 
+        error: error.message, 
+        path: documentPath,
+        operation: 'update',
+        ...additionalInfo 
+      });
+      
+      setError(error);
+      return false;
+    }
+  };
+  
+  /**
+   * Delete a document at a specific path
+   */
+  const deleteDocument = async (
+    documentPath: string,
+    options: FirestoreLog = {}
+  ): Promise<boolean> => {
+    const { logCategory = LogCategory.OTHER, additionalInfo = {} } = options;
+    
+    try {
+      // Log the write operation
+      logWrite(logCategory, `Deleting document at ${documentPath}`, { 
+        path: documentPath, 
+        operation: 'delete',
+        ...additionalInfo 
+      });
+      
+      // Delete the document
+      const docRef = doc(db, documentPath);
+      await deleteDoc(docRef);
+      
+      // Log success
+      logSuccess(logCategory, `Document deleted at ${documentPath}`, { 
+        status: 'success', 
+        path: documentPath,
+        operation: 'delete',
+        ...additionalInfo 
+      });
+      
+      return true;
+    } catch (err) {
+      const error = err as Error;
+      
+      // Log error
+      logError(logCategory, `Error deleting document at ${documentPath}`, { 
+        error: error.message, 
+        path: documentPath,
+        operation: 'delete',
+        ...additionalInfo 
+      });
+      
+      setError(error);
+      return false;
+    }
+  };
+  
+  /**
+   * Create a new Firestore batch operation
+   */
+  const createBatch = (): WriteBatch => {
+    return writeBatch(db);
+  };
+  
+  /**
+   * Commit a batch operation with error handling and logging
+   */
+  const commitBatch = async (
+    batch: WriteBatch,
+    options: FirestoreLog = {}
+  ): Promise<boolean> => {
+    const { logCategory = LogCategory.OTHER, additionalInfo = {} } = options;
+    
+    try {
+      // Log the batch operation
+      logWrite(logCategory, `Committing batch operation`, { 
+        operation: 'batch',
+        ...additionalInfo 
+      });
+      
+      // Commit the batch
+      await batch.commit();
+      
+      // Log success
+      logSuccess(logCategory, `Batch operation committed successfully`, { 
+        status: 'success', 
+        operation: 'batch',
+        ...additionalInfo 
+      });
+      
+      return true;
+    } catch (err) {
+      const error = err as Error;
+      
+      // Log error
+      logError(logCategory, `Error committing batch operation`, { 
+        error: error.message, 
+        operation: 'batch',
+        ...additionalInfo 
+      });
+      
+      setError(error);
+      return false;
+    }
+  };
+  
+  /**
+   * Get reference to a document
+   */
+  const getDocumentRef = (documentPath: string): DocumentReference => {
+    return doc(db, documentPath);
+  };
+  
+  /**
+   * Get a user's data from Firestore with the new schema
+   */
+  const getUserData = async (
+    userId: string | number,
+    options: FirestoreLog = {}
+  ): Promise<any | null> => {
+    // Format the path depending on whether userId is a number or a string
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    
+    return await getDocumentById(
+      'users', 
+      typeof userId === 'number' ? `user-${userId}` : userId,
+      {
+        logCategory: LogCategory.USER,
+        additionalInfo: { ...options.additionalInfo, userId }
+      }
+    );
+  };
+  
+  /**
+   * Save a user's preferences to Firestore with the new schema
+   */
+  const saveUserPreferences = async (
+    userId: string | number,
+    preferences: {
+      country?: string;
+      streamingServices?: string[];
+      [key: string]: any;
+    },
+    options: FirestoreLog = {}
+  ): Promise<boolean> => {
+    // Format the path depending on whether userId is a number or a string
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    
+    return await setDocument(
+      userPath,
+      { 
+        preferences,
+        updatedAt: new Date().toISOString()
+      },
+      true, // merge
+      {
+        logCategory: LogCategory.USER_PREFERENCES,
+        additionalInfo: { ...options.additionalInfo, userId }
+      }
+    );
+  };
+  
+  /**
+   * Update a user's onboarding status in Firestore with the new schema
+   */
+  const updateOnboardingStatus = async (
+    userId: string | number,
+    status: {
+      step?: number;
+      progress?: number;
+      completed?: boolean;
+      [key: string]: any;
+    },
+    options: FirestoreLog = {}
+  ): Promise<boolean> => {
+    // Format the path depending on whether userId is a number or a string
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    
+    return await setDocument(
+      userPath,
+      { 
+        onboardingStatus: status,
+        updatedAt: new Date().toISOString()
+      },
+      true, // merge
+      {
+        logCategory: LogCategory.USER,
+        additionalInfo: { ...options.additionalInfo, userId }
+      }
+    );
+  };
+  
+  /**
+   * Save an onboarding rating to Firestore with the new schema
+   */
+  const saveOnboardingRating = async (
     userId: string | number,
     filmId: number,
     rating: number,
-    filmTitle: string
+    title: string,
+    options: FirestoreLog = {}
   ): Promise<boolean> => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return false;
+    // Format the path depending on whether userId is a number or a string
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    const ratingPath = `${userPath}/onboardingRatings/${filmId}`;
     
-    const ratingPath = `${userDocPath}/onboardingRatings/${filmId}`;
+    // Prepare the rating data
+    const ratingData: OnboardingRating = {
+      filmId,
+      title,
+      rating,
+      status: 'completed',
+      timestamp: new Date().toISOString()
+    };
     
-    return setDocument(
+    return await setDocument(
       ratingPath,
+      ratingData,
+      true, // merge
       {
-        filmId,
-        title: filmTitle, 
-        rating,
-        status: 'completed',
-        timestamp: new Date().toISOString()
-      },
-      { 
         logCategory: LogCategory.RATING,
-        userFacingErrorMessage: 'Failed to save film rating'
+        additionalInfo: { ...options.additionalInfo, userId, filmId }
       }
     );
-  }, [setDocument, getUserDocPath]);
+  };
   
   /**
-   * Get all onboarding ratings for a user
+   * Save a recommendation rating (good/bad) to Firestore with the new schema
    */
-  const getOnboardingRatings = useCallback(async (userId: string | number) => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return [];
-    
-    const ratingsCollectionPath = `${userDocPath}/onboardingRatings`;
-    
-    return queryCollection(
-      ratingsCollectionPath,
-      [],
-      [['timestamp', 'desc']],
-      0,
-      { 
-        logCategory: LogCategory.RATING,
-        userFacingErrorMessage: 'Failed to load film ratings'
-      }
-    );
-  }, [queryCollection, getUserDocPath]);
-  
-  /**
-   * RECOMMENDATION RATINGS
-   * Save a recommendation rating (good/bad)
-   */
-  const saveRecommendationRating = useCallback(async (
+  const saveRecommendationRating = async (
     userId: string | number,
     filmId: number,
     rating: 'good' | 'bad',
-    filmTitle: string
+    title: string,
+    options: FirestoreLog = {}
   ): Promise<boolean> => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return false;
+    // Format the path depending on whether userId is a number or a string
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    const ratingPath = `${userPath}/recommendationRatings/${filmId}`;
     
-    const ratingPath = `${userDocPath}/recommendationRatings/${filmId}`;
-    
-    return setDocument(
-      ratingPath,
-      {
-        filmId,
-        title: filmTitle,
-        rating,
-        timestamp: new Date().toISOString()
-      },
-      { 
-        logCategory: LogCategory.RATING,
-        userFacingErrorMessage: 'Failed to save recommendation feedback'
-      }
-    );
-  }, [setDocument, getUserDocPath]);
-  
-  /**
-   * WATCHLIST
-   * Add a film to the user's watchlist
-   */
-  const addToWatchlist = useCallback(async (
-    userId: string | number,
-    filmId: number,
-    filmData: {
-      title: string,
-      posterUrl?: string,
-      year?: number,
-      genres?: string[]
-    }
-  ): Promise<boolean> => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return false;
-    
-    const watchlistPath = `${userDocPath}/watchlist/${filmId}`;
-    
-    return setDocument(
-      watchlistPath,
-      {
-        filmId,
-        title: filmData.title,
-        posterUrl: filmData.posterUrl || '',
-        year: filmData.year,
-        genres: filmData.genres || [],
-        addedAt: new Date().toISOString(),
-        status: 'added',
-        watched: false
-      },
-      { 
-        logCategory: LogCategory.WATCHLIST,
-        userFacingErrorMessage: 'Failed to add film to watchlist'
-      }
-    );
-  }, [setDocument, getUserDocPath]);
-  
-  /**
-   * Remove a film from the user's watchlist
-   */
-  const removeFromWatchlist = useCallback(async (
-    userId: string | number,
-    filmId: number
-  ): Promise<boolean> => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return false;
-    
-    const watchlistPath = `${userDocPath}/watchlist/${filmId}`;
-    
-    return deleteDocument(
-      watchlistPath,
-      { 
-        logCategory: LogCategory.WATCHLIST,
-        userFacingErrorMessage: 'Failed to remove film from watchlist'
-      }
-    );
-  }, [deleteDocument, getUserDocPath]);
-  
-  /**
-   * Get all films in the user's watchlist
-   */
-  const getWatchlist = useCallback(async (userId: string | number) => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return [];
-    
-    const watchlistCollectionPath = `${userDocPath}/watchlist`;
-    
-    return queryCollection(
-      watchlistCollectionPath,
-      [],
-      [['addedAt', 'desc']],
-      0,
-      { 
-        logCategory: LogCategory.WATCHLIST,
-        userFacingErrorMessage: 'Failed to load watchlist'
-      }
-    );
-  }, [queryCollection, getUserDocPath]);
-  
-  /**
-   * FRIENDS
-   * Add a friend connection
-   */
-  const addFriend = useCallback(async (
-    userId: string | number,
-    friendId: string | number,
-    status: 'accepted' | 'pending' | 'blocked' = 'pending'
-  ): Promise<boolean> => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return false;
-    
-    const friendPath = `${userDocPath}/friends/${friendId}`;
-    
-    return setDocument(
-      friendPath,
-      {
-        friendId,
-        status,
-        friendSince: new Date().toISOString()
-      },
-      { 
-        logCategory: LogCategory.FRIENDS,
-        userFacingErrorMessage: 'Failed to add friend'
-      }
-    );
-  }, [setDocument, getUserDocPath]);
-  
-  /**
-   * Update a friend connection status
-   */
-  const updateFriendStatus = useCallback(async (
-    userId: string | number,
-    friendId: string | number,
-    status: 'accepted' | 'pending' | 'blocked'
-  ): Promise<boolean> => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return false;
-    
-    const friendPath = `${userDocPath}/friends/${friendId}`;
-    
-    return updateDocument(
-      friendPath,
-      {
-        status,
-        updatedAt: new Date().toISOString()
-      },
-      { 
-        logCategory: LogCategory.FRIENDS,
-        userFacingErrorMessage: 'Failed to update friend status'
-      }
-    );
-  }, [updateDocument, getUserDocPath]);
-  
-  /**
-   * Remove a friend connection
-   */
-  const removeFriend = useCallback(async (
-    userId: string | number,
-    friendId: string | number
-  ): Promise<boolean> => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return false;
-    
-    const friendPath = `${userDocPath}/friends/${friendId}`;
-    
-    return deleteDocument(
-      friendPath,
-      { 
-        logCategory: LogCategory.FRIENDS,
-        userFacingErrorMessage: 'Failed to remove friend'
-      }
-    );
-  }, [deleteDocument, getUserDocPath]);
-  
-  /**
-   * Get all friends for a user
-   */
-  const getFriends = useCallback(async (
-    userId: string | number,
-    status?: 'accepted' | 'pending' | 'blocked'
-  ) => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return [];
-    
-    const friendsCollectionPath = `${userDocPath}/friends`;
-    const conditions: QueryCondition[] = status ? [['status', '==', status]] : [];
-    
-    return queryCollection(
-      friendsCollectionPath,
-      conditions,
-      [['friendSince', 'desc']],
-      0,
-      { 
-        logCategory: LogCategory.FRIENDS,
-        userFacingErrorMessage: 'Failed to load friends'
-      }
-    );
-  }, [queryCollection, getUserDocPath]);
-  
-  /**
-   * SHARED RECOMMENDATIONS
-   * Save a shared recommendation session
-   */
-  const saveSharedRecommendation = useCallback(async (
-    userId: string | number,
-    sessionData: {
-      friendIds: (string | number)[],
-      filmIds: number[],
-      context?: Record<string, any>
-    },
-    sessionId?: string
-  ): Promise<string | null> => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return null;
-    
-    const sessionDocument = {
-      friends: sessionData.friendIds,
-      recommendedFilms: sessionData.filmIds,
-      createdAt: new Date().toISOString(),
-      context: sessionData.context || {}
+    // Prepare the rating data
+    const ratingData: RecommendationRating = {
+      filmId,
+      title,
+      rating,
+      timestamp: new Date().toISOString()
     };
     
-    // If we have a sessionId, update the existing document
-    if (sessionId) {
-      const sessionPath = `${userDocPath}/sharedRecommendations/${sessionId}`;
-      
-      // Update existing session
-      const success = await updateDocument(
-        sessionPath,
-        sessionDocument,
-        { 
-          logCategory: LogCategory.RECOMMENDATION,
-          userFacingErrorMessage: 'Failed to update shared recommendations'
-        }
-      );
-      return success ? sessionId : null;
-    } 
-    // Otherwise create a new session document
-    else {
-      const sharedRecommendationsCollection = `${userDocPath}/sharedRecommendations`;
-      return addToCollection(
-        sharedRecommendationsCollection,
-        sessionDocument,
-        { 
-          logCategory: LogCategory.RECOMMENDATION,
-          userFacingErrorMessage: 'Failed to save shared recommendations'
-        }
-      );
-    }
-  }, [updateDocument, addToCollection, getUserDocPath]);
-  
-  /**
-   * Get all shared recommendation sessions for a user
-   */
-  const getSharedRecommendations = useCallback(async (userId: string | number) => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return [];
-    
-    const sharedRecommendationsCollection = `${userDocPath}/sharedRecommendations`;
-    
-    return queryCollection(
-      sharedRecommendationsCollection,
-      [],
-      [['createdAt', 'desc']],
-      0,
-      { 
-        logCategory: LogCategory.RECOMMENDATION,
-        userFacingErrorMessage: 'Failed to load shared recommendations'
-      }
-    );
-  }, [queryCollection, getUserDocPath]);
-  
-  /**
-   * USER PROFILE / PREFERENCES
-   * Update user preferences (country and streaming services)
-   */
-  const updateUserPreferences = useCallback(async (
-    userId: string | number,
-    preferences: {
-      country?: string,
-      streamingServices?: string[]
-    }
-  ): Promise<boolean> => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return false;
-    
-    return setDocument(
-      userDocPath,
+    return await setDocument(
+      ratingPath,
+      ratingData,
+      true, // merge
       {
-        preferences: {
-          ...preferences,
-          updatedAt: new Date().toISOString()
-        }
-      },
-      { 
-        logCategory: LogCategory.PREFERENCE,
-        userFacingErrorMessage: 'Failed to update preferences'
+        logCategory: LogCategory.RATING,
+        additionalInfo: { ...options.additionalInfo, userId, filmId }
       }
     );
-  }, [setDocument, getUserDocPath]);
+  };
   
   /**
-   * Update user onboarding status
+   * Get all onboarding ratings for a user from Firestore with the new schema
    */
-  const updateOnboardingStatus = useCallback(async (
+  const getOnboardingRatings = async (
     userId: string | number,
-    status: {
-      step?: string | number,
-      progress?: number,
-      completed?: boolean
-    }
-  ): Promise<boolean> => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return false;
+    options: FirestoreLog = {}
+  ): Promise<OnboardingRating[]> => {
+    // Format the path depending on whether userId is a number or a string
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    const ratingsPath = `${userPath}/onboardingRatings`;
     
-    return updateDocument(
-      userDocPath,
+    return await queryCollection<OnboardingRating>(
+      ratingsPath,
+      [], // no constraints
+      [['timestamp', 'desc']], // order by timestamp descending
+      0, // no limit
       {
-        onboardingStatus: {
-          ...status,
-          updatedAt: new Date().toISOString()
-        }
-      },
-      { 
-        logCategory: LogCategory.OTHER,
-        userFacingErrorMessage: 'Failed to update onboarding status'
+        logCategory: LogCategory.RATING,
+        additionalInfo: { ...options.additionalInfo, userId }
       }
     );
-  }, [updateDocument, getUserDocPath]);
+  };
   
   /**
-   * Get user data (preferences, onboarding status)
+   * Get all recommendation ratings for a user from Firestore with the new schema
    */
-  const getUserData = useCallback(async (userId: string | number) => {
-    const userDocPath = getUserDocPath(userId);
-    if (!userDocPath) return null;
+  const getRecommendationRatings = async (
+    userId: string | number,
+    options: FirestoreLog = {}
+  ): Promise<RecommendationRating[]> => {
+    // Format the path depending on whether userId is a number or a string
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    const ratingsPath = `${userPath}/recommendationRatings`;
     
-    return getDocument(
-      userDocPath,
-      { 
-        logCategory: LogCategory.OTHER,
-        userFacingErrorMessage: 'Failed to load user data'
+    return await queryCollection<RecommendationRating>(
+      ratingsPath,
+      [], // no constraints
+      [['timestamp', 'desc']], // order by timestamp descending
+      0, // no limit
+      {
+        logCategory: LogCategory.RATING,
+        additionalInfo: { ...options.additionalInfo, userId }
       }
     );
-  }, [getDocument, getUserDocPath]);
+  };
   
+  /**
+   * Save a watchlist item to Firestore with the new schema
+   */
+  const saveWatchlistItem = async (
+    userId: string | number,
+    item: {
+      filmId: number;
+      title: string;
+      posterUrl?: string;
+      year?: number;
+      genres?: string[];
+      watched?: boolean;
+      [key: string]: any;
+    },
+    options: FirestoreLog = {}
+  ): Promise<boolean> => {
+    // Format the path depending on whether userId is a number or a string
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    const itemPath = `${userPath}/watchlist/${item.filmId}`;
+    
+    // Prepare the watchlist item data
+    const watchlistData = {
+      ...item,
+      addedAt: new Date().toISOString(),
+    };
+    
+    return await setDocument(
+      itemPath,
+      watchlistData,
+      true, // merge
+      {
+        logCategory: LogCategory.WATCHLIST,
+        additionalInfo: { ...options.additionalInfo, userId, filmId: item.filmId }
+      }
+    );
+  };
+  
+  /**
+   * Get a user's watchlist items from Firestore with the new schema
+   */
+  const getWatchlist = async (
+    userId: string | number,
+    options: FirestoreLog = {}
+  ): Promise<any[]> => {
+    // Format the path depending on whether userId is a number or a string
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    const watchlistPath = `${userPath}/watchlist`;
+    
+    return await queryCollection(
+      watchlistPath,
+      [], // no constraints
+      [['addedAt', 'desc']], // order by addedAt descending
+      0, // no limit
+      {
+        logCategory: LogCategory.WATCHLIST,
+        additionalInfo: { ...options.additionalInfo, userId }
+      }
+    );
+  };
+  
+  /**
+   * Remove a watchlist item from Firestore with the new schema
+   */
+  const removeWatchlistItem = async (
+    userId: string | number,
+    filmId: number,
+    options: FirestoreLog = {}
+  ): Promise<boolean> => {
+    // Format the path depending on whether userId is a number or a string
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    const itemPath = `${userPath}/watchlist/${filmId}`;
+    
+    return await deleteDocument(
+      itemPath,
+      {
+        logCategory: LogCategory.WATCHLIST,
+        additionalInfo: { ...options.additionalInfo, userId, filmId }
+      }
+    );
+  };
+  
+  /**
+   * Save friend data to Firestore with the new schema
+   */
+  const saveFriend = async (
+    userId: string | number,
+    friend: {
+      friendId: string | number;
+      status: 'pending' | 'accepted' | 'blocked';
+      username?: string;
+      name?: string;
+      email?: string;
+      [key: string]: any;
+    },
+    options: FirestoreLog = {}
+  ): Promise<boolean> => {
+    // Format the paths depending on whether IDs are numbers or strings
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    const friendPath = `${userPath}/friends/${typeof friend.friendId === 'number' ? `friend-${friend.friendId}` : friend.friendId}`;
+    
+    // Prepare the friend data
+    const friendData = {
+      ...friend,
+      friendSince: new Date().toISOString(),
+    };
+    
+    return await setDocument(
+      friendPath,
+      friendData,
+      true, // merge
+      {
+        logCategory: LogCategory.FRIENDS,
+        additionalInfo: { ...options.additionalInfo, userId, friendId: friend.friendId }
+      }
+    );
+  };
+  
+  /**
+   * Get a user's friends from Firestore with the new schema
+   */
+  const getFriends = async (
+    userId: string | number,
+    status?: 'pending' | 'accepted' | 'blocked',
+    options: FirestoreLog = {}
+  ): Promise<any[]> => {
+    // Format the path depending on whether userId is a number or a string
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    const friendsPath = `${userPath}/friends`;
+    
+    // Create constraints if status is specified
+    const constraints: QueryConstraint[] = [];
+    if (status) {
+      constraints.push(where('status', '==', status));
+    }
+    
+    return await queryCollection(
+      friendsPath,
+      constraints,
+      [['friendSince', 'desc']], // order by friendSince descending
+      0, // no limit
+      {
+        logCategory: LogCategory.FRIENDS,
+        additionalInfo: { ...options.additionalInfo, userId, status }
+      }
+    );
+  };
+  
+  /**
+   * Save a shared recommendation session to Firestore with the new schema
+   */
+  const saveSharedRecommendation = async (
+    userId: string | number,
+    session: {
+      friends: (string | number)[];
+      recommendedFilms?: number[];
+      context?: any;
+      [key: string]: any;
+    },
+    options: FirestoreLog = {}
+  ): Promise<string | null> => {
+    // Format the path depending on whether userId is a number or a string
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    const sessionsPath = `${userPath}/sharedRecommendations`;
+    
+    // Prepare the session data
+    const sessionData = {
+      ...session,
+      createdAt: new Date().toISOString(),
+      createdBy: userId,
+    };
+    
+    // Add the document and get its ID
+    return await addDocument(
+      sessionsPath,
+      sessionData,
+      {
+        logCategory: LogCategory.RECOMMENDATIONS,
+        additionalInfo: { ...options.additionalInfo, userId }
+      }
+    );
+  };
+  
+  /**
+   * Get a user's shared recommendation sessions from Firestore with the new schema
+   */
+  const getSharedRecommendations = async (
+    userId: string | number,
+    options: FirestoreLog = {}
+  ): Promise<any[]> => {
+    // Format the path depending on whether userId is a number or a string
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    const sessionsPath = `${userPath}/sharedRecommendations`;
+    
+    return await queryCollection(
+      sessionsPath,
+      [], // no constraints
+      [['createdAt', 'desc']], // order by createdAt descending
+      0, // no limit
+      {
+        logCategory: LogCategory.RECOMMENDATIONS,
+        additionalInfo: { ...options.additionalInfo, userId }
+      }
+    );
+  };
+  
+  // Return all the functions
   return {
-    // Status
-    isLoading,
-    error,
-    
-    // Core operations
-    getDocument,
+    // Base Firestore operations
+    getDocumentById,
+    queryCollection,
+    addDocument,
     setDocument,
     updateDocument,
     deleteDocument,
-    addToCollection,
-    queryCollection,
+    createBatch,
+    commitBatch,
+    getDocumentRef,
     
-    // User management
-    getUserDocPath,
+    // User data operations
     getUserData,
-    updateUserPreferences,
+    saveUserPreferences,
     updateOnboardingStatus,
     
-    // Onboarding ratings
+    // Rating operations
     saveOnboardingRating,
-    getOnboardingRatings,
-    
-    // Recommendation ratings
     saveRecommendationRating,
+    getOnboardingRatings,
+    getRecommendationRatings,
     
-    // Watchlist
-    addToWatchlist,
-    removeFromWatchlist,
+    // Watchlist operations
+    saveWatchlistItem,
     getWatchlist,
+    removeWatchlistItem,
     
-    // Friends
-    addFriend,
-    updateFriendStatus,
-    removeFriend,
+    // Friend operations
+    saveFriend,
     getFriends,
     
-    // Shared recommendations
+    // Shared recommendation operations
     saveSharedRecommendation,
-    getSharedRecommendations
+    getSharedRecommendations,
+    
+    // Error state
+    error
   };
 }
