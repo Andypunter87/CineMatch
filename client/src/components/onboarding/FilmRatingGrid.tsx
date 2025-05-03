@@ -3,23 +3,24 @@ import { Film } from "@shared/schema";
 import { FilmRating } from "@/lib/types/film-rating";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Star, StarHalf } from "lucide-react";
+import { Star, StarHalf, Loader2 } from "lucide-react";
 import { PosterImage } from "@/components/ui/poster-image";
 
 interface FilmRatingGridProps {
   films: Film[];
-  onRateFilms: (ratings: FilmRating[]) => void;
-  isRating: boolean;
+  onRatingComplete: (ratings: FilmRating[]) => void;
+  isLoading: boolean;
   batchNumber?: number;
 }
 
 export function FilmRatingGrid({ 
   films, 
-  onRateFilms, 
-  isRating,
+  onRatingComplete, 
+  isLoading,
   batchNumber = 1
 }: FilmRatingGridProps) {
   const [ratings, setRatings] = useState<Record<number, { rating: number | null; status: string }>>({});
+  const [isRating, setIsRating] = useState(false);
 
   // Set a rating for a film
   const rateFilm = (filmId: number, rating: number | null) => {
