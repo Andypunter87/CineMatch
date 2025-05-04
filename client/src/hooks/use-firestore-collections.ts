@@ -35,6 +35,37 @@ import {
 } from '@/lib/firestore-test-logger';
 import { OnboardingRating, RecommendationRating } from '@/lib/types/film-rating';
 
+/**
+ * Format a Firestore path for a user document or subcollection
+ * @param userId The user ID (string or number)
+ * @param subcollection Optional subcollection name
+ * @param documentId Optional document ID within the subcollection
+ * @returns Properly formatted Firestore path
+ */
+function formatUserPath(
+  userId: string | number,
+  subcollection?: string,
+  documentId?: string | number
+): string {
+  // Convert userId to string
+  const userIdStr = String(userId);
+  
+  // Base user path
+  let path = `users/${userIdStr}`;
+  
+  // Add subcollection if specified
+  if (subcollection) {
+    path += `/${subcollection}`;
+    
+    // Add document ID if specified
+    if (documentId !== undefined) {
+      path += `/${String(documentId)}`;
+    }
+  }
+  
+  return path;
+}
+
 type FirestoreLog = {
   logCategory?: LogCategory;
   additionalInfo?: Record<string, any>;
@@ -440,12 +471,10 @@ export function useFirestoreCollections() {
     userId: string | number,
     options: FirestoreLog = {}
   ): Promise<any | null> => {
-    // Format the path depending on whether userId is a number or a string
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
-    
+    // Get document directly from the users collection
     return await getDocumentById(
-      'users', 
-      typeof userId === 'number' ? `user-${userId}` : userId,
+      'users',
+      String(userId),
       {
         logCategory: LogCategory.USER,
         additionalInfo: { ...options.additionalInfo, userId }
@@ -465,8 +494,8 @@ export function useFirestoreCollections() {
     },
     options: FirestoreLog = {}
   ): Promise<boolean> => {
-    // Format the path depending on whether userId is a number or a string
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    // Use the formatUserPath utility to get the correct path
+    const userPath = formatUserPath(userId);
     
     return await setDocument(
       userPath,
@@ -495,8 +524,8 @@ export function useFirestoreCollections() {
     },
     options: FirestoreLog = {}
   ): Promise<boolean> => {
-    // Format the path depending on whether userId is a number or a string
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    // Use the formatUserPath utility to get the correct path
+    const userPath = formatUserPath(userId);
     
     return await setDocument(
       userPath,
@@ -522,9 +551,8 @@ export function useFirestoreCollections() {
     title: string,
     options: FirestoreLog = {}
   ): Promise<boolean> => {
-    // Format the path depending on whether userId is a number or a string
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
-    const ratingPath = `${userPath}/onboardingRatings/${filmId}`;
+    // Use the formatUserPath utility with subcollection and document ID
+    const ratingPath = formatUserPath(userId, 'onboardingRatings', filmId);
     
     // Prepare the rating data
     const ratingData: OnboardingRating = {
@@ -556,9 +584,8 @@ export function useFirestoreCollections() {
     title: string,
     options: FirestoreLog = {}
   ): Promise<boolean> => {
-    // Format the path depending on whether userId is a number or a string
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
-    const ratingPath = `${userPath}/recommendationRatings/${filmId}`;
+    // Use the formatUserPath utility with subcollection and document ID
+    const ratingPath = formatUserPath(userId, 'recommendationRatings', filmId);
     
     // Prepare the rating data
     const ratingData: RecommendationRating = {
@@ -586,9 +613,8 @@ export function useFirestoreCollections() {
     userId: string | number,
     options: FirestoreLog = {}
   ): Promise<OnboardingRating[]> => {
-    // Format the path depending on whether userId is a number or a string
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
-    const ratingsPath = `${userPath}/onboardingRatings`;
+    // Use the formatUserPath utility with subcollection
+    const ratingsPath = formatUserPath(userId, 'onboardingRatings');
     
     return await queryCollection<OnboardingRating>(
       ratingsPath,
@@ -609,9 +635,8 @@ export function useFirestoreCollections() {
     userId: string | number,
     options: FirestoreLog = {}
   ): Promise<RecommendationRating[]> => {
-    // Format the path depending on whether userId is a number or a string
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
-    const ratingsPath = `${userPath}/recommendationRatings`;
+    // Use the formatUserPath utility with subcollection
+    const ratingsPath = formatUserPath(userId, 'recommendationRatings');
     
     return await queryCollection<RecommendationRating>(
       ratingsPath,
@@ -641,9 +666,8 @@ export function useFirestoreCollections() {
     },
     options: FirestoreLog = {}
   ): Promise<boolean> => {
-    // Format the path depending on whether userId is a number or a string
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
-    const itemPath = `${userPath}/watchlist/${item.filmId}`;
+    // Use the formatUserPath utility with subcollection and document ID
+    const itemPath = formatUserPath(userId, 'watchlist', item.filmId);
     
     // Prepare the watchlist item data
     const watchlistData = {
@@ -669,9 +693,8 @@ export function useFirestoreCollections() {
     userId: string | number,
     options: FirestoreLog = {}
   ): Promise<any[]> => {
-    // Format the path depending on whether userId is a number or a string
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
-    const watchlistPath = `${userPath}/watchlist`;
+    // Use the formatUserPath utility with subcollection
+    const watchlistPath = formatUserPath(userId, 'watchlist');
     
     return await queryCollection(
       watchlistPath,
