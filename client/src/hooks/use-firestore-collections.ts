@@ -484,6 +484,7 @@ export function useFirestoreCollections() {
   
   /**
    * Save a user's preferences to Firestore with the new schema
+   * Preferences are now stored at /users/{userId}/preferences/settings
    */
   const saveUserPreferences = async (
     userId: string | number,
@@ -494,13 +495,13 @@ export function useFirestoreCollections() {
     },
     options: FirestoreLog = {}
   ): Promise<boolean> => {
-    // Use the formatUserPath utility to get the correct path
-    const userPath = formatUserPath(userId);
+    // Use the formatUserPath utility to get the correct path to preferences/settings
+    const preferencesPath = formatUserPath(userId, 'preferences', 'settings');
     
     return await setDocument(
-      userPath,
+      preferencesPath,
       { 
-        preferences,
+        ...preferences,
         updatedAt: new Date().toISOString()
       },
       true, // merge
