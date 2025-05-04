@@ -113,14 +113,12 @@ export function useSafeFirestore() {
       }
       
       // Log authentication failure
-      logFirestoreError(LogCategory.AUTH, 'Anonymous authentication failed', authError as Error, {
+      logFirestoreError(authError as Error, 'Anonymous authentication', {
         operationType: 'test',
-        additionalInfo: {
-          timestamp: new Date().toISOString(),
-          operationId: `auth-${Date.now()}`,
-          attempted: 'anonymous-auth',
-          errorCode: authError.code || 'unknown'
-        }
+        timestamp: new Date().toISOString(),
+        operationId: `auth-${Date.now()}`,
+        attempted: 'anonymous-auth',
+        errorCode: authError.code || 'unknown'
       });
       
       return false;
@@ -171,20 +169,18 @@ export function useSafeFirestore() {
     }
     
     // Use enhanced logger for detailed logging
-    logFirestoreError(LogCategory.CONFIG, 'Firestore Error Diagnosis', error, {
-      documentPath: docPath,
+    logFirestoreError(error, 'Firestore Error Diagnosis', {
       operationType: 'test',
-      additionalInfo: {
-        authState: isAuthenticated ? 'authenticated' : 'not_authenticated',
-        authDetails: auth.currentUser ? {
-          uid: auth.currentUser.uid,
-          provider: auth.currentUser.providerId,
-          isAnonymous: auth.currentUser.isAnonymous
-        } : null,
-        rootCause,
-        timestamp: new Date().toISOString(),
-        diagnosisId: `diag-${Date.now()}`
-      }
+      rootCause,
+      documentPath: docPath,
+      authState: isAuthenticated ? 'authenticated' : 'not_authenticated',
+      authDetails: auth.currentUser ? {
+        uid: auth.currentUser.uid,
+        provider: auth.currentUser.providerId,
+        isAnonymous: auth.currentUser.isAnonymous
+      } : null,
+      timestamp: new Date().toISOString(),
+      diagnosisId: `diag-${Date.now()}`
     });
     
     setError(error);
@@ -222,10 +218,10 @@ export function useSafeFirestore() {
       
       // Log Firestore operation using enhanced logger
       logPreferenceOperation(LogLevel.INFO, 'Firestore Test: Writing Data', {
-        documentPath: docRef.path,
         operationType: 'write',
-        data: { keys: Object.keys(data) },
         additionalInfo: {
+          documentPath: docRef.path,
+          data: { keys: Object.keys(data) },
           testId,
           timestamp: new Date().toISOString(),
           authState: auth.currentUser ? {
@@ -285,10 +281,10 @@ export function useSafeFirestore() {
             
             // Log retry attempt using the enhanced logger
             logPreferenceOperation(LogLevel.INFO, 'Firestore Test: Retrying Write Operation', {
-              documentPath: docRef.path,
               operationType: 'write',
-              errorCode: firestoreError.code,
               additionalInfo: {
+                documentPath: docRef.path,
+                errorCode: firestoreError.code,
                 testId: `retry-${Date.now()}`,
                 timestamp: new Date().toISOString(),
                 originalError: firestoreError.code,
@@ -342,9 +338,9 @@ export function useSafeFirestore() {
       
       // Log read operation using enhanced logger
       logPreferenceOperation(LogLevel.INFO, 'Firestore Test: Reading Data', {
-        documentPath: docRef.path,
         operationType: 'read',
         additionalInfo: {
+          documentPath: docRef.path,
           testId: readTestId,
           timestamp: new Date().toISOString(),
           authState: currentUser ? {
@@ -384,9 +380,9 @@ export function useSafeFirestore() {
         
         // Log document not found with enhanced logger
         logPreferenceOperation(LogLevel.INFO, 'Firestore Test: Document Not Found', {
-          documentPath: docRef.path,
           operationType: 'read',
           additionalInfo: {
+            documentPath: docRef.path,
             testId: readTestId,
             timestamp: new Date().toISOString(),
             documentExists: false
