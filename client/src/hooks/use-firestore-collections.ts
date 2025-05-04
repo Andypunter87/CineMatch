@@ -23,7 +23,8 @@ import {
   DocumentReference
 } from 'firebase/firestore';
 
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
+import { FirebaseError } from 'firebase/app';
 import { 
   LogCategory, 
   LogLevel, 
@@ -267,16 +268,40 @@ export function useFirestoreCollections() {
     const { logCategory = LogCategory.OTHER, additionalInfo = {} } = options;
     
     try {
+      // Get current Firebase auth state for verification
+      const currentUser = auth.currentUser;
+      const authUID = currentUser?.uid;
+      
+      // Extract userId from path for comparison (if it's a user path)
+      const userPathMatch = documentPath.match(/^users\/(\d+|[^\/]+)/);
+      const pathUserId = userPathMatch ? userPathMatch[1] : null;
+      
+      // Check if server-side auth token user ID exists in additionalInfo
+      const serverUserId = additionalInfo.userId || null;
+      
+      // Log auth verification details
+      console.log('AUTH VERIFICATION:', {
+        documentPath,
+        firebaseUID: authUID,
+        pathUserId,
+        serverUserId,
+        authMatch: authUID === pathUserId,
+        serverMatch: serverUserId && (serverUserId.toString() === pathUserId)
+      });
+      
       // Add server timestamp to the data
       const dataWithTimestamp = {
         ...data,
         timestamp: serverTimestamp()
       };
       
-      // Log the write operation
+      // Log the write operation with auth details
       logWrite(logCategory, `Setting document at ${documentPath}`, { 
         path: documentPath, 
         operation: merge ? 'merge' : 'set',
+        authUID,
+        pathUserId,
+        serverUserId,
         ...additionalInfo 
       });
       
@@ -284,23 +309,60 @@ export function useFirestoreCollections() {
       const docRef = doc(db, documentPath);
       await setDoc(docRef, dataWithTimestamp, { merge });
       
-      // Log success
-      logSuccess(logCategory, `Document set at ${documentPath}`, { 
-        status: 'success', 
-        path: documentPath,
-        operation: merge ? 'merge' : 'set',
-        ...additionalInfo 
-      });
+      // Immediately verify write by reading back
+      try {
+        const verifyDoc = await getDoc(docRef);
+        const writeVerified = verifyDoc.exists();
+        // Log success with verification
+        logSuccess(logCategory, `Document set at ${documentPath} (Verified: ${writeVerified})`, { 
+          status: 'success', 
+          path: documentPath,
+          operation: merge ? 'merge' : 'set',
+          writeVerified,
+          authUID,
+          pathUserId,
+          serverUserId,
+          ...additionalInfo 
+        });
+      } catch (verifyErr) {
+        console.warn('Write verification failed:', verifyErr);
+      }
       
       return true;
     } catch (err) {
       const error = err as Error;
       
-      // Log error
+      // Get additional Firestore error details
+      const firebaseError = error as FirebaseError;
+      const errorCode = firebaseError.code || 'unknown';
+      
+      // Extract userId from path for comparison (if it's a user path)
+      const userPathMatch = documentPath.match(/^users\/(\d+|[^\/]+)/);
+      const pathUserId = userPathMatch ? userPathMatch[1] : null;
+      
+      const errorDetails = {
+        code: errorCode,
+        documentPath,
+        authUID: auth.currentUser?.uid,
+        pathUserId,
+        serverUserId: additionalInfo.userId || null,
+        isAuthenticated: !!auth.currentUser
+      };
+      
+      // Full diagnosis logging for Firestore errors
+      console.error('FIREBASE ERROR DIAGNOSIS:', {
+        ...errorDetails,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      // Log detailed error
       logError(logCategory, `Error setting document at ${documentPath}`, { 
         error: error.message, 
+        errorCode,
         path: documentPath,
         operation: merge ? 'merge' : 'set',
+        ...errorDetails,
         ...additionalInfo 
       });
       
