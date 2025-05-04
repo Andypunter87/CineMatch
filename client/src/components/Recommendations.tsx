@@ -5,6 +5,11 @@ import FilmCard from "./FilmCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, Plus } from "lucide-react";
 
+// Extend RecommendationRequest to include onboarding flag
+interface OnboardingAwareRecommendationContext extends RecommendationRequest {
+  isOnboarding?: boolean;
+}
+
 interface RecommendationsProps {
   recommendations: Film[];
   isLoading: boolean;
@@ -207,7 +212,11 @@ export default function Recommendations({
                 <FilmCard 
                   key={film.id} 
                   film={film} 
-                  recommendationContext={preferences}
+                  recommendationContext={{
+                    ...preferences,
+                    // Explicitly mark this as not an onboarding recommendation
+                    isOnboarding: false
+                  }}
                   onDisliked={onDisliked}
                 />
               ))}

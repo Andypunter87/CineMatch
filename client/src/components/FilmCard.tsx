@@ -11,9 +11,14 @@ import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
 
+// Extend the RecommendationRequest type to include isOnboarding flag
+interface OnboardingAwareRecommendationContext extends RecommendationRequest {
+  isOnboarding?: boolean;
+}
+
 interface FilmCardProps {
   film: Film;
-  recommendationContext?: RecommendationRequest;
+  recommendationContext?: OnboardingAwareRecommendationContext;
   onDisliked?: (filmId: number) => void;
 }
 
