@@ -64,16 +64,41 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
     setIsWatchlisted(!!exactFilmInWatchlist);
   }, [exactFilmInWatchlist]);
   
+  // Check if this is part of onboarding flow
+  const isOnboardingContext = recommendationContext && 
+    (recommendationContext as any)?.isOnboarding === true;
+
   // Recommendation feedback mutation
   const recommendationFeedbackMutation = useMutation({
     mutationFn: async (feedback: 'like' | 'dislike') => {
-      const res = await apiRequest("POST", "/api/feedback", {
-        filmId: film.id,
-        filmTitle: film.title,
-        feedback,
-        recommendationContext
-      });
-      return await res.json();
+      // Use different endpoint during onboarding to avoid conflicts
+      if (isOnboardingContext) {
+        console.log('Submitting onboarding feedback:', { 
+          filmId: film.id, 
+          feedback, 
+          isOnboarding: true 
+        });
+        
+        // Use the onboarding-specific endpoint for ratings
+        const res = await apiRequest("POST", "/api/onboarding/rate", {
+          filmId: film.id,
+          filmTitle: film.title,
+          // Convert like/dislike to 5/1 star rating to match onboarding schema
+          rating: feedback === 'like' ? 5 : 1,
+          status: feedback === 'like' ? 'loved' : 'hated',
+          isOnboarding: true
+        });
+        return await res.json();
+      } else {
+        // Regular recommendation feedback
+        const res = await apiRequest("POST", "/api/feedback", {
+          filmId: film.id,
+          filmTitle: film.title,
+          feedback,
+          recommendationContext
+        });
+        return await res.json();
+      }
     },
     onSuccess: (_data, variables) => {
       // Set feedback submitted state
@@ -93,6 +118,11 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
         setTimeout(() => {
           onDisliked(film.id);
         }, 1000);
+      }
+      
+      // If this is onboarding, also invalidate the onboarding queries
+      if (isOnboardingContext) {
+        queryClient.invalidateQueries({ queryKey: ['/api/onboarding'] });
       }
       
       // Refresh watchlist data to ensure accurate state

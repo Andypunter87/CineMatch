@@ -122,8 +122,13 @@ export function SingleFilmRating({
         filmPosterUrl: film.posterUrl || "",
         rating: rating.rating,
         status: rating.status,
+        // Add flag to indicate this is an onboarding rating
+        isOnboarding: true
       };
     });
+    
+    // Log the ratings being submitted for debugging
+    console.log('Submitting onboarding ratings:', formattedRatings.length);
     
     onRatingComplete(formattedRatings);
     setIsSubmitting(false);
