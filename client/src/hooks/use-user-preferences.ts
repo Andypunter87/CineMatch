@@ -135,6 +135,21 @@ export function useUserPreferences(isOnboarding = false) {
     if (!user) return null;
     
     try {
+      // Use the new preferences/settings path
+      const preferencesData = await firestore.getUserPreferences(user.id);
+      
+      if (preferencesData) {
+        const preferences: UserPreferences = {
+          country: preferencesData.country || '',
+          streamingServices: preferencesData.streamingServices || [],
+          lastUpdated: preferencesData.updatedAt
+        };
+        
+        console.log(`Loaded preferences from Firestore: ${JSON.stringify(preferences)}`);
+        return preferences;
+      }
+      
+      // Fallback to legacy path if no data found
       const userData = await firestore.getUserData(user.id);
       
       if (userData && userData.preferences) {
@@ -144,7 +159,7 @@ export function useUserPreferences(isOnboarding = false) {
           lastUpdated: userData.preferences.updatedAt
         };
         
-        console.log(`Loaded preferences from Firestore: ${JSON.stringify(preferences)}`);
+        console.log(`Loaded preferences from legacy path: ${JSON.stringify(preferences)}`);
         return preferences;
       }
       

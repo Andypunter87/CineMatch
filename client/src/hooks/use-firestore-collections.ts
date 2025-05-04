@@ -483,6 +483,30 @@ export function useFirestoreCollections() {
   };
   
   /**
+   * Get a user's preferences from Firestore with the new schema
+   * Preferences now stored at /users/{userId}/preferences/settings
+   */
+  const getUserPreferences = async (
+    userId: string | number,
+    options: FirestoreLog = {}
+  ): Promise<any | null> => {
+    // Path to the user's preferences settings document
+    const preferencesPath = formatUserPath(userId, 'preferences', 'settings');
+    
+    // Get document from the preferences/settings path
+    const result = await getDocumentById(
+      preferencesPath,
+      '',  // Empty string since the full path is already specified
+      {
+        logCategory: LogCategory.USER_PREFERENCES,
+        additionalInfo: { ...options.additionalInfo, userId }
+      }
+    );
+    
+    return result;
+  };
+  
+  /**
    * Save a user's preferences to Firestore with the new schema
    * Preferences are now stored at /users/{userId}/preferences/settings
    */
@@ -544,6 +568,7 @@ export function useFirestoreCollections() {
   
   /**
    * Save an onboarding rating to Firestore with the new schema
+   * Ratings now stored at /users/{userId}/ratings/onboarding/{filmId}
    */
   const saveOnboardingRating = async (
     userId: string | number,
@@ -552,8 +577,9 @@ export function useFirestoreCollections() {
     title: string,
     options: FirestoreLog = {}
   ): Promise<boolean> => {
-    // Use the formatUserPath utility with subcollection and document ID
-    const ratingPath = formatUserPath(userId, 'onboardingRatings', filmId);
+    // Use the formatUserPath utility with subcollection path and document ID
+    // First create path to ratings/onboarding subcollection
+    const ratingPath = formatUserPath(userId, 'ratings/onboarding', filmId);
     
     // Prepare the rating data
     const ratingData: OnboardingRating = {
@@ -577,6 +603,7 @@ export function useFirestoreCollections() {
   
   /**
    * Save a recommendation rating (good/bad) to Firestore with the new schema
+   * Ratings now stored at /users/{userId}/ratings/recommendations/{filmId}
    */
   const saveRecommendationRating = async (
     userId: string | number,
@@ -585,8 +612,8 @@ export function useFirestoreCollections() {
     title: string,
     options: FirestoreLog = {}
   ): Promise<boolean> => {
-    // Use the formatUserPath utility with subcollection and document ID
-    const ratingPath = formatUserPath(userId, 'recommendationRatings', filmId);
+    // Use the formatUserPath utility with subcollection path and document ID
+    const ratingPath = formatUserPath(userId, 'ratings/recommendations', filmId);
     
     // Prepare the rating data
     const ratingData: RecommendationRating = {
@@ -609,13 +636,15 @@ export function useFirestoreCollections() {
   
   /**
    * Get all onboarding ratings for a user from Firestore with the new schema
+   * Ratings now stored at /users/{userId}/ratings/onboarding/{filmId}
    */
   const getOnboardingRatings = async (
     userId: string | number,
     options: FirestoreLog = {}
   ): Promise<OnboardingRating[]> => {
-    // Use the formatUserPath utility with subcollection
-    const ratingsPath = formatUserPath(userId, 'onboardingRatings');
+    // Use the formatUserPath utility with subcollection path
+    // Path to ratings/onboarding subcollection
+    const ratingsPath = formatUserPath(userId, 'ratings/onboarding');
     
     return await queryCollection<OnboardingRating>(
       ratingsPath,
@@ -631,13 +660,14 @@ export function useFirestoreCollections() {
   
   /**
    * Get all recommendation ratings for a user from Firestore with the new schema
+   * Ratings now stored at /users/{userId}/ratings/recommendations/{filmId}
    */
   const getRecommendationRatings = async (
     userId: string | number,
     options: FirestoreLog = {}
   ): Promise<RecommendationRating[]> => {
-    // Use the formatUserPath utility with subcollection
-    const ratingsPath = formatUserPath(userId, 'recommendationRatings');
+    // Use the formatUserPath utility with subcollection path
+    const ratingsPath = formatUserPath(userId, 'ratings/recommendations');
     
     return await queryCollection<RecommendationRating>(
       ratingsPath,
@@ -902,6 +932,7 @@ export function useFirestoreCollections() {
     
     // User data operations
     getUserData,
+    getUserPreferences,
     saveUserPreferences,
     updateOnboardingStatus,
     
