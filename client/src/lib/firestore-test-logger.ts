@@ -21,6 +21,7 @@ export enum LogCategory {
   FRIENDS = 'friends',
   RECOMMENDATION = 'recommendation',
   RECOMMENDATIONS = 'recommendations', // Alias for recommendation
+  SHARED_RECOMMENDATIONS = 'shared_recommendations',
   AUTH = 'auth',
   CONFIG = 'config',
   OTHER = 'other'
