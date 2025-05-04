@@ -686,9 +686,47 @@ export function useFirestoreCollections() {
   };
   
   /**
+   * Add a film to the user's watchlist with the new schema
+   */
+  const addToWatchlist = async (
+    userId: string | number,
+    filmId: number,
+    filmData: {
+      title: string;
+      posterUrl?: string;
+      year?: number;
+      genres?: string[];
+      [key: string]: any;
+    },
+    options: FirestoreLog = {}
+  ): Promise<boolean> => {
+    // Format the path depending on whether userId is a number or a string
+    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
+    const itemPath = `${userPath}/watchlist/${filmId}`;
+    
+    // Prepare the watchlist item data
+    const watchlistData = {
+      filmId,
+      ...filmData,
+      addedAt: new Date().toISOString(),
+      watched: false
+    };
+    
+    return await setDocument(
+      itemPath,
+      watchlistData,
+      true, // merge
+      {
+        logCategory: LogCategory.WATCHLIST,
+        additionalInfo: { ...options.additionalInfo, userId, filmId }
+      }
+    );
+  };
+
+  /**
    * Remove a watchlist item from Firestore with the new schema
    */
-  const removeWatchlistItem = async (
+  const removeFromWatchlist = async (
     userId: string | number,
     filmId: number,
     options: FirestoreLog = {}
@@ -855,9 +893,9 @@ export function useFirestoreCollections() {
     getRecommendationRatings,
     
     // Watchlist operations
-    saveWatchlistItem,
+    addToWatchlist,
     getWatchlist,
-    removeWatchlistItem,
+    removeFromWatchlist,
     
     // Friend operations
     saveFriend,

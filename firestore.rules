@@ -1,31 +1,43 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow authenticated users to read/write only to their own data
+    // --- Primary security rule pattern ---
+    // Allow authenticated users to read/write only to their own data in subcollections
     match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && 
+        (request.auth.uid == userId || // Allow user to access their own data
+        ((resource != null && resource.data.participants != null && resource.data.participants[request.auth.uid] != null) || // Allow shared access based on participants map for existing docs
+         (request.resource != null && request.resource.data.participants != null && request.resource.data.participants[request.auth.uid] != null))); // Same for new/updated docs
     }
     
-    // Allow access to user_preferences with matching user IDs
+    // --- Legacy schema support (deprecated) ---
+    // Allow access to user_preferences with matching user IDs in legacy format
     match /user_preferences/{documentId} {
       allow read, write: if 
         // Either authenticated with matching ID
         (request.auth != null && documentId.matches('user-.*') && 
-        documentId.split('user-')[1] == resource.data.userId) || 
+        documentId.split('user-')[1] == request.auth.uid) || 
         // Or allow anonymous auth for onboarding flow
         request.auth != null && request.auth.token.firebase.sign_in_provider == 'anonymous';
     }
     
-    // Allow access to collections with a userId field that matches the user
+    // Allow access to legacy collections with a userId field that matches the user
     match /{collection}/{documentId} {
       allow read, write: if 
         collection in ['onboarding_ratings', 'recommendation_ratings', 'watchlist', 'friends'] &&
         request.auth != null && 
-        (resource.data.userId == request.auth.uid || 
-         request.resource.data.userId == request.auth.uid);
+        ((resource != null && resource.data.userId == request.auth.uid) || 
+         (request.resource != null && request.resource.data.userId == request.auth.uid));
     }
     
-    // For tests and debugging only - remove in production
+    // --- Shared recommendations access ---
+    match /shared_recommendations/{sessionId} {
+      allow read, write: if request.auth != null && 
+        ((resource != null && resource.data.participants != null && resource.data.participants[request.auth.uid] != null) || // Allow access if participant
+         (request.resource != null && request.resource.data.participants != null && request.resource.data.participants[request.auth.uid] != null));
+    }
+    
+    // --- Testing and development ---
     match /test/{document=**} {
       allow read, write: if request.auth != null;
     }

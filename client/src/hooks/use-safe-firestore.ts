@@ -442,7 +442,7 @@ export function useSafeFirestore() {
    * Create a document reference with the correct path format
    */
   const createDocRef = useCallback((collection: string, id: string | number) => {
-    return doc(db, collection, typeof id === 'number' ? `user-${id}` : id);
+    return doc(db, collection, String(id));
   }, []);
   
   return {
