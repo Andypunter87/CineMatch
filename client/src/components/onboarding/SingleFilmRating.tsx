@@ -26,6 +26,7 @@ interface FilmRating {
   filmPosterUrl: string;
   rating: number | null;
   status: string;
+  isOnboarding?: boolean;
 }
 
 interface SingleFilmRatingProps {

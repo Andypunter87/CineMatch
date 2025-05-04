@@ -1,10 +1,19 @@
 import React, { useState } from "react";
 import { Film } from "@shared/schema";
-import { FilmRating } from "@/lib/types/film-rating";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Star, StarHalf, Loader2 } from "lucide-react";
 import { PosterImage } from "@/components/ui/poster-image";
+
+// Define FilmRating interface directly here to ensure isOnboarding flag is included
+interface FilmRating {
+  filmId: number;
+  filmTitle: string;
+  filmPosterUrl: string;
+  rating: number | null;
+  status: string;
+  isOnboarding?: boolean;
+}
 
 interface FilmRatingGridProps {
   films: Film[];

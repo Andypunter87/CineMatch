@@ -13,7 +13,7 @@ interface OnboardingAwareRecommendationContext extends RecommendationRequest {
 interface RecommendationsProps {
   recommendations: Film[];
   isLoading: boolean;
-  preferences: RecommendationRequest;
+  preferences: OnboardingAwareRecommendationContext;
   onReset: () => void;
   onGenerateMore?: () => void;
   hasMoreToGenerate?: boolean;

@@ -5,10 +5,15 @@ import FilmCard from "../FilmCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw } from "lucide-react";
 
+// Extended type for recommendation context with onboarding flag
+interface OnboardingAwareRecommendationContext extends RecommendationRequest {
+  isOnboarding?: boolean;
+}
+
 interface OnboardingRecommendationsProps {
   recommendations: Film[];
   isLoading: boolean;
-  preferences: RecommendationRequest;
+  preferences: OnboardingAwareRecommendationContext;
   onReset: () => void;
   onDisliked?: (filmId: number) => void;
   onComplete?: () => void;
