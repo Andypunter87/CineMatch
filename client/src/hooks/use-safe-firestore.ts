@@ -243,13 +243,12 @@ export function useSafeFirestore() {
       
       // Log success with the enhanced logger
       logSuccess(LogCategory.PREFERENCE, 'Firestore Test: Write Operation Successful', {
+        status: 'success',
+        operation: 'write',
         documentPath: docRef.path,
-        operationType: 'write',
-        additionalInfo: {
-          testId,
-          timestamp: new Date().toISOString(),
-          documentId: docRef.id
-        }
+        testId,
+        timestamp: new Date().toISOString(),
+        documentId: docRef.id
       });
       
       return true;
@@ -364,14 +363,13 @@ export function useSafeFirestore() {
         
         // Log successful read with enhanced logger
         logSuccess(LogCategory.PREFERENCE, 'Firestore Test: Read Operation Successful', {
+          status: 'success',
+          operation: 'read',
           documentPath: docRef.path,
-          operationType: 'read',
-          additionalInfo: {
-            testId: readTestId,
-            timestamp: new Date().toISOString(),
-            documentExists: true,
-            dataSize: JSON.stringify(docSnap.data()).length
-          }
+          testId: readTestId,
+          timestamp: new Date().toISOString(),
+          documentExists: true,
+          dataSize: JSON.stringify(docSnap.data()).length
         });
         
         return docSnap.data() as T;
@@ -436,6 +434,7 @@ export function useSafeFirestore() {
   
   /**
    * Create a document reference with the correct path format
+   * No longer adds prefixes to IDs
    */
   const createDocRef = useCallback((collection: string, id: string | number) => {
     return doc(db, collection, String(id));

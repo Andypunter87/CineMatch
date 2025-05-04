@@ -30,11 +30,20 @@ service cloud.firestore {
          (request.resource != null && request.resource.data.userId == request.auth.uid));
     }
     
-    // --- Shared recommendations access ---
+    // --- Shared recommendations access (legacy collection) ---
     match /shared_recommendations/{sessionId} {
       allow read, write: if request.auth != null && 
         ((resource != null && resource.data.participants != null && resource.data.participants[request.auth.uid] != null) || // Allow access if participant
          (request.resource != null && request.resource.data.participants != null && request.resource.data.participants[request.auth.uid] != null));
+    }
+    
+    // --- Shared recommendations in user subcollection ---
+    // This is already covered by the users/{userId}/{document=**} rule, but added for clarity
+    match /users/{userId}/sharedRecommendations/{sessionId} {
+      allow read, write: if request.auth != null && 
+        (request.auth.uid == userId || // User can access their own shared recommendations
+         (resource != null && resource.data.friends != null && resource.data.friends.hasAny([request.auth.uid])) || // Participant in existing doc
+         (request.resource != null && request.resource.data.friends != null && request.resource.data.friends.hasAny([request.auth.uid]))); // Participant in new/updated doc
     }
     
     // --- Testing and development ---
