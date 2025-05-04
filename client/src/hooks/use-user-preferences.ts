@@ -95,17 +95,20 @@ export function useUserPreferences(isOnboarding = false) {
     if (!user) return false;
     
     try {
-      const success = await firestore.updateUserPreferences(
+      // Use saveUserPreferences instead of updateUserPreferences to use new schema
+      // This will save to /users/{userId}/preferences/settings
+      const success = await firestore.saveUserPreferences(
         user.id,
         {
           country: preferences.country,
-          streamingServices: preferences.streamingServices
+          streamingServices: preferences.streamingServices,
+          updatedAt: new Date().toISOString()
         }
       );
       
       if (success) {
         setLocalPreferences(preferences);
-        console.log(`Preferences saved to Firestore: ${JSON.stringify(preferences)}`);
+        console.log(`Preferences saved to Firestore (new path): ${JSON.stringify(preferences)}`);
       }
       
       return success;
@@ -120,9 +123,18 @@ export function useUserPreferences(isOnboarding = false) {
     if (!user) return false;
     
     try {
+      // Convert step to number if it's a string to avoid type incompatibility
+      // Also ensure the status object matches the expected shape in updateOnboardingStatus
+      const formattedStatus = {
+        step: typeof status.step === 'string' ? parseInt(status.step, 10) : (status.step || 0),
+        progress: status.progress || 0,
+        completed: status.completed || false,
+        updatedAt: status.updatedAt || new Date().toISOString()
+      };
+      
       return await firestore.updateOnboardingStatus(
         user.id,
-        status
+        formattedStatus
       );
     } catch (error) {
       showErrorToast(error as Error, "Failed to Save Onboarding Status to Firestore");

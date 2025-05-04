@@ -93,20 +93,41 @@ export default function FirestoreTestPage() {
   // Test user preferences
   const testUserPreferences = async () => {
     try {
-      // Load preferences from Firestore
+      // Load preferences from Firestore using the hook (should use new path)
       const firestorePrefs = await loadPreferencesFromFirestore();
       
-      // Verify user preferences in the new schema location
+      // Verify user preferences in the new schema location directly
       if (user) {
-        const userData = await firestore.getUserData(user.id);
+        // Check the new path via getUserPreferences method
+        const newPathPrefs = await firestore.getUserPreferences(user.id);
         
-        if (userData && userData.preferences) {
+        // Also check the legacy path for comparison
+        const userData = await firestore.getUserData(user.id);
+        const legacyPathPrefs = userData?.preferences;
+        
+        if (newPathPrefs) {
           setTestResults(prev => ({
             ...prev,
             preferences: { 
               success: true, 
-              message: "Successfully loaded user preferences from new schema location", 
-              data: userData.preferences 
+              message: "Successfully loaded user preferences from new schema location (/users/{userId}/preferences/settings)", 
+              data: {
+                newPath: newPathPrefs,
+                legacyPath: legacyPathPrefs || 'Not found in legacy path',
+                hookResult: firestorePrefs
+              }
+            }
+          }));
+        } else if (legacyPathPrefs) {
+          setTestResults(prev => ({
+            ...prev,
+            preferences: { 
+              success: false, 
+              message: "User preferences found in legacy path but not in new schema location", 
+              data: {
+                legacyPath: legacyPathPrefs,
+                hookResult: firestorePrefs
+              }
             }
           }));
         } else {
@@ -114,7 +135,7 @@ export default function FirestoreTestPage() {
             ...prev,
             preferences: { 
               success: false, 
-              message: "User preferences not found in Firestore"
+              message: "User preferences not found in either legacy or new Firestore path"
             }
           }));
         }
@@ -134,20 +155,63 @@ export default function FirestoreTestPage() {
   // Test onboarding ratings
   const testOnboardingRatings = async () => {
     try {
-      // Load ratings from Firestore
+      // Load ratings from Firestore through the hook (should use new path)
       const firestoreRatings = await loadRatingsFromFirestore();
       
       if (user) {
-        // Query the new collection path directly
-        const onboardingRatings = await firestore.getOnboardingRatings(user.id);
+        // Query the new collection path directly using getOnboardingRatings 
+        // which should now fetch from /users/{userId}/ratings/onboarding
+        const newPathRatings = await firestore.getOnboardingRatings(user.id);
         
-        if (onboardingRatings && onboardingRatings.length > 0) {
+        // Also check the legacy path for comparison
+        const legacyPathRatings = await firestore.queryCollection(
+          `users/${user.id}/onboardingRatings`,
+          [],
+          [['timestamp', 'desc']],
+          0,
+          { logCategory: LogCategory.RATING }
+        );
+        
+        // Check direct path using raw queryCollection to verify correct schema
+        const directPathRatings = await firestore.queryCollection(
+          `users/${user.id}/ratings/onboarding`,
+          [],
+          [['timestamp', 'desc']],
+          0,
+          { logCategory: LogCategory.RATING }
+        );
+        
+        if (newPathRatings && newPathRatings.length > 0) {
           setTestResults(prev => ({
             ...prev,
             ratings: { 
               success: true, 
-              message: `Found ${onboardingRatings.length} onboarding ratings in the new schema location`, 
-              data: onboardingRatings.slice(0, 3) // Just show first 3 for brevity
+              message: `Found ${newPathRatings.length} onboarding ratings in the new schema location (/users/{userId}/ratings/onboarding)`, 
+              data: {
+                newPathRatings: newPathRatings.slice(0, 2), // First 2 for brevity
+                legacyPathRatings: legacyPathRatings.length > 0 ? 
+                  legacyPathRatings.slice(0, 2) : 
+                  'No ratings in legacy path',
+                directPathRatings: directPathRatings.length > 0 ? 
+                  directPathRatings.slice(0, 2) : 
+                  'No ratings in direct path',
+                hookResults: firestoreRatings ? firestoreRatings.slice(0, 2) : 'No hook results'
+              }
+            }
+          }));
+        } else if (legacyPathRatings && legacyPathRatings.length > 0) {
+          setTestResults(prev => ({
+            ...prev,
+            ratings: { 
+              success: false, 
+              message: `Found ${legacyPathRatings.length} ratings in legacy path but none in new schema location`, 
+              data: {
+                legacyPathRatings: legacyPathRatings.slice(0, 2),
+                directPathRatings: directPathRatings.length > 0 ? 
+                  directPathRatings.slice(0, 2) : 
+                  'No ratings in direct path',
+                hookResults: firestoreRatings ? firestoreRatings.slice(0, 2) : 'No hook results'
+              }
             }
           }));
         } else {
@@ -155,7 +219,13 @@ export default function FirestoreTestPage() {
             ...prev,
             ratings: { 
               success: false, 
-              message: "No onboarding ratings found in Firestore"
+              message: "No onboarding ratings found in either legacy or new Firestore path",
+              data: {
+                directPathRatings: directPathRatings.length > 0 ? 
+                  directPathRatings.slice(0, 2) : 
+                  'No ratings in direct path',
+                hookResults: firestoreRatings ? firestoreRatings.slice(0, 2) : 'No hook results'
+              }
             }
           }));
         }
