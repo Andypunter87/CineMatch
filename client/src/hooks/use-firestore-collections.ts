@@ -723,9 +723,8 @@ export function useFirestoreCollections() {
     },
     options: FirestoreLog = {}
   ): Promise<boolean> => {
-    // Format the path depending on whether userId is a number or a string
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
-    const itemPath = `${userPath}/watchlist/${filmId}`;
+    // Use the formatUserPath utility with subcollection and document ID
+    const itemPath = formatUserPath(userId, 'watchlist', filmId);
     
     // Prepare the watchlist item data
     const watchlistData = {
@@ -754,9 +753,8 @@ export function useFirestoreCollections() {
     filmId: number,
     options: FirestoreLog = {}
   ): Promise<boolean> => {
-    // Format the path depending on whether userId is a number or a string
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
-    const itemPath = `${userPath}/watchlist/${filmId}`;
+    // Use the formatUserPath utility with subcollection and document ID
+    const itemPath = formatUserPath(userId, 'watchlist', filmId);
     
     return await deleteDocument(
       itemPath,
@@ -782,9 +780,9 @@ export function useFirestoreCollections() {
     },
     options: FirestoreLog = {}
   ): Promise<boolean> => {
-    // Format the paths depending on whether IDs are numbers or strings
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
-    const friendPath = `${userPath}/friends/${typeof friend.friendId === 'number' ? `friend-${friend.friendId}` : friend.friendId}`;
+    // Use the formatUserPath utility with subcollection and document ID
+    // No "friend-" prefix is needed anymore
+    const friendPath = formatUserPath(userId, 'friends', String(friend.friendId));
     
     // Prepare the friend data
     const friendData = {
@@ -811,9 +809,8 @@ export function useFirestoreCollections() {
     status?: 'pending' | 'accepted' | 'blocked',
     options: FirestoreLog = {}
   ): Promise<any[]> => {
-    // Format the path depending on whether userId is a number or a string
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
-    const friendsPath = `${userPath}/friends`;
+    // Use the formatUserPath utility with subcollection
+    const friendsPath = formatUserPath(userId, 'friends');
     
     // Create constraints if status is specified
     const constraints: QueryConstraint[] = [];
@@ -846,9 +843,8 @@ export function useFirestoreCollections() {
     },
     options: FirestoreLog = {}
   ): Promise<string | null> => {
-    // Format the path depending on whether userId is a number or a string
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
-    const sessionsPath = `${userPath}/sharedRecommendations`;
+    // Use the formatUserPath utility with subcollection
+    const sessionsPath = formatUserPath(userId, 'sharedRecommendations');
     
     // Prepare the session data
     const sessionData = {
@@ -875,9 +871,8 @@ export function useFirestoreCollections() {
     userId: string | number,
     options: FirestoreLog = {}
   ): Promise<any[]> => {
-    // Format the path depending on whether userId is a number or a string
-    const userPath = `users/${typeof userId === 'number' ? `user-${userId}` : userId}`;
-    const sessionsPath = `${userPath}/sharedRecommendations`;
+    // Use the formatUserPath utility with subcollection
+    const sessionsPath = formatUserPath(userId, 'sharedRecommendations');
     
     return await queryCollection(
       sessionsPath,
