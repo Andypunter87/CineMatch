@@ -6,8 +6,18 @@ import { setDoc, doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { useFirebaseAuthStatus } from '@/components/FirebaseAuthProvider';
 import { useAuth } from '@/hooks/use-auth';
 
+// Extended user type to include Firebase token
+interface ExtendedUser {
+  id: number;
+  username: string | null;
+  name: string | null;
+  email: string;
+  firebaseToken?: string;
+  [key: string]: any;
+}
+
 export default function FirestoreTestDebugPage() {
-  const { user } = useAuth();
+  const { user } = useAuth() as { user: ExtendedUser | null };
   const { isFirebaseAuthenticated, isInitializing, error } = useFirebaseAuthStatus();
   const [testResult, setTestResult] = useState<string>('No test run yet');
   const [testLog, setTestLog] = useState<string[]>([]);
@@ -41,6 +51,32 @@ export default function FirestoreTestDebugPage() {
         if (user) {
           log(`Express user ID: ${user.id}`);
           log(`Firebase token present: ${user.firebaseToken ? 'yes' : 'no'}`);
+          
+          // Even if Firebase auth is not ready, we can check if the token is valid
+          try {
+            const tokenString = user.firebaseToken || '';
+            // Decode the base64 token
+            let decodedToken = '';
+            try {
+              decodedToken = Buffer.from(tokenString, 'base64').toString();
+            } catch (e) {
+              decodedToken = atob(tokenString);
+            }
+            
+            const tokenData = JSON.parse(decodedToken);
+            log(`Token decoded: ${JSON.stringify(tokenData)}`);
+            log(`Token expiration: ${new Date(tokenData.exp).toLocaleString()}`);
+            
+            // Check if the token is valid
+            const now = Date.now();
+            if (tokenData.exp < now) {
+              log('WARNING: Token is expired!');
+            } else {
+              log('Token is valid and not expired');
+            }
+          } catch (tokenError) {
+            log(`Error decoding token: ${tokenError instanceof Error ? tokenError.message : String(tokenError)}`);
+          }
         }
         setTestResult('Failed - Not authenticated');
         return;
@@ -133,20 +169,46 @@ export default function FirestoreTestDebugPage() {
       
       const userId = auth.currentUser.uid;
       
-      // Try to read from legacy collections to see if we have access
-      log('Checking legacy user_preferences collection');
-      const prefDoc = await getDoc(doc(db, 'user_preferences', `user-${userId}`));
+      // First check the new structure
+      log('Checking new user data structure');
       
-      if (prefDoc.exists()) {
-        log(`Found user_preferences: ${JSON.stringify(prefDoc.data())}`);
+      // Check preferences
+      log('Checking /users/{userId}/preferences/settings');
+      const prefsDoc = await getDoc(doc(db, 'users', userId, 'preferences', 'settings'));
+      if (prefsDoc.exists()) {
+        log(`Found user preferences: ${JSON.stringify(prefsDoc.data())}`);
+      } else {
+        log('No preferences document found in new structure');
+      }
+      
+      // Check onboarding ratings
+      log('Checking /users/{userId}/ratings/onboarding');
+      const onboardingDoc = await getDoc(doc(db, 'users', userId, 'ratings', 'onboarding'));
+      if (onboardingDoc.exists()) {
+        log(`Found onboarding ratings: ${JSON.stringify(onboardingDoc.data())}`);
+      } else {
+        log('No onboarding ratings document found in new structure');
+      }
+      
+      // Check watchlist
+      log('Checking /users/{userId}/watchlist collection');
+      const watchlistSnapshot = await getDocs(collection(db, 'users', userId, 'watchlist'));
+      log(`Found ${watchlistSnapshot.size} items in watchlist collection`);
+      
+      // Then try to read from legacy collections for comparison
+      log('Checking legacy user_preferences collection');
+      const legacyPrefDoc = await getDoc(doc(db, 'user_preferences', `user-${userId}`));
+      
+      if (legacyPrefDoc.exists()) {
+        log(`Found legacy user_preferences: ${JSON.stringify(legacyPrefDoc.data())}`);
       } else {
         log('No legacy user_preferences document found');
       }
       
-      // Check if we can query the onboarding_ratings collection
+      // Check if we can query the legacy onboarding_ratings collection
       log('Checking legacy onboarding_ratings collection');
-      const ratingsSnapshot = await getDocs(collection(db, 'onboarding_ratings'));
-      log(`Found ${ratingsSnapshot.size} documents in onboarding_ratings`);
+      const legacyRatingsSnapshot = await getDocs(collection(db, 'onboarding_ratings'));
+      log(`Found ${legacyRatingsSnapshot.size} documents in legacy onboarding_ratings collection`);
       
       setLegacyReadResult('Success - Legacy tests completed');
     } catch (error) {

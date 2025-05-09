@@ -44,6 +44,7 @@ function Router() {
       <ProtectedRoute path="/firestore-test-report" component={FirestoreTestReport} />
       <ProtectedRoute path="/firebase-auth-debug" component={FirebaseAuthDebug} />
       <ProtectedRoute path="/firestore-test" component={FirestoreTestPage} />
+      <ProtectedRoute path="/firestore-test-debug" component={FirestoreTestDebug} />
       <Route component={NotFound} />
     </Switch>
   );
