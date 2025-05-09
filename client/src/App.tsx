@@ -18,6 +18,7 @@ import FirestoreDemoPage from "@/pages/firestore-demo";
 import FirestoreTestReport from "@/pages/firestore-test-report";
 import FirebaseAuthDebug from "@/pages/firebase-auth-debug";
 import FirestoreTestPage from "@/pages/firestore-test-page";
+import FirestoreTestDebug from "@/pages/firestore-test-debug";
 import { AuthProvider } from "@/hooks/use-auth";
 import { FirebaseAuthProvider } from "@/components/FirebaseAuthProvider";
 import { ProtectedRoute } from "./lib/protected-route";
