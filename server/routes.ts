@@ -11,6 +11,7 @@ import onboardingRoutes from "./routes/onboarding";
 import imageProxyRoutes from "./routes/image-proxy";
 import testApiRoutes from "./routes/test-api";
 import firebaseTestRoutes from "./routes/firebase-test";
+import publicFirebaseTestRoutes from "./routes/public-firebase-test";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { sendFriendInvitationEmail, sendFriendRequestAcceptedEmails } from "./services/email";
@@ -48,6 +49,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register Firebase/Firestore test routes
   app.use('/api/firebase', firebaseTestRoutes);
+  
+  // Register public Firebase test routes (no authentication required)
+  app.use('/api/public-firebase', publicFirebaseTestRoutes);
   
   // Special endpoint specifically for "Show More Films" functionality
   app.post('/api/recommendations/more', async (req, res) => {

@@ -47,8 +47,9 @@ router.get('/firestore-test', async (req, res) => {
     
     res.json({
       success: result.success,
-      message: result.message,
-      details: result.details,
+      message: result.error || (result.success ? 'Firestore connection successful' : 'Firestore connection failed'),
+      details: result.diagnostics || {},
+      projectId: result.projectId,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
