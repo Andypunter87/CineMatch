@@ -7,6 +7,7 @@ import { FirebaseApiTest } from '@/components/FirebaseApiTest';
 import { FirebaseConfigRefresh } from '@/components/FirebaseConfigRefresh';
 import { FirestoreFallbackTest } from '@/components/FirestoreFallbackTest';
 import { FirebaseInitCheck } from '@/components/FirebaseInitCheck';
+import { FirebaseConfigDebug } from '@/components/FirebaseConfigDebug';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 

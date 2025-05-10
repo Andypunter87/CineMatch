@@ -35,10 +35,11 @@ export function FirebaseInitCheck() {
     
     // Check specific environment variables
     collectVar('VITE_FIREBASE_API_KEY');
+    collectVar('VITE_FIREBASE_AUTH_DOMAIN', true);
     collectVar('VITE_FIREBASE_PROJECT_ID', true);
-    collectVar('VITE_FIREBASE_APP_ID');
-    collectVar('VITE_FIREBASE_MESSAGING_SENDER_ID', true);
     collectVar('VITE_FIREBASE_STORAGE_BUCKET', true);
+    collectVar('VITE_FIREBASE_MESSAGING_SENDER_ID', true);
+    collectVar('VITE_FIREBASE_APP_ID');
     
     setEnvVars(firebaseVars);
   }, []);
