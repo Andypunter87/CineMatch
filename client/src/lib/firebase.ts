@@ -42,8 +42,19 @@ const firebaseConfig = {
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
+
+// Log the entire Firebase config (without sensitive parts) for debugging
+console.log('Firebase Config:', {
+  apiKey: firebaseConfig.apiKey ? `${firebaseConfig.apiKey.substring(0, 6)}...` : 'missing',
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId,
+  storageBucket: firebaseConfig.storageBucket,
+  messagingSenderId: firebaseConfig.messagingSenderId ? 'present' : 'missing',
+  appId: firebaseConfig.appId ? `${firebaseConfig.appId.split(':')[0]}:...` : 'missing'
+});
 
 // Initialize Firebase with better error handling
 let app: FirebaseApp;
@@ -60,6 +71,26 @@ try {
       appIdFirstChars: firebaseConfig.appId.split(':')[0] + ':...'
     });
     
+    // Complete Firebase configuration with all required fields 
+    // to fix auth/configuration-not-found error
+    const completeFirebaseConfig = {
+      apiKey: firebaseConfig.apiKey,
+      authDomain: firebaseConfig.authDomain,
+      projectId: firebaseConfig.projectId,
+      storageBucket: firebaseConfig.storageBucket,
+      messagingSenderId: firebaseConfig.messagingSenderId || '000000000000', // Provide a fallback
+      appId: firebaseConfig.appId,
+      // Include other fields that might be required
+      measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || undefined,
+      databaseURL: `https://${firebaseConfig.projectId}.firebaseio.com`
+    };
+    
+    console.log("Using complete Firebase config object:", {
+      ...completeFirebaseConfig,
+      apiKey: '[REDACTED]',
+      appId: '[REDACTED]'
+    });
+    
     // Check if firebase is already initialized
     try {
       const existingApps = getApps();
@@ -68,11 +99,12 @@ try {
         app = existingApps[0];
       } else {
         console.log("No existing Firebase app found, creating new app");
-        app = initializeApp(firebaseConfig);
+        app = initializeApp(completeFirebaseConfig);
       }
     } catch (initError) {
       console.error("Error checking existing apps:", initError);
-      app = initializeApp(firebaseConfig);
+      console.log("Attempting to initialize Firebase with complete config");
+      app = initializeApp(completeFirebaseConfig);
     }
     
     console.log("Firebase app initialized, getting auth and Firestore");
@@ -99,6 +131,16 @@ try {
   }
 } catch (error) {
   console.error("Failed to initialize Firebase:", error);
+  
+  // Special handling for configuration-not-found error
+  if (error instanceof Error && error.message.includes('configuration-not-found')) {
+    console.error("FIREBASE CONFIG ERROR: This error often indicates that:");
+    console.error("1. The Firebase API key doesn't match the project");
+    console.error("2. The App ID doesn't match the Firebase project");
+    console.error("3. There might be a permission issue with the Firebase project");
+    console.error("Please verify your Firebase console settings and ensure all values match");
+  }
+  
   // Create fallback objects that will prevent the app from crashing
   // but will log errors when used
   const createProxyHandler = (serviceName: string) => ({
