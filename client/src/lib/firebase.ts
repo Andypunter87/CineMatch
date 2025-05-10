@@ -132,65 +132,87 @@ interface CustomToken {
  */
 export async function signInWithServerToken(token: string): Promise<void> {
   try {
-    console.log("Processing custom token from server");
+    console.log("Processing Firebase custom token from server");
     
-    // Decode the base64 token to validate it first
+    if (!token) {
+      console.error("No token provided");
+      throw new Error("No Firebase token provided");
+    }
+    
+    // Log details about the token for debugging (without exposing the full token)
+    console.log(`Token length: ${token.length}`);
+    console.log(`Token preview: ${token.substring(0, 20)}...${token.substring(token.length - 20)}`);
+    
     try {
-      // Manual handling for browser environment which doesn't have Buffer
-      let decodedToken = '';
-      try {
-        // For Node.js environment
-        decodedToken = Buffer.from(token, 'base64').toString();
-      } catch (e) {
-        // For browser environment
-        decodedToken = atob(token);
+      // Check if we're already signed in to Firebase
+      if (auth.currentUser) {
+        console.log(`Already authenticated with Firebase as: ${auth.currentUser.uid}`);
+        // Since the token might be refreshed, we should sign in again with the new token
+        await auth.signOut();
+        console.log("Signed out from previous Firebase session");
       }
       
-      const tokenData = JSON.parse(decodedToken) as CustomToken;
+      // Sign in with the custom token using Firebase SDK
+      console.log("Signing in with Firebase custom token...");
+      const userCredential = await signInWithCustomToken(auth, token);
       
-      // Check if the token is valid
-      const now = Date.now();
-      if (tokenData.exp < now) {
-        throw new Error("Token expired");
+      // Store the user ID in localStorage for Firestore security rules
+      const uid = userCredential.user.uid;
+      localStorage.setItem('customAuthUserId', uid);
+      
+      console.log(`Successfully authenticated with Firebase as UID: ${uid}`);
+      
+      // Verify that the user is actually signed in
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        console.log(`Confirmed Firebase auth - current user: ${currentUser.uid}`);
+      } else {
+        console.warn("Warning: auth.currentUser is null even after successful sign in");
       }
       
-      console.log(`Valid token for user ${tokenData.uid}`);
+    } catch (firebaseError) {
+      console.error("Firebase authentication error:", firebaseError);
       
-      // Store the user ID in localStorage for use in Firestore security rules
-      localStorage.setItem('customAuthUserId', tokenData.uid);
-      
-      // Now attempt to sign in with Firebase Auth
-      try {
-        // Check if we're already signed in as this user
-        if (auth.currentUser && auth.currentUser.uid === tokenData.uid) {
-          console.log("Already signed in as the correct user");
-          return;
-        }
+      // Additional error diagnosis 
+      if (firebaseError instanceof Error) {
+        console.error("FIREBASE ERROR DIAGNOSIS:");
         
-        // Use Firebase anonymous auth to get a user with the correct UID
-        // This is a workaround since we can't use custom tokens in this environment
+        // Common Firebase auth errors
+        const errorCode = (firebaseError as any).code || 'unknown';
+        const errorMessage = firebaseError.message || 'Unknown error';
+        
+        console.error("Error code:", JSON.stringify(errorCode));
+        console.error("Error message:", JSON.stringify(errorMessage));
+        
+        // Attempt fallback to anonymous auth in case of token issues
         try {
-          // Sign out first if we're signed in as someone else
-          if (auth.currentUser && auth.currentUser.uid !== tokenData.uid) {
-            await auth.signOut();
-          }
-          
-          // Attempt to sign in anonymously 
-          // Firebase will assign a random UID, but we'll use our local ID for Firestore operations
+          console.warn("Attempting fallback to anonymous authentication");
           await signInAnonymously(auth);
-          console.log("Signed in anonymously with Firebase");
-          console.log("Authentication successful - using UID from token for Firestore operations");
-        } catch (authError) {
-          console.error("Error signing in with Firebase:", authError);
-          // We'll continue using the token's UID from localStorage even if Firebase auth fails
+          
+          // Extract user ID from a JWT token
+          const extractUserId = (jwt: string): string | null => {
+            try {
+              // Get the payload part (second segment) of the JWT
+              const parts = jwt.split('.');
+              if (parts.length !== 3) return null;
+              
+              // Decode the payload
+              const payload = JSON.parse(atob(parts[1]));
+              return payload.uid || payload.sub || null;
+            } catch (e) {
+              return null;
+            }
+          };
+          
+          // Try to extract the UID from the token
+          const uid = extractUserId(token) || 'unknown';
+          localStorage.setItem('customAuthUserId', uid);
+          console.log(`Fallback: using extracted UID ${uid} for Firestore operations`);
+        } catch (fallbackError) {
+          console.error("Fallback authentication also failed:", fallbackError);
+          throw new Error(`Firebase authentication failed: ${errorMessage}`);
         }
-      } catch (signInError) {
-        console.error("Error during Firebase authentication:", signInError);
-        // Continue using the token's UID from localStorage
       }
-    } catch (parseError) {
-      console.error("Error parsing custom token:", parseError);
-      throw new Error("Invalid token format");
     }
   } catch (error) {
     console.error("Error processing token:", error);
