@@ -15,7 +15,7 @@ export default function FirebaseTestPage() {
     <div className="container mx-auto py-10">
       <h1 className="text-2xl font-bold mb-6">Firebase/Firestore Integration Tests</h1>
       
-      <Alert variant="warning" className="mb-6">
+      <Alert className="mb-6 bg-amber-50 border-amber-200 text-amber-800">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Configuration Required</AlertTitle>
         <AlertDescription>
