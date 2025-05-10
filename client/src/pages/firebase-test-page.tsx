@@ -2,6 +2,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { FirebaseAuthDebug } from '@/components/FirebaseAuthDebug';
 import { FirestoreClientTest } from '@/components/FirestoreClientTest';
 import { TestFirebaseTokenButton } from '@/components/TestFirebaseTokenButton';
+import { ManualFirebaseTest } from '@/components/ManualFirebaseTest';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 
@@ -40,6 +41,40 @@ export default function FirebaseTestPage() {
               and displays detailed information about the token.
             </p>
             <TestFirebaseTokenButton />
+          </div>
+          
+          <div className="mb-8">
+            <h2 className="text-xl font-bold mb-4">Manual Firebase Authentication Test</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              This test allows you to manually sign in with a Firebase custom token and provides
+              detailed diagnostic information about any errors encountered.
+            </p>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <ManualFirebaseTest />
+              </div>
+              <div className="space-y-4">
+                <div className="bg-blue-50 p-4 rounded-md">
+                  <h3 className="font-medium text-blue-700 mb-2">Troubleshooting Configuration Errors</h3>
+                  <ul className="list-disc pl-5 space-y-1 text-blue-600 text-sm">
+                    <li>Verify that Authentication is enabled in the Firebase console</li>
+                    <li>Check that the API key matches the Firebase project</li>
+                    <li>Ensure the web app is registered in the Firebase console</li>
+                    <li>Verify all Firebase environment variables are loaded correctly</li>
+                    <li>Try accessing the Firebase Auth REST API directly</li>
+                  </ul>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-md">
+                  <h3 className="font-medium text-slate-700 mb-2">How to Obtain a Token</h3>
+                  <ol className="list-decimal pl-5 space-y-1 text-slate-600 text-sm">
+                    <li>Click "Get Test Token" in the token test section above</li>
+                    <li>Copy the full token</li>
+                    <li>Paste it in the input field in this section</li>
+                    <li>Click "Test Firebase Auth Directly"</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
           </div>
         
           <div className="mb-8">
