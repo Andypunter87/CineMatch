@@ -5,11 +5,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, CheckCircle, Info } from 'lucide-react';
 
+// Helper to fix storage bucket value if it has a prefix
+const fixStorageBucket = (value: string | undefined) => {
+  if (!value) return undefined;
+  if (value.startsWith('VITE_FIREBASE_STORAGE_BUCKET=')) {
+    return value.replace('VITE_FIREBASE_STORAGE_BUCKET=', '');
+  }
+  return value;
+};
+
 export function FirebaseConfigDebug() {
   const [configStatus, setConfigStatus] = useState<Record<string, { 
     value: string | null; 
     present: boolean; 
     display: string;
+    fixed?: string;
   }>>({});
 
   useEffect(() => {
@@ -32,7 +42,8 @@ export function FirebaseConfigDebug() {
       },
       'Storage Bucket': {
         value: env.VITE_FIREBASE_STORAGE_BUCKET,
-        display: env.VITE_FIREBASE_STORAGE_BUCKET || 'missing'
+        display: env.VITE_FIREBASE_STORAGE_BUCKET || 'missing',
+        fixed: fixStorageBucket(env.VITE_FIREBASE_STORAGE_BUCKET) || 'missing'
       },
       'Messaging Sender ID': {
         value: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
@@ -51,7 +62,8 @@ export function FirebaseConfigDebug() {
       status[key] = {
         value: config.value,
         present: !!config.value,
-        display: config.display
+        display: config.display,
+        fixed: config.fixed
       };
     }
 
@@ -99,6 +111,11 @@ export function FirebaseConfigDebug() {
               <div>
                 <div className="text-sm font-medium">{key}</div>
                 <div className="text-xs text-gray-500">{status.display}</div>
+                {key === 'Storage Bucket' && status.fixed && status.fixed !== status.display && (
+                  <div className="text-xs text-green-600 mt-0.5">
+                    Fixed value: {status.fixed}
+                  </div>
+                )}
               </div>
               {status.present ? (
                 <CheckCircle className="h-4 w-4 text-green-500" />
@@ -119,7 +136,7 @@ export function FirebaseConfigDebug() {
   apiKey: "${configStatus['API Key']?.display || ''}",
   authDomain: "${configStatus['Auth Domain']?.display || ''}",
   projectId: "${configStatus['Project ID']?.display || ''}",
-  storageBucket: "${configStatus['Storage Bucket']?.display || ''}",
+  storageBucket: "${configStatus['Storage Bucket']?.fixed || configStatus['Storage Bucket']?.display || ''}",
   messagingSenderId: "${configStatus['Messaging Sender ID']?.display || ''}",
   appId: "${configStatus['App ID']?.display || ''}"
 }`}

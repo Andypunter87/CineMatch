@@ -26,7 +26,8 @@ export default function FirebaseTestPage() {
         <AlertTitle>Configuration Required</AlertTitle>
         <AlertDescription>
           This page requires valid Firebase project configuration. Make sure all Firebase environment 
-          variables are set correctly (VITE_FIREBASE_API_KEY, VITE_FIREBASE_PROJECT_ID, VITE_FIREBASE_APP_ID).
+          variables are set correctly (VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID, 
+          VITE_FIREBASE_STORAGE_BUCKET, VITE_FIREBASE_MESSAGING_SENDER_ID, VITE_FIREBASE_APP_ID).
         </AlertDescription>
       </Alert>
       
@@ -53,6 +54,9 @@ export default function FirebaseTestPage() {
             <p className="text-sm text-gray-600 mb-4">
               This section shows the current Firebase configuration and allows you to reset it if needed.
             </p>
+            <div className="mb-6">
+              <FirebaseConfigDebug />
+            </div>
             <div className="grid md:grid-cols-3 gap-6">
               <FirebaseInitCheck />
               <FirebaseConfigRefresh />
