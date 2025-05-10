@@ -6,6 +6,7 @@ import { ManualFirebaseTest } from '@/components/ManualFirebaseTest';
 import { FirebaseApiTest } from '@/components/FirebaseApiTest';
 import { FirebaseConfigRefresh } from '@/components/FirebaseConfigRefresh';
 import { FirestoreFallbackTest } from '@/components/FirestoreFallbackTest';
+import { FirebaseInitCheck } from '@/components/FirebaseInitCheck';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 
@@ -51,7 +52,8 @@ export default function FirebaseTestPage() {
             <p className="text-sm text-gray-600 mb-4">
               This section shows the current Firebase configuration and allows you to reset it if needed.
             </p>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
+              <FirebaseInitCheck />
               <FirebaseConfigRefresh />
               <FirebaseApiTest />
             </div>
