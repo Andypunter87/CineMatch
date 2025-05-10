@@ -12,7 +12,9 @@ import { getFirestore, Firestore } from "firebase/firestore";
 // Validate Firebase API key
 function isValidFirebaseConfig(): boolean {
   const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+  const authDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN;
   const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+  const storageBucket = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET;
   const appId = import.meta.env.VITE_FIREBASE_APP_ID;
   
   // Check if the API key is present and has a reasonable length
@@ -23,8 +25,18 @@ function isValidFirebaseConfig(): boolean {
     return false;
   }
   
+  if (!authDomain || !authDomain.includes('.firebaseapp.com')) {
+    console.error("Firebase Auth Domain appears to be invalid or missing");
+    return false;
+  }
+  
   if (!projectId || projectId.length < 5) {
     console.error("Firebase Project ID appears to be invalid or missing");
+    return false;
+  }
+  
+  if (!storageBucket) {
+    console.error("Firebase Storage Bucket appears to be missing");
     return false;
   }
   
@@ -39,9 +51,16 @@ function isValidFirebaseConfig(): boolean {
 // Fix the storage bucket value if it contains the prefix
 const fixStorageBucket = (value: string | undefined) => {
   if (!value) return undefined;
+  
+  console.log('Original storage bucket value:', value);
+  
+  // Check and fix the problematic prefix
   if (value.startsWith('VITE_FIREBASE_STORAGE_BUCKET=')) {
-    return value.replace('VITE_FIREBASE_STORAGE_BUCKET=', '');
+    const fixed = value.replace('VITE_FIREBASE_STORAGE_BUCKET=', '');
+    console.log('Fixed storage bucket value:', fixed);
+    return fixed;
   }
+  
   return value;
 };
 
@@ -57,6 +76,7 @@ const firebaseConfig = {
 
 // Debug logging to verify config values at runtime
 console.log("FIREBASE CONFIG:", firebaseConfig);
+console.log("Resolved firebaseConfig", firebaseConfig);
 
 console.log('Raw Firebase environment variables:', {
   VITE_FIREBASE_API_KEY: import.meta.env.VITE_FIREBASE_API_KEY ? 'present' : 'missing',
