@@ -62,7 +62,17 @@ export async function createFirebaseToken(userId: number | string): Promise<stri
  * Test for writing to Firestore
  * @returns Success status and diagnostic information
  */
-export async function testFirestoreConnection(): Promise<{ success: boolean, projectId?: string, error?: string }> {
+export async function testFirestoreConnection(): Promise<{ 
+  success: boolean, 
+  projectId?: string, 
+  error?: string,
+  diagnostics?: {
+    environment: string,
+    recommendedApproach: string,
+    tokenSystem: string,
+    firebaseProject: string
+  }
+}> {
   // In a production environment, we would write to Firestore directly with Admin SDK
   // However, since we've determined the Admin SDK has issues in this environment,
   // we'll return diagnostic information to guide client-side operations
