@@ -37,13 +37,28 @@ router.get('/firebase-admin-test', async (req: Request, res: Response) => {
     // Test the Firebase Admin SDK connection
     const result = await testFirestoreConnection();
     
-    // Return results
-    res.json({
+    // Provide more diagnostic information about environment
+    const diagnostics = {
       success: result.success,
       projectId: result.projectId,
       timestamp: new Date().toISOString(),
-      error: result.error || null
-    });
+      error: result.error || null,
+      environment: {
+        node_version: process.version,
+        platform: process.platform,
+        architecture: process.arch,
+        host: req.headers.host
+      },
+      authentication: {
+        endpoint: '/api/user',
+        tokenEndpoint: '/api/login',
+        includeFirebaseToken: true,
+        documentation: 'Client-side authentication will work with Firestore',
+      },
+      recommendedWork: 'Focus on client-side Firestore operations using the token provided by the server'
+    };
+    
+    res.json(diagnostics);
   } catch (error) {
     console.error('Error testing Firebase Admin SDK:', error);
     res.status(500).json({ 
@@ -68,16 +83,26 @@ router.get('/user-firestore-test', async (req: Request, res: Response) => {
       // Test the Firebase connection status first
     const firebaseStatus = await testFirestoreConnection();
     
-    const results = {
+    const results: {
+      success: boolean;
+      projectId: string;
+      statusMessage: string;
+      tests: Array<{
+        collection: string;
+        success: boolean;
+        path: string;
+        error?: string;
+      }>;
+      clientAuth?: {
+        userId: string;
+        tokenAvailable: boolean;
+        recommendedApproach: string;
+      };
+    } = {
       success: firebaseStatus.success,
       projectId: firebaseStatus.projectId || 'unknown',
       statusMessage: firebaseStatus.error || 'Firebase connection ready',
-      tests: [] as Array<{
-        collection: string,
-        success: boolean,
-        path: string,
-        error?: string
-      }>
+      tests: []
     };
     
     // Test collections to write to
