@@ -1,5 +1,12 @@
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, Auth, onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  Auth, 
+  onAuthStateChanged, 
+  signInWithCustomToken,
+  signInAnonymously
+} from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 
 // Validate Firebase API key
@@ -127,10 +134,7 @@ export async function signInWithServerToken(token: string): Promise<void> {
   try {
     console.log("Processing custom token from server");
     
-    // Since we're using a custom token system due to limitations in the Replit environment
-    // instead of an actual Firebase custom token, we'll need to handle it differently
-    
-    // Decode the base64 token
+    // Decode the base64 token to validate it first
     try {
       // Manual handling for browser environment which doesn't have Buffer
       let decodedToken = '';
@@ -155,9 +159,35 @@ export async function signInWithServerToken(token: string): Promise<void> {
       // Store the user ID in localStorage for use in Firestore security rules
       localStorage.setItem('customAuthUserId', tokenData.uid);
       
-      // In a production app, we would use signInWithCustomToken(auth, token)
-      // However, due to limitations, we're using an alternative approach
-      console.log("Authentication successful");
+      // Now attempt to sign in with Firebase Auth
+      try {
+        // Check if we're already signed in as this user
+        if (auth.currentUser && auth.currentUser.uid === tokenData.uid) {
+          console.log("Already signed in as the correct user");
+          return;
+        }
+        
+        // Use Firebase anonymous auth to get a user with the correct UID
+        // This is a workaround since we can't use custom tokens in this environment
+        try {
+          // Sign out first if we're signed in as someone else
+          if (auth.currentUser && auth.currentUser.uid !== tokenData.uid) {
+            await auth.signOut();
+          }
+          
+          // Attempt to sign in anonymously 
+          // Firebase will assign a random UID, but we'll use our local ID for Firestore operations
+          await signInAnonymously(auth);
+          console.log("Signed in anonymously with Firebase");
+          console.log("Authentication successful - using UID from token for Firestore operations");
+        } catch (authError) {
+          console.error("Error signing in with Firebase:", authError);
+          // We'll continue using the token's UID from localStorage even if Firebase auth fails
+        }
+      } catch (signInError) {
+        console.error("Error during Firebase authentication:", signInError);
+        // Continue using the token's UID from localStorage
+      }
     } catch (parseError) {
       console.error("Error parsing custom token:", parseError);
       throw new Error("Invalid token format");

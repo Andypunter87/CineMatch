@@ -63,11 +63,30 @@ export async function createFirebaseToken(userId: number | string): Promise<stri
  * @returns Success status and diagnostic information
  */
 export async function testFirestoreConnection(): Promise<{ success: boolean, projectId?: string, error?: string }> {
-  return {
-    success: false,
-    projectId,
-    error: 'Firebase Admin SDK not fully initialized, using fallback token authentication. Direct Firestore access not available on this server.'
-  };
+  // In a production environment, we would write to Firestore directly with Admin SDK
+  // However, since we've determined the Admin SDK has issues in this environment,
+  // we'll return diagnostic information to guide client-side operations
+  
+  try {
+    // Check if we're using the correct project
+    return {
+      success: false,
+      projectId,
+      error: 'Firebase Admin SDK not fully initialized, using fallback token authentication. Client-side Firestore operations are required in this environment.',
+      diagnostics: {
+        environment: 'Replit',
+        recommendedApproach: 'Use client-side Firestore with Firebase Authentication',
+        tokenSystem: 'Simple token system is used for authentication',
+        firebaseProject: projectId
+      }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      projectId,
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
 }
 
 /**

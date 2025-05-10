@@ -824,6 +824,7 @@ export default function FirestoreTestDebugPage() {
               <TabsTrigger value="write">Write Tests</TabsTrigger>
               <TabsTrigger value="read">Read Tests</TabsTrigger>
               <TabsTrigger value="legacy">Legacy Structure</TabsTrigger>
+              <TabsTrigger value="clientTest">Client Test</TabsTrigger>
             </TabsList>
             
             <TabsContent value="authenticate">
