@@ -35,8 +35,8 @@ function isValidFirebaseConfig(): boolean {
     return false;
   }
   
-  if (!storageBucket) {
-    console.error("Firebase Storage Bucket appears to be missing");
+  if (!storageBucket || (typeof storageBucket === 'string' && !storageBucket.includes('.appspot.com'))) {
+    console.error("Firebase Storage Bucket appears to be missing or invalid:", storageBucket);
     return false;
   }
   
@@ -73,14 +73,21 @@ const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: fixStorageBucket(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 // Debug logging to verify config values at runtime
-console.log("FIREBASE CONFIG:", firebaseConfig);
-console.log("Resolved firebaseConfig", firebaseConfig);
+console.log("FIREBASE CONFIG (raw):", {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY ? "present" : "missing",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ? "present" : "missing",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID ? "present" : "missing"
+});
+console.log("FIREBASE CONFIG (final):", firebaseConfig);
 
 console.log('Raw Firebase environment variables:', {
   VITE_FIREBASE_API_KEY: import.meta.env.VITE_FIREBASE_API_KEY ? 'present' : 'missing',
