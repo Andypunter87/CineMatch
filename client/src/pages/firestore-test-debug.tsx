@@ -83,6 +83,9 @@ export default function FirestoreTestDebugPage() {
   // Is operation in progress flag
   const [isOperationInProgress, setIsOperationInProgress] = useState(false);
   
+  // Client direct test state
+  const [clientTestResult, setClientTestResult] = useState<string>('');
+  
   // Clear the logs when component mounts
   useEffect(() => {
     setTestLog(['Initializing Firestore test page...']);
