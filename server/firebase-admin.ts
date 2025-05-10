@@ -6,12 +6,14 @@
  * 2. Firestore database access for server-side writes
  * 3. Custom token generation for client authentication
  */
-import * as admin from 'firebase-admin';
-import { Firestore } from 'firebase-admin/firestore';
+import { initializeApp, cert, App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
 // Global settings
 let projectId = 'unknown';
 let isFirebaseAdminInitialized = false;
+let firebaseApp: App | null = null;
 let firestoreDb: Firestore | null = null;
 
 // Initialize the Firebase Admin SDK
@@ -29,17 +31,19 @@ try {
         projectId = serviceAccount.project_id;
         console.log(`Target Firebase project ID: ${projectId}`);
         
-        // Initialize the Firebase Admin SDK with the service account
-        if (!admin.apps.length) {
-          admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
+        // Initialize Firebase Admin with the modular SDK
+        try {
+          // Use modular initialization
+          firebaseApp = initializeApp({
+            credential: cert(serviceAccount),
             databaseURL: `https://${projectId}.firebaseio.com`
           });
+          
           isFirebaseAdminInitialized = true;
           console.log('Firebase Admin SDK initialized successfully');
           
-          // Get Firestore instance
-          firestoreDb = admin.firestore();
+          // Get Firestore instance with modular API
+          firestoreDb = getFirestore(firebaseApp);
           console.log('Firestore database initialized');
           
           // Run a simple test write to verify connectivity
@@ -50,9 +54,8 @@ try {
               console.error('Firestore test write failed:', result.error);
             }
           });
-        } else {
-          console.log('Firebase Admin SDK already initialized');
-          firestoreDb = admin.firestore();
+        } catch (initError) {
+          console.error('Error initializing Firebase Admin:', initError);
         }
       } else {
         console.error('Invalid service account format, missing project_id');
@@ -77,8 +80,12 @@ async function testWrite(): Promise<{ success: boolean, error?: string }> {
   
   try {
     const testRef = firestoreDb.collection('system').doc('test');
+    
+    // Using modular Firestore API
+    const { FieldValue } = await import('firebase-admin/firestore');
+    
     await testRef.set({
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp: FieldValue.serverTimestamp(),
       environment: 'server',
       test: 'connectivity',
       server: 'replit'
@@ -102,9 +109,10 @@ export async function createFirebaseToken(userId: number | string): Promise<stri
     // Convert userId to string if it's a number
     const uid = userId.toString();
     
-    if (isFirebaseAdminInitialized) {
+    if (isFirebaseAdminInitialized && firebaseApp) {
       // Create a custom token using the Firebase Admin SDK
-      const token = await admin.auth().createCustomToken(uid);
+      const auth = getAuth(firebaseApp);
+      const token = await auth.createCustomToken(uid);
       console.log(`Created Firebase custom token for user ${uid}`);
       return token;
     } else {
@@ -148,11 +156,14 @@ export async function testFirestoreConnection(): Promise<{
   }
   
   try {
+    // Get FieldValue for server timestamp
+    const { FieldValue } = await import('firebase-admin/firestore');
+    
     // Attempt a test write to verify Firestore connectivity
     const testDocId = `connection_test_${Date.now()}`;
     const testRef = firestoreDb.collection('debug_tests').doc(testDocId);
     await testRef.set({
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp: FieldValue.serverTimestamp(),
       environment: 'server',
       test: 'connection_test',
       server: 'replit'
@@ -215,13 +226,17 @@ export async function saveOnboardingRatings(
   
   try {
     const uid = userId.toString();
+    
+    // Get FieldValue for server timestamp
+    const { FieldValue } = await import('firebase-admin/firestore');
+    
     const batch = firestoreDb.batch();
     
     // Create a map of ratings by film ID for efficient access
     const ratingsMap: Record<string, {
       rating: number;
       title: string;
-      timestamp: admin.firestore.FieldValue;
+      timestamp: any; // Using any for FieldValue
     }> = {};
     
     // Process ratings into the map
@@ -229,7 +244,7 @@ export async function saveOnboardingRatings(
       ratingsMap[item.filmId.toString()] = {
         rating: item.rating,
         title: item.filmTitle,
-        timestamp: admin.firestore.FieldValue.serverTimestamp()
+        timestamp: FieldValue.serverTimestamp()
       };
     }
     
@@ -243,7 +258,7 @@ export async function saveOnboardingRatings(
     batch.set(onboardingRatingsRef, {
       films: ratingsMap,
       count: ratings.length,
-      lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+      lastUpdated: FieldValue.serverTimestamp()
     }, { merge: true });
     
     // Execute batch write
@@ -279,6 +294,9 @@ export async function saveUserPreferences(
   }
   
   try {
+    // Get FieldValue for server timestamp
+    const { FieldValue } = await import('firebase-admin/firestore');
+    
     const uid = userId.toString();
     const userPrefsRef = firestoreDb
       .collection('users')
@@ -290,7 +308,7 @@ export async function saveUserPreferences(
       country: preferences.country,
       streamingServices: preferences.streamingServices,
       language: preferences.language || 'en',
-      lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+      lastUpdated: FieldValue.serverTimestamp()
     }, { merge: true });
     
     console.log(`Saved preferences to Firestore for user ${uid}`);
