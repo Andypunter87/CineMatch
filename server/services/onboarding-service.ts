@@ -4,6 +4,7 @@ import { onboardingRatings, users } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { Film } from "@shared/schema";
+import { saveUserPreferences as savePreferencesToFirestore, saveOnboardingRatings as saveRatingsToFirestore } from "../firebase-admin";
 
 /**
  * Service for handling onboarding-related functionality
@@ -104,6 +105,25 @@ export class OnboardingService {
       console.log(`Calling storage.updateUserStreamingServices - userId: ${userId}, services: ${streamingServices.join(',')}`);
       const updatedUser = await storage.updateUserStreamingServices(userId, streamingServices);
       console.log(`Streaming services updated successfully for user ${userId}`);
+      
+      // Also save preferences to Firestore
+      console.log(`Saving preferences to Firestore for user ${userId}`);
+      try {
+        const firestoreResult = await savePreferencesToFirestore(userId, {
+          country,
+          streamingServices,
+          language: 'en' // Default language
+        });
+        
+        if (firestoreResult.success) {
+          console.log(`Successfully saved preferences to Firestore for user ${userId}`);
+        } else {
+          console.warn(`Failed to save preferences to Firestore: ${firestoreResult.error}. This is non-blocking.`);
+        }
+      } catch (firestoreError) {
+        // Don't fail the whole process if Firestore write fails
+        console.warn(`Error saving preferences to Firestore: ${firestoreError}. Continuing with SQL storage only.`);
+      }
       
       // Update onboarding state to mark preferences step as completed
       console.log(`Updating onboarding state for user ${userId} to ratings step (50% progress)`);
@@ -298,6 +318,34 @@ export class OnboardingService {
         await this.updateOnboardingState(userId, {
           progress,
         });
+      }
+      
+      // Also save ratings to Firestore (if we have at least 5 ratings)
+      if (count >= 5) {
+        console.log(`Saving ${count} onboarding ratings to Firestore for user ${userId}`);
+        try {
+          // First get all the user's ratings to send to Firestore
+          const allRatings = await this.getUserOnboardingRatings(userId);
+          
+          // Convert ratings to the format expected by Firestore
+          const firestoreRatings = allRatings.map(r => ({
+            filmId: r.filmId,
+            rating: r.rating || 0, // Convert null to 0 for "haven't seen"
+            filmTitle: r.filmTitle
+          }));
+          
+          // Save to Firestore
+          const firestoreResult = await saveRatingsToFirestore(userId, firestoreRatings);
+          
+          if (firestoreResult.success) {
+            console.log(`Successfully saved ${firestoreRatings.length} ratings to Firestore for user ${userId}`);
+          } else {
+            console.warn(`Failed to save ratings to Firestore: ${firestoreResult.error}. This is non-blocking.`);
+          }
+        } catch (firestoreError) {
+          // Don't fail the whole process if Firestore write fails
+          console.warn(`Error saving ratings to Firestore: ${firestoreError}. Continuing with SQL storage only.`);
+        }
       }
       
       return {
