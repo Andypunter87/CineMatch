@@ -3,6 +3,8 @@ import { FirebaseAuthDebug } from '@/components/FirebaseAuthDebug';
 import { FirestoreClientTest } from '@/components/FirestoreClientTest';
 import { TestFirebaseTokenButton } from '@/components/TestFirebaseTokenButton';
 import { ManualFirebaseTest } from '@/components/ManualFirebaseTest';
+import { FirebaseApiTest } from '@/components/FirebaseApiTest';
+import { FirebaseConfigRefresh } from '@/components/FirebaseConfigRefresh';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 
@@ -43,6 +45,17 @@ export default function FirebaseTestPage() {
             <TestFirebaseTokenButton />
           </div>
           
+          <div className="mb-8">
+            <h2 className="text-xl font-bold mb-4">Firebase Configuration</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              This section shows the current Firebase configuration and allows you to reset it if needed.
+            </p>
+            <div className="grid md:grid-cols-2 gap-6">
+              <FirebaseConfigRefresh />
+              <FirebaseApiTest />
+            </div>
+          </div>
+
           <div className="mb-8">
             <h2 className="text-xl font-bold mb-4">Manual Firebase Authentication Test</h2>
             <p className="text-sm text-gray-600 mb-4">

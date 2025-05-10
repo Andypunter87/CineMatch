@@ -233,7 +233,78 @@ export async function signInWithServerToken(token: string): Promise<void> {
         console.error("Error code:", JSON.stringify(errorCode));
         console.error("Error message:", JSON.stringify(errorMessage));
         
-        // Attempt fallback to anonymous auth in case of token issues
+        // If we have a configuration-not-found error, try a direct API call
+        if (errorCode === 'auth/configuration-not-found') {
+          console.warn("Attempting direct Firebase Auth REST API call as fallback");
+          
+          try {
+            // Extract the JWT payload to get user ID
+            const extractUserId = (jwt: string): string | null => {
+              try {
+                const parts = jwt.split('.');
+                if (parts.length !== 3) return null;
+                const payload = JSON.parse(atob(parts[1]));
+                return payload.uid || payload.sub || null;
+              } catch (e) {
+                return null;
+              }
+            };
+            
+            const uid = extractUserId(token);
+            if (!uid) {
+              throw new Error("Could not extract user ID from token");
+            }
+            
+            // Store the UID for Firestore operations
+            localStorage.setItem('customAuthUserId', uid);
+            console.log(`Using extracted UID ${uid} for Firestore operations`);
+            
+            // Try a direct API call to exchange the custom token
+            const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+            if (!apiKey) {
+              throw new Error("Firebase API Key is missing");
+            }
+            
+            console.log("Attempting direct API call to signInWithCustomToken endpoint");
+            const response = await fetch(
+              `https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${apiKey}`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  token,
+                  returnSecureToken: true,
+                }),
+              }
+            );
+            
+            if (!response.ok) {
+              const errorData = await response.json();
+              console.error("Direct API call failed:", errorData);
+              throw new Error(`Direct API call failed: ${errorData.error?.message || 'Unknown error'}`);
+            }
+            
+            const authData = await response.json();
+            console.log("Direct API call succeeded:", {
+              idToken: authData.idToken ? `${authData.idToken.substring(0, 10)}...` : 'missing',
+              refreshToken: authData.refreshToken ? 'present' : 'missing',
+              expiresIn: authData.expiresIn,
+            });
+            
+            // Store the tokens locally
+            localStorage.setItem('firebaseIdToken', authData.idToken);
+            localStorage.setItem('firebaseRefreshToken', authData.refreshToken);
+            
+            console.log("Successfully authenticated via direct API call");
+            return; // Exit early since we've handled authentication
+          } catch (directApiError) {
+            console.error("Direct API authentication failed:", directApiError);
+          }
+        }
+        
+        // If we get here, try anonymous auth as a last resort
         try {
           console.warn("Attempting fallback to anonymous authentication");
           await signInAnonymously(auth);
