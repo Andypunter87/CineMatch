@@ -9,6 +9,9 @@ import {
 } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 
+// Log all environment variables for debugging
+console.log("All environment variables:", import.meta.env);
+
 // Validate Firebase API key
 function isValidFirebaseConfig(): boolean {
   const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
@@ -68,12 +71,15 @@ const fixStorageBucket = (value: string | undefined) => {
   return value;
 };
 
+// Force correct storage bucket value directly from Firebase project settings
+const CORRECT_STORAGE_BUCKET = "cinematch-892cd.appspot.com";
+
 // Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  storageBucket: CORRECT_STORAGE_BUCKET, // Using hardcoded value to ensure it's correct
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
@@ -151,6 +157,8 @@ try {
         app = existingApps[0];
       } else {
         console.log("No existing Firebase app found, creating new app");
+        // Log the full complete config for debugging before initialization
+        console.log("FULL COMPLETE FIREBASE CONFIG:", JSON.stringify(completeFirebaseConfig, null, 2));
         app = initializeApp(completeFirebaseConfig);
       }
     } catch (initError) {
