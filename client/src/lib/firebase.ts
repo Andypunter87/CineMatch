@@ -54,9 +54,13 @@ const fixStorageBucket = (value: string | undefined) => {
   
   console.log('Original storage bucket value:', value);
   
-  // Check and fix the problematic prefix
+  // Check and fix the problematic prefix (appears twice in the string)
   if (value.startsWith('VITE_FIREBASE_STORAGE_BUCKET=')) {
-    const fixed = value.replace('VITE_FIREBASE_STORAGE_BUCKET=', '');
+    let fixed = value.replace('VITE_FIREBASE_STORAGE_BUCKET=', '');
+    // Check for a second instance of the prefix which might be the case in our environment
+    if (fixed.startsWith('VITE_FIREBASE_STORAGE_BUCKET=')) {
+      fixed = fixed.replace('VITE_FIREBASE_STORAGE_BUCKET=', '');
+    }
     console.log('Fixed storage bucket value:', fixed);
     return fixed;
   }

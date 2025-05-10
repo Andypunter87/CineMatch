@@ -2,31 +2,42 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { AlertTriangle, CheckCircle, Info } from 'lucide-react';
 
 // Helper to fix storage bucket value if it has a prefix
 const fixStorageBucket = (value: string | undefined) => {
   if (!value) return undefined;
+  // First check for the double prefix issue
   if (value.startsWith('VITE_FIREBASE_STORAGE_BUCKET=')) {
-    return value.replace('VITE_FIREBASE_STORAGE_BUCKET=', '');
+    let fixed = value.replace('VITE_FIREBASE_STORAGE_BUCKET=', '');
+    // Check for a second instance of the prefix
+    if (fixed.startsWith('VITE_FIREBASE_STORAGE_BUCKET=')) {
+      fixed = fixed.replace('VITE_FIREBASE_STORAGE_BUCKET=', '');
+    }
+    return fixed;
   }
   return value;
 };
 
+type ConfigStatusItem = {
+  value: any;
+  present: boolean;
+  display: string;
+  fixed?: string;
+};
+
 export function FirebaseConfigDebug() {
-  const [configStatus, setConfigStatus] = useState<Record<string, { 
-    value: string | null; 
-    present: boolean; 
-    display: string;
-    fixed?: string;
-  }>>({});
+  const [configStatus, setConfigStatus] = useState<Record<string, ConfigStatusItem>>({});
 
   useEffect(() => {
     const env = import.meta.env;
     
     // Collect Firebase config variables
-    const configs = {
+    const configs: Record<string, { 
+      value: any; 
+      display: string;
+      fixed?: string;
+    }> = {
       'API Key': {
         value: env.VITE_FIREBASE_API_KEY,
         display: env.VITE_FIREBASE_API_KEY ? 
@@ -57,7 +68,7 @@ export function FirebaseConfigDebug() {
     };
 
     // Build the status object
-    const status: Record<string, any> = {};
+    const status: Record<string, ConfigStatusItem> = {};
     for (const [key, config] of Object.entries(configs)) {
       status[key] = {
         value: config.value,
