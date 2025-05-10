@@ -66,9 +66,13 @@ router.get('/user-firestore-test', async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const userIdStr = userId.toString();
     const db = getFirestoreDb();
+    // Get Firebase Admin project ID from global variable
+    const admin = require('firebase-admin');
+    const projectId = admin.apps.length > 0 ? admin.apps[0].options.projectId : 'unknown';
+    
     const results = {
       success: true,
-      projectId: db.app.options.projectId,
+      projectId: projectId,
       tests: [] as Array<{
         collection: string,
         success: boolean,

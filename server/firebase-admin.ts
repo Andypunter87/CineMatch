@@ -5,8 +5,8 @@ import * as admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin with service account credentials
-let firebaseAdmin: admin.app.App;
-let firestoreDb: admin.firestore.Firestore;
+let firebaseAdmin: admin.app.App | undefined;
+let firestoreDb: admin.firestore.Firestore | undefined;
 
 try {
   // Check if credentials are provided
@@ -15,21 +15,63 @@ try {
   }
 
   // Parse the service account credentials
-  const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_CREDENTIALS);
+  // Log the first few characters to ensure it's a valid JSON string without exposing the full credentials
+  const credStr = process.env.FIREBASE_ADMIN_CREDENTIALS;
+  console.log(`Firebase Admin credentials string length: ${credStr.length}`);
+  console.log(`First 20 chars: ${credStr.substring(0, 20)}...`);
   
-  // Initialize Firebase Admin if not already initialized
-  if (!admin.apps.length) {
-    firebaseAdmin = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-    console.log(`Firebase Admin initialized successfully for project: ${serviceAccount.project_id}`);
+  // Try parsing as JSON
+  let serviceAccount;
+  try {
+    serviceAccount = JSON.parse(credStr);
+    console.log('Successfully parsed credentials as JSON');
+  } catch (parseError) {
+    console.error('Error parsing credentials as JSON:', parseError);
+    throw new Error('Invalid JSON format in FIREBASE_ADMIN_CREDENTIALS');
+  }
+  
+  // Log the service account keys to debug
+  console.log('Service account keys:', Object.keys(serviceAccount));
+  
+  // Check if the service account has the required fields for cert
+  if (serviceAccount && 
+      typeof serviceAccount === 'object' && 
+      'project_id' in serviceAccount && 
+      'private_key' in serviceAccount && 
+      'client_email' in serviceAccount) {
+    
+    console.log(`Using service account for project: ${serviceAccount.project_id}`);
+    
+    // Initialize Firebase Admin if not already initialized
+    // Check if apps exists and has length property before accessing it
+    if (!admin.apps || admin.apps.length === 0) {
+      try {
+        firebaseAdmin = admin.initializeApp({
+          credential: admin.credential.cert({
+            projectId: serviceAccount.project_id,
+            privateKey: serviceAccount.private_key,
+            clientEmail: serviceAccount.client_email
+          }),
+        });
+        console.log(`Firebase Admin initialized successfully for project: ${serviceAccount.project_id}`);
+      } catch (initError) {
+        console.error('Error initializing Firebase Admin:', initError);
+        throw initError;
+      }
+    } else {
+      // Get the existing app
+      firebaseAdmin = admin.app();
+    }
   } else {
-    firebaseAdmin = admin.app();
+    console.error('Invalid service account format - missing required fields');
+    throw new Error('Invalid service account format - missing required fields');
   }
   
   // Initialize Firestore
-  firestoreDb = getFirestore(firebaseAdmin);
-  console.log('Firestore initialized successfully');
+  if (firebaseAdmin) {
+    firestoreDb = getFirestore(firebaseAdmin);
+    console.log('Firestore initialized successfully');
+  }
 } catch (error) {
   console.error('Error initializing Firebase Admin:', error);
 }
@@ -86,7 +128,10 @@ export async function testFirestoreConnection(): Promise<{ success: boolean, pro
     }
     
     // Get the project ID
-    const projectId = firebaseAdmin.options.projectId;
+    let projectId = 'unknown';
+    if (admin.apps && admin.apps.length > 0) {
+      projectId = admin.apps[0].options.projectId || 'unknown';
+    }
     
     // Write a test document
     const testDoc = firestoreDb.collection('admin-tests').doc('connection-test');
