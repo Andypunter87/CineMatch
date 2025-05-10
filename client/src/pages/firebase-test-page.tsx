@@ -5,6 +5,7 @@ import { TestFirebaseTokenButton } from '@/components/TestFirebaseTokenButton';
 import { ManualFirebaseTest } from '@/components/ManualFirebaseTest';
 import { FirebaseApiTest } from '@/components/FirebaseApiTest';
 import { FirebaseConfigRefresh } from '@/components/FirebaseConfigRefresh';
+import { FirestoreFallbackTest } from '@/components/FirestoreFallbackTest';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 
@@ -100,12 +101,20 @@ export default function FirebaseTestPage() {
           </div>
           
           <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4">Firestore Client Test</h2>
+            <h2 className="text-xl font-bold mb-4">Firestore Access Tests</h2>
             <p className="text-sm text-gray-600 mb-4">
-              This test verifies connectivity to Firestore and the ability to read/write data.
-              Make sure you are authenticated with Firebase first.
+              These tests verify connectivity to Firestore using both standard SDK and direct REST API methods.
             </p>
-            <FirestoreClientTest />
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Standard Firebase SDK</h3>
+                <FirestoreClientTest />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Fallback Direct API Access</h3>
+                <FirestoreFallbackTest />
+              </div>
+            </div>
           </div>
         </>
       )}
