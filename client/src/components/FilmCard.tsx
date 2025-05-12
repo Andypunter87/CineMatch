@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
-import { useLocation } from "wouter";
+import { Link } from "wouter";
 import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
 
 // Extend the RecommendationRequest type to include isOnboarding flag
@@ -207,11 +207,12 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
       setShowConfirmation(true);
       
       // Track the success event with additional details
-      trackEvent(AnalyticsEvents.WATCHLIST_INTERACTION_FEEDBACK, {
+      trackEvent(AnalyticsEvents.FILM_ADDED_TO_WATCHLIST, {
         film_id: film.id,
         interaction_type: 'add_to_watchlist',
         success: true,
-        has_animation: true
+        has_animation: true,
+        is_visual_feedback: true
       });
       
       // Auto-hide confirmation after 5 seconds
@@ -474,20 +475,28 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
             )}
           </div>
           
-          {/* Confirmation message after adding to watchlist */}
+          {/* Enhanced confirmation message after adding to watchlist - with animation */}
           {showConfirmation && (
-            <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between bg-blue-50 p-2 rounded-md">
+            <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between bg-blue-50 p-2 rounded-md animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="flex items-center">
-                <Check className="h-4 w-4 text-green-500 mr-2" />
+                <div className="bg-green-100 rounded-full p-1 mr-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                </div>
                 <span className="text-sm text-blue-700 font-medium">Added to watchlist</span>
               </div>
               <Button 
                 variant="link" 
                 size="sm" 
-                onClick={() => setLocation("/watchlist")}
-                className="text-blue-600 p-0 h-auto"
+                className="text-blue-600 p-0 h-auto hover:text-blue-800 transition-colors"
+                onClick={() => {
+                  // Instead of redirecting, show an informative message
+                  toast({
+                    title: "Watchlist Access",
+                    description: "You can view all your saved films in the Watchlist tab anytime",
+                  });
+                }}
               >
-                View
+                View Later
               </Button>
             </div>
           )}
@@ -523,12 +532,22 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
             </div>
           )}
           
-          {/* Feedback submitted confirmation */}
+          {/* Enhanced feedback submitted confirmation with animation */}
           {feedbackSubmitted && (
             <div className="mt-3 pt-2 border-t border-gray-100">
-              <div className="bg-blue-50 p-2 rounded-md flex items-center">
-                <Check className="h-4 w-4 text-green-500 mr-2" />
-                <span className="text-sm text-blue-700">
+              <div className={`p-2 rounded-md flex items-center animate-in fade-in slide-in-from-bottom-2 duration-300 ${
+                feedbackSubmitted === 'liked' ? 'bg-green-50' : 'bg-amber-50'
+              }`}>
+                {feedbackSubmitted === 'liked' ? (
+                  <div className="bg-green-100 rounded-full p-1 mr-2">
+                    <ThumbsUp className="h-3 w-3 text-green-600" />
+                  </div>
+                ) : (
+                  <div className="bg-amber-100 rounded-full p-1 mr-2">
+                    <ThumbsDown className="h-3 w-3 text-amber-600" />
+                  </div>
+                )}
+                <span className={`text-sm ${feedbackSubmitted === 'liked' ? 'text-green-700' : 'text-amber-700'} font-medium`}>
                   {feedbackSubmitted === 'liked' 
                     ? "Thanks! We'll recommend more like this."
                     : "Thanks! We'll show fewer like this."}

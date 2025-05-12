@@ -42,6 +42,10 @@ export const AnalyticsEvents = {
   FILM_RATED: 'film_rated',
   FILM_REVIEWED: 'film_reviewed',
   
+  // UX feedback and interaction events
+  WATCHLIST_INTERACTION_FEEDBACK: 'watchlist_interaction_feedback',
+  UI_FEEDBACK_PROVIDED: 'ui_feedback_provided',
+  
   // Recommendation feedback events
   RECOMMENDATION_LIKED: 'recommendation_liked',
   RECOMMENDATION_DISLIKED: 'recommendation_disliked',
