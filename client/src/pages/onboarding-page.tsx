@@ -48,6 +48,22 @@ const OnboardingPage = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [filmsRated, setFilmsRated] = useState<FilmRating[]>([]);
   const [showMoreFilms, setShowMoreFilms] = useState(false);
+  
+  // Define step labels for the onboarding process
+  const onboardingSteps = [
+    'Welcome',
+    'Preferences',
+    'Rate Films',  
+    'Recommendations'
+  ];
+  
+  // Map the current step to our onboarding progress (0-3 explainer, 4 preferences, 5-6 ratings)
+  const getProgressStep = () => {
+    if (currentStep <= 2) return 0; // Welcome screens
+    if (currentStep === 3) return 1; // Preferences
+    if (currentStep === 4 || currentStep === 5) return 2; // Ratings
+    return 3; // Complete/Recommendations
+  };
 
   // Redirect to home if user is not logged in
   useEffect(() => {
@@ -336,8 +352,9 @@ const OnboardingPage = () => {
                 </p>
                 
                 <OnboardingStepIndicator 
-                  currentStep={currentStep} 
-                  totalSteps={3}
+                  currentStep={getProgressStep()} 
+                  totalSteps={4}
+                  stepLabels={onboardingSteps}
                 />
                 
                 <div className="w-full space-y-3 mt-6">
@@ -364,6 +381,13 @@ const OnboardingPage = () => {
           {/* User Preferences Form */}
           {currentStep === 3 && (
             <div className="py-4">
+              <div className="container max-w-md mx-auto">
+                <OnboardingStepIndicator 
+                  currentStep={getProgressStep()} 
+                  totalSteps={4}
+                  stepLabels={onboardingSteps}
+                />
+              </div>
               <UserPreferencesForm 
                 onComplete={handleNext}
               />
@@ -373,6 +397,13 @@ const OnboardingPage = () => {
           {/* Single Film Rating (cards one at a time) */}
           {currentStep === 4 && !showMoreFilms && (
             <div className="py-4">
+              <div className="container max-w-md mx-auto">
+                <OnboardingStepIndicator 
+                  currentStep={getProgressStep()} 
+                  totalSteps={4}
+                  stepLabels={onboardingSteps}
+                />
+              </div>
               <SingleFilmRating
                 films={currentBatchFilms || []}
                 onRatingComplete={handleRatingComplete}
