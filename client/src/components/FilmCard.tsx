@@ -25,7 +25,7 @@ interface FilmCardProps {
 export default function FilmCard({ film, recommendationContext, onDisliked }: FilmCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  // Removed usage of setLocation to prevent redirects when buttons are clicked
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<'liked' | 'disliked' | null>(null);
   
