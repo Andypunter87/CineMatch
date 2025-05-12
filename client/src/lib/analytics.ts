@@ -45,6 +45,7 @@ export const AnalyticsEvents = {
   // UX feedback and interaction events
   WATCHLIST_INTERACTION_FEEDBACK: 'watchlist_interaction_feedback',
   UI_FEEDBACK_PROVIDED: 'ui_feedback_provided',
+  FILM_ACTION_CLICKED: 'film_action_clicked',
   
   // Recommendation feedback events
   RECOMMENDATION_LIKED: 'recommendation_liked',

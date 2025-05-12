@@ -197,10 +197,17 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
         from_recommendation: !!recommendationContext
       });
       
-      // Show success toast
+      // Show success toast with more engaging message
       toast({
         title: "Added to watchlist",
-        description: `"${film.title}" has been added to your watchlist`,
+        description: (
+          <div className="flex items-center">
+            <Check className="mr-2 h-4 w-4 text-green-500" />
+            <span className="font-medium">"{film.title}"</span>
+            <span className="ml-1">saved for later</span>
+          </div>
+        ),
+        variant: "default",
       });
       
       // Show confirmation message within the card with improved animation
@@ -209,16 +216,18 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
       // Track the success event with additional details
       trackEvent(AnalyticsEvents.FILM_ADDED_TO_WATCHLIST, {
         film_id: film.id,
+        film_title: film.title,
         interaction_type: 'add_to_watchlist',
         success: true,
         has_animation: true,
-        is_visual_feedback: true
+        is_visual_feedback: true,
+        from_page: window.location.pathname
       });
       
-      // Auto-hide confirmation after 5 seconds
+      // Auto-hide confirmation after 6 seconds (slightly longer for better UX)
       setTimeout(() => {
         setShowConfirmation(false);
-      }, 5000);
+      }, 6000);
     },
     onError: (error: Error) => {
       toast({
@@ -598,13 +607,24 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
           {user && !showConfirmation && !feedbackSubmitted && (
             <div className="mt-3 pt-2 border-t border-gray-100">
               {exactFilmInWatchlist ? (
-                <div className="flex items-center justify-center bg-blue-50 text-blue-700 p-2 rounded-md">
+                <div className="flex items-center justify-center bg-blue-50 text-blue-700 p-2 rounded-md animate-in fade-in-25 duration-300">
                   <BookmarkCheck className="mr-2 h-4 w-4 text-blue-500" />
-                  <span className="text-sm font-medium">Already in your watchlist</span>
+                  <span className="text-sm font-medium">In Your Watchlist</span>
+                  <Button 
+                    variant="link"
+                    size="sm"
+                    className="ml-2 pl-2 text-xs text-blue-600 hover:text-blue-700 border-l border-blue-200"
+                    onClick={() => {
+                      // Navigate to watchlist page
+                      window.location.href = '/watchlist';
+                    }}
+                  >
+                    View
+                  </Button>
                 </div>
               ) : (
                 <Button 
-                  className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
+                  className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 shadow-sm hover:shadow transition-all"
                   size="sm"
                   onClick={() => {
                     // Use current state to determine if item is in watchlist
@@ -613,8 +633,16 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                       toast({
                         title: "Already in your watchlist",
                         description: "This film is already saved to your watchlist",
+                        variant: "default"
                       });
                     } else {
+                      // Track click event
+                      trackEvent(AnalyticsEvents.FILM_ACTION_CLICKED, {
+                        film_id: film.id,
+                        action: 'add_to_watchlist',
+                        from_page: window.location.pathname
+                      });
+                      
                       // Add to watchlist
                       addToWatchlistMutation.mutate();
                       
