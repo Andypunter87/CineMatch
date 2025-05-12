@@ -1,0 +1,103 @@
+🎬 CineMatch UX & UI Upgrade Brief
+
+🛠 Prepared for Replit Agent
+
+Author: Duncan Lindsey
+Focus: Improve onboarding flow, visual feedback, and interaction UX (excluding Firestore fixes for now)
+Priority: Medium-to-High — polish required before wider user onboarding
+
+⸻
+
+🔧 Summary of Issues to Address
+	1.	Adding a film to the watchlist restarts onboarding
+	2.	Rating the recommendations resets the flow
+	3.	Onboarding lacks visual feedback and progress cues
+	4.	Post-onboarding recommendation screen is abrupt and lacks UX polish
+	5.	Film rating and watchlist actions feel “invisible” — user needs confirmation
+	6.	UI allows duplicate streaming service selections
+
+⸻
+
+🎯 Objectives
+	•	Ensure users remain on the recommendation screen after interacting (e.g. watchlist or rating buttons).
+	•	Add clear, lightweight visual feedback for interactive actions (ratings, watchlist).
+	•	Improve onboarding UX via step indicators and transitions.
+	•	Prevent duplicate streaming service entries.
+	•	Enhance user confidence with microcopy and animations.
+
+⸻
+
+✅ Tasks to Implement
+
+1. 🛑 Prevent Watchlist/Ratings from Resetting Recommendation Flow
+	•	Bug: Adding a movie to the watchlist (or rating recommendations) causes onboarding/recommendation flow to restart.
+	•	Fix:
+	•	Ensure both actions (addToWatchlist, rateRecommendation) trigger a UI update without page refresh or route change.
+	•	Use client-side state update or toast instead of reloading recommendation context.
+
+⸻
+
+2. ✅ Add Visual Feedback for Film Interactions
+	•	Context: User should know when an action like “Add to Watchlist” or “Rate Film” is successful.
+	•	Solution:
+	•	Add animated tick icon or a subtle toast notification for:
+	•	✅ Successfully added to watchlist
+	•	⭐️ Film rated
+	•	👍 or 👎 feedback on recommendation
+	•	Optional: Use Framer Motion or a simple useState + CSS animation for this.
+
+⸻
+
+3. 🧭 Onboarding Progress Indicator
+	•	Goal: Show users where they are in the onboarding journey.
+	•	Add: Visual step tracker (e.g., Step 1 of 3: Preferences, Step 2 of 3: Ratings, Step 3 of 3: Confirm)
+	•	Location: Top of each onboarding screen (onboarding-page.tsx and its components)
+
+⸻
+
+4. ✨ Polish Post-Onboarding Transition
+	•	Current state: After final rating, the app cuts abruptly to recommendations.
+	•	Upgrade:
+	•	Add a loading interstitial or small “We’re generating your recommendations…” screen before the recommendations page loads.
+	•	Consider a short typing effect or animation for “Finding hidden gems for you… 🎬”
+
+⸻
+
+5. 🧼 Prevent Duplicate Streaming Services
+	•	Bug: User can select the same streaming service more than once in onboarding.
+	•	Fix:
+	•	Prevent duplicate entries in selectedServices[].
+	•	Grey out / disable already-selected services in the UI.
+
+⸻
+
+6. 🪧 Empty State Messaging
+	•	Add messaging to:
+	•	Watchlist screen: “Your watchlist is empty. Start adding films you want to see!”
+	•	Ratings screen (if relevant): “You haven’t rated any films yet.”
+
+⸻
+
+💻 Files Likely Affected
+	•	client/src/pages/onboarding-page.tsx
+	•	client/src/components/onboarding/SingleFilmRating.tsx
+	•	client/src/components/Recommendations.tsx
+	•	client/src/components/FilmCard.tsx
+	•	client/src/components/WatchlistButton.tsx (or wherever the watchlist logic lives)
+	•	client/src/hooks/useUserPreferences.ts
+	•	Possibly FilmRatingGrid.tsx for feedback UI
+
+⸻
+
+💡 Optional (Stretch)
+	•	Add micro-delay or animation when transitioning between recommendation batches
+	•	Smooth scroll to top when new recommendations are loaded
+
+⸻
+
+✅ Acceptance Criteria
+	•	✅ Adding to watchlist and rating feedback should not reset recommendations
+	•	✅ User should get clear visual confirmation for actions
+	•	✅ Onboarding steps are clearly indicated
+	•	✅ Duplicate streaming services are blocked
+	•	✅ Empty states have contextual messages

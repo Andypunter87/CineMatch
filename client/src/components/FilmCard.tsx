@@ -203,8 +203,16 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
         description: `"${film.title}" has been added to your watchlist`,
       });
       
-      // Show confirmation message within the card
+      // Show confirmation message within the card with improved animation
       setShowConfirmation(true);
+      
+      // Track the success event with additional details
+      trackEvent(AnalyticsEvents.WATCHLIST_INTERACTION_FEEDBACK, {
+        film_id: film.id,
+        interaction_type: 'add_to_watchlist',
+        success: true,
+        has_animation: true
+      });
       
       // Auto-hide confirmation after 5 seconds
       setTimeout(() => {
