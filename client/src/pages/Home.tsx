@@ -5,7 +5,6 @@ import { type RecommendationRequest, type Film } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { useRecommendationEngine } from "@/hooks/use-recommendation-engine";
-import { FirebaseAuthStatus } from "@/components/FirebaseAuthStatus";
 
 // Local storage key is now managed in the recommendation engine hook
 
@@ -80,10 +79,7 @@ export default function Home() {
         </p>
       </div>
       
-      {/* Display Firebase Auth Status */}
-      <div className="max-w-4xl mx-auto">
-        <FirebaseAuthStatus />
-      </div>
+      {/* Firebase Auth Status component removed */}
       
       <div className="max-w-4xl mx-auto">
         {showQuestionnaire ? (
