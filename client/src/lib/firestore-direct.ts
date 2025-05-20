@@ -115,9 +115,96 @@ export async function getUserPreferences(): Promise<any> {
 }
 
 /**
- * Utility hook for Firestore operations
- * This provides a unified way to access Firestore methods
+ * Set a document in Firestore using REST API
+ * @param collection The collection path
+ * @param document The document ID
+ * @param data The document data to set
+ * @returns Success status
  */
+export async function setFirestoreDocument(
+  collection: string, 
+  document: string, 
+  data: any
+): Promise<boolean> {
+  try {
+    const projectId = getProjectId();
+    if (!projectId) {
+      console.error('Firebase project ID not available');
+      return false;
+    }
+    
+    // Build the Firestore API URL
+    const url = `${FIRESTORE_BASE_URL}/projects/${projectId}/databases/(default)/documents/${collection}/${document}`;
+    
+    // Prepare data in Firestore format
+    const firestoreData = {
+      fields: convertObjectToFirestoreFields(data)
+    };
+    
+    // Make the request
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(firestoreData)
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('Error setting Firestore document:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in setFirestoreDocument:', error);
+    return false;
+  }
+}
+
+/**
+ * Convert a JavaScript object to Firestore fields format
+ * @param obj The object to convert
+ * @returns Firestore fields object
+ */
+function convertObjectToFirestoreFields(obj: any): any {
+  const result: any = {};
+  
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === null || value === undefined) {
+      result[key] = { nullValue: null };
+    } else if (typeof value === 'string') {
+      result[key] = { stringValue: value };
+    } else if (typeof value === 'number') {
+      result[key] = { integerValue: value };
+    } else if (typeof value === 'boolean') {
+      result[key] = { booleanValue: value };
+    } else if (Array.isArray(value)) {
+      result[key] = {
+        arrayValue: {
+          values: value.map(item => {
+            if (typeof item === 'object') {
+              return { mapValue: { fields: convertObjectToFirestoreFields(item) } };
+            } else if (typeof item === 'string') {
+              return { stringValue: item };
+            } else if (typeof item === 'number') {
+              return { integerValue: item };
+            } else if (typeof item === 'boolean') {
+              return { booleanValue: item };
+            }
+            return { nullValue: null };
+          })
+        }
+      };
+    } else if (typeof value === 'object') {
+      result[key] = { mapValue: { fields: convertObjectToFirestoreFields(value) } };
+    }
+  }
+  
+  return result;
+}
+
 export function useFirestoreUtils() {
   return {
     getDocument: getFirestoreDocument,

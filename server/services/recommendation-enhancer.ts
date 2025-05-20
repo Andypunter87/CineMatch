@@ -67,6 +67,9 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     let userFeedback = [];
     let feedbackWeights = { moodWeights: {}, runtimeWeights: {}, hasPreferences: false };
     
+    // Track if this is a co-watching recommendation
+    const isCoWatching = !!preferences.friendUserId;
+    
     if (preferences.userId) {
       console.log(`Retrieving Firestore feedback for user ID: ${preferences.userId}`);
       userFeedback = await getUserFilmFeedback(preferences.userId);
@@ -76,6 +79,62 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
         feedbackWeights = extractPreferenceWeights(userFeedback);
       } else {
         console.log('No feedback found in Firestore for this user');
+      }
+      
+      // If this is a co-watching scenario, get friend's feedback and preferences
+      if (isCoWatching && preferences.friendUserId) {
+        const { 
+          getFriendPreferences, 
+          getUserFilmFeedback: getFriendFilmFeedback,
+          extractPreferenceWeights: extractFriendPreferenceWeights,
+          combineWeights,
+          combinePreferences,
+          generatePersonalizationSummary
+        } = await import('./friend-feedback-reader');
+        
+        console.log(`Processing co-watching recommendation with friend ID: ${preferences.friendUserId}`);
+        
+        // Get friend's feedback for weighting
+        const friendFeedback = await getUserFilmFeedback(preferences.friendUserId);
+        let friendWeights = { moodWeights: {}, runtimeWeights: {}, hasPreferences: false };
+        
+        if (friendFeedback.length > 0) {
+          console.log(`Found ${friendFeedback.length} feedback entries for friend to influence recommendations`);
+          friendWeights = extractPreferenceWeights(friendFeedback);
+        } else {
+          console.log('No feedback found in Firestore for friend');
+        }
+        
+        // Get friend's preferences
+        const friendPreferences = await getFriendPreferences(preferences.friendUserId);
+        
+        // Weight ratio between primary user and friend (default 0.5 = equal weight)
+        const weightRatio = preferences.weightRatio !== undefined ? preferences.weightRatio : 0.5;
+        
+        // Combine weights from both users
+        feedbackWeights = combineWeights(feedbackWeights, friendWeights, weightRatio);
+        
+        // Add a personalization summary if one isn't already provided
+        if (!preferences.personalizationSummary && friendPreferences) {
+          // Extract shared moods and genres for personalization
+          const userMoods = Object.keys(feedbackWeights.moodWeights).filter(
+            mood => feedbackWeights.moodWeights[mood]?.liked > feedbackWeights.moodWeights[mood]?.disliked
+          );
+          
+          // Get genres from user preferences (not exposed in enhanced recommendataions yet)
+          const userName = 'You';
+          const friendName = friendPreferences.name || 'your friend';
+          
+          // Generate personalization summary
+          preferences.personalizationSummary = generatePersonalizationSummary(
+            userName,
+            friendName,
+            userMoods,
+            [] // No genre data in feedback yet
+          );
+          
+          console.log(`Generated personalization summary: ${preferences.personalizationSummary}`);
+        }
       }
     }
     

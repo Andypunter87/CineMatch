@@ -49,6 +49,9 @@ export const recommendationRequestSchema = z.object({
   })).optional(), // User's rated films for personalized recommendations
   requestedBatchSize: z.number().positive().optional(), // Requested number of films to return
   userId: z.number().optional(), // User ID for Firestore feedback integration
+  friendUserId: z.number().optional(), // Friend's user ID for co-watching recommendations
+  weightRatio: z.number().min(0).max(1).optional(), // Weight ratio between primary user (1.0) and friend (0.0), defaults to 0.5 (equal)
+  personalizationSummary: z.string().optional(), // Summary of personalization reasoning (e.g., shared interests)
   _bypassStreamingFilter: z.boolean().optional(), // Special flag used for "Show More" to bypass streaming service constraints
   _disableMoodFilter: z.boolean().optional(), // Special flag to disable mood filtering for more diverse recommendations
   _disableRuntimeFilter: z.boolean().optional() // Special flag to disable runtime filtering for more diverse recommendations
