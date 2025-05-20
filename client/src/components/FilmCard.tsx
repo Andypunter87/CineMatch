@@ -109,12 +109,51 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
       // Set feedback submitted state
       setFeedbackSubmitted(variables === 'like' ? 'liked' : 'disliked');
       
-      // Show success toast
+      // Show success toast with undo functionality
       toast({
         title: variables === 'like' ? "We'll recommend more like this" : "We'll show less like this",
-        description: variables === 'like' 
-          ? "Thanks for your feedback! We'll improve your recommendations." 
-          : "Thanks for letting us know. We'll adjust future recommendations.",
+        description: (
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center">
+              {variables === 'like' ? (
+                <div className="bg-green-100 rounded-full p-1 mr-2">
+                  <ThumbsUp className="h-3 w-3 text-green-600" />
+                </div>
+              ) : (
+                <div className="bg-amber-100 rounded-full p-1 mr-2">
+                  <ThumbsDown className="h-3 w-3 text-amber-600" />
+                </div>
+              )}
+              <span>
+                {variables === 'like' 
+                  ? "Thanks for your feedback! We'll improve your recommendations." 
+                  : "Thanks for letting us know. We'll adjust future recommendations."}
+              </span>
+            </div>
+            <Button 
+              type="button"
+              variant="outline" 
+              size="sm" 
+              className={`ml-2 text-xs h-7 px-2 ${variables === 'like' ? 'border-green-200 hover:bg-green-50' : 'border-amber-200 hover:bg-amber-50'}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Reset feedback state
+                setFeedbackSubmitted(null);
+                
+                // Show confirmation toast
+                toast({
+                  title: "Feedback removed",
+                  description: "Your feedback has been removed",
+                  variant: "default",
+                });
+              }}
+            >
+              Undo
+            </Button>
+          </div>
+        ),
+        variant: "default",
       });
       
       // Do NOT call onDisliked which could cause the card to be removed
