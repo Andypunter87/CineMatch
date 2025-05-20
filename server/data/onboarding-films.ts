@@ -261,7 +261,7 @@ export const onboardingFilms: Film[] = [
     synopsis: "In a dystopian near future, single people, according to the laws of The City, are taken to The Hotel, where they are obliged to find a romantic partner in forty-five days or are transformed into beasts and sent off into The Woods.",
     genres: ["Comedy", "Drama", "Romance"],
     type: "indie",
-    posterUrl: "https://image.tmdb.org/t/p/w500/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg",
+    posterUrl: "https://image.tmdb.org/t/p/w500/am7avy2B8slMhJRiKYvF8UtCLiW.jpg",
     hasCompleteData: true,
     hasStreamingData: true
   },
