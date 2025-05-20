@@ -10,6 +10,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
+import { useFilmFeedbackFirestore } from "@/hooks/use-film-feedback-firestore";
+import { useWatchlistFirestore } from "@/hooks/use-watchlist-firestore";
 
 // Extend the RecommendationRequest type to include isOnboarding flag
 interface OnboardingAwareRecommendationContext extends RecommendationRequest {
@@ -28,6 +30,10 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
   // Removed usage of setLocation to prevent redirects when buttons are clicked
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<'liked' | 'disliked' | null>(null);
+  
+  // Get Firestore hooks for film feedback and watchlist
+  const filmFeedback = useFilmFeedbackFirestore();
+  const watchlistFirestore = useWatchlistFirestore();
   
   // Use react-query to manage watchlist state instead of direct fetch
   const { data: watchlistItems = [] } = useQuery<any[]>({
@@ -93,15 +99,62 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
           status: feedback === 'like' ? 'loved' : 'hated',
           isOnboarding: true
         });
+        
+        // Also save to Firestore if user is logged in
+        if (user) {
+          try {
+            await filmFeedback.saveFilmFeedback(
+              user.id,
+              film.id,
+              {
+                filmId: film.id,
+                title: film.title,
+                liked: feedback === 'like',
+                timestamp: new Date().toISOString(),
+                moodContext: recommendationContext?.mood || null,
+                runtimePreference: recommendationContext?.runtime || null,
+                recommendationContext: {
+                  ...recommendationContext,
+                  isOnboarding: true
+                }
+              }
+            );
+          } catch (error) {
+            console.error("Error saving feedback to Firestore:", error);
+          }
+        }
+        
         return await res.json();
       } else {
-        // Regular recommendation feedback
+        // Regular recommendation feedback - Save to both SQL and Firestore
         const res = await apiRequest("POST", "/api/feedback", {
           filmId: film.id,
           filmTitle: film.title,
           feedback,
           recommendationContext
         });
+        
+        // Also save to Firestore if user is logged in
+        if (user) {
+          try {
+            await filmFeedback.saveFilmFeedback(
+              user.id,
+              film.id,
+              {
+                filmId: film.id,
+                title: film.title,
+                liked: feedback === 'like',
+                timestamp: new Date().toISOString(),
+                moodContext: recommendationContext?.mood || null,
+                runtimePreference: recommendationContext?.runtime || null,
+                recommendationContext
+              }
+            );
+          } catch (error) {
+            console.error("Error saving feedback to Firestore:", error);
+          }
+        }
+        
         return await res.json();
       }
     },
