@@ -223,14 +223,65 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
         from_recommendation: !!recommendationContext
       });
       
-      // Show success toast with more engaging message
+      // Show success toast with more engaging message and undo option
       toast({
         title: "Added to watchlist",
         description: (
-          <div className="flex items-center">
-            <Check className="mr-2 h-4 w-4 text-green-500" />
-            <span className="font-medium">"{film.title}"</span>
-            <span className="ml-1">saved for later</span>
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center">
+              <Check className="mr-2 h-4 w-4 text-green-500" />
+              <span className="font-medium">"{film.title}"</span>
+              <span className="ml-1">saved for later</span>
+            </div>
+            <Button 
+              type="button"
+              variant="outline" 
+              size="sm" 
+              className="ml-2 text-xs h-7 px-2 border-blue-200 hover:bg-blue-50"
+              onClick={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                try {
+                  // Find the watchlist item ID from the current watchlist data
+                  const currentWatchlistItems = queryClient.getQueryData<any[]>(['/api/watchlist']) || [];
+                  const watchlistItem = currentWatchlistItems.find(item => item.filmId === film.id);
+                  
+                  if (!watchlistItem) {
+                    throw new Error("Watchlist item not found");
+                  }
+                  
+                  // Remove from watchlist via API
+                  const res = await apiRequest("DELETE", `/api/watchlist/${watchlistItem.id}`);
+                  
+                  // Update local state
+                  setIsWatchlisted(false);
+                  setShowConfirmation(false);
+                  
+                  // Update cache manually without triggering refetch
+                  queryClient.setQueryData(['/api/watchlist'], (oldData: any[]) => {
+                    if (!oldData || !Array.isArray(oldData)) return [];
+                    return oldData.filter(item => item.filmId !== film.id);
+                  });
+                  
+                  // Show confirmation
+                  toast({
+                    title: "Removed from watchlist",
+                    description: `"${film.title}" was removed from your watchlist`,
+                    variant: "default"
+                  });
+                } catch (error) {
+                  console.error("Failed to remove from watchlist:", error);
+                  toast({
+                    title: "Error",
+                    description: "Failed to remove from watchlist",
+                    variant: "destructive"
+                  });
+                }
+              }}
+            >
+              Undo
+            </Button>
           </div>
         ),
         variant: "default",
@@ -289,7 +340,9 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
   const matchPercentage = film.matchPercentage || 90;
   
   return (
-    <Card className="recommendation-card bg-white rounded-lg overflow-hidden shadow-[0_4px_14px_0_rgba(59,130,246,0.2)] border border-blue-100 group hover:shadow-[0_8px_20px_0_rgba(59,130,246,0.25)] transition-all duration-200 h-full flex flex-col">
+    <Card className={`recommendation-card bg-white rounded-lg overflow-hidden shadow-[0_4px_14px_0_rgba(59,130,246,0.2)] border border-blue-100 group hover:shadow-[0_8px_20px_0_rgba(59,130,246,0.25)] transition-all duration-200 h-full flex flex-col ${
+      feedbackSubmitted ? 'opacity-90 ' + (feedbackSubmitted === 'liked' ? 'border-green-200' : 'border-amber-200') : ''
+    }`}>
       <div className="relative flex-shrink-0">
         {/* Warning badge for incomplete data */}
         {film.hasCompleteData === false && (
@@ -351,8 +404,17 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
           </div>
         )}
         
-        {/* Match percentage badge */}
-        <div className="absolute top-2 right-2 z-10 max-w-[42%]">
+        {/* Watchlist indicator - only show if film is in watchlist */}
+        {isWatchlisted && (
+          <div className="absolute top-2 right-2 z-20">
+            <div className="bg-blue-600 text-white p-1.5 rounded-full animate-in fade-in-50 shadow-md" title="In your watchlist">
+              <BookmarkCheck className="w-3.5 h-3.5" />
+            </div>
+          </div>
+        )}
+        
+        {/* Match percentage badge - position adjusted if watchlist indicator is present */}
+        <div className={`absolute ${isWatchlisted ? 'top-2 right-8' : 'top-2 right-2'} z-10 max-w-[42%]`}>
           <Badge className="bg-primary text-white px-1.5 py-0.5 text-[10px] sm:text-xs sm:px-2 sm:py-0.5 font-medium max-w-full truncate">
             <Star className="w-3 h-3 mr-0.5 sm:mr-1 inline flex-shrink-0" />
             <span className="truncate">{matchPercentage}% Match</span>
@@ -580,23 +642,46 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
           {/* Enhanced feedback submitted confirmation with animation */}
           {feedbackSubmitted && (
             <div className="mt-3 pt-2 border-t border-gray-100">
-              <div className={`p-2 rounded-md flex items-center animate-in fade-in slide-in-from-bottom-2 duration-300 ${
+              <div className={`p-2 rounded-md flex items-center justify-between animate-in fade-in slide-in-from-bottom-2 duration-300 ${
                 feedbackSubmitted === 'liked' ? 'bg-green-50' : 'bg-amber-50'
               }`}>
-                {feedbackSubmitted === 'liked' ? (
-                  <div className="bg-green-100 rounded-full p-1 mr-2">
-                    <ThumbsUp className="h-3 w-3 text-green-600" />
-                  </div>
-                ) : (
-                  <div className="bg-amber-100 rounded-full p-1 mr-2">
-                    <ThumbsDown className="h-3 w-3 text-amber-600" />
-                  </div>
-                )}
-                <span className={`text-sm ${feedbackSubmitted === 'liked' ? 'text-green-700' : 'text-amber-700'} font-medium`}>
-                  {feedbackSubmitted === 'liked' 
-                    ? "Thanks! We'll recommend more like this."
-                    : "Thanks! We'll show fewer like this."}
-                </span>
+                <div className="flex items-center">
+                  {feedbackSubmitted === 'liked' ? (
+                    <div className="bg-green-100 rounded-full p-1 mr-2 animate-pulse">
+                      <ThumbsUp className="h-3 w-3 text-green-600" />
+                    </div>
+                  ) : (
+                    <div className="bg-amber-100 rounded-full p-1 mr-2 animate-pulse">
+                      <ThumbsDown className="h-3 w-3 text-amber-600" />
+                    </div>
+                  )}
+                  <span className={`text-sm ${feedbackSubmitted === 'liked' ? 'text-green-700' : 'text-amber-700'} font-medium`}>
+                    {feedbackSubmitted === 'liked' 
+                      ? "Thanks! We'll recommend more like this."
+                      : "Thanks! We'll show fewer like this."}
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={`text-xs ${feedbackSubmitted === 'liked' ? 'text-green-700 hover:bg-green-100' : 'text-amber-700 hover:bg-amber-100'}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Reset feedback state
+                    setFeedbackSubmitted(null);
+                    
+                    // Show toast for undo action
+                    toast({
+                      title: "Feedback removed",
+                      description: "Your feedback has been removed",
+                      variant: "default",
+                    });
+                  }}
+                >
+                  Undo
+                </Button>
               </div>
               {/* Only show this message when the film hasn't been added to the watchlist */}
               {!isWatchlisted && (

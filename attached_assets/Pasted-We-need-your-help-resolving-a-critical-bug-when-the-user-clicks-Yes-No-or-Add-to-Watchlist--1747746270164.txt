@@ -1,0 +1,48 @@
+We need your help resolving a critical bug: when the user clicks “Yes”, “No”, or “Add to Watchlist” on a film card (during or after onboarding), the onboarding experience restarts unexpectedly.
+
+⸻
+
+✅ Desired Button Behaviours:
+
+1. Yes / No (Feedback on Recommendation Quality)
+	•	Purpose: Updates user preferences to improve future recommendations.
+	•	Expected Behaviour:
+	•	Should not trigger a page refresh or route change
+	•	Should not restart onboarding or reload recommendations
+	•	Should show visual feedback, e.g. ✅ “Thanks! Your feedback will improve future recommendations.”
+
+2. Add to Watchlist
+	•	Purpose: Adds the selected film to the user’s watchlist for later viewing.
+	•	Expected Behaviour:
+	•	Should not restart onboarding or reload recommendations
+	•	Should show visual feedback, e.g. ✅ “Added to your watchlist.”
+
+⸻
+
+🔍 Probable Causes:
+	•	The recommendationFeedbackMutation or watchlistMutation handler might:
+	•	Trigger a route change, refetch, or reset state unexpectedly
+	•	Be incorrectly scoped to the onboarding context, causing navigation back to /onboarding
+	•	There may be incorrect logic in:
+	•	FilmCard.tsx
+	•	SingleFilmRating.tsx
+	•	Recommendations.tsx
+	•	The onSuccess handlers for the feedback or watchlist mutations
+
+⸻
+
+🎯 What Needs to Be Done:
+	1.	Audit the handlers for Yes / No / Add to Watchlist and:
+	•	Ensure no navigate, router.push, or state-clearing function is being called
+	•	Make sure they’re not tied to the onboarding flow unless explicitly passed isOnboarding: true
+	2.	Add proper type="button" to all <button> elements to avoid accidental form submissions that reload the app.
+	3.	Add success feedback UI (e.g. via toast or inline icon) without changing or resetting the current recommendation view.
+	4.	Preserve recommendation flow state regardless of how the user interacts with the buttons.
+
+⸻
+
+📍 Context:
+	•	We’ve already implemented a flag isOnboarding, but it may not be respected consistently across components.
+	•	The onboarding experience must not be restarted unless the user explicitly triggers it.
+
+Please confirm which files and logic were changed to resolve this so we can retest and verify.
