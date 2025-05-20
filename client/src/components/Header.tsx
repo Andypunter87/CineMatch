@@ -41,7 +41,7 @@ export default function Header() {
                   Home
                 </span>
               </Link>
-              <Link href="/watchlist">
+              <Link href="/watchlist?bypass_onboarding=true">
                 <span className="flex items-center text-sm font-medium hover:text-blue-500 transition-colors">
                   <Bookmark className="mr-1 h-4 w-4" />
                   Watchlist
@@ -73,7 +73,7 @@ export default function Header() {
                       <span>My Profile</span>
                     </DropdownMenuItem>
                   </Link>
-                  <Link href="/watchlist">
+                  <Link href="/watchlist?bypass_onboarding=true">
                     <DropdownMenuItem className="cursor-pointer" onClick={() => setIsMenuOpen(false)}>
                       <Bookmark className="mr-2 h-4 w-4" />
                       <span>My Watchlist</span>

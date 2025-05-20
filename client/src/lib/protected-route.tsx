@@ -47,33 +47,61 @@ export function ProtectedRoute({
           needsOnboarding: user.needsOnboarding
         }));
         
-        // If URL includes 'just_completed_onboarding', we know they just finished onboarding
-        // so we should never redirect back to onboarding
-        const justCompletedOnboarding = window.location.search.includes('just_completed_onboarding');
+        // Several ways to bypass the onboarding redirect:
+        // 1. URL explicitly includes 'just_completed_onboarding'
+        // 2. URL includes 'bypass_onboarding=true' (for direct navigation like watchlist links)
+        // 3. User is in an active recommendation flow
+        // 4. User has explicitly completed onboarding according to their user record
         
-        // To prevent redirection when users are in active recommendations experience,
-        // we check for additional conditions
+        const urlParams = new URLSearchParams(window.location.search);
+        const justCompletedOnboarding = urlParams.has('just_completed_onboarding');
+        const bypassOnboarding = urlParams.has('bypass_onboarding');
+        
+        // Permanently complete onboarding if bypassing through watchlist
+        // This will update the database on the next server interaction
+        if (bypassOnboarding) {
+          // Set local storage flag to remember this decision
+          localStorage.setItem('onboardingCompleted', 'true');
+        }
+        
+        // For active recommendation flows - detect if user is in the middle of using recommendations
         const inActiveRecommendationsFlow = 
-          // Checking URL paths that are part of the recommendations flow
+          // Check URL paths that are part of the recommendations flow
           window.location.pathname.includes('/recommendations') ||
           // If user has interacted with recommendations (liked/disliked/watchlisted)
           window.location.pathname === '/' && 
           (sessionStorage.getItem('hasInteractedWithRecommendations') === 'true');
           
-        // Set a flag in sessionStorage when user interacts with recommendation cards
+        // Set a flag in sessionStorage when user is on recommendations page
         if (window.location.pathname === '/' && !sessionStorage.getItem('hasInteractedWithRecommendations')) {
-          // This will prevent future redirects to onboarding during this session
           sessionStorage.setItem('hasInteractedWithRecommendations', 'true');
         }
         
+        // Check if user needs onboarding using onboardingState rather than needsOnboarding field
+        const needsOnboarding = typeof user.onboardingState === 'string' 
+          ? user.onboardingState !== 'completed'
+          : true; // Default to true if field is missing
+        
+        // For debugging
+        console.log("Onboarding check:", {
+          needsOnboarding,
+          justCompletedOnboarding,
+          bypassOnboarding,
+          inActiveRecommendationsFlow,
+          localStorage: localStorage.getItem('onboardingCompleted'),
+          sessionStorage: sessionStorage.getItem('hasInteractedWithRecommendations')
+        });
+        
         if (
-          !justCompletedOnboarding && // Skip redirect check if user just completed onboarding
-          !inActiveRecommendationsFlow && // Skip redirect if user is in active recommendations flow
-          user.needsOnboarding !== false && 
-          path !== "/onboarding" && 
-          !path.startsWith("/auth") && 
-          !path.startsWith("/terms") && 
-          !path.startsWith("/privacy")
+          !justCompletedOnboarding && // Skip if just completed
+          !bypassOnboarding && // Skip if explicitly bypassing (watchlist link)
+          !inActiveRecommendationsFlow && // Skip if in active recommendations flow
+          localStorage.getItem('onboardingCompleted') !== 'true' && // Skip if previously marked complete
+          needsOnboarding && // Only redirect if still needs onboarding
+          path !== "/onboarding" && // Don't redirect if already on onboarding page
+          !path.startsWith("/auth") && // Don't redirect on auth pages
+          !path.startsWith("/terms") && // Don't redirect on terms
+          !path.startsWith("/privacy") // Don't redirect on privacy
         ) {
           console.log("Redirecting to onboarding");
           return <Redirect to="/onboarding" />;
