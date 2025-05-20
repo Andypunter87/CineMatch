@@ -35,27 +35,34 @@ import {
   logSuccess 
 } from '@/lib/firestore-test-logger';
 import { OnboardingRating, RecommendationRating } from '@/lib/types/film-rating';
-import { FirestorePaths, formatUserPath, getFilmDocId } from '@/lib/firestore-paths';
+import { FirestorePaths } from '@/lib/firestore-paths';
 
 /**
- * Local wrapper around the imported formatUserPath to maintain backward compatibility
+ * Internal function to create path to user documents and collections
  * @param userId The user ID (string or number)
  * @param subcollection Optional subcollection name
  * @param documentId Optional document ID within the subcollection
  * @returns Properly formatted Firestore path
- * @deprecated Use the imported formatUserPath from @/lib/firestore-paths instead
  */
-function _formatUserPathLegacy(
+function _formatUserPath(
   userId: string | number,
   subcollection?: string,
   documentId?: string | number
 ): string {
-  // Base user path with just the subcollection
-  let path = formatUserPath(userId, subcollection || '');
+  // Convert userId to string
+  const userIdStr = String(userId);
   
-  // Add document ID if specified
-  if (documentId !== undefined && subcollection) {
-    path += `/${String(documentId)}`;
+  // Base user path
+  let path = `users/${userIdStr}`;
+  
+  // Add subcollection if specified
+  if (subcollection) {
+    path += `/${subcollection}`;
+    
+    // Add document ID if specified
+    if (documentId !== undefined) {
+      path += `/${String(documentId)}`;
+    }
   }
   
   return path;
