@@ -35,33 +35,27 @@ import {
   logSuccess 
 } from '@/lib/firestore-test-logger';
 import { OnboardingRating, RecommendationRating } from '@/lib/types/film-rating';
+import { FirestorePaths, formatUserPath, getFilmDocId } from '@/lib/firestore-paths';
 
 /**
- * Format a Firestore path for a user document or subcollection
+ * Local wrapper around the imported formatUserPath to maintain backward compatibility
  * @param userId The user ID (string or number)
  * @param subcollection Optional subcollection name
  * @param documentId Optional document ID within the subcollection
  * @returns Properly formatted Firestore path
+ * @deprecated Use the imported formatUserPath from @/lib/firestore-paths instead
  */
-function formatUserPath(
+function _formatUserPathLegacy(
   userId: string | number,
   subcollection?: string,
   documentId?: string | number
 ): string {
-  // Convert userId to string
-  const userIdStr = String(userId);
+  // Base user path with just the subcollection
+  let path = formatUserPath(userId, subcollection || '');
   
-  // Base user path
-  let path = `users/${userIdStr}`;
-  
-  // Add subcollection if specified
-  if (subcollection) {
-    path += `/${subcollection}`;
-    
-    // Add document ID if specified
-    if (documentId !== undefined) {
-      path += `/${String(documentId)}`;
-    }
+  // Add document ID if specified
+  if (documentId !== undefined && subcollection) {
+    path += `/${String(documentId)}`;
   }
   
   return path;
@@ -552,13 +546,18 @@ export function useFirestoreCollections() {
     userId: string | number,
     options: FirestoreLog = {}
   ): Promise<any | null> => {
-    // Path to the user's preferences settings document
-    const preferencesPath = formatUserPath(userId, 'preferences', 'settings');
+    // Use the FirestorePaths constant for consistent path handling
+    const preferencesPath = FirestorePaths.USER_PREFERENCES(userId);
+    
+    // Extract just the collection path and document ID
+    const lastSlashIndex = preferencesPath.lastIndexOf('/');
+    const collectionPath = preferencesPath.substring(0, lastSlashIndex);
+    const docId = preferencesPath.substring(lastSlashIndex + 1);
     
     // Get document from the preferences/settings path
     const result = await getDocumentById(
-      preferencesPath,
-      '',  // Empty string since the full path is already specified
+      collectionPath,
+      docId,
       {
         logCategory: LogCategory.USER_PREFERENCES,
         additionalInfo: { ...options.additionalInfo, userId }
@@ -581,8 +580,8 @@ export function useFirestoreCollections() {
     },
     options: FirestoreLog = {}
   ): Promise<boolean> => {
-    // Use the formatUserPath utility to get the correct path to preferences/settings
-    const preferencesPath = formatUserPath(userId, 'preferences', 'settings');
+    // Use the FirestorePaths constant for consistent path handling
+    const preferencesPath = FirestorePaths.USER_PREFERENCES(userId);
     
     return await setDocument(
       preferencesPath,
