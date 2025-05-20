@@ -206,10 +206,57 @@ export function SingleFilmRating({
             className="w-full h-full object-cover"
           />
           
+          {/* Navigation buttons positioned at bottom of image */}
+          <div className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+            <div className="flex justify-between items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handlePrevious}
+                disabled={currentIndex === 0}
+                className="px-2 h-7 text-white bg-black/40 hover:bg-black/60"
+              >
+                <ArrowLeft className="h-3 w-3 mr-1" />
+                Previous
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={skipCurrentFilm}
+                className="px-2 h-7 text-white bg-black/40 hover:bg-black/60"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Skip
+              </Button>
+              
+              {currentIndex < films.length - 1 ? (
+                <Button
+                  size="sm"
+                  onClick={handleNext}
+                  disabled={!ratings[currentFilm.id]}
+                  className="px-2 h-7 text-white bg-primary hover:bg-primary/80"
+                >
+                  Next
+                  <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !canSubmit()}
+                  className="px-2 h-7 text-white bg-primary hover:bg-primary/80"
+                >
+                  {isSubmitting ? "Saving..." : "Finish"}
+                </Button>
+              )}
+            </div>
+          </div>
+          
           {/* Subtle prompt to indicate poster is interactive */}
           {!ratings[currentFilm.id] && (
-            <div className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/80 to-transparent flex justify-center">
-              <p className="text-xs text-white opacity-80">Click poster to rate</p>
+            <div className="absolute bottom-10 inset-x-0 p-2 flex justify-center">
+              <p className="text-xs text-white opacity-80 bg-black/50 px-2 py-1 rounded-full">Click poster to rate</p>
             </div>
           )}
           
@@ -298,49 +345,9 @@ export function SingleFilmRating({
               </div>
             </div>
             
-            {/* Navigation buttons moved inside the card */}
-            <div className="flex justify-between pt-3 border-t border-border mt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrevious}
-                disabled={currentIndex === 0}
-                className="px-2 h-8"
-              >
-                <ArrowLeft className="h-3 w-3 mr-1" />
-                Previous
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={skipCurrentFilm}
-                className="px-2 h-8"
-              >
-                <X className="h-3 w-3 mr-1" />
-                Skip
-              </Button>
-              
-              {currentIndex < films.length - 1 ? (
-                <Button
-                  size="sm"
-                  onClick={handleNext}
-                  disabled={!ratings[currentFilm.id]}
-                  className="px-2 h-8 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
-                >
-                  Next
-                  <ArrowRight className="h-3 w-3 ml-1" />
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || !canSubmit()}
-                  className="px-2 h-8 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
-                >
-                  {isSubmitting ? "Saving..." : "Finish"}
-                </Button>
-              )}
+            {/* Rating indicator only - buttons moved to bottom of poster image */}
+            <div className="pt-3 border-t border-border mt-2">
+              {/* This space is now just for the rating display - no buttons */}
             </div>
           </div>
         </CardContent>
