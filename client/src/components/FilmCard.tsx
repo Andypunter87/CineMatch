@@ -117,21 +117,26 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
           : "Thanks for letting us know. We'll adjust future recommendations.",
       });
       
-      // Only call onDisliked after a brief delay to prevent race conditions
-      if (variables === 'dislike' && onDisliked) {
-        // Use a small delay to prevent immediate disappearance which can be jarring
-        setTimeout(() => {
-          onDisliked(film.id);
-        }, 1000);
-      }
+      // Do NOT call onDisliked which could cause the card to be removed
+      // and potentially trigger a state reset in the parent component
+      // This was causing the recommendations to reset
       
-      // If this is onboarding, also invalidate the onboarding queries
-      if (isOnboardingContext) {
-        queryClient.invalidateQueries({ queryKey: ['/api/onboarding'] });
-      }
+      // Do NOT invalidate the onboarding queries during active recommendation flow
+      // The previous invalidation was causing the entire recommendation list to reset
       
-      // Refresh watchlist data to ensure accurate state
-      queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
+      // Only update watchlist data if absolutely necessary, don't trigger a full refetch
+      if (isWatchlisted) {
+        // If the film is in watchlist, update its status only
+        queryClient.setQueryData(['/api/watchlist'], (oldData: any[]) => {
+          if (!oldData || !Array.isArray(oldData)) return oldData;
+          return oldData.map(item => {
+            if (item.filmId === film.id) {
+              return { ...item, userRating: variables === 'like' ? 5 : 1 };
+            }
+            return item;
+          });
+        });
+      }
       
       // Track feedback event
       trackEvent(
@@ -183,8 +188,29 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
       // Immediately update our local state
       setIsWatchlisted(true);
       
-      // Invalidate the watchlist query to update data everywhere
-      queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
+      // IMPORTANT: Do NOT invalidate queries during recommendation flow
+      // This was causing the entire screen to refresh/reset
+      // Instead, manually update the cache without triggering a refetch
+      queryClient.setQueryData(['/api/watchlist'], (oldData: any[]) => {
+        if (!oldData || !Array.isArray(oldData)) {
+          return [watchlistItem];
+        }
+        
+        // Check if film already exists in watchlist
+        const existingIndex = oldData.findIndex(item => 
+          item && item.filmId === film.id
+        );
+        
+        if (existingIndex >= 0) {
+          // Update existing item
+          return oldData.map((item, index) => 
+            index === existingIndex ? watchlistItem : item
+          );
+        } else {
+          // Add new item
+          return [...oldData, watchlistItem];
+        }
+      });
       
       // Track film added to watchlist event
       trackEvent(AnalyticsEvents.FILM_ADDED_TO_WATCHLIST, {
@@ -212,17 +238,6 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
       
       // Show confirmation message within the card with improved animation
       setShowConfirmation(true);
-      
-      // Track the success event with additional details
-      trackEvent(AnalyticsEvents.FILM_ADDED_TO_WATCHLIST, {
-        film_id: film.id,
-        film_title: film.title,
-        interaction_type: 'add_to_watchlist',
-        success: true,
-        has_animation: true,
-        is_visual_feedback: true,
-        from_page: window.location.pathname
-      });
       
       // Auto-hide confirmation after 6 seconds (slightly longer for better UX)
       setTimeout(() => {
@@ -499,9 +514,14 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                   </div>
                   <Button 
                     variant="ghost" 
+                    type="button"
                     size="sm" 
                     className="text-blue-600 hover:text-blue-800 hover:bg-blue-100/50 transition-colors rounded-full"
-                    onClick={() => {
+                    onClick={(e) => {
+                      // Prevent default behavior
+                      e.preventDefault();
+                      e.stopPropagation();
+                      
                       // Instead of redirecting, show an informative message
                       toast({
                         title: "Watchlist Access",
@@ -590,7 +610,12 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                 <Button 
                   className="w-full mt-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
                   size="sm"
-                  onClick={() => {
+                  type="button"
+                  onClick={(e) => {
+                    // Prevent default behavior
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
                     // Use current state to determine if item is in watchlist
                     if (isWatchlisted) {
                       setIsWatchlisted(true);
@@ -599,11 +624,8 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                         description: "This film is already saved to your watchlist",
                       });
                     } else {
-                      // Add to watchlist
+                      // Add to watchlist without resetting state
                       addToWatchlistMutation.mutate();
-                      
-                      // Invalidate watchlist query to refresh data
-                      queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
                     }
                   }}
                   disabled={addToWatchlistMutation.isPending}
