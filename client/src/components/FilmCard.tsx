@@ -625,6 +625,26 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
               <span className="truncate">{genre}</span>
             </Badge>
           ))}
+          
+          {/* Personalized insight badge */}
+          {insight && !isOnboarding && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge 
+                    variant="default"
+                    className="flex items-center gap-1 cursor-help max-w-[150px]"
+                  >
+                    <Info className="h-3 w-3" />
+                    <span className="text-xs truncate">{insight.message}</span>
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Based on your previous film preferences</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
         
         <div className="mt-auto pt-3 border-t border-gray-100 space-y-2">

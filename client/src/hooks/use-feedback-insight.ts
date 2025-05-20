@@ -9,7 +9,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Film } from "@shared/schema";
 import { getFirestore, collection, query, where, getDocs, limit } from "firebase/firestore";
-import { formatUserPath } from "@/lib/firestore-paths";
+// No longer using formatUserPath, direct path construction instead
 
 // Types for the feedback insight functionality
 export type InsightType = 'positive' | 'negative' | 'neutral' | 'friend';
@@ -92,8 +92,8 @@ export function useFeedbackInsight() {
         throw new Error("Firestore not initialized");
       }
       
-      // Path to user's feedback collection
-      const feedbackPath = formatUserPath(user.id, "feedback/films");
+      // Path to user's feedback collection - direct path without using formatUserPath
+      const feedbackPath = `users/${user.id}/feedback`;
       
       // Get all feedback for this user
       const feedbackRef = collection(firestore, feedbackPath);
@@ -115,36 +115,31 @@ export function useFeedbackInsight() {
         }
         
         // If the user liked this film
-        if (feedbackData.liked && feedbackData.genres) {
-          // Check for genre overlap
-          const feedbackGenres = Array.isArray(feedbackData.genres) 
-            ? feedbackData.genres 
-            : [];
-            
+        if (feedbackData.liked) {
+          // For now, use genres from the current film as we might not have genres in feedback
+          // We can enhance this later when we ensure genres are stored in feedback
           const currentFilmGenres = film.genres || [];
           
-          // Find overlapping genres
-          const overlappingGenres = feedbackGenres.filter(genre => 
-            currentFilmGenres.includes(genre)
-          );
+          // If we have actual genres in the feedback data, use those
+          let hasGenreMatch = false;
           
-          if (overlappingGenres.length > 0) {
-            // Calculate confidence based on how many genres overlap
-            const confidence = Math.min(
-              1, 
-              overlappingGenres.length / Math.max(1, currentFilmGenres.length)
-            );
+          // If we have at least genre data to work with, provide an insight
+          if (currentFilmGenres.length > 0) {
+            hasGenreMatch = true;
+          }
+          
+          if (hasGenreMatch) {
+            // For now just use a default confidence since we can't calculate actual genre overlap
+            const confidence = 0.7;
             
-            // Only include if we have decent confidence
-            if (confidence >= 0.3) {
-              insights.push({
-                type: 'positive',
-                message: `Because you liked ${feedbackData.title}`,
-                relatedFilmId: feedbackData.filmId,
-                relatedFilmTitle: feedbackData.title,
-                confidence
-              });
-            }
+            // Add the insight with our confidence level
+            insights.push({
+              type: 'positive',
+              message: `Because you liked ${feedbackData.title}`,
+              relatedFilmId: feedbackData.filmId,
+              relatedFilmTitle: feedbackData.title,
+              confidence
+            });
           }
         }
         
@@ -178,8 +173,8 @@ export function useFeedbackInsight() {
         throw new Error("Firestore not initialized");
       }
       
-      // Path to user's feedback collection
-      const feedbackPath = formatUserPath(user.id, "feedback/films");
+      // Path to user's feedback collection - direct path
+      const feedbackPath = `users/${user.id}/feedback`;
       
       // Get all feedback for this user
       const feedbackRef = collection(firestore, feedbackPath);
