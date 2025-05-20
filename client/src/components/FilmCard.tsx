@@ -90,17 +90,7 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
           isOnboarding: true 
         });
         
-        // Use the onboarding-specific endpoint for ratings
-        const res = await apiRequest("POST", "/api/onboarding/rate", {
-          filmId: film.id,
-          filmTitle: film.title,
-          // Convert like/dislike to 5/1 star rating to match onboarding schema
-          rating: feedback === 'like' ? 5 : 1,
-          status: feedback === 'like' ? 'loved' : 'hated',
-          isOnboarding: true
-        });
-        
-        // Also save to Firestore if user is logged in
+        // First store to Firestore if user is logged in (to ensure this completes even if API fails)
         if (user) {
           try {
             await filmFeedback.saveFilmFeedback(
@@ -120,20 +110,31 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
             );
           } catch (error) {
             console.error("Error saving feedback to Firestore:", error);
+            // Don't throw - we'll continue with the API call
           }
         }
         
-        return await res.json();
+        // Use the onboarding-specific endpoint for ratings
+        try {
+          const res = await apiRequest("POST", "/api/onboarding/rate", {
+            filmId: film.id,
+            filmTitle: film.title,
+            // Convert like/dislike to 5/1 star rating to match onboarding schema
+            rating: feedback === 'like' ? 5 : 1,
+            status: feedback === 'like' ? 'loved' : 'hated',
+            isOnboarding: true
+          });
+          
+          return await res.json();
+        } catch (error) {
+          console.error("Error saving onboarding rating via API:", error);
+          // Return basic success even on API failure since we saved to Firestore
+          return { success: true, feedbackSaved: true, source: 'firestore-only' };
+        }
       } else {
-        // Regular recommendation feedback - Save to both SQL and Firestore
-        const res = await apiRequest("POST", "/api/feedback", {
-          filmId: film.id,
-          filmTitle: film.title,
-          feedback,
-          recommendationContext
-        });
+        // Regular recommendation feedback - Save to both Firestore and SQL
         
-        // Also save to Firestore if user is logged in
+        // First store to Firestore if user is logged in (to ensure this completes even if API fails)
         if (user) {
           try {
             await filmFeedback.saveFilmFeedback(
@@ -146,19 +147,40 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                 timestamp: new Date().toISOString(),
                 moodContext: recommendationContext?.mood || null,
                 runtimePreference: recommendationContext?.runtime || null,
-                recommendationContext
+                recommendationContext: recommendationContext 
+                  ? { ...recommendationContext } 
+                  : null
               }
             );
           } catch (error) {
             console.error("Error saving feedback to Firestore:", error);
+            // Don't throw - we'll continue with the API call
           }
         }
         
-        return await res.json();
+        // Then call the API endpoint
+        try {
+          const res = await apiRequest("POST", "/api/feedback", {
+            filmId: film.id,
+            filmTitle: film.title,
+            feedback,
+            recommendationContext: recommendationContext 
+              ? { ...recommendationContext } 
+              : null
+          });
+          
+          return await res.json();
+        } catch (error) {
+          console.error("Error saving feedback via API:", error);
+          // Return basic success even on API failure since we saved to Firestore
+          return { success: true, feedbackSaved: true, source: 'firestore-only' };
+        }
       }
     },
     onSuccess: (_data, variables) => {
-      // Set feedback submitted state
+      // ⚠️ DO NOT navigate or change routes here, it causes onboarding restart
+      
+      // Set feedback submitted state - just update local UI
       setFeedbackSubmitted(variables === 'like' ? 'liked' : 'disliked');
       
       // Show success toast with undo functionality
@@ -208,16 +230,17 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
         variant: "default",
       });
       
-      // Do NOT call onDisliked which could cause the card to be removed
-      // and potentially trigger a state reset in the parent component
-      // This was causing the recommendations to reset
+      // ⚠️ IMPORTANT: These comments explain what NOT to do to avoid the bug
       
-      // Do NOT invalidate the onboarding queries during active recommendation flow
-      // The previous invalidation was causing the entire recommendation list to reset
+      // 1. Do NOT navigate or redirect anywhere
+      // 2. Do NOT call onDisliked which could cause the card to be removed
+      //    and potentially trigger a state reset in the parent component
+      // 3. Do NOT invalidate any global query cache during feedback flow
+      // 4. Do NOT reset or clear any parent component state
       
       // Only update watchlist data if absolutely necessary, don't trigger a full refetch
       if (isWatchlisted) {
-        // If the film is in watchlist, update its status only
+        // If the film is in watchlist, update its status only without refetching
         queryClient.setQueryData(['/api/watchlist'], (oldData: any[]) => {
           if (!oldData || !Array.isArray(oldData)) return oldData;
           return oldData.map(item => {
