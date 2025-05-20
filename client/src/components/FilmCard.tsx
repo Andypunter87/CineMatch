@@ -525,9 +525,14 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
               <div className="flex gap-2">
                 <Button
                   variant="outline"
+                  type="button"
                   size="sm"
                   className="flex-1 border-green-200 hover:bg-green-50 hover:text-green-700"
-                  onClick={() => recommendationFeedbackMutation.mutate('like')}
+                  onClick={(e) => {
+                    // Prevent default behavior to avoid any form submissions
+                    e.preventDefault();
+                    recommendationFeedbackMutation.mutate('like');
+                  }}
                   disabled={recommendationFeedbackMutation.isPending}
                 >
                   <ThumbsUp className="mr-1 h-4 w-4 text-green-500" />
@@ -535,9 +540,14 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                 </Button>
                 <Button
                   variant="outline"
+                  type="button"
                   size="sm"
                   className="flex-1 border-red-200 hover:bg-red-50 hover:text-red-700"
-                  onClick={() => recommendationFeedbackMutation.mutate('dislike')}
+                  onClick={(e) => {
+                    // Prevent default behavior to avoid any form submissions
+                    e.preventDefault();
+                    recommendationFeedbackMutation.mutate('dislike');
+                  }}
                   disabled={recommendationFeedbackMutation.isPending}
                 >
                   <ThumbsDown className="mr-1 h-4 w-4 text-red-500" />
@@ -618,21 +628,30 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                   <span className="text-sm font-medium">In Your Watchlist</span>
                   <Button 
                     variant="link"
+                    type="button"
                     size="sm"
                     className="ml-2 pl-2 text-xs text-blue-600 hover:text-blue-700 border-l border-blue-200"
                     onClick={() => {
-                      // Navigate to watchlist page
-                      window.location.href = '/watchlist';
+                      // Instead of direct navigation which resets the page, show a toast
+                      toast({
+                        title: "Watchlist Access",
+                        description: "You can view all your saved films in the Watchlist tab when you're done here"
+                      });
                     }}
                   >
-                    View
+                    View Later
                   </Button>
                 </div>
               ) : (
                 <Button 
                   className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 shadow-sm hover:shadow transition-all"
                   size="sm"
-                  onClick={() => {
+                  type="button"
+                  onClick={(e) => {
+                    // Prevent default to avoid form submissions
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
                     // Use current state to determine if item is in watchlist
                     if (isWatchlisted) {
                       setIsWatchlisted(true);
@@ -651,9 +670,6 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                       
                       // Add to watchlist
                       addToWatchlistMutation.mutate();
-                      
-                      // Invalidate watchlist query to refresh data
-                      queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
                     }
                   }}
                   disabled={addToWatchlistMutation.isPending}
