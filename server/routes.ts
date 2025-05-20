@@ -177,6 +177,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Recommendation request with batch size: ${preferences.requestedBatchSize || "default"}`);
       
       // Get recommendations based on user preferences
+      // Add userId to preferences for Firestore feedback integration
+      if (req.isAuthenticated() && req.user) {
+        preferences.userId = req.user.id;
+      }
+      
       let recommendations = await storage.getRecommendations(preferences);
       let originalRecommendations = [...recommendations]; // Store original recommendations
       
