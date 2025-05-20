@@ -50,8 +50,8 @@ export function useFilmFeedbackFirestore() {
       }
 
       // Create path to the feedback document
-      const feedbackPath = `users/${userId}/feedback/films`;
-      const docId = `film_${filmId}`;
+      const feedbackPath = `users/${userId}/feedback`;
+      const docId = `${filmId}`;
 
       // Get document reference
       const docRef = doc(firestore, feedbackPath, docId);
@@ -108,11 +108,11 @@ export function useFilmFeedbackFirestore() {
       }
 
       // Create path to the feedback document
-      const feedbackPath = formatUserPath(userId, "feedback/films");
-      const docId = `film_${filmId}`;
+      const feedbackPath = `users/${userId}/feedback`;
+      const docId = `${filmId}`;
 
       // Get document reference
-      const docRef = firestore.collection(feedbackPath).doc(docId);
+      const docRef = doc(firestore, feedbackPath, docId);
 
       // Get document
       const docSnapshot = await docRef.get();

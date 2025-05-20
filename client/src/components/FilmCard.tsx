@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 import { Link } from "wouter";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
 import { useFilmFeedbackFirestore } from "@/hooks/use-film-feedback-firestore";
 import { useWatchlistFirestore } from "@/hooks/use-watchlist-firestore";
 import { useFeedbackInsight, FilmInsight } from "@/hooks/use-feedback-insight";

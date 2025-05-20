@@ -32,7 +32,7 @@ export async function getUserFilmFeedback(userId: number): Promise<FirestoreFeed
     }
 
     // Attempt to get all feedback documents for this user
-    const feedbackPath = `users/${userId}/feedback/films`;
+    const feedbackPath = `users/${userId}/feedback`;
     const feedbackCollection = db.collection(feedbackPath);
     const snapshot = await feedbackCollection.get();
 
