@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { type Film, type RecommendationRequest } from "@shared/schema";
 import { Card } from "@/components/ui/card";
-import { Film as FilmIcon, Star, Award, BookmarkPlus, BookmarkCheck, Loader2, Check, Clock, Globe, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Film as FilmIcon, Star, Award, BookmarkPlus, BookmarkCheck, Loader2, Check, Clock, Globe, ThumbsUp, ThumbsDown, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,6 +12,8 @@ import { Link } from "wouter";
 import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
 import { useFilmFeedbackFirestore } from "@/hooks/use-film-feedback-firestore";
 import { useWatchlistFirestore } from "@/hooks/use-watchlist-firestore";
+import { useFeedbackInsight, FilmInsight } from "@/hooks/use-feedback-insight";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Extend the RecommendationRequest type to include isOnboarding flag
 interface OnboardingAwareRecommendationContext extends RecommendationRequest {
@@ -30,10 +32,15 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
   // Removed usage of setLocation to prevent redirects when buttons are clicked
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<'liked' | 'disliked' | null>(null);
+  const [isOnboarding, setIsOnboarding] = useState(false);
   
   // Get Firestore hooks for film feedback and watchlist
   const filmFeedback = useFilmFeedbackFirestore();
   const watchlistFirestore = useWatchlistFirestore();
+  
+  // Feedback insight hook for personalized UI nudges
+  const { getFilmInsight } = useFeedbackInsight();
+  const [insight, setInsight] = useState<FilmInsight | null>(null);
   
   // Use react-query to manage watchlist state instead of direct fetch
   const { data: watchlistItems = [] } = useQuery<any[]>({
@@ -69,6 +76,19 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
         item.filmTitle.toLowerCase() === film.title.toLowerCase();
     }
   );
+  
+  // Load insight data for personalized nudges
+  useEffect(() => {
+    if (user && film && !isOnboarding) {
+      getFilmInsight(film).then(result => {
+        if (result) {
+          setInsight(result);
+        }
+      }).catch(error => {
+        console.error("Error loading film insight:", error);
+      });
+    }
+  }, [film, user, isOnboarding, getFilmInsight]);
   
   // Update state whenever watchlist items change
   useEffect(() => {
