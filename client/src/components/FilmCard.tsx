@@ -632,15 +632,25 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Badge 
-                    variant="default"
-                    className="flex items-center gap-1 cursor-help max-w-[150px]"
+                    variant="secondary"
+                    className="flex items-center gap-1 cursor-help bg-muted text-muted-foreground text-xs px-2 py-0.5 rounded-full"
+                    onClick={(e) => {
+                      // Track when a user clicks on an insight badge
+                      trackEvent('recommendation_clicked_with_insight', {
+                        filmId: film.id,
+                        filmTitle: film.title,
+                        hasInsight: true,
+                        insightType: insight.matchReason || 'unspecified',
+                        relatedFilmId: insight.relatedFilmId
+                      });
+                    }}
                   >
                     <Info className="h-3 w-3" />
-                    <span className="text-xs truncate">{insight.message}</span>
+                    <span className="text-xs truncate max-w-[120px]">{insight.message}</span>
                   </Badge>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Based on your previous film preferences</p>
+                <TooltipContent side="top" align="center">
+                  <p className="text-xs">This film shares a similar {insight.matchReason || 'theme'} with one you liked</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

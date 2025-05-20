@@ -5,11 +5,18 @@
  * It helps to create "Because you liked..." and similar nudges in the UI.
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Film } from "@shared/schema";
-import { getFirestore, collection, query, where, getDocs, limit } from "firebase/firestore";
-// No longer using formatUserPath, direct path construction instead
+import { 
+  getFirestore, 
+  collection, 
+  getDocs, 
+  query, 
+  where, 
+  limit, 
+  orderBy 
+} from "firebase/firestore";
 
 // Types for the feedback insight functionality
 export type InsightType = 'positive' | 'negative' | 'neutral' | 'friend';
@@ -20,7 +27,11 @@ export interface FilmInsight {
   relatedFilmId?: number;
   relatedFilmTitle?: string;
   confidence: number; // 0-1 rating of how confident we are in this insight
+  matchReason?: string; // Why this insight was selected: 'genre', 'mood', etc.
 }
+
+// Cache for film insights to reduce Firestore reads
+const insightCache = new Map<number, FilmInsight>();
 
 /**
  * Hook to get personalized insights about films based on previous feedback
@@ -37,7 +48,12 @@ export function useFeedbackInsight() {
    * @returns Promise with insight data or null if none found
    */
   const getFilmInsight = async (film: Film): Promise<FilmInsight | null> => {
-    if (!user || !user.id) return null;
+    if (!user || !user.id || !film || !film.id) return null;
+    
+    // Return cached insight if available
+    if (insightCache.has(film.id)) {
+      return insightCache.get(film.id) || null;
+    }
     
     try {
       setIsLoading(true);
@@ -45,27 +61,19 @@ export function useFeedbackInsight() {
       
       const firestore = getFirestore();
       if (!firestore) {
-        throw new Error("Firestore not initialized");
+        console.warn("Firestore not initialized, skipping insights");
+        return null;
       }
       
-      // Check if the user has previous feedback for similar films
-      // First, check by genre similarity
-      const genreMatches = await findSimilarFilmsByGenre(film);
+      // Check if the user has any previous feedback that might be relevant
+      const feedbackInsight = await findRelevantFeedback(film);
       
-      if (genreMatches && genreMatches.length > 0) {
-        // Find the best match (highest confidence)
-        const bestMatch = genreMatches.reduce((best, current) => 
-          current.confidence > best.confidence ? current : best, 
-          genreMatches[0]
-        );
-        
-        return bestMatch;
+      // Cache the result (even if null)
+      if (feedbackInsight) {
+        insightCache.set(film.id, feedbackInsight);
       }
       
-      // If no match by genre, try to find matches by other criteria
-      // This could be expanded with more sophisticated matching in the future
-      
-      return null;
+      return feedbackInsight;
     } catch (error) {
       console.error("Error getting film insight:", error);
       setError(error as Error);
@@ -76,14 +84,14 @@ export function useFeedbackInsight() {
   };
   
   /**
-   * Find similar films by genre in the user's feedback history
+   * Find relevant feedback for a film, prioritizing similarity in genres and mood
    * 
    * @param film The film to find similar films for
-   * @returns Promise with array of insights
+   * @returns Promise with the best matching insight or null
    */
-  const findSimilarFilmsByGenre = async (film: Film): Promise<FilmInsight[]> => {
-    if (!user || !user.id || !film.genres || film.genres.length === 0) {
-      return [];
+  const findRelevantFeedback = async (film: Film): Promise<FilmInsight | null> => {
+    if (!user || !user.id) {
+      return null;
     }
     
     try {
@@ -92,17 +100,25 @@ export function useFeedbackInsight() {
         throw new Error("Firestore not initialized");
       }
       
-      // Path to user's feedback collection - direct path without using formatUserPath
+      // Path to user's feedback collection
       const feedbackPath = `users/${user.id}/feedback`;
       
-      // Get all feedback for this user
-      const feedbackRef = collection(firestore, feedbackPath);
+      // Get recent feedback that was liked, limited to 20 documents
+      // This limits the data we need to process
+      const feedbackRef = query(
+        collection(firestore, feedbackPath),
+        where("liked", "==", true),
+        orderBy("timestamp", "desc"),
+        limit(20)
+      );
+      
       const feedbackSnap = await getDocs(feedbackRef);
       
       if (feedbackSnap.empty) {
-        return [];
+        return null;
       }
       
+      // Array to collect potential insights
       const insights: FilmInsight[] = [];
       
       // Process each feedback document
@@ -114,44 +130,61 @@ export function useFeedbackInsight() {
           return;
         }
         
-        // If the user liked this film
-        if (feedbackData.liked) {
-          // For now, use genres from the current film as we might not have genres in feedback
-          // We can enhance this later when we ensure genres are stored in feedback
-          const currentFilmGenres = film.genres || [];
+        // Default confidence and match reason
+        let confidence = 0.5;
+        let matchReason = 'liked';
+        
+        // Check for genre match if we have genre data
+        if (film.genres && film.genres.length > 0 && feedbackData.genres && feedbackData.genres.length > 0) {
+          // Find overlapping genres
+          const filmGenres = film.genres;
+          const feedbackGenres = feedbackData.genres;
           
-          // If we have actual genres in the feedback data, use those
-          let hasGenreMatch = false;
+          // Check for any genre overlap
+          const overlappingGenres = feedbackGenres.filter((genre: string) => 
+            typeof genre === 'string' && filmGenres.includes(genre)
+          );
           
-          // If we have at least genre data to work with, provide an insight
-          if (currentFilmGenres.length > 0) {
-            hasGenreMatch = true;
-          }
-          
-          if (hasGenreMatch) {
-            // For now just use a default confidence since we can't calculate actual genre overlap
-            const confidence = 0.7;
-            
-            // Add the insight with our confidence level
-            insights.push({
-              type: 'positive',
-              message: `Because you liked ${feedbackData.title}`,
-              relatedFilmId: feedbackData.filmId,
-              relatedFilmTitle: feedbackData.title,
-              confidence
-            });
+          if (overlappingGenres.length > 0) {
+            // Boost confidence based on genre matches
+            confidence = Math.min(
+              0.9, // Cap at 0.9
+              0.5 + (0.1 * overlappingGenres.length) // Base 0.5 + 0.1 per match
+            );
+            matchReason = 'genre';
           }
         }
         
-        // We could also add negative insights for disliked films
-        // For now we focus just on positive recommendations
+        // Check if we have mood data in the feedback
+        if (feedbackData.moodContext) {
+          // If the film has a matchReason containing "mood", it's likely a mood-based match
+          if (film.matchReason?.includes('mood')) {
+            confidence = Math.max(confidence, 0.8);
+            matchReason = 'mood';
+          }
+        }
+        
+        // Create insight with appropriate confidence level
+        insights.push({
+          type: 'positive',
+          message: `Because you liked ${feedbackData.title}`,
+          relatedFilmId: feedbackData.filmId,
+          relatedFilmTitle: feedbackData.title,
+          confidence,
+          matchReason
+        });
       });
       
-      // Return sorted by confidence (highest first)
-      return insights.sort((a, b) => b.confidence - a.confidence);
+      // Sort by confidence and return the best match
+      if (insights.length > 0) {
+        insights.sort((a, b) => b.confidence - a.confidence);
+        return insights[0];
+      }
+      
+      return null;
     } catch (error) {
-      console.error("Error finding similar films by genre:", error);
-      return [];
+      console.error("Error finding relevant feedback:", error);
+      return null;
     }
   };
   
@@ -168,83 +201,132 @@ export function useFeedbackInsight() {
     }
     
     try {
-      const firestore = getFirestore();
-      if (!firestore) {
-        throw new Error("Firestore not initialized");
+      // Check cache first for all films
+      const resultMap = new Map<number, FilmInsight>();
+      const uncachedFilms: Film[] = [];
+      
+      // Get any cached insights first
+      films.forEach(film => {
+        if (film.id && insightCache.has(film.id)) {
+          const cachedInsight = insightCache.get(film.id);
+          if (cachedInsight) {
+            resultMap.set(film.id, cachedInsight);
+          }
+        } else {
+          uncachedFilms.push(film);
+        }
+      });
+      
+      // If all films were cached, return the result
+      if (uncachedFilms.length === 0) {
+        return resultMap;
       }
       
-      // Path to user's feedback collection - direct path
-      const feedbackPath = `users/${user.id}/feedback`;
+      // Otherwise, fetch insights for uncached films
+      const firestore = getFirestore();
+      if (!firestore) {
+        return resultMap; // Return what we have from cache
+      }
       
-      // Get all feedback for this user
-      const feedbackRef = collection(firestore, feedbackPath);
+      // Get all liked feedback entries, limited to recent ones
+      const feedbackPath = `users/${user.id}/feedback`;
+      const feedbackRef = query(
+        collection(firestore, feedbackPath),
+        where("liked", "==", true),
+        orderBy("timestamp", "desc"),
+        limit(30)
+      );
+      
       const feedbackSnap = await getDocs(feedbackRef);
       
       if (feedbackSnap.empty) {
-        return new Map();
+        return resultMap; // Return what we have from cache
       }
       
-      // Build a map of all user's liked films with their genres
-      const likedFilms = new Map();
+      // Build a map of all user's liked films
+      const likedFilms: {
+        id: number;
+        title: string;
+        genres?: string[];
+        mood?: string;
+        timestamp?: string;
+      }[] = [];
+      
       feedbackSnap.forEach(doc => {
         const data = doc.data();
         if (data.liked) {
-          likedFilms.set(data.filmId, {
+          likedFilms.push({
+            id: data.filmId,
             title: data.title,
-            genres: data.genres || []
+            genres: data.genres || [],
+            mood: data.moodContext,
+            timestamp: data.timestamp
           });
         }
       });
       
-      // Map to store results
-      const insightMap = new Map<number, FilmInsight>();
-      
-      // Process each film to find the best insight
-      films.forEach(film => {
-        const filmGenres = film.genres || [];
+      // Process each uncached film to find the best insight
+      uncachedFilms.forEach(film => {
+        if (!film.id) return; // Skip films without ID
+        
         let bestInsight: FilmInsight | null = null;
         let bestConfidence = 0;
         
         // Check each liked film for similarity
-        likedFilms.forEach((likedFilm, likedFilmId) => {
+        for (const likedFilm of likedFilms) {
           // Skip if this is the same film
-          if (likedFilmId === film.id) return;
+          if (likedFilm.id === film.id) continue;
           
-          const likedGenres = likedFilm.genres || [];
+          // Default confidence and match reason
+          let confidence = 0.5;
+          let matchReason = 'liked';
           
-          // Find overlapping genres
-          const overlappingGenres = likedGenres.filter((genre: string) => 
-            filmGenres.includes(genre)
-          );
-          
-          if (overlappingGenres.length > 0) {
-            // Calculate confidence based on how many genres overlap
-            const confidence = Math.min(
-              1, 
-              overlappingGenres.length / Math.max(1, filmGenres.length)
+          // Check for genre match
+          if (film.genres && film.genres.length > 0 && likedFilm.genres && likedFilm.genres.length > 0) {
+            const overlappingGenres = likedFilm.genres.filter(genre => 
+              typeof genre === 'string' && film.genres.includes(genre)
             );
             
-            // Only include if we have decent confidence and it's better than existing
-            if (confidence >= 0.3 && confidence > bestConfidence) {
-              bestConfidence = confidence;
-              bestInsight = {
-                type: 'positive',
-                message: `Because you liked ${likedFilm.title}`,
-                relatedFilmId: likedFilmId,
-                relatedFilmTitle: likedFilm.title,
-                confidence
-              };
+            if (overlappingGenres.length > 0) {
+              // Boost confidence based on genre matches
+              confidence = Math.min(
+                0.9, // Cap at 0.9
+                0.5 + (0.1 * overlappingGenres.length) // Base 0.5 + 0.1 per match
+              );
+              matchReason = 'genre';
             }
           }
-        });
+          
+          // Check if we have mood data in the liked film and a match reason in the current film
+          if (likedFilm.mood && film.matchReason?.includes('mood')) {
+            // Mood match is highly relevant
+            confidence = Math.max(confidence, 0.8);
+            matchReason = 'mood';
+          }
+          
+          // Update best match if this is better
+          if (confidence > bestConfidence) {
+            bestConfidence = confidence;
+            bestInsight = {
+              type: 'positive',
+              message: `Because you liked ${likedFilm.title}`,
+              relatedFilmId: likedFilm.id,
+              relatedFilmTitle: likedFilm.title,
+              confidence,
+              matchReason
+            };
+          }
+        }
         
         // Store the best insight for this film if found
         if (bestInsight) {
-          insightMap.set(film.id, bestInsight);
+          resultMap.set(film.id, bestInsight);
+          // Update cache
+          insightCache.set(film.id, bestInsight);
         }
       });
       
-      return insightMap;
+      return resultMap;
     } catch (error) {
       console.error("Error getting film insights for list:", error);
       return new Map();
