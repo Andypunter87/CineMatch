@@ -1,0 +1,61 @@
+Please implement the following enhancements to the CineMatch recommendation engine and user interface:
+
+⸻
+
+🎯 1. Friend-Based Recommendations
+
+Objective
+
+Ensure that when a user selects “Watch with a friend”, CineMatch takes both users’ preferences into account when generating recommendations.
+
+Requirements
+	•	Extend the RecommendationRequest schema to include:
+	•	friendUserId?: number (optional, used only when in co-watch mode)
+	•	Modify the recommendation engine to:
+	•	Fetch the friend’s onboarding preferences from:
+	•	users/{friendUserId}/preferences/settings
+	•	Fetch the friend’s feedback from:
+	•	users/{friendUserId}/feedback/{filmId}
+	•	Weight both users’ preferences equally, or add a configurable ratio (e.g. 50/50 or favour primary user slightly)
+	•	Scoring logic should:
+	•	Boost films liked by both users
+	•	Filter out films disliked by either user (optional: soft penalty vs hard exclude)
+	•	Prioritise overlapping preferences (shared mood, runtime, genres)
+	•	Fallback behaviour:
+	•	If the friend has little or no data, default to the primary user’s preferences.
+	•	Optional enhancement:
+	•	Add a personalisationSummary to the final response noting shared tastes, e.g.:
+“You and Sam both love thought-provoking thrillers — here’s something that fits!”
+
+⸻
+
+✨ 2. Feedback-Based UI Nudges
+
+Objective
+
+Make the interface feel more intelligent and connected to user behaviour by surfacing personalised feedback-based cues.
+
+Requirements
+	•	In the FilmCard or recommendation results UI:
+	•	Add conditional logic that checks Firestore feedback data.
+	•	If the film matches something the user previously liked:
+	•	Show a subtle “Because you liked…” label or badge.
+	•	Example:
+✅ Because you liked The Social Network
+	•	If the user disliked a similar film:
+	•	Optionally show a “Maybe not your thing” nudge or reduce visibility (optional, toggleable)
+	•	Data source:
+	•	Pull from:
+	•	users/{userId}/feedback/{filmId}
+	•	Or match tags/genres/mood to previously liked/disliked films
+	•	UX Suggestions:
+	•	Badge or pill above the title or near the poster
+	•	Accessible tooltip or toast (on hover/tap) explaining the recommendation
+
+⸻
+
+✅ General Notes
+	•	Make sure all new Firestore reads/writes gracefully fail if feedback or friend data is missing
+	•	Ensure no onboarding restarts or route changes are triggered by these new features
+	•	Add helper utils if necessary for scoring logic or UI formatting
+	•	Type-safe: update shared schema types as needed

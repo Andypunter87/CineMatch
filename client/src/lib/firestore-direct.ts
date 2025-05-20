@@ -115,6 +115,20 @@ export async function getUserPreferences(): Promise<any> {
 }
 
 /**
+ * Utility hook for Firestore operations
+ * This provides a unified way to access Firestore methods
+ */
+export function useFirestoreUtils() {
+  return {
+    getDocument: getFirestoreDocument,
+    setDocument: setFirestoreDocument,
+    getCollection: getFirestoreCollection,
+    getProjectId,
+    getUserId
+  };
+}
+
+/**
  * Get user onboarding ratings from Firestore
  * @returns User onboarding ratings or empty array
  */
