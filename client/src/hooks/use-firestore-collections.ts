@@ -68,6 +68,15 @@ function _formatUserPath(
   return path;
 }
 
+/**
+ * Get document ID for film-related entries
+ * @param filmId The film ID
+ * @returns A formatted document ID for the film
+ */
+function _getFilmDocId(filmId: number): string {
+  return `film_${filmId}`;
+}
+
 type FirestoreLog = {
   logCategory?: LogCategory;
   additionalInfo?: Record<string, any>;

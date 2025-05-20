@@ -215,6 +215,21 @@ export function logWatchlistOperation(
   });
 }
 
+// Log a feedback operation
+export function logFeedbackOperation(
+  level: LogLevel, 
+  message: string, 
+  options: {
+    operationType: string;
+    additionalInfo?: any;
+  }
+) {
+  logFirestoreOperation(level, LogCategory.FEEDBACK, message, {
+    operation: options.operationType,
+    ...options.additionalInfo
+  });
+}
+
 // Log a friends operation
 export function logFriendsOperation(
   level: LogLevel, 
