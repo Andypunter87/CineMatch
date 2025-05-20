@@ -297,47 +297,54 @@ export function SingleFilmRating({
                 )}
               </div>
             </div>
+            
+            {/* Navigation buttons moved inside the card */}
+            <div className="flex justify-between pt-3 border-t border-border mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevious}
+                disabled={currentIndex === 0}
+                className="px-2 h-8"
+              >
+                <ArrowLeft className="h-3 w-3 mr-1" />
+                Previous
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={skipCurrentFilm}
+                className="px-2 h-8"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Skip
+              </Button>
+              
+              {currentIndex < films.length - 1 ? (
+                <Button
+                  size="sm"
+                  onClick={handleNext}
+                  disabled={!ratings[currentFilm.id]}
+                  className="px-2 h-8 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
+                >
+                  Next
+                  <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || !canSubmit()}
+                  className="px-2 h-8 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
+                >
+                  {isSubmitting ? "Saving..." : "Finish"}
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
-      
-      <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={handlePrevious}
-          disabled={currentIndex === 0}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Previous
-        </Button>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={skipCurrentFilm}
-          className="mx-2"
-        >
-          <X className="h-4 w-4 mr-1" />
-          Skip
-        </Button>
-        
-        {currentIndex < films.length - 1 ? (
-          <Button
-            onClick={handleNext}
-            disabled={!ratings[currentFilm.id]}
-          >
-            Next
-            <ArrowRight className="h-4 w-4 ml-2" />
-          </Button>
-        ) : (
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting || !canSubmit()}
-          >
-            {isSubmitting ? "Saving..." : "Finish"}
-          </Button>
-        )}
-      </div>
       
       {!canSubmit() && currentIndex === films.length - 1 && (
         <p className="text-sm text-muted-foreground text-center">

@@ -74,10 +74,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: User) => {
       queryClient.setQueryData(["/api/user"], user);
-      toast({
-        title: "Login successful",
-        description: `Welcome back${user.name ? ', ' + user.name : ''}!`,
-      });
+      // Only show welcome toast on explicit login, not auto-login
+      if (document.referrer.includes('/auth')) {
+        toast({
+          title: "Login successful",
+          description: `Welcome back${user.name ? ', ' + user.name : ''}!`,
+        });
+      }
       
       // Track login event
       trackEvent(AnalyticsEvents.USER_LOGGED_IN, {

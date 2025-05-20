@@ -10,7 +10,8 @@ import {
 import { getFirestore, Firestore } from "firebase/firestore";
 
 // Enable or disable debug logs globally
-const DEBUG = true;
+// Only log errors in production
+const DEBUG = false;
 
 // Validate Firebase API key and configuration
 function isValidFirebaseConfig(): boolean {
