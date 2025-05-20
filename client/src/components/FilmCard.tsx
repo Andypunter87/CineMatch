@@ -873,7 +873,7 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                   size="sm"
                   type="button"
                   onClick={(e) => {
-                    // Prevent default to avoid form submissions
+                    // Prevent default behavior to avoid any form submissions or navigations
                     e.preventDefault();
                     e.stopPropagation();
                     
