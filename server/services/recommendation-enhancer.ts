@@ -264,6 +264,18 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
               );
             }
             
+            // Apply feedback weights if available
+            let baseScore = film.matchPercentage || 85; // Base score from matchPercentage
+            if (feedbackWeights.hasPreferences) {
+              // Create a score object with original matchPercentage as the score
+              const scoreObj = { ...film, score: baseScore };
+              const adjustedScore = applyFeedbackWeights(scoreObj, preferences, feedbackWeights);
+              
+              // Adjust matchPercentage based on the new score (max possible score around 100)
+              const adjustedMatchPercentage = Math.min(98, Math.max(70, Math.floor(adjustedScore)));
+              film.matchPercentage = adjustedMatchPercentage;
+            }
+            
             // Merge the AI recommendation with TMDB data
             return {
               ...film,
@@ -277,6 +289,10 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
               voteAverage: tmdbFilm.voteAverage || undefined,
               originalLanguage: tmdbFilm.originalLanguage || undefined,
               releaseDate: tmdbFilm.releaseDate || undefined,
+              // Include Firestore influence in match reason if applicable
+              matchReason: feedbackWeights.hasPreferences ? 
+                `${film.matchReason || ''} (Personalized based on your feedback)` : 
+                film.matchReason,
               // Include full streaming data for all countries
               availableStreamingByCountry: tmdbFilm.availableStreamingByCountry,
               // Add special flags to help with post-processing
