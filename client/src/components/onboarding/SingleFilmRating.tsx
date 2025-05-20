@@ -206,52 +206,7 @@ export function SingleFilmRating({
             className="w-full h-full object-cover"
           />
           
-          {/* Navigation buttons positioned at bottom of image */}
-          <div className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
-            <div className="flex justify-between items-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handlePrevious}
-                disabled={currentIndex === 0}
-                className="px-2 h-7 text-white bg-black/40 hover:bg-black/60"
-              >
-                <ArrowLeft className="h-3 w-3 mr-1" />
-                Previous
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={skipCurrentFilm}
-                className="px-2 h-7 text-white bg-black/40 hover:bg-black/60"
-              >
-                <X className="h-3 w-3 mr-1" />
-                Skip
-              </Button>
-              
-              {currentIndex < films.length - 1 ? (
-                <Button
-                  size="sm"
-                  onClick={handleNext}
-                  disabled={!ratings[currentFilm.id]}
-                  className="px-2 h-7 text-white bg-primary hover:bg-primary/80"
-                >
-                  Next
-                  <ArrowRight className="h-3 w-3 ml-1" />
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || !canSubmit()}
-                  className="px-2 h-7 text-white bg-primary hover:bg-primary/80"
-                >
-                  {isSubmitting ? "Saving..." : "Finish"}
-                </Button>
-              )}
-            </div>
-          </div>
+          {/* Navigation buttons - we've removed them from here as they'll be shown in the overlay */}
           
           {/* Subtle prompt to indicate poster is interactive */}
           {!ratings[currentFilm.id] && (
@@ -260,7 +215,7 @@ export function SingleFilmRating({
             </div>
           )}
           
-          {/* Overlay with Star Ratings */}
+          {/* Overlay with Star Ratings and Navigation Controls */}
           <div className={`absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-200 ${
             ratings[currentFilm.id] ? 'opacity-100' : 'opacity-0 group-hover:opacity-90'
           }`}>
@@ -302,6 +257,51 @@ export function SingleFilmRating({
               >
                 Haven't seen it
               </Button>
+              
+              {/* Navigation Controls - Added to overlay */}
+              <div className="flex space-x-2 justify-between w-full mt-4 pt-3 border-t border-white/10">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevious}
+                  disabled={currentIndex === 0}
+                  className={`px-2 h-8 ${currentIndex === 0 ? 'opacity-50' : 'bg-black/30 text-white border-white/30 hover:bg-black/50 hover:text-white'}`}
+                >
+                  <ArrowLeft className="h-3 w-3 mr-1" />
+                  Previous
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={skipCurrentFilm}
+                  className="px-2 h-8 bg-black/30 text-white border-white/30 hover:bg-black/50 hover:text-white"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Skip
+                </Button>
+                
+                {currentIndex < films.length - 1 ? (
+                  <Button
+                    size="sm"
+                    onClick={handleNext}
+                    disabled={!ratings[currentFilm.id]}
+                    className={`px-2 h-8 ${!ratings[currentFilm.id] ? 'opacity-50' : 'bg-primary/80 text-white hover:bg-primary'}`}
+                  >
+                    Next
+                    <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || !canSubmit()}
+                    className={`px-2 h-8 ${isSubmitting || !canSubmit() ? 'opacity-50' : 'bg-primary/80 text-white hover:bg-primary'}`}
+                  >
+                    {isSubmitting ? "Saving..." : "Finish"}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
