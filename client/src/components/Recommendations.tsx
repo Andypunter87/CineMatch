@@ -171,8 +171,9 @@ export default function Recommendations({
         </div>
 
         {isLoading ? (
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center justify-center">
+          <>
+            {/* Loading message shown at the top, outside the grid */}
+            <div className="flex justify-center mb-8">
               <div className="bg-white py-5 px-8 rounded-lg border shadow-md flex items-center space-x-3 z-10">
                 <RefreshCw className="w-5 h-5 text-primary animate-spin" />
                 <p className="text-gray-800">
@@ -182,6 +183,8 @@ export default function Recommendations({
                 </p>
               </div>
             </div>
+            
+            {/* Blurred content below */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-8 filter blur-sm">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-96 bg-white rounded-lg overflow-hidden shadow-lg border border-blue-100">
@@ -194,7 +197,7 @@ export default function Recommendations({
                 </div>
               ))}
             </div>
-          </div>
+          </>
         ) : recommendations.length === 0 ? (
           <div className="bg-white p-8 rounded-lg text-center border border-blue-100 shadow-md">
             <div className="text-primary opacity-40 text-5xl mb-4">¯\_(ツ)_/¯</div>
