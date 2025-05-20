@@ -218,7 +218,7 @@ export function useFeedbackInsight() {
           const likedGenres = likedFilm.genres || [];
           
           // Find overlapping genres
-          const overlappingGenres = likedGenres.filter(genre => 
+          const overlappingGenres = likedGenres.filter((genre: string) => 
             filmGenres.includes(genre)
           );
           
