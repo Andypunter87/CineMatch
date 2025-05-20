@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { LogCategory, LogLevel, logFeedbackOperation } from "@/lib/firestore-test-logger";
 import { formatUserPath, FirestorePaths } from "@/lib/firestore-paths";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, collection, doc, setDoc, getDoc } from "firebase/firestore";
 import { RecommendationRequest } from "@shared/schema";
 
 /**
@@ -26,7 +26,6 @@ export interface FilmFeedbackData {
 export function useFilmFeedbackFirestore() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { getFirestore, getDocRef } = useFirestoreUtils();
   const [error, setError] = useState<Error | null>(null);
 
   /**
@@ -51,14 +50,14 @@ export function useFilmFeedbackFirestore() {
       }
 
       // Create path to the feedback document
-      const feedbackPath = formatUserPath(userId, `feedback/films`);
+      const feedbackPath = `users/${userId}/feedback/films`;
       const docId = `film_${filmId}`;
 
       // Get document reference
-      const docRef = firestore.collection(feedbackPath).doc(docId);
+      const docRef = doc(firestore, feedbackPath, docId);
 
       // Set data with merge option to preserve other fields
-      await docRef.set({
+      await setDoc(docRef, {
         ...feedbackData,
         // Ensure timestamp is set
         timestamp: feedbackData.timestamp || new Date().toISOString(),

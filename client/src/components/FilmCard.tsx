@@ -113,10 +113,9 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                 timestamp: new Date().toISOString(),
                 moodContext: recommendationContext?.mood || null,
                 runtimePreference: recommendationContext?.runtime || null,
-                recommendationContext: {
-                  ...recommendationContext,
-                  isOnboarding: true
-                }
+                recommendationContext: recommendationContext 
+                  ? { ...recommendationContext } 
+                  : null
               }
             );
           } catch (error) {
