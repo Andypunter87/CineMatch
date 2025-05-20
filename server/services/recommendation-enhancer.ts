@@ -83,10 +83,9 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       
       // If this is a co-watching scenario, get friend's feedback and preferences
       if (isCoWatching && preferences.friendUserId) {
+        // Import friend-specific feedback functions dynamically
         const { 
           getFriendPreferences, 
-          getUserFilmFeedback: getFriendFilmFeedback,
-          extractPreferenceWeights: extractFriendPreferenceWeights,
           combineWeights,
           combinePreferences,
           generatePersonalizationSummary
