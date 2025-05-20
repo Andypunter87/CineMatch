@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { LogCategory, LogLevel, logFeedbackOperation } from "@/lib/firestore-test-logger";
 import { formatUserPath, FirestorePaths } from "@/lib/firestore-paths";
-import { getFirestore, collection, doc, setDoc, getDoc } from "firebase/firestore";
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs } from "firebase/firestore";
 import { RecommendationRequest } from "@shared/schema";
 
 /**
@@ -115,7 +115,7 @@ export function useFilmFeedbackFirestore() {
       const docRef = doc(firestore, feedbackPath, docId);
 
       // Get document
-      const docSnapshot = await docRef.get();
+      const docSnapshot = await getDoc(docRef);
 
       // Log the operation
       logFeedbackOperation(
@@ -126,14 +126,14 @@ export function useFilmFeedbackFirestore() {
           additionalInfo: {
             userId,
             filmId,
-            exists: docSnapshot.exists,
+            exists: docSnapshot.exists(),
             ...options.additionalInfo
           }
         }
       );
 
       // Return data if it exists
-      if (docSnapshot.exists) {
+      if (docSnapshot.exists()) {
         return docSnapshot.data() as FilmFeedbackData;
       }
 
@@ -163,13 +163,13 @@ export function useFilmFeedbackFirestore() {
       }
 
       // Create path to the feedback collection
-      const feedbackPath = formatUserPath(userId, "feedback/films");
+      const feedbackPath = `users/${userId}/feedback`;
 
       // Get collection reference
-      const collectionRef = firestore.collection(feedbackPath);
+      const collectionRef = collection(firestore, feedbackPath);
 
       // Get documents
-      const snapshot = await collectionRef.get();
+      const snapshot = await getDocs(collectionRef);
 
       // Log the operation
       logFeedbackOperation(
@@ -187,7 +187,7 @@ export function useFilmFeedbackFirestore() {
 
       // Return data if it exists
       if (!snapshot.empty) {
-        return snapshot.docs.map(doc => doc.data() as FilmFeedbackData);
+        return snapshot.docs.map((document: any) => document.data() as FilmFeedbackData);
       }
 
       return [];
