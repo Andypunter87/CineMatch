@@ -23,7 +23,7 @@ const BACKDROP_SIZE = 'w1280';
 
 // Image URL helpers
 export const getPosterUrl = (posterPath: string) => 
-  posterPath ? `${TMDB_IMAGE_BASE_URL}/${POSTER_SIZE}${posterPath}` : '';
+  posterPath ? `${TMDB_IMAGE_BASE_URL}/${POSTER_SIZE}${posterPath}` : null;
 
 export const getBackdropUrl = (backdropPath: string) => 
   backdropPath ? `${TMDB_IMAGE_BASE_URL}/${BACKDROP_SIZE}${backdropPath}` : null;
