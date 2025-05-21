@@ -142,7 +142,7 @@ export async function searchMovies(query: string, page: number = 1): Promise<TMD
   const url = `${TMDB_API_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}&include_adult=false`;
   
   try {
-    console.log(`TMDB Search URL: ${url.replace(TMDB_API_KEY, '***API_KEY***')}`);
+    console.log(`TMDB Search URL: ${url.replace(/api_key=[^&]+/, 'api_key=***API_KEY***')}`);
     const response = await fetch(url);
     
     if (!response.ok) {
