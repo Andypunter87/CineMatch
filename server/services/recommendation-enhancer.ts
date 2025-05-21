@@ -335,7 +335,8 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
             }
             
             // Determine the recommendation source
-            let recommendationSource: 'onboarding' | 'friend' | 'feedback' | 'fallback' = 'fallback';
+            type SourceType = 'onboarding' | 'friend' | 'feedback' | 'fallback';
+            let recommendationSource: SourceType = 'fallback';
             
             // First check if this is a co-watching scenario with a friend
             if (isCoWatching && preferences.friendUserId) {
@@ -351,8 +352,8 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
             }
             // Otherwise it's a fallback recommendation
 
-            // Merge the AI recommendation with TMDB data
-            return {
+            // Define the return Film object with correct typing
+            const enhancedFilm: Film = {
               ...film,
               tmdbId: tmdbMovie.id,
               // Use TMDB poster if available, otherwise keep the original
@@ -376,19 +377,23 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
               hasStreamingData: true,
               hasCompleteData: !!(tmdbFilm.posterUrl && tmdbFilm.runtime) // Flag to indicate if film has all required data
             };
+            
+            return enhancedFilm;
+            };
           }
           
           // If no match found, mark as incomplete data and set fallback source
-          return {
+          const fallbackFilm: Film = {
             ...film,
             source: 'fallback',
             hasCompleteData: false
           };
+          return fallbackFilm;
         } catch (error) {
           console.error(`Error enhancing recommendation for "${film.title}":`, error);
           return {
             ...film,
-            source: 'fallback',
+            source: 'fallback' as 'onboarding' | 'friend' | 'feedback' | 'fallback',
             hasCompleteData: false
           }; // Return original film if enhancement fails
         }

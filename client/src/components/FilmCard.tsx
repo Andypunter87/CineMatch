@@ -627,6 +627,50 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
             </Badge>
           ))}
           
+          {/* Recommendation source badge */}
+          {film.source && !isOnboarding && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge 
+                    variant="secondary"
+                    className={`flex items-center gap-1 cursor-help px-2 py-0.5 rounded-full ${
+                      film.source === 'feedback' ? 'bg-purple-100 text-purple-700 border-purple-200' : 
+                      film.source === 'onboarding' ? 'bg-green-100 text-green-700 border-green-200' :
+                      film.source === 'friend' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                      'bg-blue-100 text-blue-700 border-blue-200'
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      // Track when a user clicks on source badge
+                      trackEvent(AnalyticsEvents.RECOMMENDATION_SOURCE_VIEWED, {
+                        film_id: film.id,
+                        film_title: film.title,
+                        recommendation_source: film.source
+                      });
+                    }}
+                  >
+                    <Info className="h-3 w-3" />
+                    <span className="text-xs truncate max-w-[120px]">
+                      {film.source === 'feedback' ? 'Based on feedback' : 
+                       film.source === 'onboarding' ? 'Based on ratings' :
+                       film.source === 'friend' ? 'Friend match' : 'For you'}
+                    </span>
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center">
+                  <p className="text-xs max-w-[200px]">
+                    {film.source === 'feedback' ? 'This recommendation is based on your feedback from previous films' : 
+                     film.source === 'onboarding' ? 'This recommendation is based on your initial ratings' :
+                     film.source === 'friend' ? 'This recommendation is influenced by shared interests with your friend' : 
+                     'This is a general recommendation based on your preferences'}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          
           {/* Personalized insight badge */}
           {insight && !isOnboarding && (
             <TooltipProvider>
