@@ -6,7 +6,8 @@ import {
   convertTMDBMovieToFilm,
   getPopularMovies,
   getTopRatedMovies,
-  getNowPlayingMovies
+  getNowPlayingMovies,
+  getPosterUrl
 } from "./tmdb";
 import { 
   getUserFilmFeedback, 
@@ -233,15 +234,16 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       const enhancedFilm: Film = {
         ...film,
         tmdbId: tmdbMovie.id,
-        // Use TMDB poster directly from the API response
-        posterUrl: tmdbMovie.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbMovie.poster_path}` : film.posterUrl,
+        // Use the getPosterUrl helper to construct the poster URL
+        posterUrl: tmdbMovie.poster_path ? getPosterUrl(tmdbMovie.poster_path) : film.posterUrl,
         // Include streaming availability
         availableOn,
-        // Include TMDB metadata directly from the API response when possible
-        runtime: tmdbFilm.runtime || tmdbMovie.runtime || undefined,
-        voteAverage: tmdbFilm.voteAverage || tmdbMovie.vote_average || undefined,
-        originalLanguage: tmdbFilm.originalLanguage || tmdbMovie.original_language || undefined,
-        releaseDate: tmdbFilm.releaseDate || tmdbMovie.release_date || undefined,
+        // Include TMDB metadata safely
+        // Note: TMDBMovie doesn't have runtime directly, use the converted data
+        runtime: tmdbFilm.runtime || undefined,
+        voteAverage: tmdbMovie.vote_average || tmdbFilm.voteAverage || undefined,
+        originalLanguage: tmdbMovie.original_language || tmdbFilm.originalLanguage || undefined,
+        releaseDate: tmdbMovie.release_date || tmdbFilm.releaseDate || undefined,
         // Include Firestore influence in match reason if applicable
         matchReason: feedbackWeights.hasPreferences ? 
           `${film.matchReason || ''} (Personalized based on your feedback)` : 
@@ -252,14 +254,7 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
         source: recommendationSource,
         // Add special flags to help with post-processing
         hasStreamingData: true,
-        hasCompleteData: true, // Always mark as complete since we're pulling directly from TMDB response
-        // Add additional safety fields to ensure data is available
-        tmdb: {
-          id: tmdbMovie.id,
-          poster: tmdbMovie.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbMovie.poster_path}` : null,
-          title: tmdbMovie.title || film.title,
-          runtime: tmdbFilm.runtime || tmdbMovie.runtime || null
-        }
+        hasCompleteData: true
       };
       
       // Add to cache for future use

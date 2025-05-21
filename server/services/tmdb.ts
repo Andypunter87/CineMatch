@@ -139,26 +139,38 @@ interface TMDBWatchProviders {
  * Search for movies by title
  */
 export async function searchMovies(query: string, page: number = 1): Promise<TMDBMovie[]> {
+  // Make sure we have an API key
+  if (!TMDB_API_KEY) {
+    console.error('TMDB API key is missing');
+    return [];
+  }
+  
   const url = `${TMDB_API_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}&include_adult=false`;
   
   try {
-    console.log(`TMDB Search URL: ${url.replace(/api_key=[^&]+/, 'api_key=***API_KEY***')}`);
+    console.log(`Searching TMDB for: "${query}"`);
     const response = await fetch(url);
     
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`TMDB API error (${response.status}): ${errorText}`);
-      throw new Error(`TMDB API error (${response.status}): ${errorText}`);
+      return []; // Return empty rather than throwing to prevent cascade failures
     }
     
     const data = await response.json() as TMDBSearchResponse;
-    console.log(`TMDB search results: Found ${data.results?.length || 0} movies`);
-    if (data.results && data.results.length > 0) {
-      console.log(`First result: ${data.results[0].title} (${data.results[0].release_date}) - Poster: ${data.results[0].poster_path ? 'Available' : 'Missing'}`);
+    
+    if (!data.results || data.results.length === 0) {
+      console.log(`No TMDB results found for "${query}"`);
+      return [];
     }
+    
+    console.log(`Found ${data.results.length} TMDB results for "${query}"`);
+    console.log(`First match: "${data.results[0].title}" (${data.results[0].release_date?.substring(0,4) || 'N/A'})`);
+    
+    // Always return the results array (or empty array if missing)
     return data.results || [];
   } catch (error) {
-    console.error('Error searching movies:', error);
+    console.error('Error searching TMDB:', error);
     return []; // Return empty array instead of throwing to prevent cascade failures
   }
 }
