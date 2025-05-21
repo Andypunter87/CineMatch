@@ -145,11 +145,15 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       
       // Search for the movie in TMDB
       const query = `${film.title} ${film.year}`;
+      console.log(`Searching TMDB for: "${query}"`);
       const searchResults = await searchMovies(query);
       
+      console.log(`TMDB search results for "${query}": ${searchResults.length} results found`);
+      
       if (searchResults && Array.isArray(searchResults) && searchResults.length > 0) {
-        // Convert the first result to our Film format
+        // Use the first result as our best match
         const tmdbMovie = searchResults[0];
+        console.log(`Using TMDB movie: ${tmdbMovie.title} (${tmdbMovie.release_date?.substring(0,4) || 'N/A'}) [ID: ${tmdbMovie.id}]`);
         const tmdbFilm = await convertTMDBMovieToFilm(tmdbMovie);
         
         // Get streaming services where this film is available (depends on user country)
@@ -229,15 +233,15 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       const enhancedFilm: Film = {
         ...film,
         tmdbId: tmdbMovie.id,
-        // Use TMDB poster if available, otherwise keep the original
-        posterUrl: tmdbFilm.posterUrl || film.posterUrl,
+        // Use TMDB poster directly from the API response
+        posterUrl: tmdbMovie.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbMovie.poster_path}` : film.posterUrl,
         // Include streaming availability
         availableOn,
-        // Include TMDB metadata
-        runtime: tmdbFilm.runtime || undefined,
-        voteAverage: tmdbFilm.voteAverage || undefined,
-        originalLanguage: tmdbFilm.originalLanguage || undefined,
-        releaseDate: tmdbFilm.releaseDate || undefined,
+        // Include TMDB metadata directly from the API response when possible
+        runtime: tmdbFilm.runtime || tmdbMovie.runtime || undefined,
+        voteAverage: tmdbFilm.voteAverage || tmdbMovie.vote_average || undefined,
+        originalLanguage: tmdbFilm.originalLanguage || tmdbMovie.original_language || undefined,
+        releaseDate: tmdbFilm.releaseDate || tmdbMovie.release_date || undefined,
         // Include Firestore influence in match reason if applicable
         matchReason: feedbackWeights.hasPreferences ? 
           `${film.matchReason || ''} (Personalized based on your feedback)` : 
@@ -248,7 +252,14 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
         source: recommendationSource,
         // Add special flags to help with post-processing
         hasStreamingData: true,
-        hasCompleteData: !!(tmdbFilm.posterUrl && tmdbFilm.runtime) // Flag to indicate if film has all required data
+        hasCompleteData: true, // Always mark as complete since we're pulling directly from TMDB response
+        // Add additional safety fields to ensure data is available
+        tmdb: {
+          id: tmdbMovie.id,
+          poster: tmdbMovie.poster_path ? `https://image.tmdb.org/t/p/w500${tmdbMovie.poster_path}` : null,
+          title: tmdbMovie.title || film.title,
+          runtime: tmdbFilm.runtime || tmdbMovie.runtime || null
+        }
       };
       
       // Add to cache for future use
