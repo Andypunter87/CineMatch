@@ -105,10 +105,9 @@ export function useFeedbackInsight() {
       
       // Get recent feedback that was liked, limited to 20 documents
       // This limits the data we need to process
+      // Don't use where/orderBy combination since it requires a composite index
       const feedbackRef = query(
         collection(firestore, feedbackPath),
-        where("liked", "==", true),
-        orderBy("timestamp", "desc"),
         limit(20)
       );
       
@@ -125,8 +124,8 @@ export function useFeedbackInsight() {
       feedbackSnap.forEach(doc => {
         const feedbackData = doc.data();
         
-        // Skip if this is the same film
-        if (feedbackData.filmId === film.id) {
+        // Skip if this is the same film or not a positive feedback
+        if (feedbackData.filmId === film.id || feedbackData.liked !== true) {
           return;
         }
         
