@@ -59,16 +59,15 @@ import {
 } from './firestore-feedback-reader';
 
 export async function getEnhancedRecommendations(preferences: RecommendationRequest): Promise<Film[]> {
-  try {
-    // Performance optimization: start timestamp
-    const startTime = Date.now();
-    
-    // Get user feedback from Firestore if userId is provided
-    let userFeedback = [];
-    let feedbackWeights = { moodWeights: {}, runtimeWeights: {}, hasPreferences: false };
-    
-    // Track if this is a co-watching recommendation
-    const isCoWatching = !!preferences.friendUserId;
+  // Performance optimization: start timestamp
+  const startTime = Date.now();
+  
+  // Get user feedback from Firestore if userId is provided
+  let userFeedback: any[] = [];
+  let feedbackWeights = { moodWeights: {}, runtimeWeights: {}, hasPreferences: false };
+  
+  // Track if this is a co-watching recommendation
+  const isCoWatching = !!preferences.friendUserId;
     
     if (preferences.userId) {
       console.log(`Retrieving Firestore feedback for user ID: ${preferences.userId}`);
@@ -379,7 +378,6 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
             };
             
             return enhancedFilm;
-            };
           }
           
           // If no match found, mark as incomplete data and set fallback source
