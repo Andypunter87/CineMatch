@@ -50,6 +50,7 @@ export const AnalyticsEvents = {
   // Recommendation feedback events
   RECOMMENDATION_LIKED: 'recommendation_liked',
   RECOMMENDATION_DISLIKED: 'recommendation_disliked',
+  RECOMMENDATION_SOURCE_VIEWED: 'recommendation_source_viewed',
   
   // Recommendation generation events
   MORE_RECOMMENDATIONS_REQUESTED: 'more_recommendations_requested',

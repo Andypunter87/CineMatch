@@ -282,7 +282,8 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
           film_type: film.type,
           film_genres: film.genres.join(','),
           rating: variables === 'like' ? 'positive' : 'negative',
-          match_percentage: film.matchPercentage || 90
+          match_percentage: film.matchPercentage || 90,
+          recommendation_source: film.source || 'unknown'
         }
       );
     },
