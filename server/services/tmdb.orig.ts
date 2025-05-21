@@ -9,9 +9,9 @@
  * - Getting streaming availability information
  */
 
-import { Film } from "@shared/schema";
+import { Film } from '@shared/schema';
 
-// API configuration
+// TMDB API Constants
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_API_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
@@ -21,12 +21,12 @@ const POSTER_SIZE = 'w500';
 // Backdrop sizes: "w300", "w780", "w1280", "original"
 const BACKDROP_SIZE = 'w1280';
 
-// Image URL helpers - FIXED to always return string (not null)
-export const getPosterUrl = (posterPath: string): string => 
-  posterPath ? `${TMDB_IMAGE_BASE_URL}/${POSTER_SIZE}${posterPath}` : '';
+// Image URL helpers
+export const getPosterUrl = (posterPath: string) => 
+  posterPath ? `${TMDB_IMAGE_BASE_URL}/${POSTER_SIZE}${posterPath}` : null;
 
-export const getBackdropUrl = (backdropPath: string): string => 
-  backdropPath ? `${TMDB_IMAGE_BASE_URL}/${BACKDROP_SIZE}${backdropPath}` : '';
+export const getBackdropUrl = (backdropPath: string) => 
+  backdropPath ? `${TMDB_IMAGE_BASE_URL}/${BACKDROP_SIZE}${backdropPath}` : null;
 
 // Basic types for TMDB API responses
 interface TMDBMovie {
@@ -154,7 +154,7 @@ export async function searchMovies(query: string, page: number = 1): Promise<TMD
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`TMDB API error (${response.status}): ${errorText}`);
-      return []; // Return empty rather than throwing
+      return []; // Return empty rather than throwing to prevent cascade failures
     }
     
     const data = await response.json() as TMDBSearchResponse;
@@ -171,7 +171,7 @@ export async function searchMovies(query: string, page: number = 1): Promise<TMD
     return data.results || [];
   } catch (error) {
     console.error('Error searching TMDB:', error);
-    return []; // Return empty array instead of throwing
+    return []; // Return empty array instead of throwing to prevent cascade failures
   }
 }
 
@@ -183,11 +183,13 @@ export async function getMovieDetails(movieId: number): Promise<TMDBMovieDetails
   
   try {
     const response = await fetch(url);
+    
     if (!response.ok) {
-      throw new Error(`TMDB API error: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`TMDB API error (${response.status}): ${errorText}`);
     }
     
-    return await response.json() as TMDBMovieDetails;
+    return await response.json();
   } catch (error) {
     console.error(`Error getting movie details for ID ${movieId}:`, error);
     throw error;
@@ -202,11 +204,13 @@ export async function getMovieCredits(movieId: number): Promise<TMDBCredits> {
   
   try {
     const response = await fetch(url);
+    
     if (!response.ok) {
-      throw new Error(`TMDB API error: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`TMDB API error (${response.status}): ${errorText}`);
     }
     
-    return await response.json() as TMDBCredits;
+    return await response.json();
   } catch (error) {
     console.error(`Error getting movie credits for ID ${movieId}:`, error);
     throw error;
@@ -221,13 +225,15 @@ export async function getMovieWatchProviders(movieId: number): Promise<TMDBWatch
   
   try {
     const response = await fetch(url);
+    
     if (!response.ok) {
-      throw new Error(`TMDB API error: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`TMDB API error (${response.status}): ${errorText}`);
     }
     
-    return await response.json() as TMDBWatchProviders;
+    return await response.json();
   } catch (error) {
-    console.error(`Error getting watch providers for ID ${movieId}:`, error);
+    console.error(`Error getting watch providers for movie ID ${movieId}:`, error);
     throw error;
   }
 }
@@ -240,8 +246,10 @@ export async function getStreamingProviders(): Promise<any> {
   
   try {
     const response = await fetch(url);
+    
     if (!response.ok) {
-      throw new Error(`TMDB API error: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`TMDB API error (${response.status}): ${errorText}`);
     }
     
     return await response.json();
@@ -259,11 +267,13 @@ export async function getPopularMovies(page: number = 1): Promise<TMDBSearchResp
   
   try {
     const response = await fetch(url);
+    
     if (!response.ok) {
-      throw new Error(`TMDB API error: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`TMDB API error (${response.status}): ${errorText}`);
     }
     
-    return await response.json() as TMDBSearchResponse;
+    return await response.json();
   } catch (error) {
     console.error('Error getting popular movies:', error);
     throw error;
@@ -278,11 +288,13 @@ export async function getNowPlayingMovies(page: number = 1): Promise<TMDBSearchR
   
   try {
     const response = await fetch(url);
+    
     if (!response.ok) {
-      throw new Error(`TMDB API error: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`TMDB API error (${response.status}): ${errorText}`);
     }
     
-    return await response.json() as TMDBSearchResponse;
+    return await response.json();
   } catch (error) {
     console.error('Error getting now playing movies:', error);
     throw error;
@@ -297,11 +309,13 @@ export async function getTopRatedMovies(page: number = 1): Promise<TMDBSearchRes
   
   try {
     const response = await fetch(url);
+    
     if (!response.ok) {
-      throw new Error(`TMDB API error: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`TMDB API error (${response.status}): ${errorText}`);
     }
     
-    return await response.json() as TMDBSearchResponse;
+    return await response.json();
   } catch (error) {
     console.error('Error getting top rated movies:', error);
     throw error;
@@ -316,11 +330,13 @@ export async function getMovieGenres(): Promise<{ genres: { id: number; name: st
   
   try {
     const response = await fetch(url);
+    
     if (!response.ok) {
-      throw new Error(`TMDB API error: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`TMDB API error (${response.status}): ${errorText}`);
     }
     
-    return await response.json() as { genres: { id: number; name: string }[] };
+    return await response.json();
   } catch (error) {
     console.error('Error getting movie genres:', error);
     throw error;
@@ -332,94 +348,73 @@ export async function getMovieGenres(): Promise<{ genres: { id: number; name: st
  */
 export async function convertTMDBMovieToFilm(movie: TMDBMovie | TMDBMovieDetails): Promise<Film> {
   try {
+    // Fetch additional data if we only have basic movie info
     let movieDetails: TMDBMovieDetails;
     let credits: TMDBCredits;
     let watchProviders: TMDBWatchProviders;
     
-    // If we have a TMDBMovie, fetch the details
-    if (!('runtime' in movie)) {
-      movieDetails = await getMovieDetails(movie.id);
-    } else {
+    if ('genres' in movie) {
+      // We already have detailed movie info
       movieDetails = movie as TMDBMovieDetails;
-    }
-    
-    // Get credits and watch providers
-    try {
       credits = await getMovieCredits(movie.id);
-    } catch (error) {
-      console.error(`Error getting credits for ${movie.title}:`, error);
-      credits = { id: movie.id, cast: [], crew: [] };
-    }
-    
-    try {
       watchProviders = await getMovieWatchProviders(movie.id);
-    } catch (error) {
-      console.error(`Error getting watch providers for ${movie.title}:`, error);
-      watchProviders = { id: movie.id, results: {} };
+    } else {
+      // We need to fetch detailed info
+      movieDetails = await getMovieDetails(movie.id);
+      credits = await getMovieCredits(movie.id);
+      watchProviders = await getMovieWatchProviders(movie.id);
     }
     
-    // Extract directors and primary cast
-    const directors = credits.crew
-      .filter(person => person.job === 'Director')
-      .map(director => director.name);
+    // Extract director from crew
+    const director = credits.crew.find(person => person.job === 'Director')?.name || '';
     
-    const cast = credits.cast
-      .slice(0, 5) // Take top 5 actors
-      .map(actor => actor.name);
+    // Extract top 5 cast members
+    const actors = credits.cast.slice(0, 5).map(actor => actor.name);
     
     // Extract genres
     const genres = movieDetails.genres.map(genre => genre.name);
     
-    // Extract streaming services by country
-    const availableStreamingByCountry: Record<string, string[]> = {};
+    // Extract release year from release date
+    const year = new Date(movieDetails.release_date).getFullYear();
     
-    Object.entries(watchProviders.results || {}).forEach(([countryCode, providers]) => {
-      const streamingServices = providers.flatrate || [];
-      availableStreamingByCountry[countryCode.toLowerCase()] = streamingServices.map(service => service.provider_name);
-    });
-    
-    // Determine if this is an indie film based on various factors
+    // Determine film type based on budget, production companies, and language
     const isIndie = isIndieFilm(movieDetails);
     
-    // Return our standardized Film object
+    // Get poster URL
+    const posterUrl = getPosterUrl(movieDetails.poster_path || '');
+    
+    // Convert watch providers to our format
+    const availableStreamingServices: Record<string, string[]> = {};
+    
+    if (watchProviders.results) {
+      Object.entries(watchProviders.results).forEach(([countryCode, providers]) => {
+        if (providers.flatrate) {
+          availableStreamingServices[countryCode] = providers.flatrate.map(p => p.provider_name);
+        }
+      });
+    }
+    
     return {
-      id: movie.id,
-      tmdbId: movie.id,
-      title: movie.title,
-      year: movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : 0,
-      overview: movie.overview,
-      // FIXED: Always use string for posterUrl (empty string if null)
-      posterUrl: movie.poster_path ? getPosterUrl(movie.poster_path) : '',
-      backdropUrl: movie.backdrop_path ? getBackdropUrl(movie.backdrop_path) : '',
-      runtime: movieDetails.runtime || undefined,
-      directors,
-      cast,
+      id: movieDetails.id,
+      title: movieDetails.title,
+      year,
+      director,
+      actors,
+      synopsis: movieDetails.overview,
       genres,
-      originalLanguage: movie.original_language,
-      voteAverage: movie.vote_average,
-      releaseDate: movie.release_date,
-      isIndie,
-      availableStreamingByCountry,
-      matchPercentage: 0, // To be set by recommendation engine
-      matchReason: '', // To be set by recommendation engine
-      hasCompleteData: true // This is a full data fetch from TMDB
+      type: isIndie ? 'indie' : 'mainstream',
+      posterUrl: posterUrl || '',
+      tmdbId: movieDetails.id,
+      availableStreamingByCountry: availableStreamingServices,
+      runtime: movieDetails.runtime || 0,
+      voteAverage: movieDetails.vote_average,
+      originalLanguage: movieDetails.original_language,
+      releaseDate: movieDetails.release_date,
+      hasCompleteData: !!(posterUrl && movieDetails.runtime), // Flag if film has all required data
     };
   } catch (error) {
     console.error(`Error converting TMDB movie to Film:`, error);
-    
-    // Return a minimal Film object with what we have
-    return {
-      id: movie.id,
-      tmdbId: movie.id,
-      title: movie.title,
-      year: movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : 0,
-      overview: movie.overview,
-      posterUrl: movie.poster_path ? getPosterUrl(movie.poster_path) : '',
-      genres: [],
-      matchPercentage: 0,
-      matchReason: '',
-      hasCompleteData: false
-    };
+    throw error;
   }
 }
 
@@ -427,32 +422,34 @@ export async function convertTMDBMovieToFilm(movie: TMDBMovie | TMDBMovieDetails
  * Determine if a film is indie based on various factors
  */
 function isIndieFilm(movie: TMDBMovieDetails): boolean {
-  // Indie films typically have lower budgets
-  if (movie.budget && movie.budget < 10000000) { // Under $10M is often indie
-    return true;
-  }
+  // Some heuristics to determine if a film is indie:
+  // 1. Low budget (if available)
+  // 2. Not from a major studio
+  // 3. Not in English
+  // 4. Low vote count (less popular)
   
-  // Indie films often have fewer production companies
-  if (movie.production_companies.length <= 2) {
-    return true;
-  }
-  
-  // Check if any of the production companies are major studios
   const majorStudios = [
-    'Warner Bros', 'Universal', 'Paramount', 'Walt Disney', 'Disney',
-    'Columbia', 'Sony', '20th Century', 'MGM', 'Lionsgate'
+    'Warner Bros.', 'Walt Disney', 'Universal', 'Columbia', 
+    'Paramount', '20th Century', 'Sony', 'MGM', 'Lionsgate'
   ];
   
-  const isMajorStudio = movie.production_companies.some(company => 
+  const hasMajorStudio = movie.production_companies.some(company => 
     majorStudios.some(studio => company.name.includes(studio))
   );
   
-  // If no major studios are involved, more likely to be indie
-  if (!isMajorStudio) {
-    return true;
-  }
+  const isEnglishLanguage = movie.original_language === 'en';
+  const isLowBudget = movie.budget < 10000000; // $10 million threshold
+  const hasLowVotes = movie.vote_count < 1000;
   
-  return false;
+  // Weight different factors
+  let indieScore = 0;
+  if (!hasMajorStudio) indieScore += 2;
+  if (!isEnglishLanguage) indieScore += 1;
+  if (isLowBudget) indieScore += 2;
+  if (hasLowVotes) indieScore += 1;
+  
+  // Consider it indie if score is 3 or higher
+  return indieScore >= 3;
 }
 
 /**
@@ -460,8 +457,9 @@ function isIndieFilm(movie: TMDBMovieDetails): boolean {
  */
 export async function testTMDBAPI(): Promise<boolean> {
   try {
-    const results = await searchMovies('inception', 1);
-    return Array.isArray(results) && results.length > 0;
+    const result = await getPopularMovies(1);
+    console.log(`TMDB API test successful: Found ${result.results.length} popular movies`);
+    return true;
   } catch (error) {
     console.error('TMDB API test failed:', error);
     return false;
