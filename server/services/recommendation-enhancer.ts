@@ -334,6 +334,23 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
               film.matchPercentage = adjustedMatchPercentage;
             }
             
+            // Determine the recommendation source
+            let recommendationSource: 'onboarding' | 'friend' | 'feedback' | 'fallback' = 'fallback';
+            
+            // First check if this is a co-watching scenario with a friend
+            if (isCoWatching && preferences.friendUserId) {
+              recommendationSource = 'friend';
+            } 
+            // Then check if we have feedback that influenced the recommendation
+            else if (feedbackWeights.hasPreferences) {
+              recommendationSource = 'feedback';
+            } 
+            // Finally check if this is based on onboarding preferences (no personalization yet)
+            else if (preferences.userRatedFilms && preferences.userRatedFilms.length > 0) {
+              recommendationSource = 'onboarding';
+            }
+            // Otherwise it's a fallback recommendation
+
             // Merge the AI recommendation with TMDB data
             return {
               ...film,
@@ -353,21 +370,25 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
                 film.matchReason,
               // Include full streaming data for all countries
               availableStreamingByCountry: tmdbFilm.availableStreamingByCountry,
+              // Add source field indicating where this recommendation came from
+              source: recommendationSource,
               // Add special flags to help with post-processing
               hasStreamingData: true,
               hasCompleteData: !!(tmdbFilm.posterUrl && tmdbFilm.runtime) // Flag to indicate if film has all required data
             };
           }
           
-          // If no match found, mark as incomplete data and return
+          // If no match found, mark as incomplete data and set fallback source
           return {
             ...film,
+            source: 'fallback',
             hasCompleteData: false
           };
         } catch (error) {
           console.error(`Error enhancing recommendation for "${film.title}":`, error);
           return {
             ...film,
+            source: 'fallback',
             hasCompleteData: false
           }; // Return original film if enhancement fails
         }

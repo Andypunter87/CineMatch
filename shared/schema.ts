@@ -17,6 +17,7 @@ export type Film = {
   matchPercentage?: number;
   matchReason?: string;
   availableOn?: string[]; // Streaming services where this film is available in the user's country
+  source?: 'onboarding' | 'friend' | 'feedback' | 'fallback'; // Where the recommendation came from
   
   // TMDB specific fields
   tmdbId?: number;
