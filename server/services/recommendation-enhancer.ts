@@ -147,7 +147,7 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       const query = `${film.title} ${film.year}`;
       const searchResults = await searchMovies(query);
       
-      if (searchResults.length > 0) {
+      if (searchResults && Array.isArray(searchResults) && searchResults.length > 0) {
         // Convert the first result to our Film format
         const tmdbMovie = searchResults[0];
         const tmdbFilm = await convertTMDBMovieToFilm(tmdbMovie);

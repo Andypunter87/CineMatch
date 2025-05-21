@@ -138,7 +138,7 @@ interface TMDBWatchProviders {
 /**
  * Search for movies by title
  */
-export async function searchMovies(query: string, page: number = 1): Promise<TMDBSearchResponse> {
+export async function searchMovies(query: string, page: number = 1): Promise<TMDBMovie[]> {
   const url = `${TMDB_API_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}&include_adult=false`;
   
   try {
@@ -149,10 +149,11 @@ export async function searchMovies(query: string, page: number = 1): Promise<TMD
       throw new Error(`TMDB API error (${response.status}): ${errorText}`);
     }
     
-    return await response.json();
+    const data = await response.json() as TMDBSearchResponse;
+    return data.results || [];
   } catch (error) {
     console.error('Error searching movies:', error);
-    throw error;
+    return []; // Return empty array instead of throwing to prevent cascade failures
   }
 }
 
