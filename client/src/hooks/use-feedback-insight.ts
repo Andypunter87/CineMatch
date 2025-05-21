@@ -107,8 +107,10 @@ export function useFeedbackInsight() {
       
       // Get recent feedback documents, limited to 30 documents to ensure we find matches
       // We'll filter for liked=true in memory to avoid composite index requirements
+      // Using orderBy("timestamp", "desc") to get most recent feedback
       const feedbackRef = query(
         collection(firestore, feedbackPath),
+        orderBy("timestamp", "desc"),
         limit(30)
       );
       
@@ -122,6 +124,8 @@ export function useFeedbackInsight() {
       const insights: FilmInsight[] = [];
       
       // Process each feedback document
+      console.log(`Processing ${feedbackSnap.size} feedback documents for insight generation`);
+      
       feedbackSnap.forEach(doc => {
         const feedbackData = doc.data();
         
@@ -129,6 +133,9 @@ export function useFeedbackInsight() {
         if (feedbackData.filmId === film.id || feedbackData.liked !== true) {
           return;
         }
+        
+        console.log(`Found liked film for insight: "${feedbackData.title}" (ID: ${feedbackData.filmId})`);
+        
         
         // Default confidence and match reason
         let confidence = 0.5;
@@ -228,11 +235,10 @@ export function useFeedbackInsight() {
         return resultMap; // Return what we have from cache
       }
       
-      // Get all liked feedback entries, limited to recent ones
+      // Get recent feedback entries and filter for liked=true in memory to avoid composite index requirements
       const feedbackPath = `users/${user.id}/feedback`;
       const feedbackRef = query(
         collection(firestore, feedbackPath),
-        where("liked", "==", true),
         orderBy("timestamp", "desc"),
         limit(30)
       );
@@ -243,7 +249,7 @@ export function useFeedbackInsight() {
         return resultMap; // Return what we have from cache
       }
       
-      // Build a map of all user's liked films
+      // Build a map of all user's liked films - filtering for liked=true in memory
       const likedFilms: {
         id: number;
         title: string;
@@ -252,9 +258,13 @@ export function useFeedbackInsight() {
         timestamp?: string;
       }[] = [];
       
+      // Log feedback data we retrieved for debugging
+      console.log(`Retrieved ${feedbackSnap.size} feedback items from Firestore, now filtering for liked=true`);
+      
       feedbackSnap.forEach(doc => {
         const data = doc.data();
-        if (data.liked) {
+        // Filter for liked=true in memory to avoid composite index requirements
+        if (data.liked === true) {
           likedFilms.push({
             id: data.filmId,
             title: data.title,
@@ -262,8 +272,11 @@ export function useFeedbackInsight() {
             mood: data.moodContext,
             timestamp: data.timestamp
           });
+          console.log(`Found liked film: "${data.title}" (ID: ${data.filmId})`);
         }
       });
+      
+      console.log(`After filtering, found ${likedFilms.length} liked films for badge generation`);
       
       // Process each uncached film to find the best insight
       uncachedFilms.forEach(film => {

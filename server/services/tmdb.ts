@@ -136,36 +136,62 @@ interface TMDBWatchProviders {
 }
 
 /**
- * Search for movies by title
+ * Search for movies by title and optional year
  */
-export async function searchMovies(query: string, page: number = 1): Promise<TMDBMovie[]> {
+export async function searchMovies(title: string, page: number = 1, year?: number): Promise<TMDBMovie[]> {
   // Make sure we have an API key
   if (!TMDB_API_KEY) {
     console.error('TMDB API key is missing');
     return [];
   }
   
-  const url = `${TMDB_API_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}&include_adult=false`;
+  // Build the search query with just the title (not concatenated with year)
+  let url = `${TMDB_API_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(title)}&page=${page}&include_adult=false`;
+  
+  // Only add year as a separate parameter if provided
+  if (year && year > 1900) {
+    url += `&year=${year}`;
+  }
   
   try {
-    console.log(`Searching TMDB for: "${query}"`);
+    // Debug log with masked API key
+    const debugUrl = url.replace(/api_key=[^&]+/, 'api_key=***');
+    console.log(`TMDB request URL: ${debugUrl}`);
+    
     const response = await fetch(url);
     
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`TMDB API error (${response.status}): ${errorText}`);
+      
+      // If we included a year and got no results, try again without the year
+      if (year && year > 1900) {
+        console.log(`Retrying TMDB search for "${title}" without year filter`);
+        return searchMovies(title, page); // Recursive call without year
+      }
+      
       return []; // Return empty rather than throwing
     }
     
     const data = await response.json() as TMDBSearchResponse;
     
     if (!data.results || data.results.length === 0) {
-      console.log(`No TMDB results found for "${query}"`);
+      console.log(`No TMDB results found for "${title}"${year ? ` (${year})` : ''}`);
+      
+      // If we included a year and got no results, try again without the year
+      if (year && year > 1900) {
+        console.log(`Retrying TMDB search for "${title}" without year filter`);
+        return searchMovies(title, page); // Recursive call without year
+      }
+      
       return [];
     }
     
-    console.log(`Found ${data.results.length} TMDB results for "${query}"`);
-    console.log(`First match: "${data.results[0].title}" (${data.results[0].release_date?.substring(0,4) || 'N/A'})`);
+    console.log(`Found ${data.results.length} TMDB results for "${title}"${year ? ` (${year})` : ''}`);
+    
+    if (data.results.length > 0) {
+      console.log(`First match: "${data.results[0].title}" (${data.results[0].release_date?.substring(0,4) || 'N/A'})`);
+    }
     
     // Always return the results array (or empty array if missing)
     return data.results || [];

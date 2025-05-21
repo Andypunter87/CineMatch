@@ -122,10 +122,9 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
         tmdbMovieCache.delete(cacheKey);
       }
       
-      // Search for the movie in TMDB
-      const query = `${film.title} ${film.year}`;
-      console.log(`Searching TMDB for: "${query}"`);
-      const searchResults = await searchMovies(query);
+      // Search for the movie in TMDB with separate title and year parameters
+      console.log(`Searching TMDB for film: "${film.title}" (${film.year})`);
+      const searchResults = await searchMovies(film.title, 1, film.year);
       
       if (searchResults && Array.isArray(searchResults) && searchResults.length > 0) {
         // Use the first result as our best match
