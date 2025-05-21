@@ -20,6 +20,8 @@ export const FirestorePaths = {
   
   // Feedback
   FILM_FEEDBACK: (userId: string | number) => `users/${userId}/feedback`,
+  FILM_FEEDBACK_ITEM: (userId: string | number, filmId: number) => 
+    `users/${userId}/feedback/${filmId}`,
   
   // Watchlist
   WATCHLIST: (userId: string | number) => `users/${userId}/watchlist`,

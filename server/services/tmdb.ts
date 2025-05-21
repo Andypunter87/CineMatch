@@ -142,14 +142,20 @@ export async function searchMovies(query: string, page: number = 1): Promise<TMD
   const url = `${TMDB_API_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}&include_adult=false`;
   
   try {
+    console.log(`TMDB Search URL: ${url.replace(TMDB_API_KEY, '***API_KEY***')}`);
     const response = await fetch(url);
     
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`TMDB API error (${response.status}): ${errorText}`);
       throw new Error(`TMDB API error (${response.status}): ${errorText}`);
     }
     
     const data = await response.json() as TMDBSearchResponse;
+    console.log(`TMDB search results: Found ${data.results?.length || 0} movies`);
+    if (data.results && data.results.length > 0) {
+      console.log(`First result: ${data.results[0].title} (${data.results[0].release_date}) - Poster: ${data.results[0].poster_path ? 'Available' : 'Missing'}`);
+    }
     return data.results || [];
   } catch (error) {
     console.error('Error searching movies:', error);

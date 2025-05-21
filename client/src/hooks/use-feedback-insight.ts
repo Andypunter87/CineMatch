@@ -103,12 +103,13 @@ export function useFeedbackInsight() {
       // Path to user's feedback collection
       const feedbackPath = `users/${user.id}/feedback`;
       
-      // Get recent feedback that was liked, limited to 20 documents
-      // This limits the data we need to process
-      // Don't use where/orderBy combination since it requires a composite index
+      console.log(`Looking for feedback insights in Firestore at: ${feedbackPath}`);
+      
+      // Get recent feedback documents, limited to 30 documents to ensure we find matches
+      // We'll filter for liked=true in memory to avoid composite index requirements
       const feedbackRef = query(
         collection(firestore, feedbackPath),
-        limit(20)
+        limit(30)
       );
       
       const feedbackSnap = await getDocs(feedbackRef);
