@@ -6,7 +6,7 @@
  * for collaborative sessions.
  */
 
-import { getFirestore, collection, getDocs, doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from './firebase-admin';
 
 // Type definitions for new Firestore collections
 export interface WatchlistRating {
@@ -48,17 +48,12 @@ const PREFERENCE_WEIGHTS = {
  */
 export async function fetchWatchlistRatings(userId: string): Promise<Record<string, WatchlistRating>> {
   try {
-    const firestore = getFirestore();
-    if (!firestore) {
-      throw new Error("Firestore not initialized");
-    }
-
     const ratingsPath = `users/${userId}/watchlistRatings`;
-    const ratingsRef = collection(firestore, ratingsPath);
-    const snapshot = await getDocs(ratingsRef);
+    const ratingsRef = db.collection(ratingsPath);
+    const snapshot = await ratingsRef.get();
 
     const ratings: Record<string, WatchlistRating> = {};
-    snapshot.forEach(doc => {
+    snapshot.forEach((doc: any) => {
       const data = doc.data();
       ratings[doc.id] = {
         rating: data.rating,
@@ -81,17 +76,12 @@ export async function fetchWatchlistRatings(userId: string): Promise<Record<stri
  */
 export async function fetchRecommendationFeedback(userId: string): Promise<Record<string, RecommendationFeedback>> {
   try {
-    const firestore = getFirestore();
-    if (!firestore) {
-      throw new Error("Firestore not initialized");
-    }
-
     const feedbackPath = `users/${userId}/recommendationFeedback`;
-    const feedbackRef = collection(firestore, feedbackPath);
-    const snapshot = await getDocs(feedbackRef);
+    const feedbackRef = db.collection(feedbackPath);
+    const snapshot = await feedbackRef.get();
 
     const feedback: Record<string, RecommendationFeedback> = {};
-    snapshot.forEach(doc => {
+    snapshot.forEach((doc: any) => {
       const data = doc.data();
       feedback[doc.id] = {
         liked: data.liked,
@@ -114,14 +104,9 @@ export async function fetchRecommendationFeedback(userId: string): Promise<Recor
  */
 export async function fetchOnboardingRatings(userId: string): Promise<Record<string, number>> {
   try {
-    const firestore = getFirestore();
-    if (!firestore) {
-      throw new Error("Firestore not initialized");
-    }
-
     const ratingsPath = `users/${userId}/ratings/onboarding`;
-    const ratingsDoc = doc(firestore, ratingsPath);
-    const snapshot = await getDoc(ratingsDoc);
+    const ratingsDoc = db.doc(ratingsPath);
+    const snapshot = await ratingsDoc.get();
 
     if (!snapshot.exists()) {
       console.log(`No onboarding ratings found for user ${userId}`);
