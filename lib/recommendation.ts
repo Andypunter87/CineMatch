@@ -9,6 +9,16 @@
 // Use the existing Firebase admin setup from server
 import { getFirestoreDb } from '../server/firebase-admin';
 
+// Helper function to get Firestore database
+const getDb = () => {
+  const db = getFirestoreDb();
+  if (!db) {
+    console.log('Firestore not available for enhanced recommendations');
+    return null;
+  }
+  return db;
+};
+
 // Type definitions for new Firestore collections
 export interface WatchlistRating {
   rating: number;
