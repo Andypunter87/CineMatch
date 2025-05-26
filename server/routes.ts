@@ -561,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 10;
       
       // Verify user can access this profile
-      if (req.user.id.toString() !== userId && !req.user.is_admin) {
+      if (req.user!.id.toString() !== userId && !req.user!.isAdmin) {
         return res.status(403).json({ message: 'Access denied' });
       }
       
@@ -608,7 +608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { userId } = req.params;
       
       // Verify user can cache this profile
-      if (req.user.id.toString() !== userId && !req.user.is_admin) {
+      if (req.user!.id.toString() !== userId && !req.user!.isAdmin) {
         return res.status(403).json({ message: 'Access denied' });
       }
       
