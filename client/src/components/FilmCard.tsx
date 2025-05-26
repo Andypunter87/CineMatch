@@ -94,6 +94,20 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
       });
     }
   }, [film, user, isOnboarding, getFilmInsight]);
+
+  // Load enhanced insights for better "Because you liked X" badges
+  useEffect(() => {
+    if (user && film && !isOnboarding && hasPreferenceData) {
+      getInsightForFilm(film).then(result => {
+        if (result) {
+          setEnhancedInsight(result);
+          console.log('Enhanced insight loaded:', result.reason);
+        }
+      }).catch(error => {
+        console.error("Error loading enhanced insight:", error);
+      });
+    }
+  }, [film, user, isOnboarding, hasPreferenceData, getInsightForFilm]);
   
   // Update state whenever watchlist items change
   useEffect(() => {
