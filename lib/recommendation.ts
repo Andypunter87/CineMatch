@@ -6,7 +6,11 @@
  * for collaborative sessions.
  */
 
-import { db } from './firebase-admin';
+// Use the existing Firebase admin setup from server
+import { getFirestoreDb } from '../server/firebase-admin';
+
+// Get database instance
+const getDb = () => getFirestoreDb();
 
 // Type definitions for new Firestore collections
 export interface WatchlistRating {
@@ -140,17 +144,12 @@ export async function fetchOnboardingRatings(userId: string): Promise<Record<str
  */
 export async function fetchFriends(userId: string): Promise<Record<string, Friend>> {
   try {
-    const firestore = getFirestore();
-    if (!firestore) {
-      throw new Error("Firestore not initialized");
-    }
-
     const friendsPath = `users/${userId}/friends`;
-    const friendsRef = collection(firestore, friendsPath);
-    const snapshot = await getDocs(friendsRef);
+    const friendsRef = db.collection(friendsPath);
+    const snapshot = await friendsRef.get();
 
     const friends: Record<string, Friend> = {};
-    snapshot.forEach(doc => {
+    snapshot.forEach((doc: any) => {
       const data = doc.data();
       friends[doc.id] = {
         displayName: data.displayName,
@@ -173,17 +172,12 @@ export async function fetchFriends(userId: string): Promise<Record<string, Frien
  */
 export async function fetchSessions(userId: string): Promise<Record<string, Session>> {
   try {
-    const firestore = getFirestore();
-    if (!firestore) {
-      throw new Error("Firestore not initialized");
-    }
-
     const sessionsPath = `users/${userId}/sessions`;
-    const sessionsRef = collection(firestore, sessionsPath);
-    const snapshot = await getDocs(sessionsRef);
+    const sessionsRef = db.collection(sessionsPath);
+    const snapshot = await sessionsRef.get();
 
     const sessions: Record<string, Session> = {};
-    snapshot.forEach(doc => {
+    snapshot.forEach((doc: any) => {
       const data = doc.data();
       sessions[doc.id] = {
         members: data.members || [],

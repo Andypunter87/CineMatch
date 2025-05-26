@@ -8,8 +8,9 @@
 import * as admin from 'firebase-admin';
 
 // Initialize Firebase Admin SDK if not already initialized
-if (!admin.apps.length) {
-  try {
+try {
+  // Check if admin is available and has apps property
+  if (!admin.apps || admin.apps.length === 0) {
     const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_CREDENTIALS || '{}');
     
     admin.initializeApp({
@@ -18,10 +19,10 @@ if (!admin.apps.length) {
     });
     
     console.log('Firebase Admin SDK initialized for enhanced recommendations');
-  } catch (error) {
-    console.error('Failed to initialize Firebase Admin SDK:', error);
-    throw new Error('Firebase Admin SDK initialization failed');
   }
+} catch (error) {
+  console.error('Failed to initialize Firebase Admin SDK:', error);
+  // Use the existing admin instance from server/firebase-admin.ts
 }
 
 // Export Firestore database instance
