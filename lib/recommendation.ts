@@ -99,9 +99,22 @@ export async function fetchRecommendationFeedback(userId: string): Promise<Recor
     snapshot.forEach((doc: any) => {
       const data = doc.data();
       if (data) {
+        // Handle both Firestore Timestamp objects and ISO string timestamps
+        let timestamp: Date;
+        if (data.timestamp?.toDate) {
+          // Firestore Timestamp object
+          timestamp = data.timestamp.toDate();
+        } else if (typeof data.timestamp === 'string') {
+          // ISO string timestamp
+          timestamp = new Date(data.timestamp);
+        } else {
+          // Fallback to current time
+          timestamp = new Date();
+        }
+        
         feedback[doc.id] = {
           liked: data.liked,
-          timestamp: data.timestamp?.toDate() || new Date(data.timestamp)
+          timestamp: timestamp
         };
         console.log(`📊 FEEDBACK FOUND: Film ${doc.id} - ${data.liked ? 'LIKED' : 'DISLIKED'} "${data.filmTitle || 'Unknown'}"`);
       }
