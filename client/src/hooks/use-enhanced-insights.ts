@@ -33,7 +33,7 @@ export function useEnhancedInsights() {
   const [insights, setInsights] = useState<EnhancedInsightResult>({});
 
   // Get user's preference profile from enhanced API
-  const { data: userProfile, isLoading: profileLoading } = useQuery({
+  const { data: userProfile, isLoading: profileLoading } = useQuery<{profile: Record<string, number>}>({
     queryKey: [`/api/enhanced/user-profile/${user?.id}`],
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
@@ -41,7 +41,7 @@ export function useEnhancedInsights() {
   });
 
   // Get top recommendations to understand user's strong preferences
-  const { data: topRecommendations, isLoading: topLoading } = useQuery({
+  const { data: topRecommendations, isLoading: topLoading } = useQuery<{recommendations: any[]}>({
     queryKey: [`/api/enhanced/top-recommendations/${user?.id}`],
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000,
@@ -52,13 +52,13 @@ export function useEnhancedInsights() {
    * Generate insights for a list of films using enhanced preference data
    */
   const getInsightsForFilms = async (films: Film[]): Promise<EnhancedInsightResult> => {
-    if (!user || !userProfile?.profile || !topRecommendations?.recommendations) {
+    if (!user || !userProfile || !topRecommendations) {
       return {};
     }
 
     const newInsights: EnhancedInsightResult = {};
-    const userPrefs = userProfile.profile;
-    const topRatedFilms = topRecommendations.recommendations;
+    const userPrefs = (userProfile as any).profile || {};
+    const topRatedFilms = (topRecommendations as any).recommendations || [];
 
     console.log('Generating enhanced insights for films using preference profile');
 
@@ -79,7 +79,7 @@ export function useEnhancedInsights() {
       }
 
       // Look for similar films in top rated list
-      const similarFilm = topRatedFilms.find(topFilm => {
+      const similarFilm = topRatedFilms.find((topFilm: any) => {
         if (!film.genres || !topFilm.genres) return false;
         
         // Check for genre overlap
@@ -159,10 +159,10 @@ export function useCollaborativeInsights(friendUserId?: string) {
    * Generate collaborative insights based on blended preferences
    */
   const getCollaborativeInsights = async (films: Film[]): Promise<EnhancedInsightResult> => {
-    if (!blendedProfile?.blendedProfile) return {};
+    if (!blendedProfile) return {};
 
     const insights: EnhancedInsightResult = {};
-    const blendedPrefs = blendedProfile.blendedProfile;
+    const blendedPrefs = (blendedProfile as any).blendedProfile || {};
 
     films.forEach(film => {
       if (!film.id) return;
@@ -184,6 +184,6 @@ export function useCollaborativeInsights(friendUserId?: string) {
   return {
     getCollaborativeInsights,
     isLoading,
-    hasBlendedData: !!blendedProfile?.blendedProfile
+    hasBlendedData: !!(blendedProfile as any)?.blendedProfile
   };
 }

@@ -13,6 +13,7 @@ import { trackEvent, AnalyticsEvents } from "@/lib/analytics";
 import { useFilmFeedbackFirestore } from "@/hooks/use-film-feedback-firestore";
 import { useWatchlistFirestore } from "@/hooks/use-watchlist-firestore";
 import { useFeedbackInsight, FilmInsight } from "@/hooks/use-feedback-insight";
+import { useEnhancedInsights, EnhancedFilmInsight } from "@/hooks/use-enhanced-insights";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Extend the RecommendationRequest type to include isOnboarding flag
@@ -41,6 +42,10 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
   // Feedback insight hook for personalized UI nudges
   const { getFilmInsight } = useFeedbackInsight();
   const [insight, setInsight] = useState<FilmInsight | null>(null);
+  
+  // Enhanced insights hook for improved "Because you liked X" badges
+  const { getInsightForFilm, hasPreferenceData } = useEnhancedInsights();
+  const [enhancedInsight, setEnhancedInsight] = useState<EnhancedFilmInsight | null>(null);
   
   // Use react-query to manage watchlist state instead of direct fetch
   const { data: watchlistItems = [] } = useQuery<any[]>({
