@@ -138,48 +138,54 @@ export function useFeedbackInsight() {
         
         
         // Default confidence and match reason
-        let confidence = 0.5;
+        let confidence = 0;
         let matchReason = 'liked';
+        let hasValidConnection = false;
         
-        // Check for genre match if we have genre data
+        // Check for genre match if we have genre data - require at least 2 shared genres for strong connection
         if (film.genres && film.genres.length > 0 && feedbackData.genres && feedbackData.genres.length > 0) {
           // Find overlapping genres
           const filmGenres = film.genres;
           const feedbackGenres = feedbackData.genres;
           
-          // Check for any genre overlap
+          // Check for genre overlap
           const overlappingGenres = feedbackGenres.filter((genre: string) => 
             typeof genre === 'string' && filmGenres.includes(genre)
           );
           
-          if (overlappingGenres.length > 0) {
-            // Boost confidence based on genre matches
+          if (overlappingGenres.length >= 2) {
+            // Strong genre match - require at least 2 shared genres
             confidence = Math.min(
               0.9, // Cap at 0.9
-              0.5 + (0.1 * overlappingGenres.length) // Base 0.5 + 0.1 per match
+              0.6 + (0.1 * overlappingGenres.length) // Base 0.6 + 0.1 per match
             );
             matchReason = 'genre';
+            hasValidConnection = true;
+          } else if (overlappingGenres.length === 1) {
+            // Weak genre match - only show if it's a very specific genre
+            const specificGenres = ['Documentary', 'Animation', 'Musical', 'Western', 'Horror'];
+            if (specificGenres.some(genre => overlappingGenres.includes(genre))) {
+              confidence = 0.7;
+              matchReason = 'genre';
+              hasValidConnection = true;
+            }
           }
         }
         
-        // Check if we have mood data in the feedback
-        if (feedbackData.moodContext) {
-          // If the film has a matchReason containing "mood", it's likely a mood-based match
-          if (film.matchReason?.includes('mood')) {
-            confidence = Math.max(confidence, 0.8);
-            matchReason = 'mood';
-          }
-        }
+        // Check for director/cast connections (if available in future)
+        // This would be a strong indicator for "Because you liked X"
         
-        // Create insight with appropriate confidence level
-        insights.push({
-          type: 'positive',
-          message: `We think you'll love this`,
-          relatedFilmId: feedbackData.filmId,
-          relatedFilmTitle: feedbackData.title,
-          confidence,
-          matchReason
-        });
+        // Only create insight if we have a valid connection
+        if (hasValidConnection && confidence > 0.6) {
+          insights.push({
+            type: 'positive',
+            message: `We think you'll love this`,
+            relatedFilmId: feedbackData.filmId,
+            relatedFilmTitle: feedbackData.title,
+            confidence,
+            matchReason
+          });
+        }
       });
       
       // Sort by confidence and return the best match
