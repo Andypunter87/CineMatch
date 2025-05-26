@@ -171,33 +171,9 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
           return { success: true, feedbackSaved: true, source: 'firestore-only' };
         }
       } else {
-        // Regular recommendation feedback - Save to both Firestore and SQL
+        // Regular recommendation feedback - Save via API endpoint
         
-        // First store to Firestore if user is logged in (to ensure this completes even if API fails)
-        if (user) {
-          try {
-            await filmFeedback.saveFilmFeedback(
-              user.id,
-              film.id,
-              {
-                filmId: film.id,
-                title: film.title,
-                liked: feedback === 'like',
-                timestamp: new Date().toISOString(),
-                moodContext: recommendationContext?.mood || null,
-                runtimePreference: recommendationContext?.runtime || null,
-                recommendationContext: recommendationContext 
-                  ? { ...recommendationContext } 
-                  : null
-              }
-            );
-          } catch (error) {
-            console.error("Error saving feedback to Firestore:", error);
-            // Don't throw - we'll continue with the API call
-          }
-        }
-        
-        // Then call the API endpoint
+        // Call the API endpoint
         try {
           const res = await apiRequest("POST", "/api/feedback", {
             filmId: film.id,
