@@ -359,15 +359,21 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
   // Wait for all enhancements to complete
   const enhancedRecommendations = await Promise.all(enhancedRecommendationsPromises);
   
+  // CRITICAL: Process streaming availability for every film regardless of cache source
+  console.log(`🎬 STREAMING PROCESSOR: Processing ${enhancedRecommendations.length} films for user streaming availability`);
+  const streamingProcessedRecommendations = enhancedRecommendations.map(film => {
+    return processStreamingAvailability(film, preferences);
+  });
+  
   // Filter recommendations based on runtime preferences if specified
-  let filteredRecommendations = enhancedRecommendations;
+  let filteredRecommendations = streamingProcessedRecommendations;
   
   if (preferences.runtime && preferences.runtime.length > 0) {
     filteredRecommendations = filterRecommendationsByRuntime(
-      enhancedRecommendations,
+      streamingProcessedRecommendations,
       preferences.runtime as Array<"short" | "medium" | "long">
     );
-    console.log(`Filtered ${enhancedRecommendations.length} recommendations to ${filteredRecommendations.length} based on runtime preferences`);
+    console.log(`Filtered ${streamingProcessedRecommendations.length} recommendations to ${filteredRecommendations.length} based on runtime preferences`);
   }
   
   // Report how long this took (for performance monitoring)
@@ -375,6 +381,100 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
   console.log(`Enhanced recommendations generated in ${endTime - startTime}ms`);
   
   return filteredRecommendations;
+}
+
+/**
+ * Dedicated streaming availability processor that runs for EVERY film
+ * regardless of cache source to ensure current user's services are properly matched
+ */
+function processStreamingAvailability(film: any, preferences: UserPreferences): any {
+  let availableOn: string[] = [];
+  
+  console.log(`🎬 STREAMING PROCESSOR for "${film.title}":`, {
+    hasStreamingData: !!film.availableStreamingByCountry,
+    userCountry: preferences.country,
+    userServices: preferences.streamingServices,
+    filmType: film.source || 'unknown'
+  });
+  
+  if (film.availableStreamingByCountry && preferences.streamingServices && preferences.country) {
+    const countryServices = film.availableStreamingByCountry[preferences.country.toUpperCase()] || [];
+    
+    console.log(`🎬 RAW TMDB SERVICES for "${film.title}":`, {
+      country: preferences.country.toUpperCase(),
+      tmdbServices: countryServices,
+      tmdbCount: countryServices.length
+    });
+    
+    // Apply comprehensive service name mapping
+    availableOn = countryServices.filter((service: string) =>
+      preferences.streamingServices?.some(userService => {
+        const tmdbToInternalMapping: Record<string, string[]> = {
+          'netflix': ['netflix'],
+          'amazon video': ['amazonprime', 'amazon'],
+          'amazon prime video': ['amazonprime', 'amazon'],
+          'prime video': ['amazonprime', 'amazon'],
+          'disney+': ['disneyplus', 'disney'],
+          'disney plus': ['disneyplus', 'disney'],
+          'hbo max': ['hbo', 'hbomax'],
+          'hbo': ['hbo', 'hbomax'],
+          'paramount+': ['paramountplus', 'paramount'],
+          'paramount plus': ['paramountplus', 'paramount'],
+          'apple tv+': ['appletvplus', 'apple'],
+          'apple tv': ['appletvplus', 'apple'],
+          'hulu': ['hulu'],
+          'bbc iplayer': ['bbciplayer', 'bbc'],
+          'iplayer': ['bbciplayer', 'bbc'],
+          'mubi': ['mubi'],
+          'sky go': ['sky', 'skygo'],
+          'now tv': ['nowtv', 'now'],
+          'now tv cinema': ['nowtv', 'now']
+        };
+        
+        const serviceLower = service.toLowerCase();
+        const userServiceLower = userService.toLowerCase();
+        
+        // Check comprehensive mapping
+        for (const [tmdbName, internalNames] of Object.entries(tmdbToInternalMapping)) {
+          if (serviceLower.includes(tmdbName) || tmdbName.includes(serviceLower)) {
+            if (internalNames.includes(userServiceLower)) {
+              console.log(`✅ MATCHED: "${service}" (TMDB) → "${userService}" (User) via "${tmdbName}"`);
+              return true;
+            }
+          }
+        }
+        
+        // Fallback matching
+        const isMatch = serviceLower === userServiceLower || 
+               serviceLower.includes(userServiceLower) || 
+               userServiceLower.includes(serviceLower);
+        
+        if (isMatch) {
+          console.log(`✅ FALLBACK MATCH: "${service}" (TMDB) → "${userService}" (User)`);
+        }
+        
+        return isMatch;
+      })
+    );
+    
+    console.log(`🎬 FINAL RESULT for "${film.title}":`, {
+      availableOnCount: availableOn.length,
+      availableServices: availableOn,
+      willShowBadges: availableOn.length > 0
+    });
+  } else {
+    const missingItems = [];
+    if (!film.availableStreamingByCountry) missingItems.push('streaming data');
+    if (!preferences.streamingServices) missingItems.push('user services');
+    if (!preferences.country) missingItems.push('user country');
+    
+    console.log(`🎬 NO STREAMING PROCESSING for "${film.title}" - Missing: ${missingItems.join(', ')}`);
+  }
+  
+  return {
+    ...film,
+    availableOn // Always update with processed availability
+  };
 }
 
 /**
