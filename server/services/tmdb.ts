@@ -378,7 +378,14 @@ export async function convertTMDBMovieToFilm(movie: TMDBMovie | TMDBMovieDetails
     }
     
     try {
+      console.log(`🎬 FETCHING TMDB STREAMING DATA for "${movie.title}" (ID: ${movie.id})`);
       watchProviders = await getMovieWatchProviders(movie.id);
+      console.log(`🎬 TMDB RAW RESPONSE for "${movie.title}":`, {
+        id: watchProviders.id,
+        resultsCount: Object.keys(watchProviders.results || {}).length,
+        countries: Object.keys(watchProviders.results || {}),
+        ukData: watchProviders.results?.GB || 'NO UK DATA'
+      });
     } catch (error) {
       console.error(`Error getting watch providers for ${movie.title}:`, error);
       watchProviders = { id: movie.id, results: {} };
@@ -401,7 +408,8 @@ export async function convertTMDBMovieToFilm(movie: TMDBMovie | TMDBMovieDetails
     
     Object.entries(watchProviders.results || {}).forEach(([countryCode, providers]) => {
       const streamingServices = providers.flatrate || [];
-      availableStreamingByCountry[countryCode.toLowerCase()] = streamingServices.map(service => service.provider_name);
+      // Keep country codes in UPPERCASE to match our system expectations (UK, US, etc.)
+      availableStreamingByCountry[countryCode.toUpperCase()] = streamingServices.map(service => service.provider_name);
     });
     
     // Determine if this is an indie film based on various factors
