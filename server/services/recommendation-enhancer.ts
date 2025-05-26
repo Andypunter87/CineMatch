@@ -139,37 +139,54 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
             preferences.country && tmdbFilm.availableStreamingByCountry) {
           // Get available services in user's country
           const countrySvcs = tmdbFilm.availableStreamingByCountry[preferences.country] || [];
+          console.log(`🎬 STREAMING DEBUG for "${film.title}":`, {
+            userCountry: preferences.country,
+            userServices: preferences.streamingServices,
+            tmdbServices: countrySvcs
+          });
           
           // Filter to only include services the user has selected
           availableOn = countrySvcs.filter(service => 
             preferences.streamingServices?.some(userService => {
-              // Normalize service names for comparison
-              const normalizedService = service.toLowerCase()
-                .replace('netflix', 'netflix')
-                .replace('amazon', 'amazon')
-                .replace('prime', 'amazon')
-                .replace('hbo', 'hbo')
-                .replace('disney+', 'disney')
-                .replace('disneyplus', 'disney')
-                .replace('apple', 'apple')
-                .replace('appletvplus', 'apple')
-                .replace('hulu', 'hulu')
-                .replace('paramount+', 'paramount')
-                .replace('paramountplus', 'paramount')
-                .replace('bbc', 'bbc')
-                .replace('bbciplayer', 'bbc')
-                .replace('mubi', 'mubi');
+              // Create comprehensive mapping between TMDB provider names and our internal service names
+              const tmdbToInternalMapping: Record<string, string[]> = {
+                'netflix': ['netflix'],
+                'amazon video': ['amazonprime', 'amazon'],
+                'amazon prime video': ['amazonprime', 'amazon'],
+                'prime video': ['amazonprime', 'amazon'],
+                'disney+': ['disneyplus', 'disney'],
+                'disney plus': ['disneyplus', 'disney'],
+                'hbo max': ['hbo', 'hbomax'],
+                'hbo': ['hbo', 'hbomax'],
+                'paramount+': ['paramountplus', 'paramount'],
+                'paramount plus': ['paramountplus', 'paramount'],
+                'apple tv+': ['appletvplus', 'apple'],
+                'apple tv': ['appletvplus', 'apple'],
+                'hulu': ['hulu'],
+                'bbc iplayer': ['bbciplayer', 'bbc'],
+                'iplayer': ['bbciplayer', 'bbc'],
+                'mubi': ['mubi'],
+                'sky go': ['sky', 'skygo'],
+                'now tv': ['nowtv', 'now'],
+                'now tv cinema': ['nowtv', 'now']
+              };
               
-              const normalizedUserService = userService.toLowerCase();
+              const serviceLower = service.toLowerCase();
+              const userServiceLower = userService.toLowerCase();
               
-              // Check for exact matches in normalized names first
-              if (normalizedService === normalizedUserService) {
-                return true;
+              // Check if TMDB service name maps to any of our internal service names
+              for (const [tmdbName, internalNames] of Object.entries(tmdbToInternalMapping)) {
+                if (serviceLower.includes(tmdbName) || tmdbName.includes(serviceLower)) {
+                  if (internalNames.includes(userServiceLower)) {
+                    return true;
+                  }
+                }
               }
               
-              // Then check if one contains the other as a fallback for unusual service names
-              return normalizedService.includes(normalizedUserService) || 
-                     normalizedUserService.includes(normalizedService);
+              // Fallback: direct string matching for any services not in our mapping
+              return serviceLower === userServiceLower || 
+                     serviceLower.includes(userServiceLower) || 
+                     userServiceLower.includes(serviceLower);
             })
           );
         }
