@@ -496,6 +496,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced recommendation endpoints using the new preference logic
+  
+  // Get user preference profile
+  app.get('/api/enhanced/user-profile/:userId', isAuthenticated, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Verify user can access this profile (only their own or admin)
+      if (req.user!.id.toString() !== userId && !req.user!.isAdmin) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      // Import the recommendation functions dynamically
+      const { getUserPreferenceProfile } = await import('../lib/recommendation.js');
+      
+      const profile = await getUserPreferenceProfile(userId);
+      
+      res.json({
+        userId,
+        profile,
+        movieCount: Object.keys(profile).length,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error getting user preference profile:', error);
+      res.status(500).json({ message: 'Failed to get preference profile' });
+    }
+  });
+
+  // Get blended session profile for two users
+  app.get('/api/enhanced/session-profile/:userIdA/:userIdB', isAuthenticated, async (req, res) => {
+    try {
+      const { userIdA, userIdB } = req.params;
+      
+      // Verify user can access these profiles (must be one of the users or admin)
+      const currentUserId = req.user!.id.toString();
+      if (currentUserId !== userIdA && currentUserId !== userIdB && !req.user!.isAdmin) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      // Import the recommendation functions dynamically
+      const { getBlendedSessionProfile } = await import('../lib/recommendation.js');
+      
+      const blendedProfile = await getBlendedSessionProfile(userIdA, userIdB);
+      
+      res.json({
+        userIdA,
+        userIdB,
+        blendedProfile,
+        movieCount: Object.keys(blendedProfile).length,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error getting blended session profile:', error);
+      res.status(500).json({ message: 'Failed to get blended session profile' });
+    }
+  });
+
+  // Get top recommendations from a user's profile
+  app.get('/api/enhanced/top-recommendations/:userId', isAuthenticated, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      // Verify user can access this profile
+      if (req.user.id.toString() !== userId && !req.user.is_admin) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      // Import the recommendation functions dynamically
+      const { getUserPreferenceProfile, getTopRecommendations } = await import('../lib/recommendation.js');
+      
+      const profile = await getUserPreferenceProfile(userId);
+      const topMovieIds = getTopRecommendations(profile, limit);
+      
+      // Get film details for the top recommendations
+      const filmDetails = await Promise.all(
+        topMovieIds.map(async (movieId) => {
+          try {
+            const film = await storage.getFilmById(parseInt(movieId));
+            return film ? { 
+              ...film, 
+              preferenceScore: profile[movieId] 
+            } : null;
+          } catch (error) {
+            console.error(`Error getting film ${movieId}:`, error);
+            return null;
+          }
+        })
+      );
+      
+      // Filter out null results
+      const validFilms = filmDetails.filter(film => film !== null);
+      
+      res.json({
+        userId,
+        recommendations: validFilms,
+        totalMoviesInProfile: Object.keys(profile).length,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error getting top recommendations:', error);
+      res.status(500).json({ message: 'Failed to get top recommendations' });
+    }
+  });
+
+  // Cache a user's preference profile
+  app.post('/api/enhanced/cache-profile/:userId', isAuthenticated, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Verify user can cache this profile
+      if (req.user.id.toString() !== userId && !req.user.is_admin) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      // Import the recommendation functions dynamically
+      const { getUserPreferenceProfile, cachePreferenceProfile } = await import('../lib/recommendation.js');
+      
+      const profile = await getUserPreferenceProfile(userId);
+      const success = await cachePreferenceProfile(userId, profile);
+      
+      if (success) {
+        res.json({
+          message: 'Profile cached successfully',
+          userId,
+          movieCount: Object.keys(profile).length,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(500).json({ message: 'Failed to cache profile' });
+      }
+    } catch (error) {
+      console.error('Error caching preference profile:', error);
+      res.status(500).json({ message: 'Failed to cache preference profile' });
+    }
+  });
+
   // Get list of available streaming services 
   app.get('/api/streaming-services', (req, res) => {
     // List of popular streaming services
