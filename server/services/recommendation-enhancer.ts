@@ -179,21 +179,11 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
             });
           }
 
-          // Always ensure streaming availability is processed for current user
-          const finalFilm = {
+          return {
             ...cachedFilm,
             availableOn, // Update with current user's available services
             source
           };
-          
-          console.log(`🎬 FINAL STREAMING for "${finalFilm.title}":`, {
-            availableOn: finalFilm.availableOn,
-            hasData: !!finalFilm.availableStreamingByCountry,
-            userCountry: preferences.country,
-            userServices: preferences.streamingServices
-          });
-          
-          return finalFilm;
         }
         
         // If cache has expired, remove it
@@ -362,7 +352,72 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
   // CRITICAL: Process streaming availability for every film regardless of cache source
   console.log(`🎬 STREAMING PROCESSOR: Processing ${enhancedRecommendations.length} films for user streaming availability`);
   const streamingProcessedRecommendations = enhancedRecommendations.map(film => {
-    return processStreamingAvailability(film, preferences);
+    let availableOn: string[] = [];
+    
+    console.log(`🎬 STREAMING PROCESSOR for "${film.title}":`, {
+      hasStreamingData: !!film.availableStreamingByCountry,
+      userCountry: preferences.country,
+      userServices: preferences.streamingServices,
+      filmType: film.source || 'unknown'
+    });
+    
+    if (film.availableStreamingByCountry && preferences.streamingServices && preferences.country) {
+      const countryServices = film.availableStreamingByCountry[preferences.country.toUpperCase()] || [];
+      
+      console.log(`🎬 RAW TMDB SERVICES for "${film.title}":`, {
+        country: preferences.country.toUpperCase(),
+        tmdbServices: countryServices,
+        tmdbCount: countryServices.length
+      });
+      
+      // Apply comprehensive service name mapping
+      availableOn = countryServices.filter((service: string) =>
+        preferences.streamingServices?.some(userService => {
+          const serviceLower = service.toLowerCase();
+          const userServiceLower = userService.toLowerCase();
+          
+          // Check if Netflix matches
+          if (serviceLower.includes('netflix') && userServiceLower === 'netflix') {
+            console.log(`✅ MATCHED: "${service}" (TMDB) → "${userService}" (User) - Netflix`);
+            return true;
+          }
+          
+          // Check if Amazon Prime matches
+          if ((serviceLower.includes('amazon') || serviceLower.includes('prime')) && 
+              (userServiceLower === 'amazonprime' || userServiceLower === 'amazon')) {
+            console.log(`✅ MATCHED: "${service}" (TMDB) → "${userService}" (User) - Amazon`);
+            return true;
+          }
+          
+          // Check if Disney+ matches
+          if (serviceLower.includes('disney') && 
+              (userServiceLower === 'disneyplus' || userServiceLower === 'disney')) {
+            console.log(`✅ MATCHED: "${service}" (TMDB) → "${userService}" (User) - Disney`);
+            return true;
+          }
+          
+          return false;
+        })
+      );
+      
+      console.log(`🎬 FINAL RESULT for "${film.title}":`, {
+        availableOnCount: availableOn.length,
+        availableServices: availableOn,
+        willShowBadges: availableOn.length > 0
+      });
+    } else {
+      const missingItems = [];
+      if (!film.availableStreamingByCountry) missingItems.push('streaming data');
+      if (!preferences.streamingServices) missingItems.push('user services');
+      if (!preferences.country) missingItems.push('user country');
+      
+      console.log(`🎬 NO STREAMING PROCESSING for "${film.title}" - Missing: ${missingItems.join(', ')}`);
+    }
+    
+    return {
+      ...film,
+      availableOn // Always update with processed availability
+    };
   });
   
   // Filter recommendations based on runtime preferences if specified
