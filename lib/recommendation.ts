@@ -59,6 +59,9 @@ const PREFERENCE_WEIGHTS = {
  */
 export async function fetchWatchlistRatings(userId: string): Promise<Record<string, WatchlistRating>> {
   try {
+    const db = getDb();
+    if (!db) return {};
+    
     const ratingsPath = `users/${userId}/watchlistRatings`;
     const ratingsRef = db.collection(ratingsPath);
     const snapshot = await ratingsRef.get();
@@ -87,6 +90,9 @@ export async function fetchWatchlistRatings(userId: string): Promise<Record<stri
  */
 export async function fetchRecommendationFeedback(userId: string): Promise<Record<string, RecommendationFeedback>> {
   try {
+    const db = getDb();
+    if (!db) return {};
+    
     const feedbackPath = `users/${userId}/recommendationFeedback`;
     const feedbackRef = db.collection(feedbackPath);
     const snapshot = await feedbackRef.get();
@@ -115,6 +121,9 @@ export async function fetchRecommendationFeedback(userId: string): Promise<Recor
  */
 export async function fetchOnboardingRatings(userId: string): Promise<Record<string, number>> {
   try {
+    const db = getDb();
+    if (!db) return {};
+    
     const ratingsPath = `users/${userId}/ratings/onboarding`;
     const ratingsDoc = db.doc(ratingsPath);
     const snapshot = await ratingsDoc.get();
@@ -151,6 +160,9 @@ export async function fetchOnboardingRatings(userId: string): Promise<Record<str
  */
 export async function fetchFriends(userId: string): Promise<Record<string, Friend>> {
   try {
+    const db = getDb();
+    if (!db) return {};
+    
     const friendsPath = `users/${userId}/friends`;
     const friendsRef = db.collection(friendsPath);
     const snapshot = await friendsRef.get();
@@ -179,6 +191,9 @@ export async function fetchFriends(userId: string): Promise<Record<string, Frien
  */
 export async function fetchSessions(userId: string): Promise<Record<string, Session>> {
   try {
+    const db = getDb();
+    if (!db) return {};
+    
     const sessionsPath = `users/${userId}/sessions`;
     const sessionsRef = db.collection(sessionsPath);
     const snapshot = await sessionsRef.get();
