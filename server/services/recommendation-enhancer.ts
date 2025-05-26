@@ -453,25 +453,36 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       
       if (services && Array.isArray(services)) {
         console.log(`${film.title} has ${services.length} services in ${countryKey}: ${services.join(', ')}`);
+        console.log(`User streaming services: ${preferences.streamingServices?.join(', ')}`);
         
         // Check each service
         for (const service of services) {
           const serviceName = service.toLowerCase();
+          console.log(`Checking service: "${service}" (lowercase: "${serviceName}")`);
           
           // Netflix check
-          if (serviceName.includes('netflix') && preferences.streamingServices?.includes('netflix')) {
-            if (!film.availableOn.includes('Netflix')) {
-              film.availableOn.push('Netflix');
-              console.log(`Added Netflix to ${film.title}`);
+          if (serviceName.includes('netflix')) {
+            console.log(`Found Netflix service: ${service}`);
+            if (preferences.streamingServices?.includes('netflix')) {
+              if (!film.availableOn.includes('Netflix')) {
+                film.availableOn.push('Netflix');
+                console.log(`✅ Added Netflix to ${film.title}`);
+              }
+            } else {
+              console.log(`User doesn't have netflix in their services`);
             }
           }
           
           // Amazon check  
-          if ((serviceName.includes('amazon') || serviceName.includes('prime')) && 
-              preferences.streamingServices?.some(us => us.toLowerCase().includes('amazon'))) {
-            if (!film.availableOn.includes('Amazon Prime Video')) {
-              film.availableOn.push('Amazon Prime Video');
-              console.log(`Added Amazon Prime to ${film.title}`);
+          if (serviceName.includes('amazon') || serviceName.includes('prime')) {
+            console.log(`Found Amazon/Prime service: ${service}`);
+            if (preferences.streamingServices?.some(us => us.toLowerCase().includes('amazon'))) {
+              if (!film.availableOn.includes('Amazon Prime Video')) {
+                film.availableOn.push('Amazon Prime Video');
+                console.log(`✅ Added Amazon Prime to ${film.title}`);
+              }
+            } else {
+              console.log(`User doesn't have amazon in their services`);
             }
           }
         }
