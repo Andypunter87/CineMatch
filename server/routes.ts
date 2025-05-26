@@ -634,6 +634,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Handle user feedback on recommendations (for "Because you liked X" feature)
+  app.post('/api/feedback', isAuthenticated, async (req, res) => {
+    try {
+      const { filmId, filmTitle, feedback, recommendationContext } = req.body;
+      const userId = req.user!.id;
+      
+      console.log(`Saving feedback for user ${userId}: film ${filmId} (${filmTitle}) - ${feedback}`);
+      
+      // Import Firebase admin to save to Firestore
+      const { getFirestoreDb } = await import('./firebase-admin.js');
+      const db = getFirestoreDb();
+      
+      if (!db) {
+        console.error('Firestore not available for saving feedback');
+        return res.status(500).json({ message: 'Database not available' });
+      }
+      
+      // Save to Firestore recommendationFeedback collection
+      const feedbackPath = `users/${userId}/recommendationFeedback/${filmId}`;
+      const feedbackData = {
+        liked: feedback === 'like',
+        timestamp: new Date().toISOString(),
+        filmTitle: filmTitle || 'Unknown',
+        recommendationContext: recommendationContext || null
+      };
+      
+      await db.doc(feedbackPath).set(feedbackData, { merge: true });
+      
+      console.log(`Successfully saved feedback to Firestore: ${feedbackPath}`);
+      
+      // Track the feedback event
+      storage.trackEvent({
+        eventType: 'recommendation_feedback',
+        userId,
+        data: {
+          filmId,
+          filmTitle,
+          feedback,
+          hasRecommendationContext: !!recommendationContext
+        } as Record<string, any>,
+        ip: req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+        userAgent: req.headers['user-agent'] as string || 'unknown'
+      }).catch(err => console.error('Error tracking feedback event:', err));
+      
+      res.json({ 
+        success: true, 
+        message: 'Feedback saved successfully',
+        feedbackSaved: true
+      });
+      
+    } catch (error) {
+      console.error('Error saving feedback:', error);
+      res.status(500).json({ message: 'Failed to save feedback' });
+    }
+  });
+
   // Get list of available streaming services 
   app.get('/api/streaming-services', (req, res) => {
     // List of popular streaming services
