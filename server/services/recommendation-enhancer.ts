@@ -112,8 +112,73 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
             source = 'onboarding';
           }
           
+          // CRITICAL FIX: Re-process streaming availability for cached films
+          // The cached film might not have streaming data for the current user's services
+          let availableOn: string[] = [];
+          
+          if (cachedFilm.availableStreamingByCountry && preferences.streamingServices && preferences.country) {
+            const countryServices = cachedFilm.availableStreamingByCountry[preferences.country.toUpperCase()] || [];
+            
+            console.log(`🎬 STREAMING DEBUG for "${cachedFilm.title}" (CACHED):`, {
+              country: preferences.country.toUpperCase(),
+              userServices: preferences.streamingServices,
+              tmdbServices: countryServices
+            });
+            
+            // Filter services to only those the user has
+            availableOn = countryServices.filter(service =>
+              preferences.streamingServices?.some(userService => {
+                // Use the same comprehensive mapping as fresh processing
+                const tmdbToInternalMapping: Record<string, string[]> = {
+                  'netflix': ['netflix'],
+                  'amazon video': ['amazonprime', 'amazon'],
+                  'amazon prime video': ['amazonprime', 'amazon'],
+                  'prime video': ['amazonprime', 'amazon'],
+                  'disney+': ['disneyplus', 'disney'],
+                  'disney plus': ['disneyplus', 'disney'],
+                  'hbo max': ['hbo', 'hbomax'],
+                  'hbo': ['hbo', 'hbomax'],
+                  'paramount+': ['paramountplus', 'paramount'],
+                  'paramount plus': ['paramountplus', 'paramount'],
+                  'apple tv+': ['appletvplus', 'apple'],
+                  'apple tv': ['appletvplus', 'apple'],
+                  'hulu': ['hulu'],
+                  'bbc iplayer': ['bbciplayer', 'bbc'],
+                  'iplayer': ['bbciplayer', 'bbc'],
+                  'mubi': ['mubi'],
+                  'sky go': ['sky', 'skygo'],
+                  'now tv': ['nowtv', 'now'],
+                  'now tv cinema': ['nowtv', 'now']
+                };
+                
+                const serviceLower = service.toLowerCase();
+                const userServiceLower = userService.toLowerCase();
+                
+                // Check comprehensive mapping
+                for (const [tmdbName, internalNames] of Object.entries(tmdbToInternalMapping)) {
+                  if (serviceLower.includes(tmdbName) || tmdbName.includes(serviceLower)) {
+                    if (internalNames.includes(userServiceLower)) {
+                      return true;
+                    }
+                  }
+                }
+                
+                // Fallback matching
+                return serviceLower === userServiceLower || 
+                       serviceLower.includes(userServiceLower) || 
+                       userServiceLower.includes(serviceLower);
+              })
+            );
+            
+            console.log(`🎬 STREAMING RESULT for "${cachedFilm.title}" (CACHED):`, {
+              availableOnCount: availableOn.length,
+              availableServices: availableOn
+            });
+          }
+
           return {
             ...cachedFilm,
+            availableOn, // Update with current user's available services
             source
           };
         }
