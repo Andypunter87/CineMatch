@@ -9,19 +9,6 @@
 // Use the existing Firebase admin setup from server
 import { getFirestoreDb } from '../server/firebase-admin';
 
-// Helper function to get Firestore database
-const getDb = () => {
-  const db = getFirestoreDb();
-  if (!db) {
-    console.log('Firestore not available for enhanced recommendations');
-    return null;
-  }
-  return db;
-};
-
-// Get the database instance for direct use
-const db = getDb();
-
 // Type definitions for new Firestore collections
 export interface WatchlistRating {
   rating: number;
@@ -62,8 +49,11 @@ const PREFERENCE_WEIGHTS = {
  */
 export async function fetchWatchlistRatings(userId: string): Promise<Record<string, WatchlistRating>> {
   try {
-    const db = getDb();
-    if (!db) return {};
+    const db = getFirestoreDb();
+    if (!db) {
+      console.log('Firestore not available for watchlist ratings');
+      return {};
+    }
     
     const ratingsPath = `users/${userId}/watchlistRatings`;
     const ratingsRef = db.collection(ratingsPath);
@@ -93,8 +83,11 @@ export async function fetchWatchlistRatings(userId: string): Promise<Record<stri
  */
 export async function fetchRecommendationFeedback(userId: string): Promise<Record<string, RecommendationFeedback>> {
   try {
-    const db = getDb();
-    if (!db) return {};
+    const db = getFirestoreDb();
+    if (!db) {
+      console.log('Firestore not available for recommendation feedback');
+      return {};
+    }
     
     const feedbackPath = `users/${userId}/recommendationFeedback`;
     const feedbackRef = db.collection(feedbackPath);
@@ -124,8 +117,11 @@ export async function fetchRecommendationFeedback(userId: string): Promise<Recor
  */
 export async function fetchOnboardingRatings(userId: string): Promise<Record<string, number>> {
   try {
-    const db = getDb();
-    if (!db) return {};
+    const db = getFirestoreDb();
+    if (!db) {
+      console.log('Firestore not available for onboarding ratings');
+      return {};
+    }
     
     const ratingsPath = `users/${userId}/ratings/onboarding`;
     const ratingsDoc = db.doc(ratingsPath);
@@ -163,8 +159,11 @@ export async function fetchOnboardingRatings(userId: string): Promise<Record<str
  */
 export async function fetchFriends(userId: string): Promise<Record<string, Friend>> {
   try {
-    const db = getDb();
-    if (!db) return {};
+    const db = getFirestoreDb();
+    if (!db) {
+      console.log('Firestore not available for friends');
+      return {};
+    }
     
     const friendsPath = `users/${userId}/friends`;
     const friendsRef = db.collection(friendsPath);
@@ -194,8 +193,11 @@ export async function fetchFriends(userId: string): Promise<Record<string, Frien
  */
 export async function fetchSessions(userId: string): Promise<Record<string, Session>> {
   try {
-    const db = getDb();
-    if (!db) return {};
+    const db = getFirestoreDb();
+    if (!db) {
+      console.log('Firestore not available for sessions');
+      return {};
+    }
     
     const sessionsPath = `users/${userId}/sessions`;
     const sessionsRef = db.collection(sessionsPath);
