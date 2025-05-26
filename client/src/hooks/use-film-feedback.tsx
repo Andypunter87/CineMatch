@@ -33,7 +33,11 @@ export function useFilmFeedback() {
   const submitFeedbackMutation = useMutation({
     mutationFn: async (feedback: FilmFeedback) => {
       try {
+        console.log(`🎬 Client: User clicked ${feedback.liked ? 'LIKE' : 'DISLIKE'} for "${feedback.filmTitle}" (ID: ${feedback.filmId})`);
+        console.log(`👤 Client: User ID: ${user?.id}, Authenticated: ${!!user}`);
+        
         // Save to API
+        console.log(`📤 Client: Sending feedback to API endpoint /api/feedback`);
         const apiResponse = await apiRequest("POST", "/api/feedback", {
           filmId: feedback.filmId,
           filmTitle: feedback.filmTitle,
@@ -41,8 +45,11 @@ export function useFilmFeedback() {
           recommendationContext: feedback.recommendationContext
         });
         
+        console.log(`✅ Client: API response received:`, await apiResponse.json());
+        
         // Now save to Firestore if we have a user
         if (user) {
+          console.log(`💾 Client: Also saving to Firestore for user ${user.id}`);
           const timestamp = new Date().toISOString();
           
           // Save to Firestore using the film ID as the document ID for easier retrieval
