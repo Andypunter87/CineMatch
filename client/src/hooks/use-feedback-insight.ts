@@ -174,7 +174,7 @@ export function useFeedbackInsight() {
         // Create insight with appropriate confidence level
         insights.push({
           type: 'positive',
-          message: `Because you liked ${feedbackData.title}`,
+          message: `We think you'll love this`,
           relatedFilmId: feedbackData.filmId,
           relatedFilmTitle: feedbackData.title,
           confidence,
