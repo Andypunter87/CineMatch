@@ -420,7 +420,7 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     };
   });
   
-  // Filter recommendations based on runtime preferences if specified
+  // Filter recommendations based on runtime preferences if specified  
   let filteredRecommendations = streamingProcessedRecommendations;
   
   if (preferences.runtime && preferences.runtime.length > 0) {
@@ -435,102 +435,56 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
   const endTime = Date.now();
   console.log(`Enhanced recommendations generated in ${endTime - startTime}ms`);
   
-  return filteredRecommendations;
-}
-
-/**
- * Dedicated streaming availability processor that runs for EVERY film
- * regardless of cache source to ensure current user's services are properly matched
- */
-function processStreamingAvailability(film: any, preferences: UserPreferences): any {
-  let availableOn: string[] = [];
-  
-  console.log(`🎬 STREAMING PROCESSOR for "${film.title}":`, {
-    hasStreamingData: !!film.availableStreamingByCountry,
-    userCountry: preferences.country,
-    userServices: preferences.streamingServices,
-    filmType: film.source || 'unknown'
-  });
-  
-  if (film.availableStreamingByCountry && preferences.streamingServices && preferences.country) {
-    const countryServices = film.availableStreamingByCountry[preferences.country.toUpperCase()] || [];
+  // Add streaming badges to films - this MUST execute after the timing log
+  console.log(`Processing streaming availability for ${filteredRecommendations.length} films`);
+  for (let i = 0; i < filteredRecommendations.length; i++) {
+    const film = filteredRecommendations[i];
+    console.log(`Processing film: ${film.title}`);
     
-    console.log(`🎬 RAW TMDB SERVICES for "${film.title}":`, {
-      country: preferences.country.toUpperCase(),
-      tmdbServices: countryServices,
-      tmdbCount: countryServices.length
-    });
+    // Initialize availableOn if not present
+    if (!film.availableOn) {
+      film.availableOn = [];
+    }
     
-    // Apply comprehensive service name mapping
-    availableOn = countryServices.filter((service: string) =>
-      preferences.streamingServices?.some(userService => {
-        const tmdbToInternalMapping: Record<string, string[]> = {
-          'netflix': ['netflix'],
-          'amazon video': ['amazonprime', 'amazon'],
-          'amazon prime video': ['amazonprime', 'amazon'],
-          'prime video': ['amazonprime', 'amazon'],
-          'disney+': ['disneyplus', 'disney'],
-          'disney plus': ['disneyplus', 'disney'],
-          'hbo max': ['hbo', 'hbomax'],
-          'hbo': ['hbo', 'hbomax'],
-          'paramount+': ['paramountplus', 'paramount'],
-          'paramount plus': ['paramountplus', 'paramount'],
-          'apple tv+': ['appletvplus', 'apple'],
-          'apple tv': ['appletvplus', 'apple'],
-          'hulu': ['hulu'],
-          'bbc iplayer': ['bbciplayer', 'bbc'],
-          'iplayer': ['bbciplayer', 'bbc'],
-          'mubi': ['mubi'],
-          'sky go': ['sky', 'skygo'],
-          'now tv': ['nowtv', 'now'],
-          'now tv cinema': ['nowtv', 'now']
-        };
+    // Check streaming data exists
+    if (film.availableStreamingByCountry && preferences.country) {
+      const countryKey = preferences.country.toUpperCase();
+      const services = film.availableStreamingByCountry[countryKey];
+      
+      if (services && Array.isArray(services)) {
+        console.log(`${film.title} has ${services.length} services in ${countryKey}: ${services.join(', ')}`);
         
-        const serviceLower = service.toLowerCase();
-        const userServiceLower = userService.toLowerCase();
-        
-        // Check comprehensive mapping
-        for (const [tmdbName, internalNames] of Object.entries(tmdbToInternalMapping)) {
-          if (serviceLower.includes(tmdbName) || tmdbName.includes(serviceLower)) {
-            if (internalNames.includes(userServiceLower)) {
-              console.log(`✅ MATCHED: "${service}" (TMDB) → "${userService}" (User) via "${tmdbName}"`);
-              return true;
+        // Check each service
+        for (const service of services) {
+          const serviceName = service.toLowerCase();
+          
+          // Netflix check
+          if (serviceName.includes('netflix') && preferences.streamingServices?.includes('netflix')) {
+            if (!film.availableOn.includes('Netflix')) {
+              film.availableOn.push('Netflix');
+              console.log(`Added Netflix to ${film.title}`);
+            }
+          }
+          
+          // Amazon check  
+          if ((serviceName.includes('amazon') || serviceName.includes('prime')) && 
+              preferences.streamingServices?.some(us => us.toLowerCase().includes('amazon'))) {
+            if (!film.availableOn.includes('Amazon Prime Video')) {
+              film.availableOn.push('Amazon Prime Video');
+              console.log(`Added Amazon Prime to ${film.title}`);
             }
           }
         }
-        
-        // Fallback matching
-        const isMatch = serviceLower === userServiceLower || 
-               serviceLower.includes(userServiceLower) || 
-               userServiceLower.includes(serviceLower);
-        
-        if (isMatch) {
-          console.log(`✅ FALLBACK MATCH: "${service}" (TMDB) → "${userService}" (User)`);
-        }
-        
-        return isMatch;
-      })
-    );
+      }
+    }
     
-    console.log(`🎬 FINAL RESULT for "${film.title}":`, {
-      availableOnCount: availableOn.length,
-      availableServices: availableOn,
-      willShowBadges: availableOn.length > 0
-    });
-  } else {
-    const missingItems = [];
-    if (!film.availableStreamingByCountry) missingItems.push('streaming data');
-    if (!preferences.streamingServices) missingItems.push('user services');
-    if (!preferences.country) missingItems.push('user country');
-    
-    console.log(`🎬 NO STREAMING PROCESSING for "${film.title}" - Missing: ${missingItems.join(', ')}`);
+    console.log(`${film.title} final services: ${film.availableOn.join(', ')}`);
   }
   
-  return {
-    ...film,
-    availableOn // Always update with processed availability
-  };
+  return filteredRecommendations;
 }
+
+
 
 /**
  * Filters recommendations to ensure they match the user's runtime preferences
