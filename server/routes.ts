@@ -680,79 +680,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Handle user feedback on recommendations (for "Because you liked X" feature)
   app.post('/api/feedback', isAuthenticated, async (req, res) => {
     try {
+      console.log(`🎬 FEEDBACK REQUEST - Starting feedback processing...`);
+      
+      // Extract and validate input data
       const { filmId, filmTitle, feedback, recommendationContext } = req.body;
       const userId = req.user!.id;
       
-      // Add detailed variable logging
-      console.log(`🎬 FEEDBACK DEBUG - Raw request data:`);
-      console.log(`  - userId: ${userId} (type: ${typeof userId})`);
-      console.log(`  - filmId: ${filmId} (type: ${typeof filmId})`);
-      console.log(`  - filmTitle: "${filmTitle}"`);
-      console.log(`  - feedback: ${feedback}`);
+      // Input validation with detailed logging
+      console.log(`📋 VALIDATION - Checking required fields:`);
+      console.log(`  - userId: ${userId} (type: ${typeof userId}, valid: ${!!userId})`);
+      console.log(`  - filmId: ${filmId} (type: ${typeof filmId}, valid: ${!!filmId})`);
+      console.log(`  - filmTitle: "${filmTitle}" (type: ${typeof filmTitle})`);
+      console.log(`  - feedback: ${feedback} (type: ${typeof feedback}, valid: ${feedback === 'like' || feedback === 'dislike'})`);
       
-      console.log(`📝 Writing feedback to Firestore for user ${userId}: ${feedback === 'like' ? 'liked' : 'disliked'} "${filmTitle}" (filmId: ${filmId})`);
+      // Validate required fields
+      if (!userId) {
+        console.error('❌ VALIDATION FAILED: Missing userId');
+        return res.status(400).json({ error: 'User ID is required' });
+      }
+      
+      if (!filmId) {
+        console.error('❌ VALIDATION FAILED: Missing filmId');
+        return res.status(400).json({ error: 'Film ID is required' });
+      }
+      
+      if (!feedback || (feedback !== 'like' && feedback !== 'dislike')) {
+        console.error('❌ VALIDATION FAILED: Invalid feedback value');
+        return res.status(400).json({ error: 'Feedback must be "like" or "dislike"' });
+      }
+      
+      console.log(`✅ VALIDATION PASSED - All required fields present`);
+      
+      // Convert feedback to boolean
+      const liked = feedback === 'like';
+      console.log(`📝 PROCESSING - User ${userId}: ${liked ? 'LIKED' : 'DISLIKED'} "${filmTitle}" (filmId: ${filmId})`);
       
       // Import Firebase admin to save to Firestore
       const { getFirestoreDb } = await import('./firebase-admin.js');
       const db = getFirestoreDb();
       
       if (!db) {
-        console.error('❌ Firestore not available for saving feedback');
-        return res.status(500).json({ message: 'Database not available' });
+        console.error('❌ FIRESTORE ERROR: Database not available');
+        return res.status(500).json({ error: 'Database not available' });
       }
       
-      // Save to Firestore feedback collection (matching the path used by insights system)
+      console.log(`✅ FIRESTORE CONNECTION: Database available`);
+      
+      // Prepare Firestore write
       const feedbackPath = `users/${userId}/feedback/${filmId}`;
+      const timestamp = new Date().toISOString();
       const feedbackData = {
-        liked: feedback === 'like',
-        timestamp: new Date().toISOString(),
+        liked,
+        timestamp,
         filmTitle: filmTitle || 'Unknown',
         recommendationContext: recommendationContext || null
       };
       
-      console.log(`📍 Firestore path: ${feedbackPath}`);
-      console.log(`📊 Feedback data:`, JSON.stringify(feedbackData, null, 2));
+      console.log(`📍 FIRESTORE PATH: ${feedbackPath}`);
+      console.log(`📊 FEEDBACK DATA:`, JSON.stringify(feedbackData, null, 2));
       
+      // Attempt Firestore write with comprehensive error handling
       try {
+        console.log(`🔥 FIRESTORE WRITE - Attempting to save feedback...`);
         await db.doc(feedbackPath).set(feedbackData, { merge: true });
-        console.log(`✅ Successfully saved feedback to Firestore: ${feedbackPath}`);
+        console.log(`✅ FIRESTORE SUCCESS - Feedback saved to: ${feedbackPath}`);
         
         // Verify the write by reading it back
-        const doc = await db.doc(feedbackPath).get();
-        if (doc.exists) {
-          console.log(`✅ Verified: Feedback exists in Firestore with data:`, doc.data());
-        } else {
-          console.log(`❌ Warning: Could not verify feedback write - document doesn't exist`);
+        try {
+          const savedDoc = await db.doc(feedbackPath).get();
+          if (savedDoc.exists) {
+            const savedData = savedDoc.data();
+            console.log(`✅ VERIFICATION SUCCESS - Document exists with data:`, JSON.stringify(savedData, null, 2));
+          } else {
+            console.log(`⚠️ VERIFICATION WARNING - Document was not found after write`);
+          }
+        } catch (verifyError) {
+          console.error(`❌ VERIFICATION ERROR - Could not read back document:`, verifyError);
         }
-      } catch (firestoreError) {
-        console.error('❌ Firestore write error:', firestoreError);
-        throw firestoreError;
+        
+      } catch (firestoreError: any) {
+        console.error(`❌ FIRESTORE WRITE ERROR - Failed to save feedback:`, firestoreError);
+        console.error(`❌ Error details:`, {
+          message: firestoreError?.message,
+          code: firestoreError?.code,
+          stack: firestoreError?.stack
+        });
+        return res.status(500).json({ 
+          error: 'Failed to save feedback to database',
+          details: firestoreError?.message || 'Unknown error'
+        });
       }
       
-      // Track the feedback event
-      storage.trackEvent({
-        eventType: 'recommendation_feedback',
-        userId,
-        data: {
-          filmId,
-          filmTitle,
-          feedback,
-          hasRecommendationContext: !!recommendationContext
-        } as Record<string, any>,
-        ip: req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
-        userAgent: req.headers['user-agent'] as string || 'unknown'
-      }).catch(err => console.error('Error tracking feedback event:', err));
+      // Track the feedback event for analytics
+      try {
+        await storage.trackEvent({
+          eventType: 'recommendation_feedback',
+          userId,
+          data: {
+            filmId,
+            filmTitle,
+            feedback,
+            hasRecommendationContext: !!recommendationContext
+          } as Record<string, any>,
+          ip: req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
+          userAgent: req.headers['user-agent'] as string || 'unknown'
+        });
+        console.log(`📊 ANALYTICS - Feedback event tracked successfully`);
+      } catch (trackingError) {
+        console.error('⚠️ ANALYTICS WARNING - Error tracking feedback event:', trackingError);
+        // Don't fail the request if analytics tracking fails
+      }
       
+      // Return success response
+      console.log(`🎉 FEEDBACK COMPLETE - Successfully processed feedback for user ${userId}`);
       res.json({ 
         success: true, 
         message: 'Feedback saved successfully',
         feedbackSaved: true,
-        firestorePath: feedbackPath
+        firestorePath: feedbackPath,
+        timestamp: timestamp
       });
       
     } catch (error) {
-      console.error('❌ Error saving feedback:', error);
-      res.status(500).json({ message: 'Failed to save feedback' });
+      console.error('❌ FEEDBACK ERROR - Unexpected error processing feedback:', error);
+      res.status(500).json({ 
+        error: 'Failed to save feedback',
+        details: error.message 
+      });
     }
   });
 
