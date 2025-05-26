@@ -788,8 +788,8 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
             </div>
           )}
           
-          {/* Recommendation feedback buttons - show only when recommendation context exists */}
-          {recommendationContext && !feedbackSubmitted && (
+          {/* Recommendation feedback buttons - show for all recommendations */}
+          {!feedbackSubmitted && (
             <div className="mt-3 pt-2 border-t border-gray-100">
               <div className="text-center text-sm text-gray-500 mb-2">
                 Was this a good recommendation?
