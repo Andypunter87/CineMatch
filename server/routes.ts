@@ -268,6 +268,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.saveUserRecommendations(req.user.id, preferences, recommendations);
       }
       
+      // Debug: Log final recommendations with streaming data
+      console.log(`🎬 FINAL API RESPONSE - First film streaming data:`, {
+        filmTitle: recommendations[0]?.title,
+        availableOn: recommendations[0]?.availableOn,
+        hasStreamingData: recommendations[0]?.hasStreamingData
+      });
+      
       res.json(recommendations);
     } catch (error) {
       if (error instanceof ZodError) {
