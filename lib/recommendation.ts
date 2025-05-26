@@ -19,6 +19,9 @@ const getDb = () => {
   return db;
 };
 
+// Get the database instance for direct use
+const db = getDb();
+
 // Type definitions for new Firestore collections
 export interface WatchlistRating {
   rating: number;
@@ -128,7 +131,7 @@ export async function fetchOnboardingRatings(userId: string): Promise<Record<str
     const ratingsDoc = db.doc(ratingsPath);
     const snapshot = await ratingsDoc.get();
 
-    if (!snapshot.exists()) {
+    if (!snapshot.exists) {
       console.log(`No onboarding ratings found for user ${userId}`);
       return {};
     }
