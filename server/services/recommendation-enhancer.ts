@@ -95,7 +95,7 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       console.log(`🎬 PROCESSING STREAMING for "${film.title}" - User: ${preferences.country?.toUpperCase() || 'NO_COUNTRY'}, Services: ${preferences.streamingServices?.join(', ') || 'NONE'}`);
       
       // Check if we have this film in cache
-      if (tmdbMovieCache.has(cacheKey)) {
+      if (false && tmdbMovieCache.has(cacheKey)) {
         const cachedData = tmdbMovieCache.get(cacheKey);
         // Check if cache entry is still valid
         if (Date.now() - cachedData.timestamp < TMDB_CACHE_TTL) {
@@ -198,6 +198,7 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
         // Use the first result as our best match
         const tmdbMovie = searchResults[0];
         console.log(`Using TMDB movie: ${tmdbMovie.title} (${tmdbMovie.release_date?.substring(0,4) || 'N/A'}) [ID: ${tmdbMovie.id}]`);
+        console.log(`🎬 CACHE BYPASS: Converting TMDB movie with fresh streaming data for "${tmdbMovie.title}"`);
         const tmdbFilm = await convertTMDBMovieToFilm(tmdbMovie);
         
         // Get streaming services where this film is available (depends on user country)
