@@ -175,8 +175,8 @@ export function useFeedbackInsight() {
         // Check for director/cast connections (if available in future)
         // This would be a strong indicator for "Because you liked X"
         
-        // Only create insight if we have a valid connection
-        if (hasValidConnection && confidence > 0.6) {
+        // Only create insight if we have a strong connection - raised threshold to 0.75
+        if (hasValidConnection && confidence > 0.75) {
           insights.push({
             type: 'positive',
             message: `We think you'll love this`,

@@ -89,23 +89,28 @@ export async function fetchRecommendationFeedback(userId: string): Promise<Recor
       return {};
     }
     
-    const feedbackPath = `users/${userId}/recommendationFeedback`;
+    // Use the correct path where feedback is actually stored
+    const feedbackPath = `users/${userId}/feedback`;
+    console.log(`🔍 FETCH FEEDBACK: Reading from path ${feedbackPath}`);
     const feedbackRef = db.collection(feedbackPath);
     const snapshot = await feedbackRef.get();
 
     const feedback: Record<string, RecommendationFeedback> = {};
     snapshot.forEach((doc: any) => {
       const data = doc.data();
-      feedback[doc.id] = {
-        liked: data.liked,
-        timestamp: data.timestamp?.toDate() || new Date(data.timestamp)
-      };
+      if (data) {
+        feedback[doc.id] = {
+          liked: data.liked,
+          timestamp: data.timestamp?.toDate() || new Date(data.timestamp)
+        };
+        console.log(`📊 FEEDBACK FOUND: Film ${doc.id} - ${data.liked ? 'LIKED' : 'DISLIKED'} "${data.filmTitle || 'Unknown'}"`);
+      }
     });
 
-    console.log(`Fetched ${Object.keys(feedback).length} recommendation feedback items for user ${userId}`);
+    console.log(`🎯 RECOMMENDATION FEEDBACK: Found ${Object.keys(feedback).length} feedback entries for user ${userId}`);
     return feedback;
   } catch (error) {
-    console.error("Error fetching recommendation feedback:", error);
+    console.error("❌ Error fetching recommendation feedback:", error);
     return {};
   }
 }
