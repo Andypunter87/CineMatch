@@ -35,6 +35,14 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<'liked' | 'disliked' | null>(null);
   const [isOnboarding, setIsOnboarding] = useState(false);
   
+  // Debug: Log streaming availability data
+  console.log(`🎬 FRONTEND DEBUG for "${film.title}":`, {
+    availableOn: film.availableOn,
+    hasStreamingData: film.hasStreamingData,
+    tmdbId: film.tmdbId,
+    availableStreamingByCountry: film.availableStreamingByCountry
+  });
+  
   // Get Firestore hooks for film feedback and watchlist
   const filmFeedback = useFilmFeedbackFirestore();
   const watchlistFirestore = useWatchlistFirestore();

@@ -189,6 +189,11 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
                      userServiceLower.includes(serviceLower);
             })
           );
+          
+          console.log(`🎬 STREAMING RESULT for "${film.title}":`, {
+            availableOnCount: availableOn.length,
+            availableServices: availableOn
+          });
         }
       
         // Apply feedback weights if available
