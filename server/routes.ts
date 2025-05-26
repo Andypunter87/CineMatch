@@ -634,11 +634,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug route to check feedback entries in Firestore
+  app.get('/api/debug/feedback/:userId', async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      console.log(`🔍 Debug: Checking feedback entries for user ${userId}`);
+      
+      const { getFirestoreDb } = await import('./firebase-admin.js');
+      const db = getFirestoreDb();
+      
+      if (!db) {
+        return res.status(500).json({ error: 'Firestore not available' });
+      }
+      
+      // Query the feedback collection
+      const feedbackCollection = db.collection(`users/${userId}/feedback`);
+      const snapshot = await feedbackCollection.get();
+      
+      const feedbackEntries: any[] = [];
+      snapshot.forEach(doc => {
+        feedbackEntries.push({
+          id: doc.id,
+          data: doc.data(),
+          path: `users/${userId}/feedback/${doc.id}`
+        });
+      });
+      
+      console.log(`🔍 Debug: Found ${feedbackEntries.length} feedback entries for user ${userId}`);
+      feedbackEntries.forEach(entry => {
+        console.log(`  - ${entry.path}: ${entry.data.liked ? 'LIKED' : 'DISLIKED'} "${entry.data.filmTitle}"`);
+      });
+      
+      res.json({
+        userId,
+        feedbackCount: feedbackEntries.length,
+        feedbackEntries
+      });
+      
+    } catch (error) {
+      console.error('❌ Debug feedback error:', error);
+      res.status(500).json({ error: 'Failed to fetch feedback debug info' });
+    }
+  });
+
   // Handle user feedback on recommendations (for "Because you liked X" feature)
   app.post('/api/feedback', isAuthenticated, async (req, res) => {
     try {
       const { filmId, filmTitle, feedback, recommendationContext } = req.body;
       const userId = req.user!.id;
+      
+      // Add detailed variable logging
+      console.log(`🎬 FEEDBACK DEBUG - Raw request data:`);
+      console.log(`  - userId: ${userId} (type: ${typeof userId})`);
+      console.log(`  - filmId: ${filmId} (type: ${typeof filmId})`);
+      console.log(`  - filmTitle: "${filmTitle}"`);
+      console.log(`  - feedback: ${feedback}`);
       
       console.log(`📝 Writing feedback to Firestore for user ${userId}: ${feedback === 'like' ? 'liked' : 'disliked'} "${filmTitle}" (filmId: ${filmId})`);
       
@@ -651,8 +701,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: 'Database not available' });
       }
       
-      // Save to Firestore recommendationFeedback collection
-      const feedbackPath = `users/${userId}/recommendationFeedback/${filmId}`;
+      // Save to Firestore feedback collection (matching the path used by insights system)
+      const feedbackPath = `users/${userId}/feedback/${filmId}`;
       const feedbackData = {
         liked: feedback === 'like',
         timestamp: new Date().toISOString(),
@@ -661,7 +711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       console.log(`📍 Firestore path: ${feedbackPath}`);
-      console.log(`📊 Feedback data:`, feedbackData);
+      console.log(`📊 Feedback data:`, JSON.stringify(feedbackData, null, 2));
       
       try {
         await db.doc(feedbackPath).set(feedbackData, { merge: true });
