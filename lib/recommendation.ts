@@ -9,9 +9,6 @@
 // Use the existing Firebase admin setup from server
 import { getFirestoreDb } from '../server/firebase-admin';
 
-// Get database instance
-const getDb = () => getFirestoreDb();
-
 // Type definitions for new Firestore collections
 export interface WatchlistRating {
   rating: number;
