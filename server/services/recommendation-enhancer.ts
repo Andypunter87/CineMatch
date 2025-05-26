@@ -91,6 +91,9 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       // Generate cache key based on title and year
       const cacheKey = `film:${film.title}:${film.year}`;
       
+      // ALWAYS process streaming availability for current user, regardless of cache
+      console.log(`🎬 PROCESSING STREAMING for "${film.title}" - User: ${preferences.country?.toUpperCase() || 'NO_COUNTRY'}, Services: ${preferences.streamingServices?.join(', ') || 'NONE'}`);
+      
       // Check if we have this film in cache
       if (tmdbMovieCache.has(cacheKey)) {
         const cachedData = tmdbMovieCache.get(cacheKey);
@@ -176,11 +179,21 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
             });
           }
 
-          return {
+          // Always ensure streaming availability is processed for current user
+          const finalFilm = {
             ...cachedFilm,
             availableOn, // Update with current user's available services
             source
           };
+          
+          console.log(`🎬 FINAL STREAMING for "${finalFilm.title}":`, {
+            availableOn: finalFilm.availableOn,
+            hasData: !!finalFilm.availableStreamingByCountry,
+            userCountry: preferences.country,
+            userServices: preferences.streamingServices
+          });
+          
+          return finalFilm;
         }
         
         // If cache has expired, remove it
