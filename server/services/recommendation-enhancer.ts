@@ -91,36 +91,36 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       // Generate cache key based on title and year
       const cacheKey = `film:${film.title}:${film.year}`;
       
-      // Check if we have this film in cache
-      if (tmdbMovieCache.has(cacheKey)) {
-        const cachedData = tmdbMovieCache.get(cacheKey);
-        // Check if cache entry is still valid
-        if (Date.now() - cachedData.timestamp < TMDB_CACHE_TTL) {
-          console.log(`Using cached data for "${film.title}" (${film.year})`);
-          
-          // Return cached film with source field added
-          const cachedFilm = cachedData.data;
-          
-          // Determine source based on recommendation context
-          let source: 'onboarding' | 'friend' | 'feedback' | 'fallback' = 'fallback';
-          
-          if (isCoWatching && preferences.friendUserId) {
-            source = 'friend';
-          } else if (feedbackWeights.hasPreferences) {
-            source = 'feedback';
-          } else if (preferences.userRatedFilms && preferences.userRatedFilms.length > 0) {
-            source = 'onboarding';
-          }
-          
-          return {
-            ...cachedFilm,
-            source
-          };
-        }
-        
-        // If cache has expired, remove it
-        tmdbMovieCache.delete(cacheKey);
-      }
+      // TEMPORARILY DISABLED: Check cache to debug streaming availability 
+      // if (tmdbMovieCache.has(cacheKey)) {
+      //   const cachedData = tmdbMovieCache.get(cacheKey);
+      //   // Check if cache entry is still valid
+      //   if (Date.now() - cachedData.timestamp < TMDB_CACHE_TTL) {
+      //     console.log(`Using cached data for "${film.title}" (${film.year})`);
+      //     
+      //     // Return cached film with source field added
+      //     const cachedFilm = cachedData.data;
+      //     
+      //     // Determine source based on recommendation context
+      //     let source: 'onboarding' | 'friend' | 'feedback' | 'fallback' = 'fallback';
+      //     
+      //     if (isCoWatching && preferences.friendUserId) {
+      //       source = 'friend';
+      //     } else if (feedbackWeights.hasPreferences) {
+      //       source = 'feedback';
+      //     } else if (preferences.userRatedFilms && preferences.userRatedFilms.length > 0) {
+      //       source = 'onboarding';
+      //     }
+      //     
+      //     return {
+      //       ...cachedFilm,
+      //       source
+      //     };
+      //   }
+      //   
+      //   // If cache has expired, remove it
+      //   tmdbMovieCache.delete(cacheKey);
+      // }
       
       // Search for the movie in TMDB with separate title and year parameters
       console.log(`Searching TMDB for film: "${film.title}" (${film.year})`);
