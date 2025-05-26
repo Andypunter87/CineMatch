@@ -462,11 +462,17 @@ export class DatabaseStorage implements IStorage {
       });
   
       // Sort films by score (highest first) and take top 8
-      const recommendations = scoredFilms
+      const topFilms = scoredFilms
         .sort((a, b) => b.score - a.score)
         .slice(0, 8);
-  
-      return recommendations;
+
+      // Process streaming availability for fallback recommendations too
+      const { processStreamingAvailability } = await import('./services/recommendation-enhancer');
+      const processedFilms = await processStreamingAvailability(topFilms, preferences);
+      
+      console.log(`🎬 FALLBACK STREAMING PROCESSED - First film: ${processedFilms[0]?.title}, availableOn: ${processedFilms[0]?.availableOn}, hasStreamingData: ${processedFilms[0]?.hasStreamingData}`);
+      
+      return processedFilms;
     }
   }
   
