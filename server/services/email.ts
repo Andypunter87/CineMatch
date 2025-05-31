@@ -398,7 +398,7 @@ export async function sendFriendInvitationEmail(
   recipientName?: string // Optional recipient name for personalization
 ): Promise<boolean> {
   // Base URL for the application
-  const baseUrl = 'https://cine-match.replit.app';
+  const baseUrl = 'https://cinematch.co.uk';
   
   // Different subject lines for new vs existing users
   const subject = isExistingUser
@@ -695,7 +695,7 @@ export async function sendInvitationConfirmationEmail(
   recipientName?: string
 ): Promise<boolean> {
   // Base URL for the application
-  const baseUrl = 'https://cine-match.replit.app';
+  const baseUrl = 'https://cinematch.co.uk';
   
   const subject = 'Friend invitation sent on CineMatch';
   
@@ -821,7 +821,7 @@ export async function sendFriendRequestAcceptedEmails(
   accepterUser: User
 ): Promise<boolean> {
   // Base URL for the application
-  const baseUrl = 'https://cine-match.replit.app';
+  const baseUrl = 'https://cinematch.co.uk';
   
   try {
     // Send email to the requester (person who sent the original invite)

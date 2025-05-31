@@ -77,7 +77,7 @@ function createCorrectionEmailTemplate(): string {
         <p>In all the excitement I sent out the wrong link to get you back to the app!</p>
         
         <div style="text-align: center;">
-            <a href="https://cine-match.replit.app/" class="cta-button">Take Me To CineMatch</a>
+            <a href="https://cinematch.co.uk/" class="cta-button">Take Me To CineMatch</a>
         </div>
         
         <div class="footer">

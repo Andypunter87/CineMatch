@@ -92,7 +92,7 @@ function createUpdateEmailTemplate(): string {
         <p>I've been busy behind the scenes – and I am thrilled to let you know that a brand new version of <strong>CineMatch</strong> is now live! 🥳</p>
         
         <div style="text-align: center;">
-            <a href="https://cinematch.replit.app" class="cta-button">Take me there!</a>
+            <a href="https://cinematch.co.uk" class="cta-button">Take me there!</a>
         </div>
         
         <h3>Here's what's new:</h3>
