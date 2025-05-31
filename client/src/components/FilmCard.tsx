@@ -504,17 +504,51 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                 const parentElement = e.currentTarget.parentElement;
                 if (parentElement) {
                   parentElement.style.background = getBackgroundGradient();
-                  parentElement.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-full text-center p-4">
-                      <svg class="w-10 h-10 text-white/80 mb-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m22 8-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
-                        <path d="M18 8h-6V2"/>
-                      </svg>
-                      <h3 class="text-xl md:text-2xl font-bold text-white mb-1">${title}</h3>
-                      <p class="text-white/90 font-medium">${year}</p>
-                      <p class="text-white/70 text-sm mt-2">${director}</p>
-                    </div>
-                  `;
+                  
+                  // Create fallback content safely using DOM manipulation
+                  const fallbackDiv = document.createElement('div');
+                  fallbackDiv.className = 'flex flex-col items-center justify-center h-full text-center p-4';
+                  
+                  // Create and append SVG icon
+                  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                  svg.setAttribute('class', 'w-10 h-10 text-white/80 mb-4');
+                  svg.setAttribute('viewBox', '0 0 24 24');
+                  svg.setAttribute('fill', 'none');
+                  svg.setAttribute('stroke', 'currentColor');
+                  svg.setAttribute('stroke-width', '2');
+                  svg.setAttribute('stroke-linecap', 'round');
+                  svg.setAttribute('stroke-linejoin', 'round');
+                  
+                  const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                  path1.setAttribute('d', 'm22 8-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z');
+                  const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                  path2.setAttribute('d', 'M18 8h-6V2');
+                  
+                  svg.appendChild(path1);
+                  svg.appendChild(path2);
+                  fallbackDiv.appendChild(svg);
+                  
+                  // Create and append title (safely)
+                  const titleElement = document.createElement('h3');
+                  titleElement.className = 'text-xl md:text-2xl font-bold text-white mb-1';
+                  titleElement.textContent = title; // Safe text assignment
+                  fallbackDiv.appendChild(titleElement);
+                  
+                  // Create and append year (safely)
+                  const yearElement = document.createElement('p');
+                  yearElement.className = 'text-white/90 font-medium';
+                  yearElement.textContent = year; // Safe text assignment
+                  fallbackDiv.appendChild(yearElement);
+                  
+                  // Create and append director (safely)
+                  const directorElement = document.createElement('p');
+                  directorElement.className = 'text-white/70 text-sm mt-2';
+                  directorElement.textContent = director; // Safe text assignment
+                  fallbackDiv.appendChild(directorElement);
+                  
+                  // Clear parent and append safe content
+                  parentElement.innerHTML = '';
+                  parentElement.appendChild(fallbackDiv);
                 }
               }}
             />
