@@ -113,8 +113,6 @@ function createUpdateEmailTemplate(): string {
             <span class="feature-icon">🚀</span><strong>New onboarding experience</strong> – getting started (or restarting!) is easier than ever, with a guided journey to personalise your profile.
         </div>
         
-        <p>And yes – we're using <strong>Google Firestore</strong> to store your ratings and preferences securely, helping power all these improvements.</p>
-        
         <p>To reflect these changes, we've updated our:</p>
         
         <div class="links">
@@ -158,7 +156,54 @@ async function sendUpdateEmail(email: string): Promise<boolean> {
 }
 
 /**
- * Test sending the update email
+ * Send the update email to all users in the database
+ */
+async function sendToAllUsers() {
+  console.log('Fetching all users from database...');
+  
+  try {
+    // Import database connection
+    const { db } = await import('./db');
+    const { users } = await import('../shared/schema');
+    
+    const allUsers = await db.select({
+      email: users.email,
+      name: users.name
+    }).from(users);
+    
+    console.log(`Found ${allUsers.length} users to email`);
+    
+    let successCount = 0;
+    let failureCount = 0;
+    
+    for (const user of allUsers) {
+      if (user.email) {
+        const success = await sendUpdateEmail(user.email);
+        if (success) {
+          successCount++;
+          console.log(`✅ Sent to ${user.email}`);
+        } else {
+          failureCount++;
+          console.log(`❌ Failed to send to ${user.email}`);
+        }
+        
+        // Add a small delay between emails to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    console.log(`\n📊 Email campaign completed:`);
+    console.log(`✅ Successfully sent: ${successCount}`);
+    console.log(`❌ Failed to send: ${failureCount}`);
+    console.log(`📧 Total attempted: ${allUsers.length}`);
+    
+  } catch (error) {
+    console.error('Error sending emails to all users:', error);
+  }
+}
+
+/**
+ * Test sending the update email to a single user
  */
 async function testSendUpdateEmail() {
   console.log('Sending test update email...');
@@ -171,5 +216,10 @@ async function testSendUpdateEmail() {
   }
 }
 
-// Run the test
-testSendUpdateEmail();
+// Check command line arguments to determine which function to run
+const args = process.argv.slice(2);
+if (args.includes('--all')) {
+  sendToAllUsers();
+} else {
+  testSendUpdateEmail();
+}
