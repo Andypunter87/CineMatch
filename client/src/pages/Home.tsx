@@ -26,13 +26,25 @@ export default function Home() {
       
       // Skip onboarding redirect if URL contains bypass parameters
       const urlParams = new URLSearchParams(window.location.search);
-      const bypassOnboarding = urlParams.has('bypass_onboarding') || urlParams.has('just_completed_onboarding');
+      const justCompletedOnboarding = urlParams.has('just_completed_onboarding');
+      const bypassOnboarding = urlParams.has('bypass_onboarding') || justCompletedOnboarding;
       
-      if (needsOnboarding && !bypassOnboarding) {
+      // If user just completed onboarding, mark it as complete in localStorage
+      if (justCompletedOnboarding) {
+        localStorage.setItem('onboardingCompleted', 'true');
+        console.log("Home - onboarding just completed, marked in localStorage");
+      }
+      
+      // Check if onboarding was previously completed
+      const previouslyCompleted = localStorage.getItem('onboardingCompleted') === 'true';
+      
+      if (needsOnboarding && !bypassOnboarding && !previouslyCompleted) {
         console.log("Home - redirecting to onboarding");
         setLocation('/onboarding');
         return;
       }
+      
+      console.log("Home - staying on home page, onboarding not needed");
     }
   }, [user, setLocation]);
   
