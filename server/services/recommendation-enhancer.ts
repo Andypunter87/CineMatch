@@ -477,9 +477,11 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
         console.log(`🔍 SERVICE MATCH TEST: "${service}" → Match found: ${matchFound}`);
       });
       
-      // Apply comprehensive service name mapping and remove duplicates
-      availableOn = countryServices.filter((service: string) =>
-        preferences.streamingServices?.some(userService => {
+      // Apply comprehensive service name mapping and deduplicate by user service
+      const matchedUserServices = new Set<string>();
+      
+      countryServices.forEach((service: string) => {
+        preferences.streamingServices?.forEach(userService => {
           const serviceLower = service.toLowerCase();
           const userServiceLower = userService.toLowerCase();
           
@@ -527,17 +529,16 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
             if (serviceLower.includes(tmdbName) || tmdbName.includes(serviceLower)) {
               if (internalNames.includes(userServiceLower)) {
                 console.log(`✅ MATCHED: "${service}" (TMDB) → "${userService}" (User) via ${tmdbName}`);
-                return true;
+                matchedUserServices.add(userService);
+                return;
               }
             }
           }
-          
-          return false;
-        })
-      );
+        });
+      });
       
-      // Remove duplicates from the final array
-      availableOn = [...new Set(availableOn)];
+      // Convert to array and remove duplicates
+      availableOn = [...matchedUserServices];
       
       console.log(`🎬 FINAL RESULT for "${film.title}":`, {
         availableOnCount: availableOn.length,

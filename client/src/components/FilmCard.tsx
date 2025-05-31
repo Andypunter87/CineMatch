@@ -712,22 +712,37 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                       service.toLowerCase().includes(rental)
                     );
                     
-                    // Get service icon for better visual distinction
-                    const getServiceIcon = (serviceName: string) => {
+                    // Get service logo URL for better visual distinction
+                    const getServiceLogo = (serviceName: string) => {
                       const name = serviceName.toLowerCase();
-                      if (name.includes('netflix')) return '🎬';
-                      if (name.includes('amazon') || name.includes('prime')) return '📦';
-                      if (name.includes('disney')) return '🏰';
-                      if (name.includes('apple') || name.includes('itunes')) return '🍎';
-                      if (name.includes('google') || name.includes('youtube')) return '🎥';
-                      if (name.includes('sky')) return '📡';
-                      if (name.includes('bbc')) return '📺';
-                      if (name.includes('hbo')) return '🎭';
-                      if (name.includes('paramount')) return '⭐';
-                      if (name.includes('mubi')) return '🎪';
-                      if (name.includes('rakuten')) return '🛒';
-                      return isRental ? '💳' : '📺';
+                      const baseUrl = 'https://logo.clearbit.com';
+                      
+                      if (name.includes('netflix')) return `${baseUrl}/netflix.com`;
+                      if (name.includes('amazon') || name.includes('prime')) return `${baseUrl}/amazon.com`;
+                      if (name.includes('disney')) return `${baseUrl}/disneyplus.com`;
+                      if (name.includes('apple') || name.includes('itunes')) return `${baseUrl}/apple.com`;
+                      if (name.includes('google')) return `${baseUrl}/google.com`;
+                      if (name.includes('youtube')) return `${baseUrl}/youtube.com`;
+                      if (name.includes('sky')) return `${baseUrl}/sky.com`;
+                      if (name.includes('bbc')) return `${baseUrl}/bbc.co.uk`;
+                      if (name.includes('hbo')) return `${baseUrl}/hbo.com`;
+                      if (name.includes('paramount')) return `${baseUrl}/paramount.com`;
+                      if (name.includes('mubi')) return `${baseUrl}/mubi.com`;
+                      if (name.includes('rakuten')) return `${baseUrl}/rakuten.com`;
+                      if (name.includes('hulu')) return `${baseUrl}/hulu.com`;
+                      if (name.includes('peacock')) return `${baseUrl}/peacocktv.com`;
+                      if (name.includes('crunchyroll')) return `${baseUrl}/crunchyroll.com`;
+                      if (name.includes('discovery')) return `${baseUrl}/discovery.com`;
+                      if (name.includes('britbox')) return `${baseUrl}/britbox.com`;
+                      if (name.includes('hayu')) return `${baseUrl}/hayu.com`;
+                      if (name.includes('vudu')) return `${baseUrl}/vudu.com`;
+                      if (name.includes('microsoft')) return `${baseUrl}/microsoft.com`;
+                      
+                      // Default streaming icon for unrecognized services
+                      return null;
                     };
+                    
+                    const logoUrl = getServiceLogo(service);
                     
                     return (
                       <Badge 
@@ -736,11 +751,22 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                         className={`${isRental 
                           ? 'bg-blue-100 text-blue-800 border-blue-200' 
                           : 'bg-green-100 text-green-800 border-green-200'
-                        } max-w-[120px] truncate flex items-center gap-1`}
+                        } max-w-[140px] truncate flex items-center gap-2`}
                         title={isRental ? 'Available for rental/purchase' : 'Available on subscription'}
                       >
-                        <span className="text-xs">{getServiceIcon(service)}</span>
-                        <span className="truncate text-xs">{service}</span>
+                        {logoUrl ? (
+                          <img 
+                            src={logoUrl} 
+                            alt={`${service} logo`}
+                            className="w-4 h-4 rounded-sm object-contain"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <span className="text-xs">{isRental ? '💳' : '📺'}</span>
+                        )}
+                        <span className="truncate text-xs font-medium">{service}</span>
                       </Badge>
                     );
                   })}
