@@ -106,11 +106,14 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
+      console.log("Registration attempt received:", { email: req.body.email, hasPassword: !!req.body.password });
+      
       const { password, name, email, streamingServices, country } = req.body;
 
       // Check if email already exists
       const existingEmail = await storage.getUserByEmail(email);
       if (existingEmail) {
+        console.log("Registration failed: Email already exists:", email);
         return res.status(400).json({ error: "Email already exists" });
       }
 
