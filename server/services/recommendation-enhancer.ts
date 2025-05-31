@@ -240,6 +240,7 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
           return {
             ...cachedFilm,
             availableOn, // Update with current user's available services
+            hasStreamingData: !!(cachedFilm.availableStreamingByCountry && Object.keys(cachedFilm.availableStreamingByCountry).length > 0),
             source
           };
         }
@@ -478,7 +479,8 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     
     return {
       ...film,
-      availableOn // Always update with processed availability
+      availableOn, // Always update with processed availability
+      hasStreamingData: !!(film.availableStreamingByCountry && Object.keys(film.availableStreamingByCountry).length > 0) // Set the flag the frontend expects
     };
   });
   
