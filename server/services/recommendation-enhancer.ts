@@ -192,9 +192,9 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
                 // Use the same comprehensive mapping as fresh processing
                 const tmdbToInternalMapping: Record<string, string[]> = {
                   'netflix': ['netflix'],
-                  'amazon video': ['amazonprime', 'amazon'],
-                  'amazon prime video': ['amazonprime', 'amazon'],
-                  'prime video': ['amazonprime', 'amazon'],
+                  'amazon video': ['amazonprime', 'amazon', 'amazon prime'],
+                  'amazon prime video': ['amazonprime', 'amazon', 'amazon prime'],
+                  'prime video': ['amazonprime', 'amazon', 'amazon prime'],
                   'disney+': ['disneyplus', 'disney'],
                   'disney plus': ['disneyplus', 'disney'],
                   'hbo max': ['hbo', 'hbomax'],
@@ -282,9 +282,9 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
               // Create comprehensive mapping between TMDB provider names and our internal service names
               const tmdbToInternalMapping: Record<string, string[]> = {
                 'netflix': ['netflix'],
-                'amazon video': ['amazonprime', 'amazon'],
-                'amazon prime video': ['amazonprime', 'amazon'],
-                'prime video': ['amazonprime', 'amazon'],
+                'amazon video': ['amazonprime', 'amazon', 'amazon prime'],
+                'amazon prime video': ['amazonprime', 'amazon', 'amazon prime'],
+                'prime video': ['amazonprime', 'amazon', 'amazon prime'],
                 'disney+': ['disneyplus', 'disney'],
                 'disney plus': ['disneyplus', 'disney'],
                 'hbo max': ['hbo', 'hbomax'],
