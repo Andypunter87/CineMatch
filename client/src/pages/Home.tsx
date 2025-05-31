@@ -16,9 +16,11 @@ export default function Home() {
   // Check if user needs onboarding and redirect if necessary
   useEffect(() => {
     if (user) {
-      console.log("Home - checking onboarding for user:", {
+      console.log("Home - DETAILED onboarding check for user:", {
         id: user.id,
-        onboardingState: user.onboardingState
+        onboardingState: user.onboardingState,
+        onboardingStateType: typeof user.onboardingState,
+        onboardingStateString: JSON.stringify(user.onboardingState)
       });
       
       const onboardingState = user.onboardingState as any;
@@ -29,22 +31,34 @@ export default function Home() {
       const justCompletedOnboarding = urlParams.has('just_completed_onboarding');
       const bypassOnboarding = urlParams.has('bypass_onboarding') || justCompletedOnboarding;
       
+      // Check if onboarding was previously completed
+      const previouslyCompleted = localStorage.getItem('onboardingCompleted') === 'true';
+      
+      console.log("Home - onboarding decision factors:", {
+        needsOnboarding,
+        bypassOnboarding,
+        previouslyCompleted,
+        urlParams: window.location.search,
+        localStorage_onboardingCompleted: localStorage.getItem('onboardingCompleted')
+      });
+      
       // If user just completed onboarding, mark it as complete in localStorage
       if (justCompletedOnboarding) {
         localStorage.setItem('onboardingCompleted', 'true');
         console.log("Home - onboarding just completed, marked in localStorage");
       }
       
-      // Check if onboarding was previously completed
-      const previouslyCompleted = localStorage.getItem('onboardingCompleted') === 'true';
-      
       if (needsOnboarding && !bypassOnboarding && !previouslyCompleted) {
-        console.log("Home - redirecting to onboarding");
+        console.log("Home - REDIRECTING to onboarding");
         setLocation('/onboarding');
         return;
       }
       
-      console.log("Home - staying on home page, onboarding not needed");
+      console.log("Home - STAYING on home page, reason:", {
+        needsOnboarding: !needsOnboarding ? "already completed" : "needs onboarding",
+        bypassOnboarding: bypassOnboarding ? "bypassed" : "not bypassed", 
+        previouslyCompleted: previouslyCompleted ? "previously completed" : "not previously completed"
+      });
     }
   }, [user, setLocation]);
   
