@@ -74,6 +74,10 @@ function mapUserCountryToTMDB(userCountry: string): string {
 // Create a cache for movie data to avoid redundant API calls
 const tmdbMovieCache = new Map<string, any>();
 const TMDB_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+
+// Clear cache on startup to ensure fresh streaming data after fixes
+tmdbMovieCache.clear();
+console.log('🎬 CACHE CLEARED: Starting with fresh TMDB cache to ensure proper streaming data');
 const MAX_CACHE_SIZE = 1000; // Maximum number of items to keep in cache
 
 // Function to clean up old cache entries
