@@ -37,7 +37,7 @@ function createUpdateEmailTemplate(): string {
         .header {
             text-align: center;
             margin-bottom: 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #6366f1;
             color: white;
             padding: 20px;
             border-radius: 8px;
@@ -50,8 +50,8 @@ function createUpdateEmailTemplate(): string {
         }
         .cta-button {
             display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: #6366f1;
+            color: white !important;
             padding: 12px 30px;
             text-decoration: none;
             border-radius: 25px;
@@ -75,7 +75,7 @@ function createUpdateEmailTemplate(): string {
             font-size: 14px;
         }
         .links a {
-            color: #667eea;
+            color: #6366f1;
             text-decoration: none;
         }
         .links a:hover {
