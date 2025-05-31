@@ -306,7 +306,16 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
                 'mubi': ['mubi'],
                 'sky go': ['sky', 'skygo'],
                 'now tv': ['nowtv', 'now'],
-                'now tv cinema': ['nowtv', 'now']
+                'now tv cinema': ['nowtv', 'now'],
+                'itvx': ['itvx', 'itv'],
+                'bbc iplayer': ['bbciplayer', 'bbc', 'iplayer'],
+                'channel 4': ['channel4', 'c4'],
+                'all 4': ['channel4', 'c4', 'all4'],
+                'my5': ['my5', 'channel5'],
+                'crunchyroll': ['crunchyroll'],
+                'discovery+': ['discoveryplus', 'discovery'],
+                'hayu': ['hayu'],
+                'britbox': ['britbox']
               };
               
               const serviceLower = service.toLowerCase();
@@ -438,7 +447,34 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       console.log(`🎬 RAW TMDB SERVICES for "${film.title}":`, {
         country: tmdbCountryCode,
         tmdbServices: countryServices,
-        tmdbCount: countryServices.length
+        tmdbCount: countryServices.length,
+        userHasServices: preferences.streamingServices
+      });
+      
+      // Log each service matching attempt for debugging
+      countryServices.forEach((service: string) => {
+        const matchFound = preferences.streamingServices?.some(userService => {
+          const serviceLower = service.toLowerCase();
+          const userServiceLower = userService.toLowerCase();
+          
+          // Test comprehensive mapping
+          for (const [tmdbName, internalNames] of Object.entries({
+            'netflix': ['netflix'],
+            'amazon video': ['amazonprime', 'amazon', 'amazon prime'],
+            'amazon prime video': ['amazonprime', 'amazon', 'amazon prime'],
+            'prime video': ['amazonprime', 'amazon', 'amazon prime'],
+            'disney+': ['disneyplus', 'disney'],
+            'disney plus': ['disneyplus', 'disney']
+          })) {
+            if (serviceLower.includes(tmdbName) || tmdbName.includes(serviceLower)) {
+              if (internalNames.includes(userServiceLower)) {
+                return true;
+              }
+            }
+          }
+          return false;
+        });
+        console.log(`🔍 SERVICE MATCH TEST: "${service}" → Match found: ${matchFound}`);
       });
       
       // Apply comprehensive service name mapping
