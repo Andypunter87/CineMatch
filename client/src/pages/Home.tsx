@@ -5,11 +5,36 @@ import { type RecommendationRequest, type Film } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { useRecommendationEngine } from "@/hooks/use-recommendation-engine";
+import { useLocation } from "wouter";
 
 // Local storage key is now managed in the recommendation engine hook
 
 export default function Home() {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  // Check if user needs onboarding and redirect if necessary
+  useEffect(() => {
+    if (user) {
+      console.log("Home - checking onboarding for user:", {
+        id: user.id,
+        onboardingState: user.onboardingState
+      });
+      
+      const onboardingState = user.onboardingState as any;
+      const needsOnboarding = !onboardingState?.completed;
+      
+      // Skip onboarding redirect if URL contains bypass parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const bypassOnboarding = urlParams.has('bypass_onboarding') || urlParams.has('just_completed_onboarding');
+      
+      if (needsOnboarding && !bypassOnboarding) {
+        console.log("Home - redirecting to onboarding");
+        setLocation('/onboarding');
+        return;
+      }
+    }
+  }, [user, setLocation]);
   
   // Use our new recommendation engine hook that integrates with Firestore
   const engine = useRecommendationEngine();
