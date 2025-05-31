@@ -286,6 +286,36 @@ export class DatabaseStorage implements IStorage {
         .insert(users)
         .values(insertUser)
         .returning();
+      
+      // Also create the user in Firestore for recommendation data
+      try {
+        const { getFirestoreDb } = await import('../server/firebase-admin');
+        const firestore = getFirestoreDb();
+        
+        if (firestore) {
+          // Create user preferences document in Firestore
+          const userDocRef = firestore
+            .collection('users')
+            .doc(user.id.toString())
+            .collection('preferences')
+            .doc('settings');
+          
+          await userDocRef.set({
+            email: user.email,
+            name: user.name || '',
+            country: user.country || '',
+            streamingServices: user.streamingServices || [],
+            createdAt: new Date(),
+            lastUpdated: new Date()
+          });
+          
+          console.log(`Created Firestore user preferences for user ${user.id}`);
+        }
+      } catch (firestoreError) {
+        console.warn(`Failed to create Firestore user preferences for user ${user.id}:`, firestoreError);
+        // Don't throw error - Firestore creation is non-critical for user registration
+      }
+      
       return user;
     } catch (error) {
       console.error("Error creating user:", error);
