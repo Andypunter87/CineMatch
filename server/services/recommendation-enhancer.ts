@@ -499,62 +499,7 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
   const endTime = Date.now();
   console.log(`Enhanced recommendations generated in ${endTime - startTime}ms`);
   
-  // Add streaming badges to films - this MUST execute after the timing log
-  console.log(`Processing streaming availability for ${filteredRecommendations.length} films`);
-  for (let i = 0; i < filteredRecommendations.length; i++) {
-    const film = filteredRecommendations[i];
-    console.log(`Processing film: ${film.title}`);
-    
-    // Initialize availableOn if not present
-    if (!film.availableOn) {
-      film.availableOn = [];
-    }
-    
-    // Check streaming data exists
-    if (film.availableStreamingByCountry && preferences.country) {
-      const countryKey = preferences.country.toUpperCase();
-      const services = film.availableStreamingByCountry[countryKey];
-      
-      if (services && Array.isArray(services)) {
-        console.log(`${film.title} has ${services.length} services in ${countryKey}: ${services.join(', ')}`);
-        console.log(`User streaming services: ${preferences.streamingServices?.join(', ')}`);
-        
-        // Check each service
-        for (const service of services) {
-          const serviceName = service.toLowerCase();
-          console.log(`Checking service: "${service}" (lowercase: "${serviceName}")`);
-          
-          // Netflix check
-          if (serviceName.includes('netflix')) {
-            console.log(`Found Netflix service: ${service}`);
-            if (preferences.streamingServices?.includes('netflix')) {
-              if (!film.availableOn.includes('Netflix')) {
-                film.availableOn.push('Netflix');
-                console.log(`✅ Added Netflix to ${film.title}`);
-              }
-            } else {
-              console.log(`User doesn't have netflix in their services`);
-            }
-          }
-          
-          // Amazon check  
-          if (serviceName.includes('amazon') || serviceName.includes('prime')) {
-            console.log(`Found Amazon/Prime service: ${service}`);
-            if (preferences.streamingServices?.some(us => us.toLowerCase().includes('amazon'))) {
-              if (!film.availableOn.includes('Amazon Prime Video')) {
-                film.availableOn.push('Amazon Prime Video');
-                console.log(`✅ Added Amazon Prime to ${film.title}`);
-              }
-            } else {
-              console.log(`User doesn't have amazon in their services`);
-            }
-          }
-        }
-      }
-    }
-    
-    console.log(`${film.title} final services: ${film.availableOn.join(', ')}`);
-  }
+
   
   return filteredRecommendations;
 }

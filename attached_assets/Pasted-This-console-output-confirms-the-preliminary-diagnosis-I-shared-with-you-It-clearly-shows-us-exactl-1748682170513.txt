@@ -1,0 +1,30 @@
+This console output confirms the preliminary diagnosis I shared with you. It clearly shows us exactly where the process is failing.
+
+What the Console Log Tells Us
+Let's look at the data for the film "Prisoners":
+
+availableOn: []: This is the "smoking gun." The final array that your frontend FilmCard component uses to display the streaming service badges is empty. This is precisely why nothing is showing up in the UI.
+
+hasStreamingData: true: This is equally important. It confirms that your backend successfully fetched streaming availability data from the TMDB API.
+
+availableStreamingByCountry: { ... }: This object is full of data, showing which providers have the film in each country.
+
+Conclusion: Your backend is successfully getting the data from TMDB but is failing to correctly process it and populate the availableOn array before sending it to your frontend.
+
+The Confirmed Cause: The Buggy Final Loop
+This output is the exact result expected from the redundant and buggy logic in your backend file (File 1).
+
+Here is what's happening in your code:
+
+Your code first correctly processes the availableStreamingByCountry data and creates a correct availableOn array (using the comprehensive tmdbToInternalMapping).
+However, near the end of the getEnhancedRecommendations function, the final for loop runs (the one starting around line 373).
+This loop overwrites the correct data. Since its internal logic is incomplete and only checks for "Netflix" and "Amazon", if "Prisoners" is available on a different service that you subscribe to (like Disney+, Apple TV+, etc.), that match is discarded.
+The function then finishes and returns the film object with availableOn: [], which is exactly what we see in your screenshot.
+The Solution (Confirmed)
+The solution remains the same as my initial recommendation, but now we can be 100% confident it will work. You must remove the conflicting logic.
+
+In File 1, please perform the following two deletions:
+
+DELETE the entire streamingProcessedRecommendations.map(...) block (from approximately line 292 to 343).
+DELETE the entire final for (let i = 0; ...) loop (from approximately line 373 to 434).
+By removing these, you will allow the initial, correct processing step to be the single source of truth. The availableOn array that it generates will be preserved and passed to the frontend, and your streaming service badges will appear as expected.
