@@ -31,8 +31,9 @@ export default function Home() {
       const justCompletedOnboarding = urlParams.has('just_completed_onboarding');
       const bypassOnboarding = urlParams.has('bypass_onboarding') || justCompletedOnboarding;
       
-      // Check if onboarding was previously completed
-      const previouslyCompleted = localStorage.getItem('onboardingCompleted') === 'true';
+      // Check if onboarding was previously completed for THIS specific user
+      const userOnboardingKey = `onboardingCompleted_${user.id}`;
+      const previouslyCompleted = localStorage.getItem(userOnboardingKey) === 'true';
       
       console.log("Home - onboarding decision factors:", {
         needsOnboarding,
@@ -42,10 +43,10 @@ export default function Home() {
         localStorage_onboardingCompleted: localStorage.getItem('onboardingCompleted')
       });
       
-      // If user just completed onboarding, mark it as complete in localStorage
+      // If user just completed onboarding, mark it as complete in localStorage for this user
       if (justCompletedOnboarding) {
-        localStorage.setItem('onboardingCompleted', 'true');
-        console.log("Home - onboarding just completed, marked in localStorage");
+        localStorage.setItem(userOnboardingKey, 'true');
+        console.log("Home - onboarding just completed, marked in localStorage for user", user.id);
       }
       
       if (needsOnboarding && !bypassOnboarding && !previouslyCompleted) {
