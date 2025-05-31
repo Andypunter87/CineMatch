@@ -512,14 +512,14 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
             'discovery+': ['discoveryplus', 'discovery'],
             'hayu': ['hayu'],
             'britbox': ['britbox'],
-            // Digital rental/purchase platforms - match to common user services
-            'rakuten tv': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple'],
-            'google play movies': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple'],
-            'youtube': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple'],
-            'microsoft store': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple'],
-            'sky store': ['sky', 'skystore', 'nowtv', 'now'],
-            'vudu': ['amazonprime', 'amazon', 'amazon prime'],
-            'itunes': ['appletv', 'apple']
+            // Digital rental/purchase platforms - match to ANY user services (since they're widely available)
+            'rakuten tv': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple', 'netflix', 'disneyplus', 'disney'],
+            'google play movies': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple', 'netflix', 'disneyplus', 'disney'],
+            'youtube': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple', 'netflix', 'disneyplus', 'disney'],
+            'microsoft store': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple', 'netflix', 'disneyplus', 'disney'],
+            'sky store': ['sky', 'skystore', 'nowtv', 'now', 'amazonprime', 'amazon', 'amazon prime'],
+            'vudu': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple'],
+            'itunes': ['appletv', 'apple', 'amazonprime', 'amazon', 'amazon prime']
           };
           
           // Check for matches using the mapping
