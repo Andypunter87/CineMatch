@@ -47,6 +47,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register test API routes
   app.use('/api/test', testApiRoutes);
   
+  // Test endpoint for streaming availability (bypass OpenAI)
+  app.post('/api/test-streaming', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { getEnhancedRecommendations } = await import('./services/recommendation-enhancer');
+      const preferences = await storage.getUserPreferences(req.user!.id);
+      
+      if (!preferences) {
+        return res.status(400).json({ error: 'User preferences not found' });
+      }
+      
+      // Test films that should have UK streaming data
+      const testFilms: Film[] = [
+        { id: 1, title: "Fight Club", year: 1999, genre: "Drama", description: "Test film", matchReason: "Test" },
+        { id: 2, title: "The Dark Knight", year: 2008, genre: "Action", description: "Test film", matchReason: "Test" },
+        { id: 3, title: "Inception", year: 2010, genre: "Sci-Fi", description: "Test film", matchReason: "Test" }
+      ];
+      
+      console.log(`🧪 STREAMING TEST: Testing with user preferences:`, {
+        country: preferences.country,
+        streamingServices: preferences.streamingServices
+      });
+      
+      const enhancedFilms = await getEnhancedRecommendations(preferences, testFilms);
+      
+      console.log(`🧪 STREAMING TEST RESULTS:`, enhancedFilms.map(f => ({
+        title: f.title,
+        availableOn: f.availableOn,
+        hasStreamingData: f.hasStreamingData
+      })));
+      
+      res.json({
+        success: true,
+        testFilms: enhancedFilms,
+        userPreferences: {
+          country: preferences.country,
+          streamingServices: preferences.streamingServices
+        }
+      });
+    } catch (error) {
+      console.error('Streaming test error:', error);
+      res.status(500).json({ error: 'Streaming test failed' });
+    }
+  });
+  
   // Register Firebase/Firestore test routes
   app.use('/api/firebase', firebaseTestRoutes);
   
