@@ -78,13 +78,27 @@ export function setupAuth(app: Express) {
       { usernameField: 'email' }, // Use email field for authentication
       async (email, password, done) => {
         try {
+          console.log("Login attempt:", { email, hasPassword: !!password });
           const user = await storage.getUserByEmail(email);
-          if (!user || !(await comparePasswords(password, user.password))) {
+          console.log("User found:", { found: !!user, userId: user?.id });
+          
+          if (!user) {
+            console.log("Login failed: User not found");
             return done(null, false);
-          } else {
-            return done(null, user);
           }
+          
+          const passwordMatch = await comparePasswords(password, user.password);
+          console.log("Password comparison:", { match: passwordMatch });
+          
+          if (!passwordMatch) {
+            console.log("Login failed: Password mismatch");
+            return done(null, false);
+          }
+          
+          console.log("Login successful for user:", user.id);
+          return done(null, user);
         } catch (error) {
+          console.log("Login error:", error);
           return done(error);
         }
       }
