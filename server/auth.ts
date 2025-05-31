@@ -123,7 +123,12 @@ export function setupAuth(app: Express) {
         streamingServices: streamingServices || [],
         country,
         authProvider: "local",
-        needsOnboarding: true // Flag to direct new users to onboarding
+        onboardingState: {
+          completed: false,
+          currentStep: "intro",
+          progress: 0,
+          lastUpdated: new Date().toISOString(),
+        }
       };
       
       const user = await storage.createUser(userToCreate);

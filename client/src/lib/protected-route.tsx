@@ -77,10 +77,8 @@ export function ProtectedRoute({
           sessionStorage.setItem('hasInteractedWithRecommendations', 'true');
         }
         
-        // Check if user needs onboarding using onboardingState rather than needsOnboarding field
-        const needsOnboarding = typeof user.onboardingState === 'string' 
-          ? user.onboardingState !== 'completed'
-          : true; // Default to true if field is missing
+        // Check if user needs onboarding using onboardingState
+        const needsOnboarding = user.onboardingState?.completed === false;
         
         // For debugging
         console.log("Onboarding check:", {
