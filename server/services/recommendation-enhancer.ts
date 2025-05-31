@@ -425,10 +425,11 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
     });
     
     if (film.availableStreamingByCountry && preferences.streamingServices && preferences.country) {
-      const countryServices = film.availableStreamingByCountry[preferences.country.toUpperCase()] || [];
+      const tmdbCountryCode = mapUserCountryToTMDB(preferences.country);
+      const countryServices = film.availableStreamingByCountry[tmdbCountryCode] || [];
       
       console.log(`🎬 RAW TMDB SERVICES for "${film.title}":`, {
-        country: preferences.country.toUpperCase(),
+        country: tmdbCountryCode,
         tmdbServices: countryServices,
         tmdbCount: countryServices.length
       });
