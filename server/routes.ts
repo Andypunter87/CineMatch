@@ -1054,59 +1054,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Serve robots.txt
-  app.get('/robots.txt', (_req, res) => {
+  app.get('/robots.txt', (req, res) => {
     res.type('text/plain');
+    const baseUrl = process.env.BASE_URL || `https://${req.get('host')}` || 'https://cinematch.co.uk';
     res.send(`User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://cinematch.co.uk/sitemap.xml`);
+Sitemap: ${baseUrl}/sitemap.xml`);
   });
   
   // Serve sitemap.xml
-  app.get('/sitemap.xml', (_req, res) => {
+  app.get('/sitemap.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
+    
+    // Determine the base URL dynamically from the request or environment
+    const baseUrl = process.env.BASE_URL || `https://${req.get('host')}` || 'https://cinematch.co.uk';
+    const lastmod = new Date().toISOString().split('T')[0];
+    
     res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://cinematch.co.uk/</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <loc>${baseUrl}/</loc>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://cinematch.co.uk/auth</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <loc>${baseUrl}/auth</loc>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://cinematch.co.uk/watchlist</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <loc>${baseUrl}/watchlist</loc>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://cinematch.co.uk/profile</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <loc>${baseUrl}/profile</loc>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://cinematch.co.uk/terms</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <loc>${baseUrl}/terms</loc>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://cinematch.co.uk/privacy</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <loc>${baseUrl}/privacy</loc>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://cinematch.co.uk/admin</loc>
-    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <loc>${baseUrl}/admin</loc>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
