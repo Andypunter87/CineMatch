@@ -122,7 +122,6 @@ IMPORTANT ABOUT GROUP VIEWING:
 Return the requested number of films that match the criteria:
 - PRIORITIZE films most likely to be available on streaming services (including specialty platforms like Mubi, Criterion Channel, etc.)
 - Focus on films that have had digital releases and wide distribution
-- Prefer films from 2000 onwards when possible (better streaming coverage)
 - Include both popular and independent films that are commonly available on streaming platforms
 - ALL films should strongly match the user's mood, audience and setting preferences
 - Include films with complete information (especially those that have runtime data available)

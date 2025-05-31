@@ -701,16 +701,44 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
             </span>
             {film.availableOn && film.availableOn.length > 0 ? (
               // Film is available on user's streaming services
-              <div className="flex flex-wrap gap-1 mt-1">
-                {/* Remove duplicates by using Array.filter for uniqueness */}
-                {(film.availableOn || []).filter((service, index, self) => 
-                  self.indexOf(service) === index
-                ).map((service, index) => (
-                  <Badge key={index} variant="secondary" className="bg-green-100 text-green-800 border-green-200 max-w-[100px] truncate">
-                    <span className="truncate">{service}</span>
-                  </Badge>
-                ))}
-              </div>
+              <>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {/* Remove duplicates by using Array.filter for uniqueness */}
+                  {(film.availableOn || []).filter((service, index, self) => 
+                    self.indexOf(service) === index
+                  ).map((service, index) => {
+                    // Check if this is a rental/purchase service
+                    const isRental = ['itunes', 'google play', 'rakuten', 'youtube', 'microsoft store', 'sky store', 'vudu'].some(rental => 
+                      service.toLowerCase().includes(rental)
+                    );
+                    
+                    return (
+                      <Badge 
+                        key={index} 
+                        variant="secondary" 
+                        className={`${isRental 
+                          ? 'bg-blue-100 text-blue-800 border-blue-200' 
+                          : 'bg-green-100 text-green-800 border-green-200'
+                        } max-w-[100px] truncate`}
+                        title={isRental ? 'Available for rental/purchase' : 'Available on subscription'}
+                      >
+                        <span className="truncate">{service}</span>
+                        {isRental && <span className="ml-1">💳</span>}
+                      </Badge>
+                    );
+                  })}
+                </div>
+                {/* Add helpful text about rental options */}
+                {film.availableOn.some(service => 
+                  ['itunes', 'google play', 'rakuten', 'youtube', 'microsoft store', 'sky store', 'vudu'].some(rental => 
+                    service.toLowerCase().includes(rental)
+                  )
+                ) && (
+                  <div className="mt-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                    💳 Available for digital rental or purchase
+                  </div>
+                )}
+              </>
             ) : film.hasStreamingData ? (
               // We have streaming data, but film isn't on user's services
               <div className="mt-1 text-gray-500 text-xs italic">
