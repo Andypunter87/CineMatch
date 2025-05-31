@@ -44,7 +44,7 @@ export function ProtectedRoute({
         console.log("Protected route check - user:", JSON.stringify({
           id: user.id,
           name: user.name,
-          needsOnboarding: user.needsOnboarding
+          onboardingState: user.onboardingState
         }));
         
         // Several ways to bypass the onboarding redirect:
