@@ -120,10 +120,10 @@ IMPORTANT ABOUT GROUP VIEWING:
 3. For family viewing, prioritize films with positive themes, clear storylines, and appropriate content
 
 Return the requested number of films that match the criteria:
-- PRIORITIZE films from 2010 onwards (better streaming availability)
-- Focus on mainstream/popular films and well-distributed indie films
-- Favor movies from major studios and distributors
-- Prefer films that have had wide digital releases
+- PRIORITIZE films most likely to be available on streaming services (including specialty platforms like Mubi, Criterion Channel, etc.)
+- Focus on films that have had digital releases and wide distribution
+- Prefer films from 2000 onwards when possible (better streaming coverage)
+- Include both popular and independent films that are commonly available on streaming platforms
 - ALL films should strongly match the user's mood, audience and setting preferences
 - Include films with complete information (especially those that have runtime data available)
 - When user has rated films, prioritize recommendations that match their apparent taste

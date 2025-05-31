@@ -483,24 +483,53 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
           const serviceLower = service.toLowerCase();
           const userServiceLower = userService.toLowerCase();
           
-          // Check if Netflix matches
-          if (serviceLower.includes('netflix') && userServiceLower === 'netflix') {
-            console.log(`✅ MATCHED: "${service}" (TMDB) → "${userService}" (User) - Netflix`);
-            return true;
-          }
+          // Enhanced mapping that includes rental/purchase platforms
+          const serviceNameMapping = {
+            'netflix': ['netflix'],
+            'amazon video': ['amazonprime', 'amazon', 'amazon prime'],
+            'amazon prime video': ['amazonprime', 'amazon', 'amazon prime'],
+            'prime video': ['amazonprime', 'amazon', 'amazon prime'],
+            'disney+': ['disneyplus', 'disney'],
+            'disney plus': ['disneyplus', 'disney'],
+            'apple tv+': ['appletv', 'apple'],
+            'apple tv': ['appletv', 'apple'],
+            'hbo max': ['hbomax', 'hbo'],
+            'paramount+': ['paramountplus', 'paramount'],
+            'paramount plus': ['paramountplus', 'paramount'],
+            'peacock': ['peacock'],
+            'hulu': ['hulu'],
+            'bbc iplayer': ['bbciplayer', 'bbc', 'iplayer'],
+            'iplayer': ['bbciplayer', 'bbc', 'iplayer'],
+            'mubi': ['mubi'],
+            'sky go': ['sky', 'skygo'],
+            'now tv': ['nowtv', 'now'],
+            'now tv cinema': ['nowtv', 'now'],
+            'itvx': ['itvx', 'itv'],
+            'channel 4': ['channel4', 'c4'],
+            'all 4': ['channel4', 'c4', 'all4'],
+            'my5': ['my5', 'channel5'],
+            'crunchyroll': ['crunchyroll'],
+            'discovery+': ['discoveryplus', 'discovery'],
+            'hayu': ['hayu'],
+            'britbox': ['britbox'],
+            // Digital rental/purchase platforms - match to common user services
+            'rakuten tv': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple'],
+            'google play movies': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple'],
+            'youtube': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple'],
+            'microsoft store': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple'],
+            'sky store': ['sky', 'skystore', 'nowtv', 'now'],
+            'vudu': ['amazonprime', 'amazon', 'amazon prime'],
+            'itunes': ['appletv', 'apple']
+          };
           
-          // Check if Amazon Prime matches
-          if ((serviceLower.includes('amazon') || serviceLower.includes('prime')) && 
-              (userServiceLower === 'amazonprime' || userServiceLower === 'amazon')) {
-            console.log(`✅ MATCHED: "${service}" (TMDB) → "${userService}" (User) - Amazon`);
-            return true;
-          }
-          
-          // Check if Disney+ matches
-          if (serviceLower.includes('disney') && 
-              (userServiceLower === 'disneyplus' || userServiceLower === 'disney')) {
-            console.log(`✅ MATCHED: "${service}" (TMDB) → "${userService}" (User) - Disney`);
-            return true;
+          // Check for matches using the mapping
+          for (const [tmdbName, internalNames] of Object.entries(serviceNameMapping)) {
+            if (serviceLower.includes(tmdbName) || tmdbName.includes(serviceLower)) {
+              if (internalNames.includes(userServiceLower)) {
+                console.log(`✅ MATCHED: "${service}" (TMDB) → "${userService}" (User) via ${tmdbName}`);
+                return true;
+              }
+            }
           }
           
           return false;
