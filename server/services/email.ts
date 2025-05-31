@@ -254,7 +254,7 @@ Their email address is ${email}
       <p><span class="label">Email:</span> <span class="value">${email}</span></p>
     </div>
     
-    <a href="https://cine-match.replit.app/admin" class="button">View Admin Dashboard</a>
+    <a href="https://cinematch.co.uk/admin" class="button">View Admin Dashboard</a>
   </div>
   <div class="footer">
     <p>CineMatch - The Right Movie For Right Now</p>
