@@ -1,57 +1,121 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // --- Primary security rule pattern ---
-    // Allow authenticated users to read/write only to their own data in subcollections
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && 
-        (request.auth.uid == userId || // Allow user to access their own data
-        ((resource != null && resource.data.participants != null && resource.data.participants[request.auth.uid] != null) || // Allow shared access based on participants map for existing docs
-         (request.resource != null && request.resource.data.participants != null && request.resource.data.participants[request.auth.uid] != null))); // Same for new/updated docs
+    
+    // --- Core User Data Protection ---
+    // Users can only access their own data under their user ID
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // User preferences - only the user can access
+      match /preferences/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // User's onboarding ratings - only the user can access
+      match /onboardingRatings/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // User's recommendation feedback - only the user can access
+      match /recommendationFeedback/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // User's watchlist ratings - only the user can access
+      match /watchlistRatings/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // User's friends list - only the user can access
+      match /friends/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // User's session data - only the user can access
+      match /sessions/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Shared recommendations - user can access their own, plus invited sessions
+      match /sharedRecommendations/{sessionId} {
+        allow read, write: if request.auth != null && 
+          (request.auth.uid == userId || // User owns the session
+           (resource != null && resource.data.members != null && 
+            resource.data.members.hasAny([request.auth.uid])) || // User is a member
+           (request.resource != null && request.resource.data.members != null && 
+            request.resource.data.members.hasAny([request.auth.uid]))); // User being added as member
+      }
     }
     
-    // --- Legacy schema support (deprecated) ---
-    // Allow access to user_preferences with matching user IDs in legacy format
+    // --- Friend Invitations ---
+    // Allow users to create friend invitations for others (by email lookup)
+    match /friendInvitations/{invitationId} {
+      allow create: if request.auth != null && 
+        request.resource.data.fromUserId == request.auth.uid;
+      allow read, update: if request.auth != null && 
+        (resource.data.fromUserId == request.auth.uid || 
+         resource.data.toUserId == request.auth.uid);
+      allow delete: if request.auth != null && 
+        resource.data.fromUserId == request.auth.uid;
+    }
+    
+    // --- Public User Profiles (limited data) ---
+    // Allow reading basic profile info for friend connections
+    match /publicProfiles/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // --- System Data (read-only) ---
+    // Allow reading system-wide data like film catalogs, streaming services
+    match /systemData/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only server can write system data
+    }
+    
+    // --- Legacy Collections (gradually being phased out) ---
+    // Support for old data structure during migration
     match /user_preferences/{documentId} {
-      allow read, write: if 
-        // Either authenticated with matching ID
-        (request.auth != null && documentId.matches('user-.*') && 
-        documentId.split('user-')[1] == request.auth.uid) || 
-        // Or allow anonymous auth for onboarding flow
-        request.auth != null && request.auth.token.firebase.sign_in_provider == 'anonymous';
+      allow read, write: if request.auth != null && 
+        documentId.matches('user-.*') && 
+        documentId.split('user-')[1] == request.auth.uid;
     }
     
-    // Allow access to legacy collections with a userId field that matches the user
-    match /{collection}/{documentId} {
-      allow read, write: if 
-        collection in ['onboarding_ratings', 'recommendation_ratings', 'watchlist', 'friends'] &&
-        request.auth != null && 
+    match /onboarding_ratings/{documentId} {
+      allow read, write: if request.auth != null && 
         ((resource != null && resource.data.userId == request.auth.uid) || 
          (request.resource != null && request.resource.data.userId == request.auth.uid));
     }
     
-    // --- Shared recommendations access (legacy collection) ---
-    match /shared_recommendations/{sessionId} {
+    match /recommendation_ratings/{documentId} {
       allow read, write: if request.auth != null && 
-        ((resource != null && resource.data.participants != null && resource.data.participants[request.auth.uid] != null) || // Allow access if participant
-         (request.resource != null && request.resource.data.participants != null && request.resource.data.participants[request.auth.uid] != null));
+        ((resource != null && resource.data.userId == request.auth.uid) || 
+         (request.resource != null && request.resource.data.userId == request.auth.uid));
     }
     
-    // --- Shared recommendations in user subcollection ---
-    // This is already covered by the users/{userId}/{document=**} rule, but added for clarity
-    match /users/{userId}/sharedRecommendations/{sessionId} {
+    match /watchlist/{documentId} {
       allow read, write: if request.auth != null && 
-        (request.auth.uid == userId || // User can access their own shared recommendations
-         (resource != null && resource.data.friends != null && resource.data.friends.hasAny([request.auth.uid])) || // Participant in existing doc
-         (request.resource != null && request.resource.data.friends != null && request.resource.data.friends.hasAny([request.auth.uid]))); // Participant in new/updated doc
+        ((resource != null && resource.data.userId == request.auth.uid) || 
+         (request.resource != null && request.resource.data.userId == request.auth.uid));
     }
     
-    // --- Testing and development ---
+    // --- Admin Access (server-side only) ---
+    // Admin operations should use server-side Firebase Admin SDK
+    match /admin/{document=**} {
+      allow read, write: if false; // No client access to admin data
+    }
+    
+    // --- Development/Testing ---
+    // Test collections for development (remove in production)
     match /test/{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null && 
+        request.auth.token.email != null && 
+        request.auth.token.email.matches('.*@more-human\\.co\\.uk');
     }
     
-    // Default deny
+    // --- Default Deny ---
+    // Explicitly deny all other access
     match /{document=**} {
       allow read, write: if false;
     }
