@@ -78,7 +78,8 @@ export function ProtectedRoute({
         }
         
         // Check if user needs onboarding using onboardingState
-        const needsOnboarding = user.onboardingState?.completed === false;
+        const onboardingState = user.onboardingState as any;
+        const needsOnboarding = !onboardingState?.completed;
         
         // For debugging
         console.log("Onboarding check:", {

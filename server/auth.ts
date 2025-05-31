@@ -132,6 +132,12 @@ export function setupAuth(app: Express) {
       };
       
       const user = await storage.createUser(userToCreate);
+      
+      console.log("Created new user:", {
+        id: user.id,
+        email: user.email,
+        onboardingState: user.onboardingState
+      });
 
       // Send welcome email asynchronously (don't wait for it to complete)
       // Make sure name and email are properly sanitized
