@@ -15,6 +15,62 @@ import {
   applyFeedbackWeights 
 } from './firestore-feedback-reader';
 
+/**
+ * Map user country input to TMDB country codes
+ */
+function mapUserCountryToTMDB(userCountry: string): string {
+  const countryMapping: Record<string, string> = {
+    // Common user inputs to TMDB codes
+    'uk': 'GB',
+    'gb': 'GB',
+    'united kingdom': 'GB',
+    'britain': 'GB',
+    'england': 'GB',
+    'scotland': 'GB',
+    'wales': 'GB',
+    'us': 'US',
+    'usa': 'US',
+    'united states': 'US',
+    'america': 'US',
+    'canada': 'CA',
+    'france': 'FR',
+    'germany': 'DE',
+    'spain': 'ES',
+    'italy': 'IT',
+    'australia': 'AU',
+    'japan': 'JP',
+    'south korea': 'KR',
+    'korea': 'KR',
+    'netherlands': 'NL',
+    'sweden': 'SE',
+    'norway': 'NO',
+    'denmark': 'DK',
+    'finland': 'FI',
+    'brazil': 'BR',
+    'mexico': 'MX',
+    'argentina': 'AR',
+    'india': 'IN',
+    'china': 'CN',
+    'russia': 'RU'
+  };
+
+  const normalizedInput = userCountry.toLowerCase().trim();
+  
+  // Check if it's already a valid TMDB code (2-letter uppercase)
+  if (userCountry.length === 2 && userCountry === userCountry.toUpperCase()) {
+    return userCountry;
+  }
+  
+  // Look up in mapping
+  const mappedCode = countryMapping[normalizedInput];
+  if (mappedCode) {
+    return mappedCode;
+  }
+  
+  // Fallback: convert to uppercase (assuming it's already a valid code)
+  return userCountry.toUpperCase();
+}
+
 // Create a cache for movie data to avoid redundant API calls
 const tmdbMovieCache = new Map<string, any>();
 const TMDB_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
@@ -120,16 +176,18 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
           let availableOn: string[] = [];
           
           if (cachedFilm.availableStreamingByCountry && preferences.streamingServices && preferences.country) {
-            const countryServices = cachedFilm.availableStreamingByCountry[preferences.country.toUpperCase()] || [];
+            const tmdbCountryCode = mapUserCountryToTMDB(preferences.country);
+            const countryServices = cachedFilm.availableStreamingByCountry[tmdbCountryCode] || [];
             
             console.log(`🎬 STREAMING DEBUG for "${cachedFilm.title}" (CACHED):`, {
-              country: preferences.country.toUpperCase(),
+              country: preferences.country,
+              tmdbCountryCode: tmdbCountryCode,
               userServices: preferences.streamingServices,
               tmdbServices: countryServices
             });
             
             // Filter services to only those the user has
-            availableOn = countryServices.filter(service =>
+            availableOn = countryServices.filter((service: string) =>
               preferences.streamingServices?.some(userService => {
                 // Use the same comprehensive mapping as fresh processing
                 const tmdbToInternalMapping: Record<string, string[]> = {
@@ -206,16 +264,19 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
         
         if (preferences.streamingServices && preferences.streamingServices.length > 0 && 
             preferences.country && tmdbFilm.availableStreamingByCountry) {
+          // Map user territory to TMDB country code
+          const tmdbCountryCode = mapUserCountryToTMDB(preferences.country);
           // Get available services in user's country
-          const countrySvcs = tmdbFilm.availableStreamingByCountry[preferences.country] || [];
+          const countrySvcs = tmdbFilm.availableStreamingByCountry[tmdbCountryCode] || [];
           console.log(`🎬 STREAMING DEBUG for "${film.title}":`, {
             userCountry: preferences.country,
+            tmdbCountryCode: tmdbCountryCode,
             userServices: preferences.streamingServices,
             tmdbServices: countrySvcs
           });
           
           // Filter to only include services the user has selected
-          availableOn = countrySvcs.filter(service => 
+          availableOn = countrySvcs.filter((service: string) => 
             preferences.streamingServices?.some(userService => {
               // Create comprehensive mapping between TMDB provider names and our internal service names
               const tmdbToInternalMapping: Record<string, string[]> = {
