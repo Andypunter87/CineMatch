@@ -16,12 +16,7 @@ export default function Home() {
   // Check if user needs onboarding and redirect if necessary
   useEffect(() => {
     if (user) {
-      console.log("Home - DETAILED onboarding check for user:", {
-        id: user.id,
-        onboardingState: user.onboardingState,
-        onboardingStateType: typeof user.onboardingState,
-        onboardingStateString: JSON.stringify(user.onboardingState)
-      });
+      // Check onboarding state for this user
       
       const onboardingState = user.onboardingState as any;
       const needsOnboarding = !onboardingState?.completed;
@@ -35,31 +30,15 @@ export default function Home() {
       const userOnboardingKey = `onboardingCompleted_${user.id}`;
       const previouslyCompleted = localStorage.getItem(userOnboardingKey) === 'true';
       
-      console.log("Home - onboarding decision factors:", {
-        needsOnboarding,
-        bypassOnboarding,
-        previouslyCompleted,
-        urlParams: window.location.search,
-        localStorage_onboardingCompleted: localStorage.getItem('onboardingCompleted')
-      });
-      
       // If user just completed onboarding, mark it as complete in localStorage for this user
       if (justCompletedOnboarding) {
         localStorage.setItem(userOnboardingKey, 'true');
-        console.log("Home - onboarding just completed, marked in localStorage for user", user.id);
       }
       
       if (needsOnboarding && !bypassOnboarding && !previouslyCompleted) {
-        console.log("Home - REDIRECTING to onboarding");
         setLocation('/onboarding');
         return;
       }
-      
-      console.log("Home - STAYING on home page, reason:", {
-        needsOnboarding: !needsOnboarding ? "already completed" : "needs onboarding",
-        bypassOnboarding: bypassOnboarding ? "bypassed" : "not bypassed", 
-        previouslyCompleted: previouslyCompleted ? "previously completed" : "not previously completed"
-      });
     }
   }, [user, setLocation]);
   
