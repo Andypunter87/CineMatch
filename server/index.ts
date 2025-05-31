@@ -76,7 +76,11 @@ app.use((req, res, next) => {
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
+  
+  // Force development mode for Replit environment to ensure Vite serves the frontend
+  const isDevelopment = app.get("env") === "development" || process.env.NODE_ENV !== "production";
+  
+  if (isDevelopment) {
     await setupVite(app, server);
   } else {
     serveStatic(app);
