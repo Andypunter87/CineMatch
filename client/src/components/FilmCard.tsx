@@ -712,6 +712,23 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                       service.toLowerCase().includes(rental)
                     );
                     
+                    // Get service icon for better visual distinction
+                    const getServiceIcon = (serviceName: string) => {
+                      const name = serviceName.toLowerCase();
+                      if (name.includes('netflix')) return '🎬';
+                      if (name.includes('amazon') || name.includes('prime')) return '📦';
+                      if (name.includes('disney')) return '🏰';
+                      if (name.includes('apple') || name.includes('itunes')) return '🍎';
+                      if (name.includes('google') || name.includes('youtube')) return '🎥';
+                      if (name.includes('sky')) return '📡';
+                      if (name.includes('bbc')) return '📺';
+                      if (name.includes('hbo')) return '🎭';
+                      if (name.includes('paramount')) return '⭐';
+                      if (name.includes('mubi')) return '🎪';
+                      if (name.includes('rakuten')) return '🛒';
+                      return isRental ? '💳' : '📺';
+                    };
+                    
                     return (
                       <Badge 
                         key={index} 
@@ -719,11 +736,11 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
                         className={`${isRental 
                           ? 'bg-blue-100 text-blue-800 border-blue-200' 
                           : 'bg-green-100 text-green-800 border-green-200'
-                        } max-w-[100px] truncate`}
+                        } max-w-[120px] truncate flex items-center gap-1`}
                         title={isRental ? 'Available for rental/purchase' : 'Available on subscription'}
                       >
-                        <span className="truncate">{service}</span>
-                        {isRental && <span className="ml-1">💳</span>}
+                        <span className="text-xs">{getServiceIcon(service)}</span>
+                        <span className="truncate text-xs">{service}</span>
                       </Badge>
                     );
                   })}

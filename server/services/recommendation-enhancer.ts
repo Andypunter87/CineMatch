@@ -477,7 +477,7 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
         console.log(`🔍 SERVICE MATCH TEST: "${service}" → Match found: ${matchFound}`);
       });
       
-      // Apply comprehensive service name mapping
+      // Apply comprehensive service name mapping and remove duplicates
       availableOn = countryServices.filter((service: string) =>
         preferences.streamingServices?.some(userService => {
           const serviceLower = service.toLowerCase();
@@ -535,6 +535,9 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
           return false;
         })
       );
+      
+      // Remove duplicates from the final array
+      availableOn = [...new Set(availableOn)];
       
       console.log(`🎬 FINAL RESULT for "${film.title}":`, {
         availableOnCount: availableOn.length,
