@@ -282,10 +282,22 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     try {
+      console.log("Creating user with data:", {
+        email: insertUser.email,
+        name: insertUser.name,
+        onboardingState: insertUser.onboardingState
+      });
+      
       const [user] = await db
         .insert(users)
         .values(insertUser)
         .returning();
+      
+      console.log("User created in database:", {
+        id: user.id,
+        email: user.email,
+        onboardingState: user.onboardingState
+      });
       
       // Also create the user in Firestore for recommendation data
       try {
@@ -293,6 +305,8 @@ export class DatabaseStorage implements IStorage {
         const firestore = getFirestoreDb();
         
         if (firestore) {
+          console.log(`Creating Firestore preferences for user ${user.id}...`);
+          
           // Create user preferences document in Firestore
           const userDocRef = firestore
             .collection('users')
@@ -309,7 +323,9 @@ export class DatabaseStorage implements IStorage {
             lastUpdated: new Date()
           });
           
-          console.log(`Created Firestore user preferences for user ${user.id}`);
+          console.log(`✅ Created Firestore user preferences for user ${user.id}`);
+        } else {
+          console.warn(`Firestore not available for user ${user.id}`);
         }
       } catch (firestoreError) {
         console.warn(`Failed to create Firestore user preferences for user ${user.id}:`, firestoreError);
