@@ -37,6 +37,16 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface QuestionnaireProps {
   onSubmit: (data: RecommendationRequest) => void;
@@ -58,6 +68,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingInvites, setIsSendingInvites] = useState(false);
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
   
   // Check if we should show the friend invitation step (for "friends" or "date" audience)
@@ -188,7 +199,6 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   
   // Handle adding a friend email
   const addFriendEmail = () => {
-    console.log('addFriendEmail function called with:', { newFriendEmail, newFriendName });
     if (!newFriendEmail || !newFriendEmail.includes('@')) {
       toast({
         title: "Invalid email",
@@ -216,14 +226,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       return;
     }
     
-    const newInvite = { email: newFriendEmail, name: newFriendName };
-    console.log('Adding friend invitation:', newInvite);
-    
-    setFriendInvites(prev => {
-      const updated = [...prev, newInvite];
-      console.log('Updated friendInvites array after adding:', updated);
-      return updated;
-    });
+    setFriendInvites(prev => [...prev, { email: newFriendEmail, name: newFriendName }]);
     setNewFriendEmail("");
     setNewFriendName("");
   };
@@ -321,7 +324,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
     // Check if we're on the friend invitation step and have unsent invitations
     if (currentStep === 4 && shouldShowFriendStep && friendInvites.length > 0) {
       const confirmContinue = window.confirm(
-        "You have unsent friend invitations. Are you sure you want to continue without sending them? You can always invite friends later from your profile."
+        "You have friends waiting to be invited! Would you like to continue without sending the invitations? Don't worry - you can always invite them later from your profile."
       );
       
       if (!confirmContinue) {
@@ -857,28 +860,15 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   </Button>
                   <Button
                     onClick={() => {
-                      console.log('Continue button clicked - State check:', {
-                        friendInvitesLength: friendInvites.length,
-                        friendInvites: friendInvites,
-                        currentStep,
-                        shouldShowFriendStep,
-                        activeTab
-                      });
-                      
                       // Check if user has unsent invitations before continuing
                       if (friendInvites.length > 0) {
-                        console.log('Showing confirmation dialog - friendInvites found');
                         const confirmContinue = window.confirm(
-                          "You have unsent friend invitations. Are you sure you want to continue without sending them? You can always invite friends later from your profile."
+                          "You have friends waiting to be invited! Would you like to continue without sending the invitations? Don't worry - you can always invite them later from your profile."
                         );
                         
                         if (!confirmContinue) {
-                          console.log('User cancelled confirmation dialog');
                           return; // Don't continue if user cancels
                         }
-                        console.log('User confirmed, proceeding');
-                      } else {
-                        console.log('No unsent invitations found, proceeding directly');
                       }
                       goToNextStep();
                     }}
