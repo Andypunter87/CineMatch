@@ -50,8 +50,9 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay[]>([]);
   const [mood, setMood] = useState<RecommendationRequest["mood"] | "">("");
   const [runtime, setRuntime] = useState<RuntimeOption[]>([]);
-  const [friendEmails, setFriendEmails] = useState<string[]>([]);
+  const [friendInvites, setFriendInvites] = useState<{email: string, name: string}[]>([]);
   const [newFriendEmail, setNewFriendEmail] = useState("");
+  const [newFriendName, setNewFriendName] = useState("");
   const [selectedFriends, setSelectedFriends] = useState<number[]>([]);
   const [activeTab, setActiveTab] = useState<string>("select");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -77,7 +78,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   // Effect to run when audience changes - if it's not a social option, clear friend emails
   useEffect(() => {
     if (!shouldShowFriendStep) {
-      setFriendEmails([]);
+      setFriendInvites([]);
       setSelectedFriends([]);
     }
   }, [audience, shouldShowFriendStep]);
@@ -123,11 +124,8 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
 
   // Function to handle friend invitation
   const friendInviteMutation = useMutation({
-    mutationFn: async (email: string) => {
+    mutationFn: async ({ email, friendName }: { email: string; friendName: string }) => {
       try {
-        // Extract friend name from email (use part before @ as fallback)
-        const friendName = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').trim() || 'Friend';
-        
         const response = await apiRequest("POST", "/api/friend-requests", { 
           email, 
           friendName 
@@ -190,7 +188,16 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       return;
     }
     
-    if (friendEmails.includes(newFriendEmail)) {
+    if (!newFriendName || newFriendName.trim() === '') {
+      toast({
+        title: "Friend's name required",
+        description: "Please enter your friend's name",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (friendInvites.some(invite => invite.email === newFriendEmail)) {
       toast({
         title: "Duplicate email",
         description: "This email is already in your invite list",
@@ -199,13 +206,14 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       return;
     }
     
-    setFriendEmails(prev => [...prev, newFriendEmail]);
+    setFriendInvites(prev => [...prev, { email: newFriendEmail, name: newFriendName }]);
     setNewFriendEmail("");
+    setNewFriendName("");
   };
   
   // Remove a friend email
   const removeFriendEmail = (email: string) => {
-    setFriendEmails(prev => prev.filter(e => e !== email));
+    setFriendInvites(prev => prev.filter(invite => invite.email !== email));
   };
   
   // Send invitations to all emails
@@ -219,7 +227,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       return;
     }
     
-    if (friendEmails.length === 0) return;
+    if (friendInvites.length === 0) return;
     
     setIsSendingInvites(true);
     
@@ -229,18 +237,18 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       let alreadyFriendsCount = 0;
       let errorCount = 0;
       
-      for (const email of friendEmails) {
+      for (const invite of friendInvites) {
         try {
-          await friendInviteMutation.mutateAsync(email);
+          await friendInviteMutation.mutateAsync({ email: invite.email, friendName: invite.name });
           successCount++;
         } catch (error: any) {
           if (error.message?.includes("already friends")) {
             // This is not really an error, the user is already friends with this person
             alreadyFriendsCount++;
-            console.log(`User is already friends with ${email}`);
+            console.log(`User is already friends with ${invite.email}`);
           } else {
             errorCount++;
-            console.error(`Failed to send invitation to ${email}:`, error);
+            console.error(`Failed to send invitation to ${invite.email}:`, error);
           }
         }
       }
