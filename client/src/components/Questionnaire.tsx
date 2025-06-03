@@ -310,7 +310,13 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   };
 
   const goToNextStep = () => {
-    console.log('goToNextStep called:', { currentStep, shouldShowFriendStep, friendInvitesLength: friendInvites.length });
+    console.log('goToNextStep called:', { 
+      currentStep, 
+      shouldShowFriendStep, 
+      friendInvitesLength: friendInvites.length,
+      friendInvites: friendInvites,
+      activeTab
+    });
     
     // Check if we're on the friend invitation step and have unsent invitations
     if (currentStep === 4 && shouldShowFriendStep && friendInvites.length > 0) {
