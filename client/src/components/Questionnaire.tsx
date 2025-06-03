@@ -323,13 +323,8 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   const goToNextStep = () => {
     // Check if we're on the friend invitation step and have unsent invitations
     if (currentStep === 4 && shouldShowFriendStep && friendInvites.length > 0) {
-      const confirmContinue = window.confirm(
-        "You have friends waiting to be invited! Would you like to continue without sending the invitations? Don't worry - you can always invite them later from your profile."
-      );
-      
-      if (!confirmContinue) {
-        return; // Don't continue if user cancels
-      }
+      setShowConfirmDialog(true);
+      return; // Show dialog instead of continuing immediately
     }
 
     // Determine if we should show friend step
@@ -338,6 +333,18 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       setCurrentStep(currentStep + 1);
     } else if (currentStep === 4 && shouldShowFriendStep) {
       // If we're on the standard step 4 (time selection) and coming from friend step
+      setCurrentStep(currentStep + 1);
+    } else if (currentStep < 6) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handleConfirmContinue = () => {
+    setShowConfirmDialog(false);
+    // Continue with the original goToNextStep logic
+    if (currentStep === 3 && shouldShowFriendStep) {
+      setCurrentStep(currentStep + 1);
+    } else if (currentStep === 4 && shouldShowFriendStep) {
       setCurrentStep(currentStep + 1);
     } else if (currentStep < 6) {
       setCurrentStep(currentStep + 1);
@@ -862,13 +869,8 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     onClick={() => {
                       // Check if user has unsent invitations before continuing
                       if (friendInvites.length > 0) {
-                        const confirmContinue = window.confirm(
-                          "You have friends waiting to be invited! Would you like to continue without sending the invitations? Don't worry - you can always invite them later from your profile."
-                        );
-                        
-                        if (!confirmContinue) {
-                          return; // Don't continue if user cancels
-                        }
+                        setShowConfirmDialog(true);
+                        return;
                       }
                       goToNextStep();
                     }}
@@ -1281,6 +1283,24 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Custom Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Friends waiting to be invited!</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have friends waiting to be invited! Would you like to continue without sending the invitations? Don't worry - you can always invite them later from your profile.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay here</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmContinue}>
+              Continue anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
