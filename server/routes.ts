@@ -1413,6 +1413,8 @@ Sitemap: ${baseUrl}/sitemap.xml`);
       // Send invitation email for new users
       const senderName = req.user!.name || req.user!.username || 'A friend';
       const senderEmail = req.user!.email; // Get the sender's email for notification
+      
+      console.log(`Attempting to send friend invitation email to ${email} from ${senderName}`);
       const emailSent = await sendFriendInvitationEmail(
         senderName,
         email,
@@ -1421,6 +1423,7 @@ Sitemap: ${baseUrl}/sitemap.xml`);
         senderEmail, // Pass sender email for confirmation notification
         friendName // Pass the recipient's name
       );
+      console.log(`Friend invitation email result: ${emailSent ? 'SUCCESS' : 'FAILED'} for ${email}`);
       
       // Track the event
       await storage.trackEvent({
@@ -1437,7 +1440,11 @@ Sitemap: ${baseUrl}/sitemap.xml`);
       
       res.status(201).json({
         ...newRequest,
-        emailSent
+        emailSent,
+        message: emailSent 
+          ? `Invitation sent to ${friendName}! They'll receive an email to join CineMatch and you'll be able to create blended recommendations together.`
+          : `Friend request created for ${friendName}, but email delivery failed. They can still join using the invite code.`,
+        inviteCode: newRequest.inviteCode
       });
     } catch (error) {
       console.error("Error creating friend request:", error);

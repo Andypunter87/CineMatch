@@ -156,13 +156,15 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       }
     },
     onSuccess: (data: FriendInviteResponse) => {
+      const message = data.message || (data.directAdd 
+        ? `${data.friend?.name || data.friend?.email} has been added to your friends.`
+        : `Invitation sent! They'll receive an email to join CineMatch and you'll be able to create blended recommendations together.`);
+        
       toast({
         title: data.directAdd 
           ? "Friend added!" 
           : "Invitation sent!",
-        description: data.directAdd 
-          ? `${data.friend?.name || data.friend?.email} has been added to your friends.` 
-          : `We'll notify you when they join.`,
+        description: message,
         variant: "default"
       });
     },
@@ -264,7 +266,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       if (successCount > 0) {
         toast({
           title: `${successCount} invitation${successCount > 1 ? 's' : ''} sent!`,
-          description: "We'll notify you when they join.",
+          description: `Your friend${successCount > 1 ? 's' : ''} will receive an email to join CineMatch. Once they accept, you'll be able to create blended recommendations together for the perfect movie night!`,
           variant: "default"
         });
       }
