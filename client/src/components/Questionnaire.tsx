@@ -310,6 +310,17 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   };
 
   const goToNextStep = () => {
+    // Check if we're on the friend invitation step and have unsent invitations
+    if (currentStep === 4 && shouldShowFriendStep && friendInvites.length > 0) {
+      const confirmContinue = window.confirm(
+        "You have unsent friend invitations. Are you sure you want to continue without sending them? You can always invite friends later from your profile."
+      );
+      
+      if (!confirmContinue) {
+        return; // Don't continue if user cancels
+      }
+    }
+
     // Determine if we should show friend step
     if (currentStep === 3 && shouldShowFriendStep) {
       // If user selected "friends" or "date" audience, add friend collection step
