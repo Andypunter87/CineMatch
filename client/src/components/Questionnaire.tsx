@@ -188,6 +188,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   
   // Handle adding a friend email
   const addFriendEmail = () => {
+    console.log('addFriendEmail function called with:', { newFriendEmail, newFriendName });
     if (!newFriendEmail || !newFriendEmail.includes('@')) {
       toast({
         title: "Invalid email",
