@@ -294,8 +294,8 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
         // Clear the list after sending
         setFriendInvites([]);
         
-        // Go to next step
-        goToNextStep();
+        // Don't automatically go to next step - let user click Continue
+        // This preserves the user's choice to proceed or add more invitations
       }
     } catch (error) {
       console.error("Error in invitation process:", error);
