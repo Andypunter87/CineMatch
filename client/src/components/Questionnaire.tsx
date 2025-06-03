@@ -215,7 +215,14 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       return;
     }
     
-    setFriendInvites(prev => [...prev, { email: newFriendEmail, name: newFriendName }]);
+    const newInvite = { email: newFriendEmail, name: newFriendName };
+    console.log('Adding friend invitation:', newInvite);
+    
+    setFriendInvites(prev => {
+      const updated = [...prev, newInvite];
+      console.log('Updated friendInvites array after adding:', updated);
+      return updated;
+    });
     setNewFriendEmail("");
     setNewFriendName("");
   };
