@@ -125,7 +125,13 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   const friendInviteMutation = useMutation({
     mutationFn: async (email: string) => {
       try {
-        const response = await apiRequest("POST", "/api/friend-requests", { email });
+        // Extract friend name from email (use part before @ as fallback)
+        const friendName = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').trim() || 'Friend';
+        
+        const response = await apiRequest("POST", "/api/friend-requests", { 
+          email, 
+          friendName 
+        });
         
         if (!response.ok) {
           const errorData = await response.json();
