@@ -57,6 +57,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
   const [activeTab, setActiveTab] = useState<string>("select");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingInvites, setIsSendingInvites] = useState(false);
+  const [showIncompleteWarning, setShowIncompleteWarning] = useState(false);
   const { toast } = useToast();
   
   // Check if we should show the friend invitation step (for "friends" or "date" audience)
@@ -82,6 +83,12 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       setSelectedFriends([]);
     }
   }, [audience, shouldShowFriendStep]);
+
+  // Check if user has incomplete invitation data
+  const hasIncompleteInvitation = newFriendEmail.trim() !== '' || newFriendName.trim() !== '';
+  
+  // Check if Continue button should be disabled
+  const shouldDisableContinue = hasIncompleteInvitation;
   
   // Friend invitation response type
   interface FriendInviteResponse {
@@ -283,7 +290,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       // If we had any successful operations (either new invites or identified existing friends)
       if (successCount > 0 || alreadyFriendsCount > 0) {
         // Clear the list after sending
-        setFriendEmails([]);
+        setFriendInvites([]);
         
         // Go to next step
         goToNextStep();
@@ -658,9 +665,9 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     <TabsTrigger value="invite" className="flex items-center gap-2">
                       <UserPlus className="w-4 h-4" />
                       <span>Invite New Friends</span>
-                      {friendEmails.length > 0 && 
+                      {friendInvites.length > 0 && 
                         <span className="inline-flex items-center justify-center bg-blue-100 text-blue-800 text-xs font-medium rounded-full h-5 px-2 ml-1">
-                          {friendEmails.length}
+                          {friendInvites.length}
                         </span>
                       }
                     </TabsTrigger>
@@ -729,43 +736,53 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                   
                   <TabsContent value="invite">
                     <div className="space-y-4">
-                      <div className="flex gap-2">
+                      <div className="space-y-3">
                         <Input
-                          type="email"
-                          placeholder="Enter friend's email"
-                          value={newFriendEmail}
-                          onChange={(e) => setNewFriendEmail(e.target.value)}
-                          className="flex-1"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && newFriendEmail) {
-                              e.preventDefault();
-                              addFriendEmail();
-                            }
-                          }}
+                          placeholder="Friend's name"
+                          value={newFriendName}
+                          onChange={(e) => setNewFriendName(e.target.value)}
+                          className="w-full"
                         />
-                        <Button
-                          onClick={addFriendEmail}
-                          className="bg-primary hover:bg-primary/90"
-                          disabled={!newFriendEmail}
-                        >
-                          <PlusCircle className="w-4 h-4 mr-1" />
-                          Add
-                        </Button>
+                        <div className="flex gap-2">
+                          <Input
+                            type="email"
+                            placeholder="Friend's email"
+                            value={newFriendEmail}
+                            onChange={(e) => setNewFriendEmail(e.target.value)}
+                            className="flex-1"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && newFriendEmail && newFriendName) {
+                                e.preventDefault();
+                                addFriendEmail();
+                              }
+                            }}
+                          />
+                          <Button
+                            onClick={addFriendEmail}
+                            className="bg-primary hover:bg-primary/90"
+                            disabled={!newFriendEmail || !newFriendName}
+                          >
+                            <PlusCircle className="w-4 h-4 mr-1" />
+                            Add
+                          </Button>
+                        </div>
                       </div>
                       
-                      {friendEmails.length > 0 && (
+                      {friendInvites.length > 0 && (
                         <div className="border rounded-md p-3 max-h-40 overflow-y-auto">
-                          <p className="text-sm text-gray-500 mb-2">Friend emails to invite:</p>
+                          <p className="text-sm text-gray-500 mb-2">Friends to invite:</p>
                           <div className="flex flex-wrap gap-2">
-                            {friendEmails.map((email) => (
+                            {friendInvites.map((invite) => (
                               <div 
-                                key={email} 
+                                key={invite.email} 
                                 className="bg-blue-50 text-blue-800 rounded-full px-3 py-1 text-sm flex items-center gap-1"
                               >
-                                <Mail className="w-3 h-3" />
-                                <span>{email}</span>
+                                <UserIcon className="w-3 h-3" />
+                                <span>{invite.name}</span>
+                                <Mail className="w-3 h-3 mx-1" />
+                                <span className="text-xs">{invite.email}</span>
                                 <button 
-                                  onClick={() => removeFriendEmail(email)}
+                                  onClick={() => removeFriendEmail(invite.email)}
                                   className="ml-1 text-blue-600 hover:text-blue-800"
                                 >
                                   <X className="w-3 h-3" />
@@ -776,7 +793,7 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                         </div>
                       )}
                       
-                      {friendEmails.length > 0 && (
+                      {friendInvites.length > 0 && (
                         <div className="pt-2">
                           <Button
                             onClick={sendInvitations}
