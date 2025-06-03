@@ -215,7 +215,11 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
       return;
     }
     
-    setFriendInvites(prev => [...prev, { email: newFriendEmail, name: newFriendName }]);
+    setFriendInvites(prev => {
+      const updated = [...prev, { email: newFriendEmail, name: newFriendName }];
+      console.log('Adding friend invitation, updated array:', updated);
+      return updated;
+    });
     setNewFriendEmail("");
     setNewFriendName("");
   };
@@ -859,7 +863,19 @@ export default function Questionnaire({ onSubmit }: QuestionnaireProps) {
                     Back
                   </Button>
                   <Button
-                    onClick={goToNextStep}
+                    onClick={() => {
+                      // Check if user has unsent invitations before continuing
+                      if (friendInvites.length > 0) {
+                        const confirmContinue = window.confirm(
+                          "You have unsent friend invitations. Are you sure you want to continue without sending them? You can always invite friends later from your profile."
+                        );
+                        
+                        if (!confirmContinue) {
+                          return; // Don't continue if user cancels
+                        }
+                      }
+                      goToNextStep();
+                    }}
                     className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white"
                   >
                     Continue
