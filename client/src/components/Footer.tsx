@@ -57,7 +57,7 @@ export default function Footer() {
                 Privacy Policy
               </a>
               <a 
-                href="mailto:support@cinematch.app" 
+                href="mailto:andy@more-human.co.uk" 
                 className="hover:text-blue-500 transition-colors"
               >
                 Contact

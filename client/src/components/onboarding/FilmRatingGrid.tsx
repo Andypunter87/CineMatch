@@ -164,11 +164,7 @@ export function FilmRatingGrid({
         </Button>
       </div>
       
-      {!canProceed() && (
-        <p className="text-sm text-muted-foreground text-center">
-          Please rate at least 5 films to continue
-        </p>
-      )}
+
     </div>
   );
 }

@@ -186,9 +186,6 @@ export function SingleFilmRating({
     <div className="flex flex-col space-y-6">
       <div className="text-center space-y-1">
         <h3 className="text-lg font-medium">Rate films to get personalized recommendations</h3>
-        <p className="text-sm text-muted-foreground">
-          Rate at least {Math.min(5, films.length)} films to continue
-        </p>
         <div className="mt-2">
           <Progress value={progressPercentage} className="h-2" />
           <p className="text-xs text-muted-foreground mt-1">
