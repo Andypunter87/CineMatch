@@ -1,14 +1,11 @@
-import { MailService } from '@sendgrid/mail';
+import { sendEmail } from './services/email';
 import { db } from './db';
 import { users } from '@shared/schema';
 
-// Initialize SendGrid
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error("SENDGRID_API_KEY environment variable is not set");
+// Check if Brevo API key is available
+if (!process.env.BREVO_API_KEY) {
+  throw new Error("BREVO_API_KEY environment variable is not set");
 }
-
-const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
 
 /**
  * Creates a rich HTML email with CineMatch branding for the anniversary announcement

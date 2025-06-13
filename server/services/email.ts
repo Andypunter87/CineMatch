@@ -1,30 +1,22 @@
-import { TransactionalEmailsApi, SendSmtpEmail } from '@getbrevo/brevo';
+import * as brevo from '@getbrevo/brevo';
 import { User } from '@shared/schema';
 
 // Initialize Brevo with API key
 let brevoInitialized = false;
-let brevoApiInstance: TransactionalEmailsApi;
-
-if (!process.env.BREVO_API_KEY) {
-  console.warn('BREVO_API_KEY not found. Email functionality will not work.');
-} else {
-  try {
-    brevoApiInstance = new TransactionalEmailsApi();
-    brevoApiInstance.setApiKey(TransactionalEmailsApi.ApiKeyAuth, process.env.BREVO_API_KEY);
-    brevoInitialized = true;
-    console.log('Brevo initialized successfully');
-  } catch (error) {
-    console.error('Failed to initialize Brevo:', error);
-  }
-}
 
 // For development/debugging purposes only
-// Set to true to simulate emails without actually sending them
-// Or set the DEBUG_EMAIL_MODE environment variable to control this behavior
 const DEBUG_MODE = false;
 
 // Sender email address - using the verified sender email
 const FROM_EMAIL = 'andy@more-human.co.uk';
+
+// Check if Brevo API key is available
+if (!process.env.BREVO_API_KEY) {
+  console.warn('BREVO_API_KEY not found. Email functionality will not work.');
+} else {
+  brevoInitialized = true;
+  console.log('Brevo initialized successfully');
+}
 
 interface EmailOptions {
   to: string;
@@ -53,21 +45,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
     if (!brevoInitialized) {
       console.error('Cannot send email: Brevo is not properly initialized');
       
-      // Try to initialize again if API key is available
-      if (process.env.BREVO_API_KEY) {
-        try {
-          const defaultClient = brevo.ApiClient.instance;
-          const apiKey = defaultClient.authentications['api-key'];
-          apiKey.apiKey = process.env.BREVO_API_KEY;
-          
-          brevoApiInstance = new brevo.TransactionalEmailsApi();
-          brevoInitialized = true;
-          console.log('Brevo re-initialized successfully');
-        } catch (initError) {
-          console.error('Failed to re-initialize Brevo:', initError);
-          return false;
-        }
-      } else {
+      if (!process.env.BREVO_API_KEY) {
         console.error('Cannot send email: BREVO_API_KEY is not set');
         return false;
       }
@@ -91,20 +69,31 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
       return false;
     }
 
-    // Prepare the email message for Brevo
-    const sendSmtpEmail = new brevo.SendSmtpEmail();
-    sendSmtpEmail.sender = { email: FROM_EMAIL, name: 'CineMatch' };
-    sendSmtpEmail.to = [{ email: options.to }];
-    sendSmtpEmail.subject = options.subject;
-    sendSmtpEmail.textContent = textContent;
+    // Use Brevo API directly with fetch
+    const brevoUrl = 'https://api.brevo.com/v3/smtp/email';
     
-    // Only add html if it's non-empty
-    if (htmlContent) {
-      sendSmtpEmail.htmlContent = htmlContent;
-    }
+    const emailData = {
+      sender: { email: FROM_EMAIL, name: 'CineMatch' },
+      to: [{ email: options.to }],
+      subject: options.subject,
+      textContent: textContent,
+      htmlContent: htmlContent || undefined
+    };
 
     try {
-      await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
+      const response = await fetch(brevoUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': process.env.BREVO_API_KEY!
+        },
+        body: JSON.stringify(emailData)
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Brevo API error: ${response.status} - ${errorText}`);
+      }
       console.log(`Email sent successfully to ${options.to}`);
       return true;
     } catch (sendError: any) {
@@ -118,7 +107,6 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
       }
       
       // For now, we'll continue the app flow even if emails fail
-      // In production, you might want to implement a retry mechanism or queue
       console.log('WARNING: Email sending failed, but application will continue');
       
       // If we're in debug mode, let's pretend the email was sent
@@ -146,120 +134,21 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
  * Send an admin notification email about new user registration
  */
 export async function sendAdminNewUserNotification(name: string, email: string): Promise<boolean> {
-  const now = new Date();
-  const formattedDate = now.toLocaleString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    hour12: true
-  });
-  
-  const subject = 'CineMatch: New User Registration';
-  
-  // Create a plain text version
-  const textContent = `
-You have a new user!
-They signed up on ${formattedDate}
-Their name is ${name}
-Their email address is ${email}
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #e5007d;">🎬 New CineMatch User Registration</h2>
+      <p>A new user has registered on CineMatch:</p>
+      <ul>
+        <li><strong>Name:</strong> ${name}</li>
+        <li><strong>Email:</strong> ${email}</li>
+      </ul>
+      <p>Visit the <a href="https://cinematch.co.uk/admin">admin dashboard</a> to view more details.</p>
+    </div>
   `;
-  
-  // Create HTML content with inline styles for email compatibility
-  const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CineMatch: New User Registration</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .header {
-      background: linear-gradient(to right, #3b82f6, #06b6d4);
-      color: white;
-      padding: 20px;
-      border-radius: 8px 8px 0 0;
-      text-align: center;
-    }
-    .content {
-      padding: 20px;
-      background-color: #fff;
-      border: 1px solid #e5e7eb;
-      border-top: none;
-      border-radius: 0 0 8px 8px;
-    }
-    .info-row {
-      margin: 10px 0;
-      padding: 10px;
-      background-color: #f9fafb;
-      border-radius: 4px;
-    }
-    .label {
-      font-weight: bold;
-      color: #4b5563;
-    }
-    .value {
-      color: #111827;
-    }
-    .button {
-      display: inline-block;
-      background: linear-gradient(to right, #3b82f6, #06b6d4);
-      color: white;
-      text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 4px;
-      margin: 20px 0;
-      font-weight: bold;
-    }
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 12px;
-      color: #6b7280;
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>🎉 New User Registration 🎉</h1>
-  </div>
-  <div class="content">
-    <h2>You have a new user!</h2>
-    
-    <div class="info-row">
-      <p><span class="label">Registration Date:</span> <span class="value">${formattedDate}</span></p>
-    </div>
-    
-    <div class="info-row">
-      <p><span class="label">Name:</span> <span class="value">${name}</span></p>
-    </div>
-    
-    <div class="info-row">
-      <p><span class="label">Email:</span> <span class="value">${email}</span></p>
-    </div>
-    
-    <a href="https://cinematch.co.uk/admin" class="button">View Admin Dashboard</a>
-  </div>
-  <div class="footer">
-    <p>CineMatch - The Right Movie For Right Now</p>
-    <p>This is an automated notification. Please do not reply to this email.</p>
-  </div>
-</body>
-</html>`;
 
-  return sendEmail({
+  return await sendEmail({
     to: 'andy@more-human.co.uk',
-    subject,
-    text: textContent,
+    subject: '🎬 New CineMatch User Registration',
     html: htmlContent
   });
 }
@@ -268,107 +157,45 @@ Their email address is ${email}
  * Send a welcome email to a new user
  */
 export async function sendWelcomeEmail(name: string, email: string): Promise<boolean> {
-  const subject = 'Welcome to CineMatch!';
-  
-  // Create a plain text version for email clients that don't support HTML
-  const textContent = `
-Hi ${name},
-
-I'm Andy, the creator of CineMatch. I just wanted to say a huge thank you for signing up and trying us out!
-
-I love movies. Nothing makes me happier than discovering something new to watch that I connect with. However, in an age of almost infinite choice at our fingertips it can sometimes be hard to find the right thing to watch at the right time.
-
-I wanted to make something that makes it easier to find something awesome to watch quickly and ideally, find something that I might not have discovered on my own. CineMatch is my attempt to solve that problem.
-
-This project is very much in its early stages, so I'd love to hear from you about how you find it and if you have any feedback for me, I'd really love to hear it!
-
-I hope you find something amazing to watch,
-Andy
-
----
-Powered by More Human | Contact: andy@more-human.co.uk
-This email was sent to ${email}. If you didn't create this account, please ignore this email.
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #ffffff;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #e5007d; font-size: 28px; margin: 0;">🎬 Welcome to CineMatch!</h1>
+      </div>
+      
+      <p style="font-size: 16px; line-height: 1.6;">Hi ${name},</p>
+      
+      <p style="font-size: 16px; line-height: 1.6;">
+        Welcome to CineMatch - your personalized film recommendation platform! We're excited to help you discover your next favorite movie.
+      </p>
+      
+      <div style="background-color: #1a1a1a; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="color: #e5007d; margin-top: 0;">🎯 What's Next?</h3>
+        <ul style="line-height: 1.8;">
+          <li>Complete your onboarding to get personalized recommendations</li>
+          <li>Rate some films to improve your suggestions</li>
+          <li>Explore our extensive movie database</li>
+          <li>Build your watchlist for future viewing</li>
+        </ul>
+      </div>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="https://cinematch.co.uk" 
+           style="background-color: #e5007d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+          Start Exploring
+        </a>
+      </div>
+      
+      <p style="font-size: 14px; color: #888; margin-top: 30px;">
+        Happy movie watching!<br>
+        The CineMatch Team
+      </p>
+    </div>
   `;
-  
-  // Create HTML content with inline styles for email compatibility
-  const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Welcome to CineMatch</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .header {
-      background: linear-gradient(to right, #3b82f6, #06b6d4);
-      color: white;
-      padding: 20px;
-      border-radius: 8px 8px 0 0;
-      text-align: center;
-    }
-    .content {
-      padding: 20px;
-      background-color: #fff;
-      border: 1px solid #e5e7eb;
-      border-top: none;
-      border-radius: 0 0 8px 8px;
-    }
-    .button {
-      display: inline-block;
-      background: linear-gradient(to right, #3b82f6, #06b6d4);
-      color: white;
-      text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 4px;
-      margin: 20px 0;
-      font-weight: bold;
-    }
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 12px;
-      color: #6b7280;
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>Welcome to CineMatch!</h1>
-  </div>
-  <div class="content">
-    <p>Hi ${name},</p>
-    
-    <p>I'm Andy, the creator of CineMatch. I just wanted to say a huge thank you for signing up and trying us out!</p>
-    
-    <p>I love movies. Nothing makes me happier than discovering something new to watch that I connect with. However, in an age of almost infinite choice at our fingertips it can sometimes be hard to find the right thing to watch at the right time. If you are anything like me, you probably end up spending ages flipping through the different menus of the streaming services just hoping that something perfect for your mood jumps out at you.</p>
-    
-    <p>I wanted to make something that makes it easier to find something awesome to watch quickly and ideally, find something that I might not have discovered on my own. CineMatch is my attempt to solve that problem.</p>
-    
-    <p>This project is very much in its early stages, so I'd love to hear from you about how you find it and if you have any feedback for me, I'd really love to hear it!</p>
-    
-    <a href="https://cine-match.replit.app" class="button">Explore Recommendations</a>
-    
-    <p>I hope you find something amazing to watch,</p>
-    <p>Andy</p>
-  </div>
-  <div class="footer">
-    <p>Powered by More Human | Contact: andy@more-human.co.uk</p>
-    <p>This email was sent to ${email}. If you didn't create this account, please ignore this email.</p>
-  </div>
-</body>
-</html>`;
 
-  return sendEmail({
+  return await sendEmail({
     to: email,
-    subject,
-    text: textContent,
+    subject: '🎬 Welcome to CineMatch - Your Movie Journey Begins!',
     html: htmlContent
   });
 }
@@ -383,293 +210,63 @@ This email was sent to ${email}. If you didn't create this account, please ignor
  * @param recipientName Optional recipient name for personalization
  */
 export async function sendFriendInvitationEmail(
-  senderName: string, 
-  recipientEmail: string, 
+  senderName: string,
+  recipientEmail: string,
   inviteCode: string,
-  isExistingUser: boolean = false,
-  senderEmail?: string, // Optional parameter for sender notification
-  recipientName?: string // Optional recipient name for personalization
+  isExistingUser: boolean,
+  senderEmail?: string,
+  recipientName?: string
 ): Promise<boolean> {
-  // Base URL for the application
+  const displayName = recipientName || 'there';
+  const actionText = isExistingUser ? 'Accept Friend Request' : 'Join CineMatch & Connect';
   const baseUrl = 'https://cinematch.co.uk';
-  
-  // Different subject lines for new vs existing users
-  const subject = isExistingUser
-    ? `${senderName} wants to connect on CineMatch`
-    : `${senderName} has invited you to join CineMatch`;
-  
-  // Create invite link with the invite code - ensuring consistent URL formats
-  // Always direct to the friends page for both existing and new users
-  // The auth system will handle redirecting unauthenticated users to login/signup
-  const inviteLink = `${baseUrl}/friends?accept=${inviteCode}`;
-  
-  // Log the link for debugging purposes
-  console.log(`Generated invite link: ${inviteLink} for ${recipientEmail} (${isExistingUser ? 'existing' : 'new'} user)`);
-  
-  
-  // Create a plain text version for email clients that don't support HTML
-  const textContent = isExistingUser
-    ? `
-Hi ${recipientName || 'there'},
+  const inviteUrl = `${baseUrl}${isExistingUser ? '/friends' : '/register'}?invite=${inviteCode}`;
 
-${senderName} wants to connect with you on CineMatch so you can share film recommendations and plan watch parties together.
-
-Click the link below to accept their friend request:
-${inviteLink}
-
-Once connected, you'll be able to:
-- Share your favorite films and recommendations
-- Create watch parties with shared preferences
-- Discover movies that you'll both enjoy
-
-Happy movie watching!
-
----
-Powered by More Human | Contact: andy@more-human.co.uk
-`
-    : `
-Hi ${recipientName || 'there'},
-
-${senderName} has invited you to join CineMatch - a personalized film recommendation platform.
-
-CineMatch helps you discover films that match your mood and preferences, and now you can share the experience with friends!
-
-Use this link to create an account and connect with ${senderName}:
-${inviteLink}
-
-CineMatch makes it easy to:
-- Find movies that match your mood and situation
-- Discover films available on your streaming services
-- Share recommendations with friends
-- Plan movie nights together
-
-Happy movie watching!
-
----
-Powered by More Human | Contact: andy@more-human.co.uk
-If you didn't expect this invitation, you can safely ignore this email.
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #ffffff;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #e5007d; font-size: 28px; margin: 0;">🎬 CineMatch Friend Invitation</h1>
+      </div>
+      
+      <p style="font-size: 16px; line-height: 1.6;">Hi ${displayName},</p>
+      
+      <p style="font-size: 16px; line-height: 1.6;">
+        <strong>${senderName}</strong> has invited you to connect on CineMatch! 
+        ${isExistingUser ? 
+          'They want to share movie recommendations and discover films together.' : 
+          'Join the platform to get personalized movie recommendations and connect with friends.'
+        }
+      </p>
+      
+      <div style="background-color: #1a1a1a; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="color: #e5007d; margin-top: 0;">🎯 What You'll Get:</h3>
+        <ul style="line-height: 1.8;">
+          <li>Personalized movie recommendations</li>
+          <li>Share watchlists with friends</li>
+          <li>Discover what your friends are watching</li>
+          <li>Get social recommendations based on shared tastes</li>
+        </ul>
+      </div>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${inviteUrl}" 
+           style="background-color: #e5007d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+          ${actionText}
+        </a>
+      </div>
+      
+      <p style="font-size: 14px; color: #888; margin-top: 30px;">
+        This invitation was sent by ${senderName} (${senderEmail || 'CineMatch user'}).<br>
+        If you don't want to receive these invitations, please ignore this email.
+      </p>
+    </div>
   `;
-  
-  // Create HTML content with inline styles for email compatibility
-  let htmlContent = '';
-  
-  // Different HTML templates for new vs existing users
-  if (isExistingUser) {
-    // For existing users - simpler email focusing on the friend connection
-    htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Friend Request on CineMatch</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .header {
-      background: linear-gradient(to right, #3b82f6, #06b6d4);
-      color: white;
-      padding: 20px;
-      border-radius: 8px 8px 0 0;
-      text-align: center;
-    }
-    .content {
-      padding: 20px;
-      background-color: #fff;
-      border: 1px solid #e5e7eb;
-      border-top: none;
-      border-radius: 0 0 8px 8px;
-    }
-    .friend-bubble {
-      background-color: #f0f9ff;
-      border-left: 4px solid #3b82f6;
-      padding: 15px;
-      margin: 20px 0;
-      border-radius: 0 8px 8px 0;
-    }
-    .button {
-      display: inline-block;
-      background: linear-gradient(to right, #3b82f6, #06b6d4);
-      color: white;
-      text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 4px;
-      margin: 20px 0;
-      font-weight: bold;
-      text-align: center;
-    }
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 12px;
-      color: #6b7280;
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>New Friend Request</h1>
-  </div>
-  <div class="content">
-    <div class="friend-bubble">
-      <p><strong>${senderName}</strong> wants to connect with you on CineMatch 🎬</p>
-    </div>
-    
-    <p>Hi ${recipientName || 'there'}, connect with ${senderName} to share recommendations and plan movie nights together.</p>
-    
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${inviteLink}" class="button">Accept Friend Request</a>
-    </div>
-    
-    <p>Once connected, you'll be able to:</p>
-    <ul>
-      <li>Share your favorite films and recommendations</li>
-      <li>Create watch parties with shared preferences</li>
-      <li>Discover movies that you'll both enjoy</li>
-    </ul>
-  </div>
-  <div class="footer">
-    <p>Powered by More Human | Contact: andy@more-human.co.uk</p>
-  </div>
-</body>
-</html>`;
-  } else {
-    // For new users - more detailed email about the platform
-    htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Friend Invitation to CineMatch</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .header {
-      background: linear-gradient(to right, #3b82f6, #06b6d4);
-      color: white;
-      padding: 20px;
-      border-radius: 8px 8px 0 0;
-      text-align: center;
-    }
-    .content {
-      padding: 20px;
-      background-color: #fff;
-      border: 1px solid #e5e7eb;
-      border-top: none;
-      border-radius: 0 0 8px 8px;
-    }
-    .friend-bubble {
-      background-color: #f0f9ff;
-      border-left: 4px solid #3b82f6;
-      padding: 15px;
-      margin: 20px 0;
-      border-radius: 0 8px 8px 0;
-    }
-    .button {
-      display: inline-block;
-      background: linear-gradient(to right, #3b82f6, #06b6d4);
-      color: white;
-      text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 4px;
-      margin: 20px 0;
-      font-weight: bold;
-      text-align: center;
-    }
-    .features {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      margin: 20px 0;
-    }
-    .feature {
-      flex: 1 0 45%;
-      padding: 15px;
-      background-color: #f9fafb;
-      border-radius: 8px;
-      min-width: 200px;
-    }
-    .feature-title {
-      font-weight: bold;
-      color: #3b82f6;
-      margin-bottom: 5px;
-    }
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 12px;
-      color: #6b7280;
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>You've Been Invited to CineMatch!</h1>
-  </div>
-  <div class="content">
-    <div class="friend-bubble">
-      <p><strong>${senderName}</strong> has invited you to join CineMatch - a personalized film recommendation platform. 🎬</p>
-    </div>
-    
-    <p>Hi ${recipientName || 'there'}, CineMatch helps you discover films that match your mood and preferences, and now you can share the experience with friends!</p>
-    
-    <div class="features">
-      <div class="feature">
-        <div class="feature-title">🎯 Personalized Recommendations</div>
-        <p>Get film suggestions tailored to your mood and preferences</p>
-      </div>
-      <div class="feature">
-        <div class="feature-title">👥 Watch with Friends</div>
-        <p>Create viewing parties and get recommendations that everyone will enjoy</p>
-      </div>
-      <div class="feature">
-        <div class="feature-title">📋 Build Your Watchlist</div>
-        <p>Save films to watch later and track what you've seen</p>
-      </div>
-      <div class="feature">
-        <div class="feature-title">🔍 Find Where to Stream</div>
-        <p>See which of your services offer each recommended film</p>
-      </div>
-    </div>
-    
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${inviteLink}" class="button">Accept Invitation & Join</a>
-    </div>
-    
-    <p>When you accept this invitation, you'll be automatically connected with ${senderName} so you can share recommendations and create movie nights together.</p>
-  </div>
-  <div class="footer">
-    <p>Powered by More Human | Contact: andy@more-human.co.uk</p>
-    <p>If you didn't expect this invitation, you can safely ignore this email.</p>
-  </div>
-</body>
-</html>`;
-  }
 
-  const invitationSent = await sendEmail({
+  return await sendEmail({
     to: recipientEmail,
-    subject,
-    text: textContent,
+    subject: `🎬 ${senderName} invited you to CineMatch!`,
     html: htmlContent
   });
-  
-  // If senderEmail is provided, send a confirmation notification
-  if (invitationSent && senderEmail) {
-    await sendInvitationConfirmationEmail(senderName, senderEmail, recipientEmail, isExistingUser, recipientName);
-  }
-  
-  return invitationSent;
 }
 
 /**
@@ -687,118 +284,49 @@ export async function sendInvitationConfirmationEmail(
   isExistingUser: boolean,
   recipientName?: string
 ): Promise<boolean> {
-  // Base URL for the application
-  const baseUrl = 'https://cinematch.co.uk';
-  
-  const subject = 'Friend invitation sent on CineMatch';
-  
-  // Create a plain text version
-  const textContent = `
-Hi ${senderName},
+  const displayName = recipientName || recipientEmail;
+  const statusText = isExistingUser ? 'existing CineMatch user' : 'new user';
 
-Your invitation to ${recipientName ? recipientName + ' (' + recipientEmail + ')' : recipientEmail} has been sent successfully.
-
-${isExistingUser 
-  ? `Since ${recipientName || recipientEmail} is already a CineMatch user, they'll receive a friend request notification.` 
-  : `We've sent ${recipientName || recipientEmail} an invitation to join CineMatch and connect with you.`}
-
-You'll receive a notification when they accept your invitation.
-
-You can manage your friend connections at ${baseUrl}/friends
-
-Happy movie watching!
-
----
-Powered by More Human | Contact: andy@more-human.co.uk
-`;
-  
-  // Create HTML content with inline styles for email compatibility
-  const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CineMatch Friend Invitation Sent</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .header {
-      background: linear-gradient(to right, #3b82f6, #06b6d4);
-      color: white;
-      padding: 20px;
-      border-radius: 8px 8px 0 0;
-      text-align: center;
-    }
-    .content {
-      padding: 20px;
-      background-color: #fff;
-      border: 1px solid #e5e7eb;
-      border-top: none;
-      border-radius: 0 0 8px 8px;
-    }
-    .status-bubble {
-      background-color: #f0f9ff;
-      border-left: 4px solid #3b82f6;
-      padding: 15px;
-      margin: 20px 0;
-      border-radius: 0 8px 8px 0;
-    }
-    .button {
-      display: inline-block;
-      background: linear-gradient(to right, #3b82f6, #06b6d4);
-      color: white;
-      text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 4px;
-      margin: 20px 0;
-      font-weight: bold;
-      text-align: center;
-    }
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 12px;
-      color: #6b7280;
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>Invitation Sent</h1>
-  </div>
-  <div class="content">
-    <p>Hi ${senderName},</p>
-    
-    <div class="status-bubble">
-      <p>Your invitation to <strong>${recipientName ? `${recipientName} (${recipientEmail})` : recipientEmail}</strong> has been sent successfully! 🎬</p>
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #ffffff;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #e5007d; font-size: 28px; margin: 0;">🎬 Invitation Sent!</h1>
+      </div>
+      
+      <p style="font-size: 16px; line-height: 1.6;">Hi ${senderName},</p>
+      
+      <p style="font-size: 16px; line-height: 1.6;">
+        Your friend invitation has been sent successfully! We've emailed <strong>${displayName}</strong> 
+        (${statusText}) at ${recipientEmail}.
+      </p>
+      
+      <div style="background-color: #1a1a1a; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="color: #e5007d; margin-top: 0;">🎯 What happens next?</h3>
+        <p style="line-height: 1.8; margin: 0;">
+          ${isExistingUser ? 
+            'They can accept your friend request from their CineMatch friends page, and you\'ll be notified when they do.' :
+            'If they join CineMatch using your invitation, you\'ll automatically become friends and can start sharing recommendations!'
+          }
+        </p>
+      </div>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="https://cinematch.co.uk/friends" 
+           style="background-color: #e5007d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+          Manage Friends
+        </a>
+      </div>
+      
+      <p style="font-size: 14px; color: #888; margin-top: 30px;">
+        Thanks for helping grow the CineMatch community!<br>
+        The CineMatch Team
+      </p>
     </div>
-    
-    <p>${isExistingUser 
-      ? `Since ${recipientName || recipientEmail} is already a CineMatch user, they'll receive a friend request notification.` 
-      : `We've sent ${recipientName || recipientEmail} an invitation to join CineMatch and connect with you.`}</p>
-    
-    <p>You'll receive a notification when they accept your invitation.</p>
-    
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${baseUrl}/friends" class="button">Manage Friend Connections</a>
-    </div>
-  </div>
-  <div class="footer">
-    <p>Powered by More Human | Contact: andy@more-human.co.uk</p>
-  </div>
-</body>
-</html>`;
-  
-  return sendEmail({
+  `;
+
+  return await sendEmail({
     to: senderEmail,
-    subject,
-    text: textContent,
+    subject: `🎬 Friend invitation sent to ${displayName}`,
     html: htmlContent
   });
 }
@@ -813,237 +341,84 @@ export async function sendFriendRequestAcceptedEmails(
   requesterUser: User,
   accepterUser: User
 ): Promise<boolean> {
-  // Base URL for the application
-  const baseUrl = 'https://cinematch.co.uk';
-  
-  try {
-    // Send email to the requester (person who sent the original invite)
-    const requesterSubject = `${accepterUser.name || accepterUser.username} accepted your friend request`;
-    const requesterText = `
-Hi ${requesterUser.name || requesterUser.username},
-
-Great news! ${accepterUser.name || accepterUser.username} has accepted your friend request on CineMatch.
-
-You can now:
-- Share film recommendations with each other
-- Create shared movie nights
-- Discover films that match both your preferences
-
-Visit your friends page to see your connections:
-${baseUrl}/friends
-
-Happy movie watching!
-
----
-Powered by More Human | Contact: andy@more-human.co.uk
-    `;
-    
-    const requesterHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Friend Request Accepted on CineMatch</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .header {
-      background: linear-gradient(to right, #3b82f6, #06b6d4);
-      color: white;
-      padding: 20px;
-      border-radius: 8px 8px 0 0;
-      text-align: center;
-    }
-    .content {
-      padding: 20px;
-      background-color: #fff;
-      border: 1px solid #e5e7eb;
-      border-top: none;
-      border-radius: 0 0 8px 8px;
-    }
-    .success-bubble {
-      background-color: #f0fdf4;
-      border-left: 4px solid #22c55e;
-      padding: 15px;
-      margin: 20px 0;
-      border-radius: 0 8px 8px 0;
-    }
-    .button {
-      display: inline-block;
-      background: linear-gradient(to right, #3b82f6, #06b6d4);
-      color: white;
-      text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 4px;
-      margin: 20px 0;
-      font-weight: bold;
-      text-align: center;
-    }
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 12px;
-      color: #6b7280;
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>Friend Request Accepted</h1>
-  </div>
-  <div class="content">
-    <p>Hi ${requesterUser.name || requesterUser.username},</p>
-    
-    <div class="success-bubble">
-      <p><strong>${accepterUser.name || accepterUser.username}</strong> has accepted your friend request on CineMatch! 🎬</p>
+  // Email to the person who sent the original request
+  const requesterHtml = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #ffffff;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #e5007d; font-size: 28px; margin: 0;">🎉 Friend Request Accepted!</h1>
+      </div>
+      
+      <p style="font-size: 16px; line-height: 1.6;">Hi ${requesterUser.name},</p>
+      
+      <p style="font-size: 16px; line-height: 1.6;">
+        Great news! <strong>${accepterUser.name}</strong> has accepted your friend request on CineMatch. 
+        You can now share movie recommendations and see what each other are watching!
+      </p>
+      
+      <div style="background-color: #1a1a1a; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="color: #e5007d; margin-top: 0;">🎬 Start sharing:</h3>
+        <ul style="line-height: 1.8;">
+          <li>Check out ${accepterUser.name}'s watchlist</li>
+          <li>Get recommendations based on shared interests</li>
+          <li>See their latest movie ratings</li>
+        </ul>
+      </div>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="https://cinematch.co.uk/friends" 
+           style="background-color: #e5007d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+          View Friends
+        </a>
+      </div>
     </div>
-    
-    <p>You can now:</p>
-    <ul>
-      <li>Share film recommendations with each other</li>
-      <li>Create shared movie nights</li>
-      <li>Discover films that match both your preferences</li>
-    </ul>
-    
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${baseUrl}/friends" class="button">View Friends</a>
-    </div>
-  </div>
-  <div class="footer">
-    <p>Powered by More Human | Contact: andy@more-human.co.uk</p>
-  </div>
-</body>
-</html>`;
+  `;
 
-    // Send to requester
-    await sendEmail({
+  // Email to the person who accepted the request
+  const accepterHtml = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #ffffff;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #e5007d; font-size: 28px; margin: 0;">🎬 You're Now Friends!</h1>
+      </div>
+      
+      <p style="font-size: 16px; line-height: 1.6;">Hi ${accepterUser.name},</p>
+      
+      <p style="font-size: 16px; line-height: 1.6;">
+        You've successfully connected with <strong>${requesterUser.name}</strong> on CineMatch! 
+        Start exploring movies together and sharing your recommendations.
+      </p>
+      
+      <div style="background-color: #1a1a1a; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="color: #e5007d; margin-top: 0;">🎯 Explore together:</h3>
+        <ul style="line-height: 1.8;">
+          <li>Browse ${requesterUser.name}'s favorite movies</li>
+          <li>Get social recommendations</li>
+          <li>Share your latest discoveries</li>
+        </ul>
+      </div>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="https://cinematch.co.uk/friends" 
+           style="background-color: #e5007d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+          View Friends
+        </a>
+      </div>
+    </div>
+  `;
+
+  // Send both emails
+  const results = await Promise.all([
+    sendEmail({
       to: requesterUser.email,
-      subject: requesterSubject,
-      text: requesterText,
+      subject: `🎉 ${accepterUser.name} accepted your friend request on CineMatch!`,
       html: requesterHtml
-    });
-    
-    // Send email to the accepter (person who accepted the request)
-    const accepterSubject = `You're now connected with ${requesterUser.name || requesterUser.username} on CineMatch`;
-    const accepterText = `
-Hi ${accepterUser.name || accepterUser.username},
-
-You are now connected with ${requesterUser.name || requesterUser.username} on CineMatch.
-
-You can now:
-- Share film recommendations with each other
-- Create shared movie nights
-- Discover films that match both your preferences
-
-Visit your friends page to see your connections:
-${baseUrl}/friends
-
-Happy movie watching!
-
----
-Powered by More Human | Contact: andy@more-human.co.uk
-    `;
-    
-    const accepterHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>New Friend Connection on CineMatch</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .header {
-      background: linear-gradient(to right, #3b82f6, #06b6d4);
-      color: white;
-      padding: 20px;
-      border-radius: 8px 8px 0 0;
-      text-align: center;
-    }
-    .content {
-      padding: 20px;
-      background-color: #fff;
-      border: 1px solid #e5e7eb;
-      border-top: none;
-      border-radius: 0 0 8px 8px;
-    }
-    .success-bubble {
-      background-color: #f0fdf4;
-      border-left: 4px solid #22c55e;
-      padding: 15px;
-      margin: 20px 0;
-      border-radius: 0 8px 8px 0;
-    }
-    .button {
-      display: inline-block;
-      background: linear-gradient(to right, #3b82f6, #06b6d4);
-      color: white;
-      text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 4px;
-      margin: 20px 0;
-      font-weight: bold;
-      text-align: center;
-    }
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 12px;
-      color: #6b7280;
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>New Friend Connection</h1>
-  </div>
-  <div class="content">
-    <p>Hi ${accepterUser.name || accepterUser.username},</p>
-    
-    <div class="success-bubble">
-      <p>You're now connected with <strong>${requesterUser.name || requesterUser.username}</strong> on CineMatch! 🎬</p>
-    </div>
-    
-    <p>You can now:</p>
-    <ul>
-      <li>Share film recommendations with each other</li>
-      <li>Create shared movie nights</li>
-      <li>Discover films that match both your preferences</li>
-    </ul>
-    
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${baseUrl}/friends" class="button">View Friends</a>
-    </div>
-  </div>
-  <div class="footer">
-    <p>Powered by More Human | Contact: andy@more-human.co.uk</p>
-  </div>
-</body>
-</html>`;
-
-    // Send to accepter
-    await sendEmail({
+    }),
+    sendEmail({
       to: accepterUser.email,
-      subject: accepterSubject,
-      text: accepterText,
+      subject: `🎬 You're now friends with ${requesterUser.name} on CineMatch!`,
       html: accepterHtml
-    });
-    
-    return true;
-  } catch (error) {
-    console.error("Error sending friend request accepted emails:", error);
-    return false;
-  }
+    })
+  ]);
+
+  // Return true if both emails were sent successfully
+  return results.every(result => result === true);
 }
