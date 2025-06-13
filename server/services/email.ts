@@ -1,24 +1,20 @@
-import sgMail from '@sendgrid/mail';
+import { TransactionalEmailsApi, SendSmtpEmail } from '@getbrevo/brevo';
 import { User } from '@shared/schema';
 
-// Initialize SendGrid with API key
-let sgMailInitialized = false;
+// Initialize Brevo with API key
+let brevoInitialized = false;
+let brevoApiInstance: TransactionalEmailsApi;
 
-if (!process.env.SENDGRID_API_KEY) {
-  console.warn('SENDGRID_API_KEY not found. Email functionality will not work.');
+if (!process.env.BREVO_API_KEY) {
+  console.warn('BREVO_API_KEY not found. Email functionality will not work.');
 } else {
-  // Validate the API key format (should start with "SG.")
-  if (!process.env.SENDGRID_API_KEY.startsWith('SG.')) {
-    console.warn('SENDGRID_API_KEY appears to be in an invalid format. It should start with "SG."');
-    console.warn('Email functionality may not work correctly.');
-  }
-  
   try {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    sgMailInitialized = true;
-    console.log('SendGrid initialized successfully');
+    brevoApiInstance = new TransactionalEmailsApi();
+    brevoApiInstance.setApiKey(TransactionalEmailsApi.ApiKeyAuth, process.env.BREVO_API_KEY);
+    brevoInitialized = true;
+    console.log('Brevo initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize SendGrid:', error);
+    console.error('Failed to initialize Brevo:', error);
   }
 }
 
@@ -38,7 +34,7 @@ interface EmailOptions {
 }
 
 /**
- * Send an email using SendGrid
+ * Send an email using Brevo
  */
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
   try {
@@ -53,22 +49,26 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
       return true;
     }
     
-    // Check if SendGrid is properly initialized
-    if (!sgMailInitialized) {
-      console.error('Cannot send email: SendGrid is not properly initialized');
+    // Check if Brevo is properly initialized
+    if (!brevoInitialized) {
+      console.error('Cannot send email: Brevo is not properly initialized');
       
       // Try to initialize again if API key is available
-      if (process.env.SENDGRID_API_KEY) {
+      if (process.env.BREVO_API_KEY) {
         try {
-          sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-          sgMailInitialized = true;
-          console.log('SendGrid re-initialized successfully');
+          const defaultClient = brevo.ApiClient.instance;
+          const apiKey = defaultClient.authentications['api-key'];
+          apiKey.apiKey = process.env.BREVO_API_KEY;
+          
+          brevoApiInstance = new brevo.TransactionalEmailsApi();
+          brevoInitialized = true;
+          console.log('Brevo re-initialized successfully');
         } catch (initError) {
-          console.error('Failed to re-initialize SendGrid:', initError);
+          console.error('Failed to re-initialize Brevo:', initError);
           return false;
         }
       } else {
-        console.error('Cannot send email: SENDGRID_API_KEY is not set');
+        console.error('Cannot send email: BREVO_API_KEY is not set');
         return false;
       }
     }
@@ -91,37 +91,30 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
       return false;
     }
 
-    // Define message with proper typing
-    const msg: {
-      to: string;
-      from: string;
-      subject: string;
-      text: string;
-      html?: string;
-    } = {
-      to: options.to,
-      from: FROM_EMAIL,
-      subject: options.subject,
-      text: textContent,
-    };
+    // Prepare the email message for Brevo
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = { email: FROM_EMAIL, name: 'CineMatch' };
+    sendSmtpEmail.to = [{ email: options.to }];
+    sendSmtpEmail.subject = options.subject;
+    sendSmtpEmail.textContent = textContent;
     
     // Only add html if it's non-empty
     if (htmlContent) {
-      msg.html = htmlContent;
+      sendSmtpEmail.htmlContent = htmlContent;
     }
 
     try {
-      await sgMail.send(msg);
+      await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
       console.log(`Email sent successfully to ${options.to}`);
       return true;
     } catch (sendError: any) {
-      // Log detailed SendGrid error information
+      // Log detailed Brevo error information
       console.error('Error sending email:', sendError.toString());
       
       // If we have response details, log them for debugging
       if (sendError.response && sendError.response.body) {
         const errorDetails = sendError.response.body;
-        console.error('SendGrid API error details:', JSON.stringify(errorDetails, null, 2));
+        console.error('Brevo API error details:', JSON.stringify(errorDetails, null, 2));
       }
       
       // For now, we'll continue the app flow even if emails fail
