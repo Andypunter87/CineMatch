@@ -6,7 +6,8 @@ let brevoTransporter: nodemailer.Transporter | null = null;
 let brevoInitialized = false;
 
 // For development/debugging purposes only
-const DEBUG_MODE = false;
+// Set to true temporarily to allow application to function while SMTP is being configured
+const DEBUG_MODE = true;
 
 // Sender email address - using the verified sender email
 const FROM_EMAIL = 'andy@more-human.co.uk';
@@ -19,11 +20,13 @@ if (!process.env.BREVO_API_KEY) {
     brevoTransporter = nodemailer.createTransport({
       host: 'smtp-relay.brevo.com',
       port: 587,
-      secure: false, // true for 465, false for other ports
+      secure: false,
       auth: {
-        user: 'andy@more-human.co.uk', // Use verified email as username
-        pass: process.env.BREVO_API_KEY, // Use SMTP key as password
+        user: process.env.BREVO_SMTP_LOGIN,
+        pass: process.env.BREVO_SMTP_PASSWORD,
       },
+      debug: true, // Enable debug logging
+      logger: true // Enable logger
     });
     brevoInitialized = true;
     console.log('Brevo initialized successfully');
@@ -71,8 +74,8 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
           port: 587,
           secure: false,
           auth: {
-            user: 'andy@more-human.co.uk',
-            pass: process.env.BREVO_API_KEY,
+            user: process.env.BREVO_SMTP_LOGIN,
+            pass: process.env.BREVO_SMTP_PASSWORD,
           },
         });
         brevoInitialized = true;
