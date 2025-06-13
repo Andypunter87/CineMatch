@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import {
@@ -8,8 +8,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, User, LogOut, Settings, Bookmark, Home, BarChart, Users, Bug, Database } from "lucide-react";
+import { Loader2, User, LogOut, Settings, Bookmark, Home, BarChart, Users, Bug, Database, Sparkles } from "lucide-react";
 import { NotificationBell } from "./notifications/NotificationBell";
+
+interface MoodCardData {
+  moodName: string;
+  year: number;
+  month: number;
+}
 
 export default function Header() {
   const { user, isLoading, logoutMutation } = useAuth();
@@ -85,6 +91,7 @@ export default function Header() {
                       <span>My Friends</span>
                     </DropdownMenuItem>
                   </Link>
+                  <MoodCardMenuLink onClick={() => setIsMenuOpen(false)} />
                   {user.isAdmin && (
                     <Link href="/admin">
                       <DropdownMenuItem className="cursor-pointer" onClick={() => setIsMenuOpen(false)}>
