@@ -86,7 +86,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
         headers: {
           'Content-Type': 'application/json',
           'accept': 'application/json',
-          'Authorization': `Bearer ${process.env.BREVO_API_KEY!}`
+          'api-key': process.env.BREVO_API_KEY!
         },
         body: JSON.stringify(emailData)
       });
