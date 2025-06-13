@@ -21,6 +21,7 @@ import FirestoreTestPage from "@/pages/firestore-test-page";
 import FirestoreTestDebug from "@/pages/firestore-test-debug";
 import FirebaseTestPage from "@/pages/firebase-test-page";
 import FirebaseDiagnosticPage from "@/pages/firebase-diagnostic-page";
+import MoodCard from "@/pages/MoodCard";
 import { AuthProvider } from "@/hooks/use-auth";
 import { FirebaseAuthProvider } from "@/components/FirebaseAuthProvider";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -49,6 +50,7 @@ function Router() {
       <ProtectedRoute path="/firestore-test-debug" component={FirestoreTestDebug} />
       <ProtectedRoute path="/firebase-test" component={FirebaseTestPage} />
       <ProtectedRoute path="/firebase-diagnostic" component={FirebaseDiagnosticPage} />
+      <Route path="/mymood/:year-:month" component={MoodCard} />
       <Route component={NotFound} />
     </Switch>
   );
