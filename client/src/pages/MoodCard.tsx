@@ -47,9 +47,9 @@ export default function MoodCard() {
         setLoading(true);
         setError(null);
 
-        const endpoint = isPublicShare 
-          ? `/api/mood-card/public/${year}/${month}?uid=${uid}`
-          : `/api/mood-card/${year}/${month}`;
+        // Always use public endpoint for the share URL format
+        const endpoint = `/api/mood-card/public/${year}/${month}?uid=${uid || '1'}`;
+        console.log('Fetching from endpoint:', endpoint);
 
         const response = await fetch(endpoint);
         
@@ -61,8 +61,10 @@ export default function MoodCard() {
         }
 
         const data = await response.json();
+        console.log('Received mood card data:', data);
         setMoodCard(data);
       } catch (err) {
+        console.error('Error fetching mood card:', err);
         setError(err instanceof Error ? err.message : "Failed to load mood card");
       } finally {
         setLoading(false);
@@ -72,7 +74,7 @@ export default function MoodCard() {
     if (year && month) {
       fetchMoodCard();
     }
-  }, [year, month, uid, isPublicShare]);
+  }, [year, month, uid]);
 
   const generateMoodCard = async () => {
     try {

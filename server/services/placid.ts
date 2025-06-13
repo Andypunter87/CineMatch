@@ -39,7 +39,7 @@ export async function generatePlacidImage(templateData: PlacidTemplateData): Pro
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        template_uuid: 'monthly-mood-card', // Template ID - this would be created in Placid dashboard
+        template_uuid: 'monthly-mood-card', // Template ID - needs to be created in Placid dashboard first
         layers: {
           mood_name: {
             text: templateData.mood_name
