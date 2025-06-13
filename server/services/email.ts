@@ -152,14 +152,14 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
  */
 export async function sendAdminNewUserNotification(name: string, email: string): Promise<boolean> {
   const htmlContent = `
-    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #e5007d;">🎬 New CineMatch User Registration</h2>
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background-color: #ffffff; color: #000000;">
+      <h2 style="color: #3B82F6;">🎬 New CineMatch User Registration</h2>
       <p>A new user has registered on CineMatch:</p>
       <ul>
         <li><strong>Name:</strong> ${name}</li>
         <li><strong>Email:</strong> ${email}</li>
       </ul>
-      <p>Visit the <a href="https://cinematch.co.uk/admin">admin dashboard</a> to view more details.</p>
+      <p>Visit the <a href="https://cinematch.co.uk/admin" style="color: #3B82F6;">admin dashboard</a> to view more details.</p>
     </div>
   `;
 
@@ -175,9 +175,9 @@ export async function sendAdminNewUserNotification(name: string, email: string):
  */
 export async function sendWelcomeEmail(name: string, email: string): Promise<boolean> {
   const htmlContent = `
-    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #ffffff;">
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background-color: #ffffff; color: #000000;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #e5007d; font-size: 28px; margin: 0;">🎬 Welcome to CineMatch!</h1>
+        <h1 style="color: #3B82F6; font-size: 28px; margin: 0;">🎬 Welcome to CineMatch!</h1>
       </div>
       
       <p style="font-size: 16px; line-height: 1.6;">Hi ${name},</p>
@@ -186,9 +186,9 @@ export async function sendWelcomeEmail(name: string, email: string): Promise<boo
         Welcome to CineMatch - your personalized film recommendation platform! We're excited to help you discover your next favorite movie.
       </p>
       
-      <div style="background-color: #1a1a1a; padding: 20px; border-radius: 8px; margin: 20px 0;">
-        <h3 style="color: #e5007d; margin-top: 0;">🎯 What's Next?</h3>
-        <ul style="line-height: 1.8;">
+      <div style="background-color: #F8FAFC; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #E2E8F0;">
+        <h3 style="color: #3B82F6; margin-top: 0;">🎯 What's Next?</h3>
+        <ul style="line-height: 1.8; color: #374151;">
           <li>Complete your onboarding to get personalized recommendations</li>
           <li>Rate some films to improve your suggestions</li>
           <li>Explore our extensive movie database</li>
@@ -198,12 +198,12 @@ export async function sendWelcomeEmail(name: string, email: string): Promise<boo
       
       <div style="text-align: center; margin: 30px 0;">
         <a href="https://cinematch.co.uk" 
-           style="background-color: #e5007d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+           style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
           Start Exploring
         </a>
       </div>
       
-      <p style="font-size: 14px; color: #888; margin-top: 30px;">
+      <p style="font-size: 14px; color: #6B7280; margin-top: 30px;">
         Happy movie watching!<br>
         The CineMatch Team
       </p>
