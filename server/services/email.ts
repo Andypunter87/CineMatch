@@ -85,13 +85,17 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'api-key': process.env.BREVO_API_KEY!
+          'accept': 'application/json',
+          'Authorization': `Bearer ${process.env.BREVO_API_KEY!}`
         },
         body: JSON.stringify(emailData)
       });
       
       if (!response.ok) {
         const errorText = await response.text();
+        console.error(`Brevo API Response Status: ${response.status}`);
+        console.error(`Brevo API Response Headers:`, Object.fromEntries(response.headers.entries()));
+        console.error(`Brevo API Response Body:`, errorText);
         throw new Error(`Brevo API error: ${response.status} - ${errorText}`);
       }
       console.log(`Email sent successfully to ${options.to}`);
