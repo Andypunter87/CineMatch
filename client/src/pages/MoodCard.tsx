@@ -29,7 +29,7 @@ export default function MoodCard() {
   console.log('Route params:', params);
   console.log('Location:', location);
   
-  const yearMonth = params['year-month'] || params.yearMonth || '';
+  const yearMonth = params['year-:month'] || params['0'] || '';
   const [year, month] = yearMonth.split('-');
   
   console.log('Extracted year:', year, 'month:', month);
