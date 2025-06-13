@@ -36,12 +36,13 @@ async function testPlacidIntegration() {
   const testData = {
     mood_name: "Bittersweet & Beautiful",
     subtitle: "Coming-of-age chaos with soft light and big feelings",
-    bg_colour: "#f7c6c7",
+    bg_colour: "rgba(247, 198, 199, 0.7)",
     film_1: "The Royal Tenenbaums",
     film_2: "Frances Ha",
     film_3: "Lady Bird",
     film_4: "Aftersun",
-    film_5: "Eighth Grade"
+    film_5: "Eighth Grade",
+    poster_img: "https://image.tmdb.org/t/p/w500/fng3jVw7PyP3VjXbaXjVLfGm9YQ.jpg"
   };
 
   try {

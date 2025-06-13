@@ -158,16 +158,55 @@ export async function generateMoodCard(
     const moodData = await generateMoodFromFilms(topFilms);
     console.log(`Generated mood data:`, moodData);
 
+    // Get poster image for Film 1
+    let posterImageUrl = '';
+    if (topFilms[0]) {
+      const posterQuery = await db
+        .select({ posterUrl: watchlist.filmPosterUrl })
+        .from(watchlist)
+        .where(and(
+          eq(watchlist.userId, userId),
+          eq(watchlist.filmTitle, topFilms[0])
+        ))
+        .limit(1);
+      
+      posterImageUrl = posterQuery[0]?.posterUrl || '';
+    }
+
+    // Select overlay color based on mood vibe
+    const moodColorMap: Record<string, string> = {
+      'introspective': 'rgba(59, 130, 246, 0.7)', // Blue with transparency
+      'nostalgic': 'rgba(139, 69, 19, 0.7)', // Sepia brown
+      'adventurous': 'rgba(34, 197, 94, 0.7)', // Green
+      'romantic': 'rgba(219, 39, 119, 0.7)', // Pink
+      'dramatic': 'rgba(153, 27, 27, 0.7)', // Deep red
+      'whimsical': 'rgba(168, 85, 247, 0.7)', // Purple
+      'melancholic': 'rgba(75, 85, 99, 0.7)', // Gray
+      'uplifting': 'rgba(251, 191, 36, 0.7)', // Gold
+    };
+
+    // Find best matching overlay color based on mood name
+    const lowerMoodName = moodData.moodName.toLowerCase();
+    let overlayColor = 'rgba(59, 130, 246, 0.7)'; // Default blue
+    
+    for (const [mood, color] of Object.entries(moodColorMap)) {
+      if (lowerMoodName.includes(mood)) {
+        overlayColor = color;
+        break;
+      }
+    }
+
     // Prepare Placid template data
     const placidData: PlacidTemplateData = {
       mood_name: moodData.moodName,
       subtitle: moodData.subtitle,
-      bg_colour: moodData.bgColour,
+      bg_colour: overlayColor,
       film_1: topFilms[0] || '',
       film_2: topFilms[1] || '',
       film_3: topFilms[2] || '',
       film_4: topFilms[3] || '',
       film_5: topFilms[4] || '',
+      poster_img: posterImageUrl,
     };
 
     // Generate Placid image

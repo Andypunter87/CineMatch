@@ -11,7 +11,7 @@ export interface PlacidTemplateData {
   film_4?: string;
   film_5?: string;
   bg_colour: string;
-  poster_img?: string;
+  poster_img: string;
 }
 
 export interface PlacidResponse {
@@ -66,7 +66,7 @@ export async function generatePlacidImage(templateData: PlacidTemplateData): Pro
             backgroundColor: templateData.bg_colour
           },
           "Poster_img": {
-            src: templateData.poster_img || ''
+            src: templateData.poster_img
           }
         }
       })
@@ -145,7 +145,8 @@ export async function testPlacidConnection(): Promise<{ success: boolean; error?
       mood_name: "Test Mood",
       subtitle: "Testing Placid integration",
       film_1: "Test Film",
-      bg_colour: "#3B82F6"
+      bg_colour: "rgba(59, 130, 246, 0.7)",
+      poster_img: "https://image.tmdb.org/t/p/w500/example.jpg"
     };
 
     const imageUrl = await generatePlacidImage(testData);
