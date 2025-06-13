@@ -20,6 +20,7 @@ interface MoodCardData {
 export default function Header() {
   const { user, isLoading, logoutMutation } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [latestMoodCard, setLatestMoodCard] = useState<MoodCardData | null>(null);
   
   // Debug log to check user admin status
   console.log("User data in header:", user);
@@ -28,6 +29,41 @@ export default function Header() {
     logoutMutation.mutate();
     setIsMenuOpen(false);
   };
+
+  // Fetch latest mood card for the dropdown menu
+  useEffect(() => {
+    if (user) {
+      const fetchLatestMoodCard = async () => {
+        try {
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = now.getMonth() + 1;
+
+          let response = await fetch(`/api/mood-card/${year}/${month}`);
+          
+          if (response.status === 404) {
+            // Try previous month
+            const prevMonth = month === 1 ? 12 : month - 1;
+            const prevYear = month === 1 ? year - 1 : year;
+            response = await fetch(`/api/mood-card/${prevYear}/${prevMonth}`);
+          }
+
+          if (response.ok) {
+            const data = await response.json();
+            setLatestMoodCard({
+              moodName: data.moodName,
+              year: data.year,
+              month: data.month
+            });
+          }
+        } catch (error) {
+          // Silently handle error
+        }
+      };
+
+      fetchLatestMoodCard();
+    }
+  }, [user]);
 
   return (
     <header className="border-b border-border bg-card">
@@ -91,7 +127,14 @@ export default function Header() {
                       <span>My Friends</span>
                     </DropdownMenuItem>
                   </Link>
-                  <MoodCardMenuLink onClick={() => setIsMenuOpen(false)} />
+                  {latestMoodCard && (
+                    <Link href={`/mymood/${latestMoodCard.year}-${latestMoodCard.month.toString().padStart(2, '0')}`}>
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => setIsMenuOpen(false)}>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        <span>My Monthly Mood</span>
+                      </DropdownMenuItem>
+                    </Link>
+                  )}
                   {user.isAdmin && (
                     <Link href="/admin">
                       <DropdownMenuItem className="cursor-pointer" onClick={() => setIsMenuOpen(false)}>
