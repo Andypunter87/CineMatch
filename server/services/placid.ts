@@ -39,33 +39,33 @@ export async function generatePlacidImage(templateData: PlacidTemplateData): Pro
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        template_uuid: 'monthly-mood-card', // Template ID - needs to be created in Placid dashboard first
+        template_uuid: 'b3hlraf6t9vlj', // Monthly Mood Card template UUID from Placid dashboard
         layers: {
-          mood_name: {
+          "Mood Name": {
             text: templateData.mood_name
           },
-          subtitle: {
+          "Subtitle": {
             text: templateData.subtitle
           },
-          film_1: {
+          "Film 1 ": {
             text: templateData.film_1 || ''
           },
-          film_2: {
+          "Film 2": {
             text: templateData.film_2 || ''
           },
-          film_3: {
+          "Film 3": {
             text: templateData.film_3 || ''
           },
-          film_4: {
+          "Film 4": {
             text: templateData.film_4 || ''
           },
-          film_5: {
+          "Film 5": {
             text: templateData.film_5 || ''
           },
-          bg_colour: {
+          "bg_colour": {
             backgroundColor: templateData.bg_colour
           },
-          poster_img: {
+          "Poster_img": {
             src: templateData.poster_img || ''
           }
         }
