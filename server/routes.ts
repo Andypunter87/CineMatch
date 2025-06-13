@@ -947,6 +947,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(streamingServices);
   });
 
+  // Monthly Mood Card API Routes
+  
+  // Get user's mood card for a specific month
+  app.get('/api/mood-card/:year/:month', isAuthenticated, async (req, res) => {
+    try {
+      const { year, month } = req.params;
+      const userId = req.user!.id;
+      
+      const { getMoodCard } = await import('./services/monthly-mood-cards');
+      const moodCard = await getMoodCard(userId, parseInt(year), parseInt(month));
+      
+      if (!moodCard) {
+        return res.status(404).json({ message: 'Mood card not found for this month' });
+      }
+      
+      res.json(moodCard);
+    } catch (error) {
+      console.error('Error retrieving mood card:', error);
+      res.status(500).json({ message: 'Failed to retrieve mood card' });
+    }
+  });
+  
+  // Get public mood card for sharing (no authentication required)
+  app.get('/api/mood-card/public/:year/:month', async (req, res) => {
+    try {
+      const { year, month } = req.params;
+      const { uid } = req.query;
+      
+      if (!uid) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+      
+      const { getMoodCard } = await import('./services/monthly-mood-cards');
+      const moodCard = await getMoodCard(parseInt(uid as string), parseInt(year), parseInt(month));
+      
+      if (!moodCard) {
+        return res.status(404).json({ message: 'Mood card not found' });
+      }
+      
+      // Return public-safe mood card data
+      res.json({
+        moodName: moodCard.moodName,
+        subtitle: moodCard.subtitle,
+        bgColour: moodCard.bgColour,
+        emojis: moodCard.emojis,
+        topFilms: moodCard.topFilms,
+        placidImageUrl: moodCard.placidImageUrl,
+        year: moodCard.year,
+        month: moodCard.month
+      });
+    } catch (error) {
+      console.error('Error retrieving public mood card:', error);
+      res.status(500).json({ message: 'Failed to retrieve mood card' });
+    }
+  });
+  
+  // Generate mood card for current user (manual trigger)
+  app.post('/api/mood-card/generate', isAuthenticated, async (req, res) => {
+    try {
+      const schema = z.object({
+        year: z.number(),
+        month: z.number().min(1).max(12)
+      });
+      
+      const { year, month } = schema.parse(req.body);
+      const userId = req.user!.id;
+      
+      const { getTopFilmsForMonth, generateMoodCard } = await import('./services/monthly-mood-cards');
+      
+      // Get user's top films for the specified month
+      const topFilms = await getTopFilmsForMonth(userId, year, month);
+      
+      if (topFilms.length === 0) {
+        return res.status(400).json({ message: 'No films found for this month' });
+      }
+      
+      // Generate mood card
+      const moodCard = await generateMoodCard(userId, year, month, topFilms);
+      
+      res.json(moodCard);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({ message: 'Invalid data format', errors: error.errors });
+      } else {
+        console.error('Error generating mood card:', error);
+        res.status(500).json({ message: 'Failed to generate mood card' });
+      }
+    }
+  });
+  
+  // Admin route to generate mood cards for all users
+  app.post('/api/admin/mood-cards/generate', isAuthenticated, async (req, res) => {
+    try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const schema = z.object({
+        year: z.number(),
+        month: z.number().min(1).max(12)
+      });
+      
+      const { year, month } = schema.parse(req.body);
+      
+      const { generateMonthlyMoodCards } = await import('./services/monthly-mood-cards');
+      const results = await generateMonthlyMoodCards(year, month);
+      
+      res.json(results);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({ message: 'Invalid data format', errors: error.errors });
+      } else {
+        console.error('Error generating monthly mood cards:', error);
+        res.status(500).json({ message: 'Failed to generate mood cards' });
+      }
+    }
+  });
+
   // API routes for user profile management
   // Update user streaming services
   app.put('/api/user/streaming', isAuthenticated, async (req, res) => {
