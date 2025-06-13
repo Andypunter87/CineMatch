@@ -1,4 +1,4 @@
-const { Client } = require('pg');
+import { Client } from 'pg';
 
 async function createMoodCard() {
   const client = new Client({
