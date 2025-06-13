@@ -32,14 +32,13 @@ export async function generatePlacidImage(templateData: PlacidTemplateData): Pro
   try {
     console.log("Generating Placid image with template data:", templateData);
 
-    const response = await fetch('https://api.placid.app/api/rest', {
+    const response = await fetch('https://api.placid.app/api/rest/b3hlraf6t9vlj', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.PLACID_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        template_uuid: 'b3hlraf6t9vlj', // Monthly Mood Card template UUID from Placid dashboard
         layers: {
           "Mood Name": {
             text: templateData.mood_name
@@ -78,14 +77,48 @@ export async function generatePlacidImage(templateData: PlacidTemplateData): Pro
       throw new Error(`Placid API error: ${response.status} - ${errorData}`);
     }
 
-    const result = await response.json() as PlacidResponse;
+    const result = await response.json();
+    console.log("Placid API initial response:", result);
     
-    if (!result.image_url) {
-      throw new Error("No image URL returned from Placid API");
+    // Handle queued response - need to poll for completion
+    if (result.status === 'queued' && result.polling_url) {
+      console.log("Image queued, polling for completion...");
+      
+      // Poll for up to 30 seconds
+      for (let i = 0; i < 30; i++) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        
+        const pollResponse = await fetch(result.polling_url, {
+          headers: {
+            'Authorization': `Bearer ${process.env.PLACID_API_KEY}`,
+          }
+        });
+        
+        if (pollResponse.ok) {
+          const pollResult = await pollResponse.json();
+          console.log(`Poll attempt ${i + 1}:`, pollResult.status);
+          
+          if (pollResult.status === 'finished' && pollResult.image_url) {
+            console.log("Successfully generated Placid image:", pollResult.image_url);
+            return pollResult.image_url;
+          }
+          
+          if (pollResult.status === 'error') {
+            throw new Error(`Placid image generation failed: ${JSON.stringify(pollResult.errors)}`);
+          }
+        }
+      }
+      
+      throw new Error("Placid image generation timed out");
     }
-
-    console.log("Successfully generated Placid image:", result.image_url);
-    return result.image_url;
+    
+    // Handle immediate response
+    if (result.image_url) {
+      console.log("Successfully generated Placid image:", result.image_url);
+      return result.image_url;
+    }
+    
+    throw new Error("No image URL returned from Placid API");
   } catch (error) {
     console.error("Error generating Placid image:", error);
     
