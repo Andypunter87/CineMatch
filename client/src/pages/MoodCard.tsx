@@ -18,17 +18,28 @@ interface MoodCardData {
 }
 
 export default function MoodCard() {
-  const { year, month } = useParams();
+  const params = useParams();
   const [location] = useLocation();
   const { toast } = useToast();
   const [moodCard, setMoodCard] = useState<MoodCardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Extract year and month from the combined parameter
+  console.log('Route params:', params);
+  console.log('Location:', location);
+  
+  const yearMonth = params['year-month'] || params.yearMonth || '';
+  const [year, month] = yearMonth.split('-');
+  
+  console.log('Extracted year:', year, 'month:', month);
+
   // Check if this is a public share URL
   const urlParams = new URLSearchParams(location.split('?')[1] || '');
   const uid = urlParams.get('uid');
   const isPublicShare = !!uid;
+  
+  console.log('UID:', uid, 'isPublicShare:', isPublicShare);
 
   useEffect(() => {
     const fetchMoodCard = async () => {
