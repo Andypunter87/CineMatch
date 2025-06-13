@@ -170,6 +170,23 @@ export const userRecommendations = pgTable("user_recommendations", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// 9. Monthly Mood Cards table
+export const monthlyMoodCards = pgTable("monthly_mood_cards", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  year: integer("year").notNull(),
+  month: integer("month").notNull(), // 1-12
+  moodName: text("mood_name").notNull(),
+  subtitle: text("subtitle").notNull(),
+  bgColour: text("bg_colour").notNull(),
+  emojis: text("emojis").notNull(),
+  topFilms: jsonb("top_films").$type<string[]>().notNull(), // Array of film titles
+  placidImageUrl: text("placid_image_url"),
+  shareUrl: text("share_url"),
+  emailSent: boolean("email_sent").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // =====================
 // RELATIONS 
 // =====================
@@ -184,6 +201,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   notifications: many(notifications),
   relatedNotifications: many(notifications, { relationName: "relatedUserNotifications" }),
   recommendations: many(userRecommendations),
+  moodCards: many(monthlyMoodCards),
 }));
 
 // Watchlist relations
@@ -235,6 +253,14 @@ export const notificationRelations = relations(notifications, ({ one }) => ({
     fields: [notifications.relatedUserId],
     references: [users.id],
     relationName: "relatedUserNotifications"
+  }),
+}));
+
+// Monthly mood card relations
+export const monthlyMoodCardRelations = relations(monthlyMoodCards, ({ one }) => ({
+  user: one(users, {
+    fields: [monthlyMoodCards.userId],
+    references: [users.id],
   }),
 }));
 
@@ -296,6 +322,23 @@ export const insertNotificationSchema = createInsertSchema(notifications, {
   message: true,
   relatedUserId: true,
   read: true,
+});
+
+// Monthly mood card insert schema
+export const insertMonthlyMoodCardSchema = createInsertSchema(monthlyMoodCards, {
+  createdAt: z.date().optional(),
+}).pick({
+  userId: true,
+  year: true,
+  month: true,
+  moodName: true,
+  subtitle: true,
+  bgColour: true,
+  emojis: true,
+  topFilms: true,
+  placidImageUrl: true,
+  shareUrl: true,
+  emailSent: true,
 });
 
 // User recommendations insert schema
