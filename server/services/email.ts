@@ -21,8 +21,8 @@ if (!process.env.BREVO_API_KEY) {
       port: 587,
       secure: false, // true for 465, false for other ports
       auth: {
-        user: 'andy@more-human.co.uk', // Your verified sender email
-        pass: process.env.BREVO_API_KEY, // Your SMTP API key
+        user: 'andy@more-human.co.uk', // Use verified email as username
+        pass: process.env.BREVO_API_KEY, // Use SMTP key as password
       },
     });
     brevoInitialized = true;
@@ -115,18 +115,21 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
       console.log(`Email sent successfully to ${options.to}, messageId: ${info.messageId}`);
       return true;
     } catch (sendError: any) {
-      // Log detailed Brevo SMTP error information
       console.error('Error sending email via SMTP:', sendError.toString());
       
-      // For now, we'll continue the app flow even if emails fail
-      console.log('WARNING: Email sending failed, but application will continue');
-      
-      // If we're in debug mode, let's pretend the email was sent
-      if (DEBUG_MODE) {
-        console.log('DEBUG MODE: Pretending email was sent successfully despite error');
-        return true;
+      // Check if this is an authentication error
+      if (sendError.message && sendError.message.includes('Authentication failed')) {
+        console.error('SMTP Authentication failed. Please verify:');
+        console.error('1. Brevo SMTP is enabled in your account');
+        console.error('2. The email andy@more-human.co.uk is verified as a sender');
+        console.error('3. The SMTP key has correct permissions');
+        console.error('4. Consider using REST API key instead of SMTP key');
       }
       
+      console.log('WARNING: Email sending failed, but application will continue');
+      
+      // For production stability, return true to prevent cascading failures
+      // Users will still be able to use the application even if emails fail
       return false;
     }
   } catch (error) {
