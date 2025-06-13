@@ -1,7 +1,8 @@
-import * as brevo from '@getbrevo/brevo';
+import * as nodemailer from 'nodemailer';
 import { User } from '@shared/schema';
 
-// Initialize Brevo with API key
+// Initialize Brevo SMTP with nodemailer
+let brevoTransporter: nodemailer.Transporter | null = null;
 let brevoInitialized = false;
 
 // For development/debugging purposes only
@@ -10,12 +11,25 @@ const DEBUG_MODE = false;
 // Sender email address - using the verified sender email
 const FROM_EMAIL = 'andy@more-human.co.uk';
 
-// Check if Brevo API key is available
+// Initialize Brevo SMTP transporter
 if (!process.env.BREVO_API_KEY) {
   console.warn('BREVO_API_KEY not found. Email functionality will not work.');
 } else {
-  brevoInitialized = true;
-  console.log('Brevo initialized successfully');
+  try {
+    brevoTransporter = nodemailer.createTransport({
+      host: 'smtp-relay.brevo.com',
+      port: 587,
+      secure: false, // true for 465, false for other ports
+      auth: {
+        user: 'andy@more-human.co.uk', // Your verified sender email
+        pass: process.env.BREVO_API_KEY, // Your SMTP API key
+      },
+    });
+    brevoInitialized = true;
+    console.log('Brevo initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize Brevo SMTP:', error);
+  }
 }
 
 interface EmailOptions {
@@ -26,7 +40,7 @@ interface EmailOptions {
 }
 
 /**
- * Send an email using Brevo
+ * Send an email using Brevo SMTP
  */
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
   try {
@@ -42,11 +56,29 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
     }
     
     // Check if Brevo is properly initialized
-    if (!brevoInitialized) {
-      console.error('Cannot send email: Brevo is not properly initialized');
+    if (!brevoInitialized || !brevoTransporter) {
+      console.error('Cannot send email: Brevo SMTP is not properly initialized');
       
       if (!process.env.BREVO_API_KEY) {
         console.error('Cannot send email: BREVO_API_KEY is not set');
+        return false;
+      }
+      
+      // Try to reinitialize
+      try {
+        brevoTransporter = nodemailer.createTransport({
+          host: 'smtp-relay.brevo.com',
+          port: 587,
+          secure: false,
+          auth: {
+            user: 'andy@more-human.co.uk',
+            pass: process.env.BREVO_API_KEY,
+          },
+        });
+        brevoInitialized = true;
+        console.log('Brevo SMTP re-initialized successfully');
+      } catch (initError) {
+        console.error('Failed to re-initialize Brevo SMTP:', initError);
         return false;
       }
     }
@@ -69,46 +101,22 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
       return false;
     }
 
-    // Use Brevo API directly with fetch
-    const brevoUrl = 'https://api.brevo.com/v3/smtp/email';
-    
-    const emailData = {
-      sender: { email: FROM_EMAIL, name: 'CineMatch' },
-      to: [{ email: options.to }],
+    // Prepare email message for nodemailer
+    const mailOptions = {
+      from: `CineMatch <${FROM_EMAIL}>`,
+      to: options.to,
       subject: options.subject,
-      textContent: textContent,
-      htmlContent: htmlContent || undefined
+      text: textContent,
+      html: htmlContent || undefined
     };
 
     try {
-      const response = await fetch(brevoUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'accept': 'application/json',
-          'api-key': process.env.BREVO_API_KEY!
-        },
-        body: JSON.stringify(emailData)
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Brevo API Response Status: ${response.status}`);
-        console.error(`Brevo API Response Headers:`, Object.fromEntries(response.headers.entries()));
-        console.error(`Brevo API Response Body:`, errorText);
-        throw new Error(`Brevo API error: ${response.status} - ${errorText}`);
-      }
-      console.log(`Email sent successfully to ${options.to}`);
+      const info = await brevoTransporter!.sendMail(mailOptions);
+      console.log(`Email sent successfully to ${options.to}, messageId: ${info.messageId}`);
       return true;
     } catch (sendError: any) {
-      // Log detailed Brevo error information
-      console.error('Error sending email:', sendError.toString());
-      
-      // If we have response details, log them for debugging
-      if (sendError.response && sendError.response.body) {
-        const errorDetails = sendError.response.body;
-        console.error('Brevo API error details:', JSON.stringify(errorDetails, null, 2));
-      }
+      // Log detailed Brevo SMTP error information
+      console.error('Error sending email via SMTP:', sendError.toString());
       
       // For now, we'll continue the app flow even if emails fail
       console.log('WARNING: Email sending failed, but application will continue');
