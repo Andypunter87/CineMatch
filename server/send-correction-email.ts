@@ -1,11 +1,8 @@
-import { MailService } from '@sendgrid/mail';
+import { sendEmail } from './services/email';
 
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error("SENDGRID_API_KEY environment variable must be set");
+if (!process.env.BREVO_API_KEY) {
+  throw new Error("BREVO_API_KEY environment variable must be set");
 }
-
-const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
 
 /**
  * Creates the correction email with proper styling and content
@@ -95,16 +92,19 @@ function createCorrectionEmailTemplate(): string {
  */
 async function sendCorrectionEmail(email: string): Promise<boolean> {
   try {
-    const emailContent = {
+    const success = await sendEmail({
       to: email,
-      from: 'andy@more-human.co.uk',
       subject: 'Woopsie!',
       html: createCorrectionEmailTemplate(),
-    };
+    });
 
-    await mailService.send(emailContent);
-    console.log(`Correction email sent successfully to ${email}`);
-    return true;
+    if (success) {
+      console.log(`Correction email sent successfully to ${email}`);
+      return true;
+    } else {
+      console.error('Failed to send correction email via Brevo');
+      return false;
+    }
   } catch (error) {
     console.error('Error sending correction email:', error);
     return false;

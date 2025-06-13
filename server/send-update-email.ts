@@ -1,11 +1,8 @@
-import { MailService } from '@sendgrid/mail';
+import { sendEmail } from './services/email';
 
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error("SENDGRID_API_KEY environment variable must be set");
+if (!process.env.BREVO_API_KEY) {
+  throw new Error("BREVO_API_KEY environment variable must be set");
 }
-
-const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
 
 /**
  * Creates the CineMatch update email with proper styling and content
@@ -139,16 +136,19 @@ function createUpdateEmailTemplate(): string {
  */
 async function sendUpdateEmail(email: string): Promise<boolean> {
   try {
-    const emailContent = {
+    const success = await sendEmail({
       to: email,
-      from: 'andy@more-human.co.uk',
       subject: '🎬 Big CineMatch Update: New Features You\'ll Love + Privacy Policy Changes',
       html: createUpdateEmailTemplate(),
-    };
+    });
 
-    await mailService.send(emailContent);
-    console.log(`Update email sent successfully to ${email}`);
-    return true;
+    if (success) {
+      console.log(`Update email sent successfully to ${email}`);
+      return true;
+    } else {
+      console.error('Failed to send update email via Brevo');
+      return false;
+    }
   } catch (error) {
     console.error('Error sending update email:', error);
     return false;

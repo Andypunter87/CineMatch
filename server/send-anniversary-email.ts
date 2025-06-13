@@ -147,15 +147,10 @@ async function sendAnniversaryEmail(email: string, name: string): Promise<boolea
   try {
     const htmlContent = createEmailTemplate(firstName);
     
-    await mailService.send({
+    const success = await sendEmail({
       to: email,
-      from: {
-        email: 'andy@more-human.co.uk', // Using the verified sender email
-        name: 'Andy from CineMatch'
-      },
       subject: "We turned one (week)! Here's what we learned",
       html: htmlContent,
-      // Plain text version as fallback
       text: "Dear " + firstName + ",\n\n" + 
       "CineMatch is officially one week old! 🎉\n\n" + 
       "I just wanted to say a huge thank you for giving us a try. Honestly, I've been blown away by the enthusiasm so many of you have shown — and by how generous you've been with your feedback. It's made a big difference.\n\n" + 
@@ -173,6 +168,10 @@ async function sendAnniversaryEmail(email: string, name: string): Promise<boolea
       "Cheers,\n" + 
       "Andy"
     });
+    
+    if (!success) {
+      throw new Error('Failed to send email via Brevo');
+    }
     
     console.log(`Anniversary email sent successfully to ${email}`);
     return true;
