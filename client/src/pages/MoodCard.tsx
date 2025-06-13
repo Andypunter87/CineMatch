@@ -211,7 +211,7 @@ export default function MoodCard() {
             className="p-8 text-white text-center"
             style={{ backgroundColor: moodCard.bgColour }}
           >
-            <div className="text-4xl mb-4">{moodCard.emojis}</div>
+
             <h2 className="text-3xl font-bold mb-3">{moodCard.moodName}</h2>
             <p className="text-lg opacity-90">{moodCard.subtitle}</p>
           </div>
