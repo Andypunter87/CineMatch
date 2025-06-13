@@ -6,8 +6,7 @@ let brevoTransporter: nodemailer.Transporter | null = null;
 let brevoInitialized = false;
 
 // For development/debugging purposes only
-// Set to true temporarily to allow application to function while SMTP is being configured
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 // Sender email address - using the verified sender email
 const FROM_EMAIL = 'andy@more-human.co.uk';
