@@ -32,13 +32,14 @@ export async function generatePlacidImage(templateData: PlacidTemplateData): Pro
   try {
     console.log("Generating Placid image with template data:", templateData);
 
-    const response = await fetch('https://api.placid.app/api/rest/b3hlraf6t9vlj', {
+    const response = await fetch('https://api.placid.app/api/rest/images', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.PLACID_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        template_uuid: 'b3hlraf6t9vlj',
         layers: {
           "Mood Name": {
             text: templateData.mood_name
