@@ -146,6 +146,7 @@ export default function ChatRecommender({
   // Generate personalized mood labels mutation
   const generateMoodsMutation = useMutation({
     mutationFn: async (context: { audience: string, timeOfDay: string[] }) => {
+      console.log('Generating mood labels with context:', context);
       const response = await fetch('/api/mood-labels/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -158,19 +159,22 @@ export default function ChatRecommender({
       return response.json();
     },
     onSuccess: (data) => {
+      console.log('Mood generation successful:', data);
       setPersonalizedMoods(data.moodLabels);
       setIsGeneratingMoods(false);
     },
     onError: (error: any) => {
       console.error('Error generating moods:', error);
       // Fall back to default mood options
-      setPersonalizedMoods([
+      const fallbackMoods = [
         "Something that feels like a warm hug",
         "Let me escape into another world", 
         "Make me feel cleverer than I am",
         "Something beautifully melancholic",
         "A film that surprises me"
-      ]);
+      ];
+      console.log('Using fallback moods:', fallbackMoods);
+      setPersonalizedMoods(fallbackMoods);
       setIsGeneratingMoods(false);
     }
   });
@@ -438,12 +442,21 @@ export default function ChatRecommender({
   
   // For mood step, use personalized moods if available
   const getOptionsForCurrentStep = () => {
-    if (!currentStepData) return [];
+    if (!currentStepData) {
+      console.log('No currentStepData available');
+      return [];
+    }
+    
+    console.log('Getting options for step:', currentStepData.id);
+    console.log('Personalized moods:', personalizedMoods);
+    console.log('Default options:', currentStepData.options);
     
     if (currentStepData.id === 'mood' && personalizedMoods.length > 0) {
+      console.log('Using personalized moods:', personalizedMoods);
       return personalizedMoods;
     }
     
+    console.log('Using default options for step:', currentStepData.id);
     return currentStepData.options;
   };
   
