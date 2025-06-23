@@ -640,18 +640,26 @@ export default function ChatRecommender({
         <div className="space-y-3">
           {currentStepData.allowMultiple ? (
             <div className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                {currentStepData.options.map((option, index) => (
-                  <Button
-                    key={index}
-                    variant={selectedOptions.includes(option) ? "default" : "outline"}
-                    onClick={() => handleOptionSelect(index)}
-                    className="flex-1 min-w-[120px]"
-                  >
-                    {option}
-                  </Button>
-                ))}
-              </div>
+              {/* Show loading state when generating mood labels */}
+              {isGeneratingMoods && currentStepData.id === 'mood' ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                  <span className="text-sm text-gray-600">Generating personalized mood options...</span>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {getOptionsForCurrentStep().map((option, index) => (
+                    <Button
+                      key={index}
+                      variant={selectedOptions.includes(option) ? "default" : "outline"}
+                      onClick={() => handleOptionSelect(index)}
+                      className="flex-1 min-w-[120px]"
+                    >
+                      {option}
+                    </Button>
+                  ))}
+                </div>
+              )}
               {selectedOptions.length > 0 && (
                 <Button onClick={handleMultipleConfirm} className="w-full">
                   Continue with: {selectedOptions.join(', ')}
@@ -660,18 +668,26 @@ export default function ChatRecommender({
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                {currentStepData.options.map((option, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    onClick={() => handleOptionSelect(index)}
-                    className="flex-1 min-w-[120px]"
-                  >
-                    {option}
-                  </Button>
-                ))}
-              </div>
+              {/* Show loading state when generating mood labels */}
+              {isGeneratingMoods && currentStepData.id === 'mood' ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                  <span className="text-sm text-gray-600">Generating personalized mood options...</span>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                    {getOptionsForCurrentStep().map((option, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        onClick={() => handleOptionSelect(index)}
+                        className="flex-1 min-w-[120px]"
+                      >
+                        {option}
+                      </Button>
+                    ))}
+                  </div>
+              )}
               
               {/* Custom Input for Location and Mood Questions */}
               {allowCustomInput && (
