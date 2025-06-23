@@ -105,6 +105,7 @@ export default function ChatRecommender({
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [isProcessingOther, setIsProcessingOther] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showFriendSelection, setShowFriendSelection] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -131,6 +132,7 @@ export default function ChatRecommender({
     setOtherInputValue('');
     setRecommendationData({});
     setShowConfirmation(false);
+    setShowFriendSelection(false);
     setIsTyping(false);
     
     // Start the conversation
@@ -202,7 +204,17 @@ export default function ChatRecommender({
       return;
     }
 
-    // Single selection
+    // Handle "Friends" selection - show friend dropdown
+    if (step.id === 'audience' && selectedOption === 'Friends' && friends.length > 0) {
+      addUserMessage(selectedOption);
+      updateRecommendationData(step.schemaField, mappedValue);
+      
+      // Set up friend selection step
+      setShowFriendSelection(true);
+      return;
+    }
+
+    // Single selection - normal flow
     addUserMessage(selectedOption);
     updateRecommendationData(step.schemaField, mappedValue);
     proceedToNextStep();
@@ -238,6 +250,23 @@ export default function ChatRecommender({
 
     setIsProcessingOther(false);
     setOtherInputValue('');
+  };
+
+  const handleFriendSelection = (friendId: string) => {
+    const selectedFriend = friends.find(f => f.id.toString() === friendId);
+    if (selectedFriend) {
+      addUserMessage(`Watching with ${selectedFriend.name}`);
+      updateRecommendationData('viewingParty', [friendId]);
+    }
+    setShowFriendSelection(false);
+    proceedToNextStep();
+  };
+
+  const skipFriendSelection = () => {
+    addUserMessage("Just me for this session");
+    updateRecommendationData('viewingParty', []);
+    setShowFriendSelection(false);
+    proceedToNextStep();
   };
 
   const updateRecommendationData = (field: keyof RecommendationRequest, value: any) => {
@@ -301,7 +330,7 @@ export default function ChatRecommender({
   };
 
   const currentStepData = currentStep < chatSteps.length ? chatSteps[currentStep] : null;
-  const showOptions = !isTyping && !showConfirmation && currentStepData;
+  const showOptions = !isTyping && !showConfirmation && !showFriendSelection && currentStepData;
   const isViewingPartyStep = currentStepData?.id === 'viewingParty';
 
 
@@ -388,7 +417,37 @@ export default function ChatRecommender({
           </div>
         )}
 
-
+        {/* Friend Selection Dropdown */}
+        {showFriendSelection && (
+          <div className="space-y-3">
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800 mb-3">
+                Which friend are you watching with?
+              </p>
+              <div className="space-y-2">
+                <Select onValueChange={handleFriendSelection}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a friend" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {friends.map((friend) => (
+                      <SelectItem key={friend.id} value={friend.id.toString()}>
+                        {friend.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  variant="outline" 
+                  onClick={skipFriendSelection}
+                  className="w-full"
+                >
+                  Actually, just me tonight
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {showOptions && (
           <div className="space-y-3">
