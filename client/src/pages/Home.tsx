@@ -116,6 +116,7 @@ export default function Home() {
         {showQuestionnaire ? (
           <div className="py-8">
             <ChatRecommender 
+              key={`chat-${user?.id}-${showQuestionnaire}`}
               onComplete={handleSubmitChat}
               userId={user?.id}
             />

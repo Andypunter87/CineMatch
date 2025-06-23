@@ -129,7 +129,7 @@ export default function ChatRecommender({
     setTimeout(() => {
       askCurrentQuestion();
     }, 1000);
-  }, []);
+  }, []); // Added dependency array to ensure this only runs once
 
   const addCineMateMessage = (text: string, isTyping = false) => {
     const message: ChatMessage = {
@@ -218,37 +218,17 @@ export default function ChatRecommender({
     setIsProcessingOther(true);
     addUserMessage(otherInputValue);
 
-    try {
-      // Process "Other" input with OpenAI to map to schema values
-      const response = await fetch('/api/chat/process-other', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          step: chatSteps[currentStep].id,
-          userInput: otherInputValue,
-          availableOptions: chatSteps[currentStep].mappedValues
-        })
-      });
+    // Store the raw user input directly instead of trying to map it
+    const step = chatSteps[currentStep];
+    updateRecommendationData(step.schemaField, otherInputValue);
+    
+    simulateTyping(() => {
+      addCineMateMessage("Got it! I'll include that in your recommendations.");
+      proceedToNextStep();
+    });
 
-      const result = await response.json();
-      updateRecommendationData(chatSteps[currentStep].schemaField, result.mappedValue);
-      
-      simulateTyping(() => {
-        addCineMateMessage(`Got it! I'll interpret that as "${result.interpretation}".`);
-        proceedToNextStep();
-      });
-    } catch (error) {
-      // Fallback: use the first available option
-      const step = chatSteps[currentStep];
-      updateRecommendationData(step.schemaField, step.mappedValues[0]);
-      simulateTyping(() => {
-        addCineMateMessage("I'll make my best guess from what you've told me!");
-        proceedToNextStep();
-      });
-    } finally {
-      setIsProcessingOther(false);
-      setOtherInputValue('');
-    }
+    setIsProcessingOther(false);
+    setOtherInputValue('');
   };
 
   const updateRecommendationData = (field: keyof RecommendationRequest, value: any) => {
@@ -288,10 +268,23 @@ export default function ChatRecommender({
     setCurrentStep(0);
     setRecommendationData({});
     setMessages([]);
+    setSelectedOptions([]);
+    setOtherInputValue('');
     simulateTyping(() => {
       addCineMateMessage("No problem! Let's start fresh. What would you like to change?");
       askCurrentQuestion();
     });
+  };
+
+  // Add a reset function to properly clear state
+  const resetConversation = () => {
+    setCurrentStep(0);
+    setMessages([]);
+    setRecommendationData({});
+    setSelectedOptions([]);
+    setOtherInputValue('');
+    setShowConfirmation(false);
+    setIsTyping(false);
   };
 
   const currentStepData = currentStep < chatSteps.length ? chatSteps[currentStep] : null;
