@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Questionnaire from "@/components/Questionnaire";
+import ChatRecommender from "@/components/ChatRecommender";
 import Recommendations from "@/components/Recommendations";
 import { type RecommendationRequest, type Film } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
@@ -88,7 +88,7 @@ export default function Home() {
   }, [engine]);
   
   // Helper function to wrap the engine's submitQuestionnaire function
-  const handleSubmitQuestionnaire = (data: RecommendationRequest) => {
+  const handleSubmitChat = (data: RecommendationRequest) => {
     engine.submitQuestionnaire(data);
     setShowQuestionnaire(false);
   };
@@ -114,16 +114,12 @@ export default function Home() {
       
       <div className="max-w-4xl mx-auto">
         {showQuestionnaire ? (
-          <>
-            <Questionnaire onSubmit={handleSubmitQuestionnaire} />
-            
-            {user && user.streamingServices && user.streamingServices.length > 0 && (
-              <div className="mt-6 text-center text-sm bg-blue-50 border border-blue-100 rounded-lg p-4 max-w-2xl mx-auto shadow-[0_4px_14px_0_rgba(59,130,246,0.2)]">
-                <span className="font-medium text-blue-700">Streaming match:</span> We'll search for films available on your preferred platforms 
-                ({user.streamingServices.join(", ")}) in {user.country || "your country"}.
-              </div>
-            )}
-          </>
+          <div className="py-8">
+            <ChatRecommender 
+              onComplete={handleSubmitChat}
+              userId={user?.id}
+            />
+          </div>
         ) : (
           <>
             {engine.isShowingHistory && (
