@@ -125,6 +125,18 @@ CineMatch is a sophisticated film recommendation platform that uses AI to provid
 - CORS and security headers configured for production deployment
 
 ## Changelog
+- June 23, 2025: Implemented chat data persistence to Firestore
+  - Created useChatPersistence hook for saving chat sessions and vibe preferences
+  - Chat interactions now save complete conversation history to Firestore
+  - Custom vibe preferences are tracked with frequency and source attribution
+  - AI-generated personalized moods are saved for future reference
+  - Chat sessions include full message history, user preferences, and custom data
+  - Firestore collections: chat_sessions and vibe_preferences under users/{userId}
+- June 23, 2025: Secured mood card features with admin-only access controls
+  - All mood card API endpoints now require admin authentication
+  - Mood card page routes protected from non-admin users
+  - Public mood card sharing restricted to admin access only
+  - Mood card generation features completely hidden from regular users
 - June 23, 2025: Successfully implemented personalized mood label generation feature
   - OpenAI generates custom mood options based on user context (audience, time of day)
   - Fixed JSON parsing to handle markdown code blocks from OpenAI responses
