@@ -294,6 +294,7 @@ export function setupAuth(app: Express) {
             ? JSON.parse(userWithoutPassword.onboardingState) 
             : userWithoutPassword.onboardingState;
           needsOnboarding = !onboardingState.completed;
+          console.log('Onboarding state check (with token):', { onboardingState, needsOnboarding });
         } catch (e) {
           console.error('Error parsing onboarding state:', e);
           needsOnboarding = true;
@@ -318,6 +319,7 @@ export function setupAuth(app: Express) {
             ? JSON.parse(userWithoutPassword.onboardingState) 
             : userWithoutPassword.onboardingState;
           needsOnboarding = !onboardingState.completed;
+          console.log('Onboarding state check (no token):', { onboardingState, needsOnboarding });
         } catch (e) {
           console.error('Error parsing onboarding state:', e);
           needsOnboarding = true;

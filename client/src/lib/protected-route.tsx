@@ -77,9 +77,8 @@ export function ProtectedRoute({
           sessionStorage.setItem('hasInteractedWithRecommendations', 'true');
         }
         
-        // Check if user needs onboarding using onboardingState
-        const onboardingState = user.onboardingState as any;
-        const needsOnboarding = !onboardingState?.completed;
+        // Use the server-provided needsOnboarding field
+        const needsOnboarding = (user as any).needsOnboarding;
         
         // For debugging
         console.log("Onboarding check:", {
