@@ -249,10 +249,23 @@ export default function ChatRecommender({
       const audience = recommendationData.audience || 'solo';
       const timeOfDay = recommendationData.timeOfDay || ['evening'];
       
+      // Immediately set personalized fallback moods while API generates better ones
+      const contextualMoods = [
+        "Something that feels like a warm hug",
+        "Let me escape into another world", 
+        "Make me feel cleverer than I am",
+        "Something beautifully melancholic",
+        "A film that surprises me"
+      ];
+      setPersonalizedMoods(contextualMoods);
+      setIsGeneratingMoods(false);
+      
+      // Try to generate better personalized moods in the background
       try {
         await generateMoodsMutation.mutateAsync({ audience, timeOfDay });
       } catch (error) {
-        console.error('Failed to generate mood labels:', error);
+        console.error('Failed to generate enhanced mood labels:', error);
+        // Keep the fallback moods we already set
       }
     }
     
