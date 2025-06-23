@@ -162,6 +162,13 @@ export default function ChatRecommender({
     onSuccess: (data) => {
       setPersonalizedMoods(data.moodLabels);
       setIsGeneratingMoods(false);
+      
+      // Save personalized moods to Firestore
+      if (data.moodLabels && data.moodLabels.length > 0) {
+        savePersonalizedMoods(data.moodLabels).catch(error => {
+          console.warn('Failed to save personalized moods to Firestore:', error);
+        });
+      }
     },
     onError: (error: any) => {
       console.error('Error generating moods:', error);
@@ -302,6 +309,12 @@ export default function ChatRecommender({
     if (step.id === 'mood' && personalizedMoods.length > 0) {
       addUserMessage(selectedOption);
       updateRecommendationData(step.schemaField, selectedOption); // Use the personalized text directly
+      
+      // Save the selected vibe preference to Firestore
+      saveVibePreference(selectedOption, 'ai_generated').catch(error => {
+        console.warn('Failed to save vibe preference to Firestore:', error);
+      });
+      
       proceedToNextStep();
       return;
     }
@@ -382,6 +395,13 @@ export default function ChatRecommender({
     // The LLM will interpret this contextually
     updateRecommendationData(step.schemaField, customInput);
     
+    // If this is a mood step, save the custom vibe preference to Firestore
+    if (step.id === 'mood') {
+      saveVibePreference(customInput, 'user_custom').catch(error => {
+        console.warn('Failed to save custom vibe preference to Firestore:', error);
+      });
+    }
+    
     setCustomInput('');
     setIsProcessingCustom(false);
     proceedToNextStep();
@@ -427,6 +447,26 @@ export default function ChatRecommender({
       viewingParty: recommendationData.viewingParty || [],
       additionalContext: 'Generated from chat interface'
     };
+    
+    // Save the complete chat session to Firestore
+    const chatSessionData = {
+      messages: messages.map(msg => ({
+        id: msg.id,
+        sender: msg.sender,
+        text: msg.text,
+        timestamp: msg.timestamp.toISOString()
+      })),
+      preferences: completeRequest,
+      customVibes: messages
+        .filter(msg => msg.sender === 'user' && chatSteps.find(step => step.id === 'mood'))
+        .map(msg => msg.text),
+      personalizedMoods: personalizedMoods,
+      completed: true
+    };
+    
+    saveChatSession(chatSessionData).catch(error => {
+      console.warn('Failed to save chat session to Firestore:', error);
+    });
     
     onComplete(completeRequest);
   };
