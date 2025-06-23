@@ -240,6 +240,10 @@ export default function ChatRecommender({
   };
 
   const proceedToNextStep = () => {
+    // Clear selections before moving to next step
+    setSelectedOptions([]);
+    setOtherInputValue('');
+    
     setCurrentStep(prev => prev + 1);
     setTimeout(() => {
       askCurrentQuestion();
