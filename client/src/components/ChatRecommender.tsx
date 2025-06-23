@@ -50,7 +50,7 @@ const chatSteps: ChatStep[] = [
   {
     id: 'timeOfDay',
     question: "When's this for? (You can pick multiple)",
-    options: ["Weekday evening", "Weekend", "Late night", "Morning"],
+    options: ["Weekday", "Weekend", "Late night", "Morning"],
     schemaField: 'timeOfDay',
     mappedValues: ["weekday", "weekend", "late", "morning"],
     allowMultiple: true

@@ -32,10 +32,10 @@ export type Film = {
 
 // Define recommendation request schema
 export const recommendationRequestSchema = z.object({
-  location: z.enum(["home", "travel"]),
+  location: z.union([z.enum(["home", "travel"]), z.string()]), // Allow custom text responses
   audience: z.enum(["solo", "friends", "date", "family"]),
   timeOfDay: z.array(z.enum(["weekday", "weekend", "late", "morning"])).min(1),
-  mood: z.enum(["laugh", "think", "cry", "thrill", "escape", "inspire"]),
+  mood: z.union([z.enum(["laugh", "think", "cry", "thrill", "escape", "inspire"]), z.string()]), // Allow custom text responses
   runtime: z.array(z.enum(["short", "medium", "long"])).optional(),
   streamingServices: z.array(z.string()).optional(),
   country: z.string().optional(),
