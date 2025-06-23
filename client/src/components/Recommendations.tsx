@@ -54,7 +54,7 @@ export default function Recommendations({
       case "travel": return "Traveling";
       case "date": return "Date Night";
       case "friends": return "With Friends";
-      default: return "";
+      default: return location; // Return the custom text instead of empty string
     }
   };
 
@@ -79,7 +79,7 @@ export default function Recommendations({
       case "thrill": return "Thrill";
       case "escape": return "Escape";
       case "inspire": return "Inspire";
-      default: return "";
+      default: return mood; // Return the custom text instead of empty string
     }
   };
   
