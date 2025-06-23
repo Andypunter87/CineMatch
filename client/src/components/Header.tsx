@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, User, LogOut, Settings, Bookmark, Home, BarChart, Users, Bug, Database, Sparkles } from "lucide-react";
+import { Loader2, User, LogOut, Settings, Bookmark, Home, BarChart, Users, Bug, Database, Sparkles, MessageCircle } from "lucide-react";
 import { NotificationBell } from "./notifications/NotificationBell";
 
 interface MoodCardData {
@@ -89,6 +89,12 @@ export default function Header() {
                   Watchlist
                 </span>
               </Link>
+              <Link href="/chat">
+                <span className="flex items-center text-sm font-medium hover:text-blue-500 transition-colors">
+                  <MessageCircle className="mr-1 h-4 w-4" />
+                  Chat
+                </span>
+              </Link>
             </nav>
           )}
         </div>
@@ -125,6 +131,12 @@ export default function Header() {
                     <DropdownMenuItem className="cursor-pointer" onClick={() => setIsMenuOpen(false)}>
                       <Users className="mr-2 h-4 w-4" />
                       <span>My Friends</span>
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/chat">
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => setIsMenuOpen(false)}>
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      <span>Chat with CineMate</span>
                     </DropdownMenuItem>
                   </Link>
                   {latestMoodCard && (

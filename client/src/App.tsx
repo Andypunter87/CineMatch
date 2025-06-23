@@ -40,6 +40,7 @@ function Router() {
       <ProtectedRoute path="/admin" component={AdminDashboard} adminOnly={true} />
       <ProtectedRoute path="/onboarding" component={OnboardingPage} />
       <ProtectedRoute path="/onboarding-test" component={OnboardingTestPage} />
+      <ProtectedRoute path="/chat" component={ChatRecommenderPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
