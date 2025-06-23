@@ -99,7 +99,7 @@ export default function ChatRecommender({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
-  const [showOtherInput, setShowOtherInput] = useState(false);
+
   const [otherInputValue, setOtherInputValue] = useState('');
   const [recommendationData, setRecommendationData] = useState<Partial<RecommendationRequest>>({});
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
@@ -125,7 +125,7 @@ export default function ChatRecommender({
 
   useEffect(() => {
     // Start the conversation
-    addCineMateMessage("Hi! I'm CineMate, your friendly film buff. Let's find you the perfect movie tonight! 🎬");
+    addCineMateMessage("Hi! I'm CineMate, your friendly film buff. Let's find you the perfect movie to watch! 🎬");
     setTimeout(() => {
       askCurrentQuestion();
     }, 1000);
@@ -247,7 +247,6 @@ export default function ChatRecommender({
       });
     } finally {
       setIsProcessingOther(false);
-      setShowOtherInput(false);
       setOtherInputValue('');
     }
   };
@@ -296,14 +295,10 @@ export default function ChatRecommender({
   };
 
   const currentStepData = currentStep < chatSteps.length ? chatSteps[currentStep] : null;
-  const showOptions = !isTyping && !showOtherInput && !showConfirmation && currentStepData;
+  const showOptions = !isTyping && !showConfirmation && currentStepData;
   const isViewingPartyStep = currentStepData?.id === 'viewingParty';
 
-  // Debug logging
-  console.log('Current step:', currentStep);
-  console.log('Current step data:', currentStepData);
-  console.log('Current step question:', currentStepData?.question);
-  console.log('Current step options:', currentStepData?.options);
+
 
   return (
     <div className="max-w-2xl mx-auto h-[600px] flex flex-col bg-white rounded-lg shadow-lg">
@@ -387,37 +382,7 @@ export default function ChatRecommender({
           </div>
         )}
 
-        {showOtherInput && (
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <Input
-                value={otherInputValue}
-                onChange={(e) => setOtherInputValue(e.target.value)}
-                placeholder="Tell me more..."
-                onKeyPress={(e) => e.key === 'Enter' && handleOtherSubmit()}
-                disabled={isProcessingOther}
-              />
-              <Button 
-                onClick={handleOtherSubmit} 
-                disabled={!otherInputValue.trim() || isProcessingOther}
-                size="icon"
-              >
-                {isProcessingOther ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
-            <Button 
-              variant="ghost" 
-              onClick={() => setShowOtherInput(false)}
-              className="w-full"
-            >
-              Back to options
-            </Button>
-          </div>
-        )}
+
 
         {showOptions && (
           <div className="space-y-3">
@@ -455,48 +420,75 @@ export default function ChatRecommender({
               </div>
             ) : (
               /* Regular button options */
-              <div className="space-y-2">
-                {currentStepData.options.map((option, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    {currentStepData.allowMultiple ? (
-                      <>
-                        <Checkbox
-                          id={`option-${index}`}
-                          checked={selectedOptions.includes(option)}
-                          onCheckedChange={() => handleOptionSelect(index)}
-                        />
-                        <label
-                          htmlFor={`option-${index}`}
-                          className="flex-1 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                        >
-                          {option}
-                        </label>
-                      </>
-                    ) : (
+              <div className="space-y-3">
+                {currentStepData.allowMultiple ? (
+                  /* Multiple selection with checkboxes in a grid */
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      {currentStepData.options.map((option, index) => (
+                        <div key={index} className="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50">
+                          <Checkbox
+                            id={`option-${index}`}
+                            checked={selectedOptions.includes(option)}
+                            onCheckedChange={() => handleOptionSelect(index)}
+                          />
+                          <label
+                            htmlFor={`option-${index}`}
+                            className="flex-1 text-sm font-medium leading-none cursor-pointer"
+                          >
+                            {option}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {selectedOptions.length > 0 && (
+                      <Button onClick={handleMultipleConfirm} className="w-full">
+                        Continue with selected ({selectedOptions.length})
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  /* Single selection with buttons in a row */
+                  <div className="flex flex-wrap gap-2">
+                    {currentStepData.options.map((option, index) => (
                       <Button
+                        key={index}
                         variant="outline"
                         onClick={() => handleOptionSelect(index)}
-                        className="w-full justify-start text-left hover:bg-blue-50 hover:border-blue-300"
+                        className="flex-1 min-w-0 hover:bg-blue-50 hover:border-blue-300"
                       >
                         {option}
                       </Button>
-                    )}
+                    ))}
                   </div>
-                ))}
-
-                {currentStepData.allowMultiple && selectedOptions.length > 0 && (
-                  <Button onClick={handleMultipleConfirm} className="w-full">
-                    Continue with selected ({selectedOptions.length})
-                  </Button>
                 )}
 
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowOtherInput(true)}
-                  className="w-full"
-                >
-                  Other
-                </Button>
+                {/* Text input option */}
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Input
+                      value={otherInputValue}
+                      onChange={(e) => setOtherInputValue(e.target.value)}
+                      placeholder="Or tell me something else..."
+                      onKeyPress={(e) => e.key === 'Enter' && otherInputValue.trim() && handleOtherSubmit()}
+                      disabled={isProcessingOther}
+                      className="pr-10"
+                    />
+                    <Button 
+                      onClick={handleOtherSubmit} 
+                      disabled={!otherInputValue.trim() || isProcessingOther}
+                      size="sm"
+                      className="absolute right-1 top-1 h-8 w-8 p-0"
+                    >
+                      {isProcessingOther ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
