@@ -34,18 +34,18 @@ interface Friend {
 
 const chatSteps: ChatStep[] = [
   {
-    id: 'location',
-    question: "Where are you watching?",
-    options: ["At home", "Travelling", "Out and about"],
-    schemaField: 'location',
-    mappedValues: ["home", "travel", "travel"]
-  },
-  {
     id: 'audience',
     question: "Who are you watching with?",
     options: ["Just me", "Friends", "Date night", "Family"],
     schemaField: 'audience',
     mappedValues: ["solo", "friends", "date", "family"]
+  },
+  {
+    id: 'location',
+    question: "Where are you watching?",
+    options: ["At home", "Travelling", "Out and about"],
+    schemaField: 'location',
+    mappedValues: ["home", "travel", "travel"]
   },
   {
     id: 'timeOfDay',
@@ -68,14 +68,6 @@ const chatSteps: ChatStep[] = [
     options: ["Short (≤90 mins)", "Medium (≤120 mins)", "Long (2.5+ hrs)"],
     schemaField: 'runtime',
     mappedValues: ["short", "medium", "long"],
-    allowMultiple: true
-  },
-  {
-    id: 'streamingServices',
-    question: "Where do you stream? (You can pick multiple)",
-    options: ["Netflix", "Prime Video", "Disney+", "Apple TV+", "Hulu", "HBO Max"],
-    schemaField: 'streamingServices',
-    mappedValues: ["Netflix", "Amazon Prime Video", "Disney Plus", "Apple TV Plus", "Hulu", "HBO Max"],
     allowMultiple: true
   },
   {
