@@ -4,9 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Send, User, Bot } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { Loader2, Send, User, Bot, UserPlus, X } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { RecommendationRequest } from '@shared/schema';
+import { useToast } from '@/hooks/use-toast';
 
 interface ChatMessage {
   id: string;
@@ -88,14 +89,54 @@ export default function ChatRecommender({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [customInput, setCustomInput] = useState('');
   const [isProcessingCustom, setIsProcessingCustom] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fetch friends for the viewing party step
-  const { data: friends = [] } = useQuery<Friend[]>({
+  const { data: friends = [], refetch: refetchFriends } = useQuery<Friend[]>({
     queryKey: ['/api/friends'],
     enabled: userId !== undefined,
     queryFn: () => fetch('/api/friends').then(res => res.json())
+  });
+
+  // Friend invitation mutation
+  const inviteFriendMutation = useMutation({
+    mutationFn: async (data: { email: string, friendName: string }) => {
+      const response = await fetch('/api/friend-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to send invitation');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Friend invitation sent",
+        description: "We'll notify you when they accept your request",
+      });
+      setInviteEmail('');
+      setInviteName('');
+      setShowInviteModal(false);
+      refetchFriends();
+      queryClient.invalidateQueries({ queryKey: ['/api/friends'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/friend-requests'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to send invitation",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      });
+    }
   });
 
   const scrollToBottom = () => {
@@ -182,8 +223,8 @@ export default function ChatRecommender({
       return;
     }
 
-    // Handle "Friends" selection - show friend dropdown
-    if (step.id === 'audience' && selectedOption === 'Friends' && friends.length > 0) {
+    // Handle "Friends" or "Date night" selection - show friend dropdown
+    if (step.id === 'audience' && (selectedOption === 'Friends' || selectedOption === 'Date night')) {
       addUserMessage(selectedOption);
       updateRecommendationData(step.schemaField, mappedValue);
       setShowFriendSelection(true);
@@ -224,6 +265,33 @@ export default function ChatRecommender({
     updateRecommendationData('viewingParty', []);
     setShowFriendSelection(false);
     proceedToNextStep();
+  };
+
+  const handleInviteFriend = () => {
+    setShowInviteModal(true);
+  };
+
+  const handleSendInvitation = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail || !inviteEmail.includes('@')) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!inviteName || inviteName.trim() === '') {
+      toast({
+        title: "Friend's name is required",
+        description: "Please enter your friend's name",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    inviteFriendMutation.mutate({ email: inviteEmail, friendName: inviteName });
   };
 
   const handleCustomInput = async () => {
@@ -377,27 +445,54 @@ export default function ChatRecommender({
         <div className="space-y-3">
           <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-sm text-blue-800 mb-3">
-              Which friend are you watching with?
+              {recommendationData.audience === 'date' 
+                ? "Who are you going on a date with?"
+                : "Which friend are you watching with?"}
             </p>
             <div className="space-y-2">
-              <Select onValueChange={handleFriendSelection}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a friend" />
-                </SelectTrigger>
-                <SelectContent>
-                  {friends.map((friend) => (
-                    <SelectItem key={friend.id} value={friend.id.toString()}>
-                      {friend.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {friends.length > 0 ? (
+                <Select onValueChange={handleFriendSelection}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={
+                      recommendationData.audience === 'date' 
+                        ? "Select your date" 
+                        : "Select a friend"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {friends.map((friend) => (
+                      <SelectItem key={friend.id} value={friend.id.toString()}>
+                        {friend.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm text-gray-600 mb-2">
+                  You don't have any friends added yet.
+                </p>
+              )}
+              
+              <Button 
+                variant="outline" 
+                onClick={handleInviteFriend}
+                className="w-full"
+                disabled={inviteFriendMutation.isPending}
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                {recommendationData.audience === 'date' 
+                  ? "Invite someone new" 
+                  : "Invite a friend"}
+              </Button>
+              
               <Button 
                 variant="outline" 
                 onClick={skipFriendSelection}
                 className="w-full"
               >
-                Actually, just me tonight
+                {recommendationData.audience === 'date' 
+                  ? "Actually, just me tonight"
+                  : "Actually, just me tonight"}
               </Button>
             </div>
           </div>
