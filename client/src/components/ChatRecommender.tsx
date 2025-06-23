@@ -222,12 +222,7 @@ export default function ChatRecommender({
       text,
       timestamp: new Date()
     };
-    console.log('Adding user message:', message);
-    setMessages(prev => {
-      const newMessages = [...prev, message];
-      console.log('Updated messages array:', newMessages);
-      return newMessages;
-    });
+    setMessages(prev => [...prev, message]);
   };
 
   const simulateTyping = (callback: () => void, delay = 1500) => {
@@ -303,7 +298,6 @@ export default function ChatRecommender({
 
     // For mood step with personalized options, use the actual text instead of mapped value
     if (step.id === 'mood' && personalizedMoods.length > 0) {
-      console.log('Adding mood message to chat:', selectedOption);
       addUserMessage(selectedOption);
       updateRecommendationData(step.schemaField, selectedOption); // Use the personalized text directly
       proceedToNextStep();

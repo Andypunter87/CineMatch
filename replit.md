@@ -125,7 +125,13 @@ CineMatch is a sophisticated film recommendation platform that uses AI to provid
 - CORS and security headers configured for production deployment
 
 ## Changelog
-- June 23, 2025. Initial setup
+- June 23, 2025: Successfully implemented personalized mood label generation feature
+  - OpenAI generates custom mood options based on user context (audience, time of day)
+  - Fixed JSON parsing to handle markdown code blocks from OpenAI responses
+  - Improved chat UI layout with responsive grid for better mood option readability
+  - Verified personalized mood labels are passed to OpenAI for enhanced recommendations
+  - Fixed onboarding state for test users to prevent unwanted redirects
+- June 23, 2025: Initial setup
 
 ## User Preferences
 
