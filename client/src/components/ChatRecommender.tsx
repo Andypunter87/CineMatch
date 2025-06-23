@@ -86,6 +86,8 @@ export default function ChatRecommender({
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [showFriendSelection, setShowFriendSelection] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [customInput, setCustomInput] = useState('');
+  const [isProcessingCustom, setIsProcessingCustom] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -116,6 +118,8 @@ export default function ChatRecommender({
     setSelectedOptions([]);
     setShowFriendSelection(false);
     setShowConfirmation(false);
+    setCustomInput('');
+    setIsProcessingCustom(false);
     
     addCineMateMessage("Hi! I'm CineMate, your friendly film buff. Let's find you the perfect movie to watch! 🎬");
     setTimeout(() => {
@@ -222,6 +226,31 @@ export default function ChatRecommender({
     proceedToNextStep();
   };
 
+  const handleCustomInput = async () => {
+    if (!customInput.trim() || isProcessingCustom) return;
+    
+    setIsProcessingCustom(true);
+    const step = chatSteps[currentStep];
+    
+    // Add user message and process the custom input
+    addUserMessage(customInput);
+    
+    // For custom responses, pass the raw text as the value
+    // The LLM will interpret this contextually
+    updateRecommendationData(step.schemaField, customInput);
+    
+    setCustomInput('');
+    setIsProcessingCustom(false);
+    proceedToNextStep();
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleCustomInput();
+    }
+  };
+
   const updateRecommendationData = (field: keyof RecommendationRequest, value: any) => {
     setRecommendationData(prev => ({
       ...prev,
@@ -265,6 +294,10 @@ export default function ChatRecommender({
 
   const currentStepData = currentStep < chatSteps.length ? chatSteps[currentStep] : null;
   const showOptions = !isTyping && !showConfirmation && !showFriendSelection && currentStepData;
+  
+  // Only allow custom input for location and mood questions
+  // Keep predefined options for audience and time/runtime questions
+  const allowCustomInput = currentStepData && ['location', 'mood'].includes(currentStepData.id);
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-4">
@@ -395,17 +428,43 @@ export default function ChatRecommender({
               )}
             </div>
           ) : (
-            <div className="flex flex-wrap gap-2">
-              {currentStepData.options.map((option, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  onClick={() => handleOptionSelect(index)}
-                  className="flex-1 min-w-[120px]"
-                >
-                  {option}
-                </Button>
-              ))}
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {currentStepData.options.map((option, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    onClick={() => handleOptionSelect(index)}
+                    className="flex-1 min-w-[120px]"
+                  >
+                    {option}
+                  </Button>
+                ))}
+              </div>
+              
+              {/* Custom Input for Location and Mood Questions */}
+              {allowCustomInput && (
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-xs text-gray-600 mb-2">Or describe it in your own words:</p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={customInput}
+                      onChange={(e) => setCustomInput(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Type your answer..."
+                      className="flex-1"
+                      disabled={isProcessingCustom}
+                    />
+                    <Button 
+                      onClick={handleCustomInput}
+                      disabled={!customInput.trim() || isProcessingCustom}
+                      size="sm"
+                    >
+                      {isProcessingCustom ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
