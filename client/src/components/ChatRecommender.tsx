@@ -8,6 +8,7 @@ import { Loader2, Send, User, Bot, UserPlus, X } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { RecommendationRequest } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
+import { useChatPersistence } from '@/hooks/use-chat-persistence';
 
 interface ChatMessage {
   id: string;
@@ -100,6 +101,7 @@ export default function ChatRecommender({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { saveChatSession, saveVibePreference, savePersonalizedMoods } = useChatPersistence();
 
   // Fetch friends for the viewing party step
   const { data: friends = [], refetch: refetchFriends } = useQuery<Friend[]>({
