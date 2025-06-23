@@ -284,17 +284,50 @@ export function setupAuth(app: Express) {
       // Generate a Firebase token for the user
       const firebaseToken = await createFirebaseToken(req.user.id);
       
-      // Return user without password but with Firebase token
+      // Check onboarding state
       const { password, ...userWithoutPassword } = req.user as SelectUser;
+      let needsOnboarding = true;
+      
+      if (userWithoutPassword.onboardingState) {
+        try {
+          const onboardingState = typeof userWithoutPassword.onboardingState === 'string' 
+            ? JSON.parse(userWithoutPassword.onboardingState) 
+            : userWithoutPassword.onboardingState;
+          needsOnboarding = !onboardingState.completed;
+        } catch (e) {
+          console.error('Error parsing onboarding state:', e);
+          needsOnboarding = true;
+        }
+      }
+      
       res.json({
         ...userWithoutPassword,
+        needsOnboarding,
         firebaseToken // Include the token in the response
-      });
+      } as any);
     } catch (error) {
       console.error('Error generating Firebase token:', error);
       // Still return the user even if token generation fails
       const { password, ...userWithoutPassword } = req.user as SelectUser;
-      res.json(userWithoutPassword);
+      
+      // Check onboarding state even without Firebase token
+      let needsOnboarding = true;
+      if (userWithoutPassword.onboardingState) {
+        try {
+          const onboardingState = typeof userWithoutPassword.onboardingState === 'string' 
+            ? JSON.parse(userWithoutPassword.onboardingState) 
+            : userWithoutPassword.onboardingState;
+          needsOnboarding = !onboardingState.completed;
+        } catch (e) {
+          console.error('Error parsing onboarding state:', e);
+          needsOnboarding = true;
+        }
+      }
+      
+      res.json({
+        ...userWithoutPassword,
+        needsOnboarding
+      } as any);
     }
   });
 

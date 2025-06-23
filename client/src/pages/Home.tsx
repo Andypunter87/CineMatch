@@ -16,26 +16,16 @@ export default function Home() {
   // Check if user needs onboarding and redirect if necessary
   useEffect(() => {
     if (user) {
-      // Check onboarding state for this user
-      
-      const onboardingState = user.onboardingState as any;
-      const needsOnboarding = !onboardingState?.completed;
+      // Use the server-provided needsOnboarding field
+      const needsOnboarding = (user as any).needsOnboarding;
       
       // Skip onboarding redirect if URL contains bypass parameters
       const urlParams = new URLSearchParams(window.location.search);
       const justCompletedOnboarding = urlParams.has('just_completed_onboarding');
       const bypassOnboarding = urlParams.has('bypass_onboarding') || justCompletedOnboarding;
       
-      // Check if onboarding was previously completed for THIS specific user
-      const userOnboardingKey = `onboardingCompleted_${user.id}`;
-      const previouslyCompleted = localStorage.getItem(userOnboardingKey) === 'true';
-      
-      // If user just completed onboarding, mark it as complete in localStorage for this user
-      if (justCompletedOnboarding) {
-        localStorage.setItem(userOnboardingKey, 'true');
-      }
-      
-      if (needsOnboarding && !bypassOnboarding && !previouslyCompleted) {
+      // Only redirect to onboarding if the server says we need it and we're not bypassing
+      if (needsOnboarding && !bypassOnboarding) {
         setLocation('/onboarding');
         return;
       }
