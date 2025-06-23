@@ -69,15 +69,6 @@ const chatSteps: ChatStep[] = [
     schemaField: 'runtime',
     mappedValues: ["short", "medium", "long"],
     allowMultiple: true
-  },
-  {
-    id: 'viewingParty',
-    question: "Want to include any of your CineMatch friends in this recommendation?",
-    options: [], // Will be populated with friend names
-    schemaField: 'viewingParty',
-    mappedValues: [],
-    requiresDropdown: true,
-    allowMultiple: true
   }
 ];
 
@@ -91,13 +82,10 @@ export default function ChatRecommender({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
-
-  const [otherInputValue, setOtherInputValue] = useState('');
   const [recommendationData, setRecommendationData] = useState<Partial<RecommendationRequest>>({});
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [isProcessingOther, setIsProcessingOther] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
   const [showFriendSelection, setShowFriendSelection] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -116,23 +104,24 @@ export default function ChatRecommender({
     scrollToBottom();
   }, [messages]);
 
+  // Initialize conversation on mount
   useEffect(() => {
-    // Reset state and start fresh conversation
-    setCurrentStep(0);
+    startConversation();
+  }, []);
+
+  const startConversation = () => {
     setMessages([]);
-    setSelectedOptions([]);
-    setOtherInputValue('');
+    setCurrentStep(0);
     setRecommendationData({});
-    setShowConfirmation(false);
+    setSelectedOptions([]);
     setShowFriendSelection(false);
-    setIsTyping(false);
+    setShowConfirmation(false);
     
-    // Start the conversation
     addCineMateMessage("Hi! I'm CineMate, your friendly film buff. Let's find you the perfect movie to watch! 🎬");
     setTimeout(() => {
-      askCurrentQuestion();
+      askQuestion(0);
     }, 1000);
-  }, [])
+  };
 
   const addCineMateMessage = (text: string, isTyping = false) => {
     const message: ChatMessage = {
@@ -163,20 +152,13 @@ export default function ChatRecommender({
     }, delay);
   };
 
-  const askCurrentQuestion = () => {
-    if (currentStep >= chatSteps.length) {
+  const askQuestion = (stepIndex: number) => {
+    if (stepIndex >= chatSteps.length) {
       showFinalConfirmation();
       return;
     }
 
-    const step = chatSteps[currentStep];
-    
-    // For viewing party step, populate with friends
-    if (step.id === 'viewingParty' && friends.length > 0) {
-      step.options = friends.map(f => f.name);
-      step.mappedValues = friends.map(f => f.id.toString());
-    }
-
+    const step = chatSteps[stepIndex];
     simulateTyping(() => {
       addCineMateMessage(step.question);
     });
@@ -200,13 +182,11 @@ export default function ChatRecommender({
     if (step.id === 'audience' && selectedOption === 'Friends' && friends.length > 0) {
       addUserMessage(selectedOption);
       updateRecommendationData(step.schemaField, mappedValue);
-      
-      // Set up friend selection step
       setShowFriendSelection(true);
       return;
     }
 
-    // Single selection - normal flow
+    // Single selection - proceed to next question
     addUserMessage(selectedOption);
     updateRecommendationData(step.schemaField, mappedValue);
     proceedToNextStep();
@@ -223,25 +203,6 @@ export default function ChatRecommender({
     updateRecommendationData(step.schemaField, selectedMappedValues);
     setSelectedOptions([]);
     proceedToNextStep();
-  };
-
-  const handleOtherSubmit = async () => {
-    if (!otherInputValue.trim()) return;
-
-    setIsProcessingOther(true);
-    addUserMessage(otherInputValue);
-
-    // Store the raw user input directly instead of trying to map it
-    const step = chatSteps[currentStep];
-    updateRecommendationData(step.schemaField, otherInputValue);
-    
-    simulateTyping(() => {
-      addCineMateMessage("Got it! I'll include that in your recommendations.");
-      proceedToNextStep();
-    });
-
-    setIsProcessingOther(false);
-    setOtherInputValue('');
   };
 
   const handleFriendSelection = (friendId: string) => {
@@ -264,288 +225,191 @@ export default function ChatRecommender({
   const updateRecommendationData = (field: keyof RecommendationRequest, value: any) => {
     setRecommendationData(prev => ({
       ...prev,
-      [field]: value,
-      userId: userId
+      [field]: value
     }));
   };
 
   const proceedToNextStep = () => {
-    // Clear selections before moving to next step
-    setSelectedOptions([]);
-    setOtherInputValue('');
+    const nextStep = currentStep + 1;
+    setCurrentStep(nextStep);
     
-    setCurrentStep(prev => prev + 1);
     setTimeout(() => {
-      askCurrentQuestion();
+      askQuestion(nextStep);
     }, 1000);
   };
 
   const showFinalConfirmation = () => {
     simulateTyping(() => {
-      addCineMateMessage("Perfect! Based on what you've told me, I'll suggest films I think you'll absolutely love. Ready for your personalized recommendations?");
+      addCineMateMessage("Perfect! I've got all the details I need. Let me find you some great recommendations!");
       setShowConfirmation(true);
     });
   };
 
-  const handleConfirm = () => {
-    addUserMessage("Let's go!");
-    simulateTyping(() => {
-      addCineMateMessage("Fantastic! Give me a moment to curate the perfect selection for you...");
-      // Complete the recommendation request
-      onComplete(recommendationData as RecommendationRequest);
-    });
+  const handleConfirmSubmit = () => {
+    const completeRequest: RecommendationRequest = {
+      location: recommendationData.location || 'home',
+      audience: recommendationData.audience || 'solo',
+      timeOfDay: recommendationData.timeOfDay || ['evening'],
+      mood: recommendationData.mood || 'any',
+      runtime: recommendationData.runtime || ['medium'],
+      viewingParty: recommendationData.viewingParty || [],
+      additionalContext: 'Generated from chat interface'
+    };
+    
+    onComplete(completeRequest);
   };
 
-  const handleChangeResponses = () => {
-    addUserMessage("I'd like to change something");
-    setShowConfirmation(false);
-    setCurrentStep(0);
-    setRecommendationData({});
-    setMessages([]);
-    setSelectedOptions([]);
-    setOtherInputValue('');
-    simulateTyping(() => {
-      addCineMateMessage("No problem! Let's start fresh. What would you like to change?");
-      askCurrentQuestion();
-    });
-  };
-
-  // Add a reset function to properly clear state
-  const resetConversation = () => {
-    setCurrentStep(0);
-    setMessages([]);
-    setRecommendationData({});
-    setSelectedOptions([]);
-    setOtherInputValue('');
-    setShowConfirmation(false);
-    setIsTyping(false);
+  const restartChat = () => {
+    startConversation();
   };
 
   const currentStepData = currentStep < chatSteps.length ? chatSteps[currentStep] : null;
   const showOptions = !isTyping && !showConfirmation && !showFriendSelection && currentStepData;
-  const isViewingPartyStep = currentStepData?.id === 'viewingParty';
-
-
 
   return (
-    <div className="max-w-2xl mx-auto h-[600px] flex flex-col bg-white rounded-lg shadow-lg">
-      {/* Chat Header */}
-      <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-            <Bot className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-gray-900">CineMate</h3>
-            <p className="text-sm text-gray-600">Your personal film curator</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex gap-3 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            {message.sender === 'cineMate' && (
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <Bot className="w-4 h-4 text-white" />
-              </div>
-            )}
+    <div className="max-w-2xl mx-auto p-4 space-y-4">
+      <Card className="h-96 overflow-y-auto bg-gradient-to-b from-blue-50 to-white border-blue-200">
+        <CardContent className="p-6 space-y-4">
+          {messages.map((message) => (
             <div
-              className={`max-w-[80%] p-3 rounded-lg ${
-                message.sender === 'user'
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white'
+              key={message.id}
+              className={`flex items-start gap-3 ${
+                message.sender === 'user' ? 'flex-row-reverse' : ''
               }`}
             >
-              <p className="text-sm">{message.text}</p>
-            </div>
-            {message.sender === 'user' && (
-              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
-                <User className="w-4 h-4 text-gray-600" />
+              <div className={`p-2 rounded-full ${
+                message.sender === 'cineMate' 
+                  ? 'bg-blue-100 text-blue-600' 
+                  : 'bg-gray-100 text-gray-600'
+              }`}>
+                {message.sender === 'cineMate' ? <Bot size={16} /> : <User size={16} />}
               </div>
-            )}
-          </div>
-        ))}
-
-        {isTyping && (
-          <div className="flex gap-3 justify-start">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <Bot className="w-4 h-4 text-white" />
-            </div>
-            <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-3 rounded-lg">
-              <div className="flex gap-1">
-                <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input Area */}
-      <div className="p-4 border-t bg-gray-50 rounded-b-lg">
-        {showConfirmation && (
-          <div className="space-y-3">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-800">
-                We'll suggest films we think you'll love based on what you've told us.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleConfirm} className="flex-1">
-                Let's go!
-              </Button>
-              <Button variant="outline" onClick={handleChangeResponses}>
-                Change something
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Friend Selection Dropdown */}
-        {showFriendSelection && (
-          <div className="space-y-3">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-800 mb-3">
-                Which friend are you watching with?
-              </p>
-              <div className="space-y-2">
-                <Select onValueChange={handleFriendSelection}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a friend" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {friends.map((friend) => (
-                      <SelectItem key={friend.id} value={friend.id.toString()}>
-                        {friend.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button 
-                  variant="outline" 
-                  onClick={skipFriendSelection}
-                  className="w-full"
-                >
-                  Actually, just me tonight
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showOptions && (
-          <div className="space-y-3">
-            {/* Special handling for viewing party dropdown */}
-            {isViewingPartyStep && friends.length > 0 ? (
-              <div className="space-y-2">
-                <Select onValueChange={(value) => {
-                  const friendIndex = friends.findIndex(f => f.id.toString() === value);
-                  if (friendIndex !== -1) {
-                    handleOptionSelect(friendIndex);
-                  }
-                }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a friend (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {friends.map((friend, index) => (
-                      <SelectItem key={friend.id} value={friend.id.toString()}>
-                        {friend.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    addUserMessage("No friends for this session");
-                    updateRecommendationData(currentStepData.schemaField, []);
-                    proceedToNextStep();
-                  }}
-                  className="w-full"
-                >
-                  Skip - Just me tonight
-                </Button>
-              </div>
-            ) : (
-              /* Regular button options */
-              <div className="space-y-3">
-                {currentStepData.allowMultiple ? (
-                  /* Multiple selection with buttons in horizontal layout for consistency */
-                  <>
-                    <div className="flex flex-wrap gap-2">
-                      {currentStepData.options.map((option, index) => (
-                        <Button
-                          key={index}
-                          variant={selectedOptions.includes(option) ? "default" : "outline"}
-                          onClick={() => handleOptionSelect(index)}
-                          className="flex-1 min-w-[120px]"
-                        >
-                          {option}
-                        </Button>
-                      ))}
-                    </div>
-                    
-                    {selectedOptions.length > 0 && (
-                      <Button onClick={handleMultipleConfirm} className="w-full">
-                        Continue with selected ({selectedOptions.length})
-                      </Button>
-                    )}
-                  </>
-                ) : (
-                  /* Single selection with buttons in a row */
-                  <div className="flex flex-wrap gap-2">
-                    {currentStepData.options.map((option, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        onClick={() => handleOptionSelect(index)}
-                        className="flex-1 min-w-0 hover:bg-blue-50 hover:border-blue-300"
-                      >
-                        {option}
-                      </Button>
-                    ))}
+              <div className={`max-w-[80%] p-3 rounded-lg ${
+                message.sender === 'cineMate'
+                  ? 'bg-white shadow-sm border border-blue-100'
+                  : 'bg-blue-500 text-white'
+              }`}>
+                <p className="text-sm">{message.text}</p>
+                {message.isTyping && (
+                  <div className="flex items-center gap-1 mt-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                 )}
+              </div>
+            </div>
+          ))}
 
-                {/* Text input option */}
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Input
-                      value={otherInputValue}
-                      onChange={(e) => setOtherInputValue(e.target.value)}
-                      placeholder="Or tell me something else..."
-                      onKeyPress={(e) => e.key === 'Enter' && otherInputValue.trim() && handleOtherSubmit()}
-                      disabled={isProcessingOther}
-                      className="pr-10"
-                    />
-                    <Button 
-                      onClick={handleOtherSubmit} 
-                      disabled={!otherInputValue.trim() || isProcessingOther}
-                      size="sm"
-                      className="absolute right-1 top-1 h-8 w-8 p-0"
-                    >
-                      {isProcessingOther ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Send className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
+          {isTyping && (
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-full bg-blue-100 text-blue-600">
+                <Bot size={16} />
+              </div>
+              <div className="bg-white shadow-sm border border-blue-100 p-3 rounded-lg">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </CardContent>
+      </Card>
+
+      {/* Confirmation Screen */}
+      {showConfirmation && (
+        <div className="space-y-3">
+          <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+            <p className="text-sm text-green-800 mb-3">
+              Ready to get your recommendations?
+            </p>
+            <div className="flex gap-2">
+              <Button onClick={handleConfirmSubmit} className="flex-1">
+                Get My Recommendations
+              </Button>
+              <Button variant="outline" onClick={restartChat}>
+                Start Over
+              </Button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Friend Selection Dropdown */}
+      {showFriendSelection && (
+        <div className="space-y-3">
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-800 mb-3">
+              Which friend are you watching with?
+            </p>
+            <div className="space-y-2">
+              <Select onValueChange={handleFriendSelection}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a friend" />
+                </SelectTrigger>
+                <SelectContent>
+                  {friends.map((friend) => (
+                    <SelectItem key={friend.id} value={friend.id.toString()}>
+                      {friend.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                variant="outline" 
+                onClick={skipFriendSelection}
+                className="w-full"
+              >
+                Actually, just me tonight
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Options Interface */}
+      {showOptions && (
+        <div className="space-y-3">
+          {currentStepData.allowMultiple ? (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {currentStepData.options.map((option, index) => (
+                  <Button
+                    key={index}
+                    variant={selectedOptions.includes(option) ? "default" : "outline"}
+                    onClick={() => handleOptionSelect(index)}
+                    className="flex-1 min-w-[120px]"
+                  >
+                    {option}
+                  </Button>
+                ))}
+              </div>
+              {selectedOptions.length > 0 && (
+                <Button onClick={handleMultipleConfirm} className="w-full">
+                  Continue with: {selectedOptions.join(', ')}
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {currentStepData.options.map((option, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  onClick={() => handleOptionSelect(index)}
+                  className="flex-1 min-w-[120px]"
+                >
+                  {option}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
