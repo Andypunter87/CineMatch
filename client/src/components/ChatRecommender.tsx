@@ -35,7 +35,7 @@ interface Friend {
 const chatSteps: ChatStep[] = [
   {
     id: 'location',
-    question: "Where are you watching tonight?",
+    question: "Where are you watching?",
     options: ["At home", "Travelling", "Out and about"],
     schemaField: 'location',
     mappedValues: ["home", "travel", "travel"]
