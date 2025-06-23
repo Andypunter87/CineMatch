@@ -299,6 +299,12 @@ export default function ChatRecommender({
   const showOptions = !isTyping && !showOtherInput && !showConfirmation && currentStepData;
   const isViewingPartyStep = currentStepData?.id === 'viewingParty';
 
+  // Debug logging
+  console.log('Current step:', currentStep);
+  console.log('Current step data:', currentStepData);
+  console.log('Current step question:', currentStepData?.question);
+  console.log('Current step options:', currentStepData?.options);
+
   return (
     <div className="max-w-2xl mx-auto h-[600px] flex flex-col bg-white rounded-lg shadow-lg">
       {/* Chat Header */}
