@@ -499,6 +499,69 @@ export default function ChatRecommender({
         </div>
       )}
 
+      {/* Friend Invitation Modal */}
+      {showInviteModal && (
+        <div className="space-y-3">
+          <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm text-green-800 font-medium">
+                {recommendationData.audience === 'date' 
+                  ? "Invite someone special"
+                  : "Invite a friend"}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowInviteModal(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <form onSubmit={handleSendInvitation} className="space-y-3">
+              <div>
+                <Input
+                  type="email"
+                  placeholder="Enter their email address"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Input
+                  type="text"
+                  placeholder="Enter their name"
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  type="submit" 
+                  className="flex-1"
+                  disabled={inviteFriendMutation.isPending}
+                >
+                  {inviteFriendMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-2" />
+                  )}
+                  Send Invitation
+                </Button>
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  onClick={() => setShowInviteModal(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Options Interface */}
       {showOptions && (
         <div className="space-y-3">
