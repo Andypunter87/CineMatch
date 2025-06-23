@@ -34,18 +34,18 @@ interface Friend {
 
 const chatSteps: ChatStep[] = [
   {
-    id: 'audience',
-    question: "Who are you watching with?",
-    options: ["Just me", "Friends", "Date night", "Family"],
-    schemaField: 'audience',
-    mappedValues: ["solo", "friends", "date", "family"]
-  },
-  {
     id: 'location',
     question: "Where are you watching?",
     options: ["At home", "Travelling", "Out and about"],
     schemaField: 'location',
     mappedValues: ["home", "travel", "travel"]
+  },
+  {
+    id: 'audience',
+    question: "Who are you watching with?",
+    options: ["Just me", "Friends", "Date night", "Family"],
+    schemaField: 'audience',
+    mappedValues: ["solo", "friends", "date", "family"]
   },
   {
     id: 'timeOfDay',
