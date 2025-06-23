@@ -25,6 +25,7 @@ interface ChatStep {
   mappedValues: string[];
   allowMultiple?: boolean;
   requiresDropdown?: boolean;
+  requiresPersonalization?: boolean;
 }
 
 interface Friend {
@@ -59,9 +60,10 @@ const chatSteps: ChatStep[] = [
   {
     id: 'mood',
     question: "What sort of vibe are you in the mood for?",
-    options: ["Make me laugh", "Get my heart racing", "Make me think", "Tug the heartstrings", "Help me escape", "Inspire me"],
+    options: [], // Will be populated with personalized mood labels
     schemaField: 'mood',
-    mappedValues: ["laugh", "thrill", "think", "cry", "escape", "inspire"]
+    mappedValues: [], // Will be populated with mood labels as-is
+    requiresPersonalization: true
   },
   {
     id: 'runtime',
@@ -231,13 +233,29 @@ export default function ChatRecommender({
     }, delay);
   };
 
-  const askQuestion = (stepIndex: number) => {
+  const askQuestion = async (stepIndex: number) => {
     if (stepIndex >= chatSteps.length) {
       showFinalConfirmation();
       return;
     }
 
     const step = chatSteps[stepIndex];
+    
+    // If this is the mood step and requires personalization, generate mood labels
+    if (step.requiresPersonalization && step.id === 'mood') {
+      setIsGeneratingMoods(true);
+      
+      // Get context from previous answers
+      const audience = recommendationData.audience || 'solo';
+      const timeOfDay = recommendationData.timeOfDay || ['evening'];
+      
+      try {
+        await generateMoodsMutation.mutateAsync({ audience, timeOfDay });
+      } catch (error) {
+        console.error('Failed to generate mood labels:', error);
+      }
+    }
+    
     simulateTyping(() => {
       addCineMateMessage(step.question);
     });
@@ -396,6 +414,27 @@ export default function ChatRecommender({
 
   const currentStepData = currentStep < chatSteps.length ? chatSteps[currentStep] : null;
   const showOptions = !isTyping && !showConfirmation && !showFriendSelection && currentStepData;
+  
+  // For mood step, use personalized moods if available
+  const getOptionsForCurrentStep = () => {
+    if (!currentStepData) return [];
+    
+    if (currentStepData.id === 'mood' && personalizedMoods.length > 0) {
+      return personalizedMoods;
+    }
+    
+    return currentStepData.options;
+  };
+  
+  const getMappedValuesForCurrentStep = () => {
+    if (!currentStepData) return [];
+    
+    if (currentStepData.id === 'mood' && personalizedMoods.length > 0) {
+      return personalizedMoods; // Use mood labels as-is for mapping
+    }
+    
+    return currentStepData.mappedValues;
+  };
   
   // Only allow custom input for location and mood questions
   // Keep predefined options for audience and time/runtime questions
