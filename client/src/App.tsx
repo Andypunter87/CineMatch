@@ -42,6 +42,7 @@ function Router() {
       <ProtectedRoute path="/onboarding" component={OnboardingPage} />
       <ProtectedRoute path="/onboarding-test" component={OnboardingTestPage} />
       <ProtectedRoute path="/chat" component={ChatRecommenderPage} />
+      <ProtectedRoute path="/chat-data-demo" component={ChatDataDemo} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
