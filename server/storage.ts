@@ -226,7 +226,7 @@ export class DatabaseStorage implements IStorage {
       const result = await db.execute(sql`
         SELECT 
           id, username, email, name, streaming_services, country, 
-          auth_provider, provider_id, password, is_admin
+          auth_provider, provider_id, password, is_admin, onboarding_state
         FROM users 
         WHERE id = ${id}
       `);
@@ -242,7 +242,8 @@ export class DatabaseStorage implements IStorage {
         streamingServices: user.streaming_services,
         authProvider: user.auth_provider,
         providerId: user.provider_id,
-        isAdmin: user.is_admin === true // Convert to boolean in case it's null
+        isAdmin: user.is_admin === true, // Convert to boolean in case it's null
+        onboardingState: user.onboarding_state
       } as User;
     } catch (error) {
       console.error("Error retrieving user with fallback:", error);
@@ -390,11 +391,11 @@ export class DatabaseStorage implements IStorage {
    * @param needsOnboarding Whether the user needs onboarding
    * @returns The updated user
    */
-  async updateOnboardingStatus(userId: number, needsOnboarding: boolean): Promise<User> {
+  async updateOnboardingStatus(userId: number, onboardingState: any): Promise<User> {
     try {
       const [updatedUser] = await db
         .update(users)
-        .set({ needsOnboarding })
+        .set({ onboardingState } as any)
         .where(eq(users.id, userId))
         .returning();
       
