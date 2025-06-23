@@ -16,6 +16,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { sendFriendInvitationEmail, sendFriendRequestAcceptedEmails } from "./services/email";
 import { safelyParseRecommendations } from "./services/recommendation-helper";
+import { generateAndSaveMoodLabels, getMoodLabelsFromFirestore } from "./services/moodLabels";
 
 const scryptAsync = promisify(scrypt);
 
@@ -934,6 +935,56 @@ Be flexible and understanding. If their input doesn't clearly match any option, 
     } catch (error) {
       console.error('Error processing other input:', error);
       res.status(500).json({ error: 'Failed to process input' });
+    }
+  });
+
+  // Generate personalized mood labels
+  app.post('/api/mood-labels/generate', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id.toString();
+      
+      // Get user's rated films for context
+      const userRatedFilms = await storage.getUserRatedFilms(req.user!.id);
+      
+      // Get viewing context from request body
+      const { audience, timeOfDay } = req.body;
+      
+      const userData = {
+        userRatedFilms: userRatedFilms.map(film => ({
+          title: film.title,
+          genres: film.genres,
+          rating: film.rating
+        })),
+        viewingContext: {
+          audience: audience || 'solo',
+          timeOfDay: timeOfDay || ['evening']
+        }
+      };
+      
+      // Generate and save mood labels
+      const moodLabels = await generateAndSaveMoodLabels(userId, userData);
+      
+      res.json({ moodLabels });
+    } catch (error) {
+      console.error('Error generating mood labels:', error);
+      res.status(500).json({ error: 'Failed to generate mood labels' });
+    }
+  });
+
+  // Get user's stored mood labels
+  app.get('/api/mood-labels', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id.toString();
+      const moodLabels = await getMoodLabelsFromFirestore(userId);
+      
+      if (!moodLabels) {
+        return res.status(404).json({ message: 'No mood labels found' });
+      }
+      
+      res.json({ moodLabels });
+    } catch (error) {
+      console.error('Error retrieving mood labels:', error);
+      res.status(500).json({ error: 'Failed to retrieve mood labels' });
     }
   });
 

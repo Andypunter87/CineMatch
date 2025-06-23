@@ -92,6 +92,8 @@ export default function ChatRecommender({
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
+  const [personalizedMoods, setPersonalizedMoods] = useState<string[]>([]);
+  const [isGeneratingMoods, setIsGeneratingMoods] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -136,6 +138,38 @@ export default function ChatRecommender({
         description: error.message || "Please try again",
         variant: "destructive",
       });
+    }
+  });
+
+  // Generate personalized mood labels mutation
+  const generateMoodsMutation = useMutation({
+    mutationFn: async (context: { audience: string, timeOfDay: string[] }) => {
+      const response = await fetch('/api/mood-labels/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(context)
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate mood labels');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setPersonalizedMoods(data.moodLabels);
+      setIsGeneratingMoods(false);
+    },
+    onError: (error: any) => {
+      console.error('Error generating moods:', error);
+      // Fall back to default mood options
+      setPersonalizedMoods([
+        "Something that feels like a warm hug",
+        "Let me escape into another world", 
+        "Make me feel cleverer than I am",
+        "Something beautifully melancholic",
+        "A film that surprises me"
+      ]);
+      setIsGeneratingMoods(false);
     }
   });
 
