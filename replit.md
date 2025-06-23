@@ -131,6 +131,12 @@ CineMatch is a sophisticated film recommendation platform that uses AI to provid
   - Improved chat UI layout with responsive grid for better mood option readability
   - Verified personalized mood labels are passed to OpenAI for enhanced recommendations
   - Fixed onboarding state for test users to prevent unwanted redirects
+- June 23, 2025: Fixed profile navigation and onboarding redirect issues
+  - Updated server-side user retrieval to include onboarding_state field in queries
+  - Fixed onboarding state parsing logic to properly detect completed users
+  - Modified protected routes to use server-provided needsOnboarding field
+  - Ensured users who complete onboarding never see onboarding flow again
+  - Profile button now navigates directly to profile page without unwanted redirects
 - June 23, 2025: Initial setup
 
 ## User Preferences

@@ -1076,9 +1076,13 @@ Be flexible and understanding. If their input doesn't clearly match any option, 
 
   // Monthly Mood Card API Routes
   
-  // Get user's mood card for a specific month
+  // Get user's mood card for a specific month (Admin only)
   app.get('/api/mood-card/:year/:month', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
       const { year, month } = req.params;
       const userId = req.user!.id;
       
@@ -1096,9 +1100,13 @@ Be flexible and understanding. If their input doesn't clearly match any option, 
     }
   });
   
-  // Get public mood card for sharing (no authentication required)
-  app.get('/api/mood-card/public/:year/:month', async (req, res) => {
+  // Get public mood card for sharing (Admin only)
+  app.get('/api/mood-card/public/:year/:month', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
       const { year, month } = req.params;
       const { uid } = req.query;
       
@@ -1130,9 +1138,13 @@ Be flexible and understanding. If their input doesn't clearly match any option, 
     }
   });
   
-  // Generate mood card for current user (manual trigger)
+  // Generate mood card for current user (manual trigger - Admin only)
   app.post('/api/mood-card/generate', isAuthenticated, async (req, res) => {
     try {
+      if (!req.user?.isAdmin) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
       const schema = z.object({
         year: z.number(),
         month: z.number().min(1).max(12)

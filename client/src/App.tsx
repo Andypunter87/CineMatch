@@ -52,7 +52,7 @@ function Router() {
       <ProtectedRoute path="/firestore-test-debug" component={FirestoreTestDebug} />
       <ProtectedRoute path="/firebase-test" component={FirebaseTestPage} />
       <ProtectedRoute path="/firebase-diagnostic" component={FirebaseDiagnosticPage} />
-      <Route path="/mymood/:year-:month" component={MoodCard} />
+      <ProtectedRoute path="/mymood/:year-:month" component={MoodCard} adminOnly={true} />
       <Route component={NotFound} />
     </Switch>
   );
