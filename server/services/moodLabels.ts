@@ -86,15 +86,28 @@ Return as a JSON array of exactly 5 mood label strings.`;
       throw new Error('No response from OpenAI');
     }
 
-    // Parse the JSON response
+    // Parse the JSON response - handle markdown code blocks if present
     let moodLabels: string[];
     try {
-      moodLabels = JSON.parse(responseContent);
+      // Clean the response content by removing markdown code blocks
+      let cleanedContent = responseContent.trim();
+      
+      // Remove ```json and ``` if present
+      if (cleanedContent.startsWith('```json')) {
+        cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanedContent.startsWith('```')) {
+        cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      console.log('Cleaned OpenAI response:', cleanedContent);
+      
+      moodLabels = JSON.parse(cleanedContent);
       if (!Array.isArray(moodLabels) || moodLabels.length !== 5) {
         throw new Error('Invalid response format');
       }
     } catch (parseError) {
       console.error('Failed to parse OpenAI response:', parseError);
+      console.error('Original response content:', responseContent);
       throw new Error('Invalid JSON response from OpenAI');
     }
 
