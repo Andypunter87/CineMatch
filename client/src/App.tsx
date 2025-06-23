@@ -23,6 +23,7 @@ import FirebaseTestPage from "@/pages/firebase-test-page";
 import FirebaseDiagnosticPage from "@/pages/firebase-diagnostic-page";
 import MoodCard from "@/pages/MoodCard";
 import ChatRecommenderPage from "@/pages/chat-recommender-page";
+import ChatDataDemo from "@/pages/ChatDataDemo";
 import { AuthProvider } from "@/hooks/use-auth";
 import { FirebaseAuthProvider } from "@/components/FirebaseAuthProvider";
 import { ProtectedRoute } from "./lib/protected-route";
