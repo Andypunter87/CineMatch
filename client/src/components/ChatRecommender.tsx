@@ -124,12 +124,21 @@ export default function ChatRecommender({
   }, [messages]);
 
   useEffect(() => {
+    // Reset state and start fresh conversation
+    setCurrentStep(0);
+    setMessages([]);
+    setSelectedOptions([]);
+    setOtherInputValue('');
+    setRecommendationData({});
+    setShowConfirmation(false);
+    setIsTyping(false);
+    
     // Start the conversation
     addCineMateMessage("Hi! I'm CineMate, your friendly film buff. Let's find you the perfect movie to watch! 🎬");
     setTimeout(() => {
       askCurrentQuestion();
     }, 1000);
-  }, []); // Added dependency array to ensure this only runs once
+  }, [])
 
   const addCineMateMessage = (text: string, isTyping = false) => {
     const message: ChatMessage = {
@@ -419,23 +428,18 @@ export default function ChatRecommender({
               /* Regular button options */
               <div className="space-y-3">
                 {currentStepData.allowMultiple ? (
-                  /* Multiple selection with checkboxes in a grid */
+                  /* Multiple selection with buttons in horizontal layout for consistency */
                   <>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {currentStepData.options.map((option, index) => (
-                        <div key={index} className="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50">
-                          <Checkbox
-                            id={`option-${index}`}
-                            checked={selectedOptions.includes(option)}
-                            onCheckedChange={() => handleOptionSelect(index)}
-                          />
-                          <label
-                            htmlFor={`option-${index}`}
-                            className="flex-1 text-sm font-medium leading-none cursor-pointer"
-                          >
-                            {option}
-                          </label>
-                        </div>
+                        <Button
+                          key={index}
+                          variant={selectedOptions.includes(option) ? "default" : "outline"}
+                          onClick={() => handleOptionSelect(index)}
+                          className="flex-1 min-w-[120px]"
+                        >
+                          {option}
+                        </Button>
                       ))}
                     </div>
                     
