@@ -296,6 +296,14 @@ export default function ChatRecommender({
       return;
     }
 
+    // For mood step with personalized options, use the actual text instead of mapped value
+    if (step.id === 'mood' && personalizedMoods.length > 0) {
+      addUserMessage(selectedOption);
+      updateRecommendationData(step.schemaField, selectedOption); // Use the personalized text directly
+      proceedToNextStep();
+      return;
+    }
+
     // Single selection - proceed to next question
     addUserMessage(selectedOption);
     updateRecommendationData(step.schemaField, mappedValue);
