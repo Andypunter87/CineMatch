@@ -49,6 +49,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/test', testApiRoutes);
   
   // Test endpoint for streaming availability (bypass OpenAI)
+  // Test chat data persistence and recommendation enhancement
+  app.get('/api/test-chat-data', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id.toString();
+      const { testChatDataPersistence, analyzeUserVibePatterns } = await import('./test-chat-data.js');
+      
+      console.log(`Testing chat data persistence for user: ${userId}`);
+      
+      const testResults = await testChatDataPersistence(userId);
+      const vibeAnalysis = await analyzeUserVibePatterns(userId);
+      
+      res.json({
+        success: true,
+        userId,
+        testResults,
+        vibeAnalysis,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Chat data test failed:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
   app.post('/api/test-streaming', isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { getEnhancedRecommendations } = await import('./services/recommendation-enhancer');

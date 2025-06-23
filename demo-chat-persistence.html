@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Data Persistence Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .demo-section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .code-block { background: #f8f8f8; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 14px; overflow-x: auto; }
+        .success { color: #22c55e; font-weight: bold; }
+        .info { color: #3b82f6; font-weight: bold; }
+        .warning { color: #f59e0b; font-weight: bold; }
+        h1 { color: #1f2937; }
+        h2 { color: #374151; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+        ul { line-height: 1.6; }
+        .flow-diagram { background: #f1f5f9; padding: 20px; border-left: 4px solid #3b82f6; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <h1>CineMatch Chat Data Persistence & Recommendation Enhancement</h1>
+    
+    <div class="demo-section">
+        <h2>Chat Data Flow Overview</h2>
+        <div class="flow-diagram">
+            <strong>User Chat Session → Firestore Storage → Recommendation Enhancement</strong>
+            <ol>
+                <li>User interacts with CineMatch chat interface</li>
+                <li>Custom vibe preferences and personalized moods are captured</li>
+                <li>Data is saved to Firestore collections under users/{userId}/</li>
+                <li>Recommendation engine retrieves and analyzes user patterns</li>
+                <li>Enhanced recommendations based on historical preferences</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>Firestore Data Structure</h2>
+        <div class="code-block">
+users/{userId}/
+├── chat_sessions/{sessionId}
+│   ├── id: string
+│   ├── userId: number
+│   ├── messages: Array&lt;ChatMessage&gt;
+│   ├── preferences: RecommendationRequest
+│   ├── customVibes: string[]
+│   ├── personalizedMoods: string[]
+│   ├── completed: boolean
+│   └── createdAt/updatedAt: timestamps
+│
+├── vibe_preferences/{vibeId}
+│   ├── text: string
+│   ├── frequency: number
+│   ├── lastUsed: timestamp
+│   └── source: 'user_custom' | 'ai_generated' | 'predefined'
+│
+├── preferences/settings
+│   ├── country: string
+│   ├── streamingServices: string[]
+│   └── lastUpdated: timestamp
+│
+└── ratings/
+    ├── onboarding/films/{filmId}
+    └── recommendations/films/{filmId}
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>Chat Persistence Implementation</h2>
+        <div class="code-block">
+// useChatPersistence hook functionality:
+
+✓ saveChatSession(sessionData)
+  - Saves complete conversation history
+  - Stores user preferences and custom vibes
+  - Tracks AI-generated personalized moods
+
+✓ saveVibePreference(vibeText, source)
+  - Records custom mood preferences
+  - Tracks usage frequency for popularity
+  - Differentiates user vs AI-generated vibes
+
+✓ savePersonalizedMoods(moods)
+  - Stores AI-generated mood options
+  - Links to user context and preferences
+  - Available for future recommendation sessions
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>How User Data Improves Recommendations</h2>
+        <ul>
+            <li><span class="success">Vibe Frequency Analysis:</span> Most-used custom vibes are prioritized in future mood matching</li>
+            <li><span class="success">Conversation Context:</span> Chat history reveals user language patterns and preferences</li>
+            <li><span class="success">Personalized Mood Evolution:</span> AI learns from user's custom vibe selections to generate better options</li>
+            <li><span class="success">Pattern Recognition:</span> Identifies user preferences for custom vs AI-generated content</li>
+            <li><span class="success">Cross-Session Learning:</span> Previous chat sessions inform future recommendation strategies</li>
+        </ul>
+    </div>
+
+    <div class="demo-section">
+        <h2>Recommendation Enhancement Strategy</h2>
+        <div class="flow-diagram">
+            <strong>Multi-Source Data Integration:</strong>
+            <ol>
+                <li><strong>Merge user ratings</strong> from onboarding and recommendation feedback (weighted scoring)</li>
+                <li><strong>Analyze vibe preferences</strong> by frequency and recency for mood matching priority</li>
+                <li><strong>Process chat context</strong> for conversational personalization patterns</li>
+                <li><strong>Apply user constraints</strong> (streaming services, country, runtime preferences)</li>
+                <li><strong>Learn language patterns</strong> from custom vibe descriptions for future AI generation</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>Data-Driven Personalization Examples</h2>
+        <div class="code-block">
+Example User Pattern Analysis:
+
+User has 3 chat sessions with custom vibes:
+- "Something that makes me feel empowered" (frequency: 4)
+- "A film that sparks my creativity" (frequency: 2) 
+- "Stories of underdogs winning" (frequency: 3)
+
+AI Learning Results:
+→ Recognizes preference for empowerment themes
+→ Generates similar mood options: "Stories of triumph", "Characters who inspire courage"
+→ Prioritizes films with empowerment, creativity, and underdog themes
+→ Uses user's language style in future AI-generated options
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>Implementation Status</h2>
+        <ul>
+            <li><span class="success">✓ Chat persistence hook created</span> (useChatPersistence)</li>
+            <li><span class="success">✓ Firestore collections structured</span> (chat_sessions, vibe_preferences)</li>
+            <li><span class="success">✓ ChatRecommender integration</span> (saves sessions and vibes automatically)</li>
+            <li><span class="success">✓ Vibe frequency tracking</span> (learns from user selections)</li>
+            <li><span class="success">✓ AI mood generation storage</span> (preserves personalized options)</li>
+            <li><span class="success">✓ Cross-session data analysis</span> (recommendation engine integration)</li>
+        </ul>
+    </div>
+
+    <div class="demo-section">
+        <h2>Testing the Implementation</h2>
+        <div class="info">
+            To verify the chat data persistence:
+            <ol>
+                <li>Start a new chat session in CineMatch</li>
+                <li>Select or enter custom vibe preferences</li>
+                <li>Complete the recommendation flow</li>
+                <li>Check Firestore console for saved data in users/{userId}/chat_sessions and vibe_preferences</li>
+                <li>Observe how future sessions reference previous preferences</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>Future Enhancement Opportunities</h2>
+        <ul>
+            <li><span class="info">Sentiment Analysis:</span> Analyze chat tone for mood classification</li>
+            <li><span class="info">Temporal Patterns:</span> Track viewing preferences by time of day/week</li>
+            <li><span class="info">Social Learning:</span> Learn from similar users' vibe preferences</li>
+            <li><span class="info">Contextual Memory:</span> Remember user's life events that influence viewing moods</li>
+            <li><span class="info">Predictive Vibes:</span> Suggest mood options based on user history and current context</li>
+        </ul>
+    </div>
+</body>
+</html>
