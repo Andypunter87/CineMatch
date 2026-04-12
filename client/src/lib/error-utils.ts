@@ -1,6 +1,5 @@
 import { useToast } from "@/hooks/use-toast";
 import { useState, useCallback } from "react";
-import { FirebaseError } from "firebase/app";
 
 // Error categories for consistent handling
 export enum ErrorCategory {
@@ -56,30 +55,6 @@ export function normalizeError(error: unknown): AppError {
   // If it's already an AppError, return it as is
   if (error instanceof AppError) {
     return error;
-  }
-  
-  // Handle Firebase errors
-  if (error instanceof FirebaseError) {
-    let category = ErrorCategory.UNKNOWN;
-    
-    // Determine category based on Firebase error code
-    if (error.code.startsWith('auth/')) {
-      category = ErrorCategory.AUTHENTICATION;
-    } else if (error.code.startsWith('firestore/')) {
-      category = ErrorCategory.FIRESTORE;
-    } else if (error.code.startsWith('permission-denied')) {
-      category = ErrorCategory.PERMISSION;
-    } else if (error.code.startsWith('unavailable') || error.code.startsWith('network-request-failed')) {
-      category = ErrorCategory.NETWORK;
-    }
-    
-    return new AppError(
-      error.message,
-      category,
-      undefined,
-      error.code,
-      { originalError: error }
-    );
   }
   
   // Handle standard Error objects

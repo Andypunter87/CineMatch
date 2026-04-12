@@ -15,7 +15,6 @@ import OnboardingPage from "@/pages/onboarding-page";
 import MoodCard from "@/pages/MoodCard";
 import ChatRecommenderPage from "@/pages/chat-recommender-page";
 import { AuthProvider } from "@/hooks/use-auth";
-import { FirebaseAuthProvider } from "@/components/FirebaseAuthProvider";
 import { ProtectedRoute } from "./lib/protected-route";
 import Layout from "@/components/Layout";
 import CookieConsent from "@/components/CookieConsent";
@@ -45,13 +44,11 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <FirebaseAuthProvider>
             <Layout>
               <Router />
             </Layout>
             <CookieConsent />
             <Toaster />
-          </FirebaseAuthProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

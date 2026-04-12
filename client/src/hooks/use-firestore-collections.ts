@@ -166,7 +166,7 @@ export function useFirestoreCollections() {
     _options: any = {}
   ): Promise<boolean> => {
     try {
-      await apiRequest('POST', '/api/user/preferences', {
+      await apiRequest('PUT', '/api/preferences', {
         country: preferences.country,
         streamingServices: preferences.streamingServices,
       });
@@ -182,7 +182,7 @@ export function useFirestoreCollections() {
     _options: any = {}
   ): Promise<any | null> => {
     try {
-      const res = await apiRequest('GET', '/api/user/preferences');
+      const res = await apiRequest('GET', '/api/preferences');
       const data = await res.json();
       return data.preferences || null;
     } catch {
