@@ -18,7 +18,7 @@ CineMatch is a sophisticated film recommendation platform that uses AI to provid
 - **Runtime**: Node.js with TypeScript (ESM modules)
 - **Framework**: Express.js for REST API endpoints
 - **Database**: PostgreSQL with Drizzle ORM
-- **AI Services**: OpenAI GPT-4o for recommendation generation and mood analysis
+- **AI Services**: Anthropic Claude (claude-opus-4-5) for recommendation generation and mood analysis
 - **External APIs**: TMDB for movie data and streaming availability
 - **Image Processing**: Placid API for generating shareable mood cards
 - **Email Service**: Brevo (formerly Sendinblue) for transactional emails
@@ -38,7 +38,7 @@ CineMatch is a sophisticated film recommendation platform that uses AI to provid
 - Social features including friend requests and shared recommendations
 
 ### AI-Powered Recommendation Engine
-- OpenAI GPT-4o integration for intelligent film matching
+- Anthropic Claude integration for intelligent film matching
 - Context-aware recommendations based on mood, time, location, and audience
 - Feedback loop system using Firestore for continuous learning
 - Personalization through user rating history and preference analysis
@@ -66,7 +66,7 @@ CineMatch is a sophisticated film recommendation platform that uses AI to provid
 ### Recommendation Generation
 1. User submits preferences (mood, audience, location, time)
 2. System queries user's historical ratings and feedback from Firestore
-3. OpenAI generates contextual recommendations with reasoning
+3. Claude generates contextual recommendations with reasoning
 4. TMDB API enhances results with metadata and streaming availability
 5. Results are filtered by user's streaming services and country
 6. Recommendations are stored for caching and analytics
@@ -86,7 +86,7 @@ CineMatch is a sophisticated film recommendation platform that uses AI to provid
 ## External Dependencies
 
 ### Core Services
-- **OpenAI API**: Film recommendation generation and mood analysis
+- **Anthropic Claude API**: Film recommendation generation and mood analysis
 - **TMDB API**: Movie metadata, images, and streaming availability
 - **Firebase**: Real-time database for user preferences and social features
 - **Brevo**: Email delivery for notifications and marketing

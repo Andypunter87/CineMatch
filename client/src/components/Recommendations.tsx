@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { type Film, type RecommendationRequest } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import FilmCard from "./FilmCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw, Plus } from "lucide-react";
+import { RefreshCw, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Filter } from "lucide-react";
+import { useSwipeable } from "react-swipeable";
 
-// Extend RecommendationRequest to include onboarding flag
 interface OnboardingAwareRecommendationContext extends RecommendationRequest {
   isOnboarding?: boolean;
 }
@@ -20,33 +20,53 @@ interface RecommendationsProps {
   onDisliked?: (filmId: number) => void;
 }
 
-export default function Recommendations({ 
-  recommendations, 
-  isLoading, 
-  preferences, 
+export default function Recommendations({
+  recommendations,
+  isLoading,
+  preferences,
   onReset,
   onGenerateMore,
   hasMoreToGenerate = false,
   onDisliked
 }: RecommendationsProps) {
   const [filterType, setFilterType] = useState<"all" | "mainstream" | "indie">("all");
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isLongLoading, setIsLongLoading] = useState(false);
-  
-  // Set up a timer to change the loading message after 7 seconds
+
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    
     if (isLoading) {
       setIsLongLoading(false);
-      timer = setTimeout(() => {
-        setIsLongLoading(true);
-      }, 7000); // 7 seconds
+      timer = setTimeout(() => setIsLongLoading(true), 7000);
     }
-    
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
+    return () => { if (timer) clearTimeout(timer); };
   }, [isLoading]);
+
+  const filteredRecommendations = recommendations.filter(
+    film => filterType === "all" || film.type === filterType
+  );
+
+  const total = filteredRecommendations.length;
+
+  const goNext = useCallback(() => {
+    setCurrentIndex(i => Math.min(i + 1, total - 1));
+  }, [total]);
+
+  const goPrev = useCallback(() => {
+    setCurrentIndex(i => Math.max(i - 1, 0));
+  }, []);
+
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [filterType]);
+
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: goNext,
+    onSwipedRight: goPrev,
+    preventScrollOnSwipe: true,
+    trackMouse: false,
+  });
 
   const getLocationText = (location: string) => {
     switch (location) {
@@ -54,7 +74,7 @@ export default function Recommendations({
       case "travel": return "Traveling";
       case "date": return "Date Night";
       case "friends": return "With Friends";
-      default: return location; // Return the custom text instead of empty string
+      default: return location;
     }
   };
 
@@ -68,7 +88,7 @@ export default function Recommendations({
         case "morning": return "Morning/Daytime";
         default: return "";
       }
-    }).join(", ");
+    }).filter(Boolean).join(", ");
   };
 
   const getMoodText = (mood: string) => {
@@ -79,175 +99,197 @@ export default function Recommendations({
       case "thrill": return "Thrill";
       case "escape": return "Escape";
       case "inspire": return "Inspire";
-      default: return mood; // Return the custom text instead of empty string
-    }
-  };
-  
-  const getRuntimeText = (runtime?: string[] | string) => {
-    if (!runtime || (Array.isArray(runtime) && runtime.length === 0)) return "";
-    
-    // Handle array of runtimes
-    if (Array.isArray(runtime)) {
-      return runtime.map(r => {
-        switch (r) {
-          case "short": return "Under 90 mins";
-          case "medium": return "90-120 mins";
-          case "long": return "Over 120 mins";
-          default: return "";
-        }
-      }).join(", ");
-    }
-    
-    // Handle single runtime (legacy support)
-    switch (runtime) {
-      case "short": return "Under 90 mins";
-      case "medium": return "90-120 mins";
-      case "long": return "Over 120 mins";
-      default: return "";
+      default: return mood;
     }
   };
 
-  const filteredRecommendations = recommendations.filter(
-    film => filterType === "all" || film.type === filterType
-  );
+  const currentFilm = filteredRecommendations[currentIndex] ?? null;
 
-  return (
-    <section className="py-6 px-4 md:px-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-2">Your Film Recommendations</h2>
-            <div className="text-gray-600 text-sm sm:text-base">
-              <p className="mb-1">Based on your preferences:</p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li><span className="text-primary font-medium">{getLocationText(preferences.location)}</span></li>
-                <li><span className="text-primary font-medium">{getTimeText(preferences.timeOfDay)}</span></li> 
-                <li><span className="text-primary font-medium">{getMoodText(preferences.mood)}</span></li>
-                {preferences.runtime && (
-                  <li><span className="text-primary font-medium">Runtime: {getRuntimeText(preferences.runtime)}</span></li>
-                )}
-                {preferences.viewingParty && preferences.viewingParty.length > 0 && (
-                  <li><span className="text-primary font-medium">Watching with: {preferences.viewingParty.length} {preferences.viewingParty.length === 1 ? 'friend' : 'friends'}</span></li>
-                )}
-                {preferences.country && (
-                  <li><span className="text-primary font-medium">Country: {preferences.country}</span></li>
-                )}
-                {preferences.streamingServices && preferences.streamingServices.length > 0 && (
-                  <li><span className="text-primary font-medium">Services: {preferences.streamingServices.join(", ")}</span></li>
-                )}
-              </ul>
-            </div>
-            {preferences.streamingServices && preferences.streamingServices.length > 0 && (
-              <div className="mt-3 text-xs bg-blue-50 border border-blue-100 rounded-md p-2 text-blue-700">
-                <strong>Tip:</strong> We've listed streaming services where each film may be available. Always check the services directly for current availability.
-              </div>
-            )}
-          </div>
-          <div className="mt-4 md:mt-0">
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                onClick={() => setFilterType("all")} 
-                variant={filterType === "all" ? "default" : "outline"}
-                className="px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-sm h-auto"
-              >
-                All Films
-              </Button>
-              <Button 
-                onClick={() => setFilterType("mainstream")} 
-                variant={filterType === "mainstream" ? "default" : "outline"}
-                className="px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-sm h-auto"
-              >
-                Mainstream
-              </Button>
-              <Button 
-                onClick={() => setFilterType("indie")} 
-                variant={filterType === "indie" ? "default" : "outline"}
-                className="px-3 py-1 text-xs sm:px-4 sm:py-2 sm:text-sm h-auto"
-              >
-                Indie/Foreign
-              </Button>
-            </div>
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] px-4">
+        <div className="bg-white py-5 px-8 rounded-2xl border shadow-md flex items-center space-x-3 mb-8">
+          <RefreshCw className="w-5 h-5 text-primary animate-spin" />
+          <p className="text-gray-800">
+            {isLongLoading
+              ? "Nearly there! Thanks for waiting..."
+              : "Getting your personalized film recommendations..."}
+          </p>
+        </div>
+        <div className="w-full max-w-sm mx-auto rounded-2xl overflow-hidden shadow-lg border border-blue-100 filter blur-sm">
+          <Skeleton className="w-full h-64 bg-blue-100" />
+          <div className="p-5 bg-white">
+            <Skeleton className="h-6 w-3/4 mb-3 bg-blue-100" />
+            <Skeleton className="h-4 w-1/2 mb-4 bg-blue-100" />
+            <Skeleton className="h-16 w-full bg-blue-100" />
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {isLoading ? (
-          <>
-            {/* Loading message shown at the top, outside the grid */}
-            <div className="flex justify-center mb-8">
-              <div className="bg-white py-5 px-8 rounded-lg border shadow-md flex items-center space-x-3 z-10">
-                <RefreshCw className="w-5 h-5 text-primary animate-spin" />
-                <p className="text-gray-800">
-                  {isLongLoading
-                    ? "Nearly there! Thanks for waiting..."
-                    : "Getting your personalized film recommendations..."}
-                </p>
-              </div>
+  if (recommendations.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
+        <div className="bg-white p-8 rounded-2xl text-center border border-blue-100 shadow-md max-w-sm w-full">
+          <div className="text-primary opacity-40 text-5xl mb-4">¯\_(ツ)_/¯</div>
+          <p className="text-xl text-gray-800 font-medium">No recommendations found.</p>
+          <p className="mt-2 text-gray-600 mb-4">Try a different combination of settings.</p>
+          <Button onClick={onReset} variant="secondary" className="mt-2">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Try different preferences
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col min-h-[calc(100dvh-4rem)] bg-background">
+      {/* Collapsible top bar: preferences + filters */}
+      <div className="border-b bg-white dark:bg-zinc-900 shadow-sm">
+        <button
+          data-testid="button-toggle-filters"
+          onClick={() => setIsFiltersOpen(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200"
+        >
+          <span className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-primary" />
+            {getLocationText(preferences.location)} · {getMoodText(preferences.mood)}
+            {preferences.audience && preferences.audience !== "solo" && ` · ${preferences.audience}`}
+          </span>
+          {isFiltersOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </button>
+
+        {isFiltersOpen && (
+          <div className="px-4 pb-4 space-y-3 border-t pt-3">
+            <div className="text-xs text-gray-500 space-y-1">
+              <p><span className="font-medium text-gray-700">Setting:</span> {getLocationText(preferences.location)}</p>
+              <p><span className="font-medium text-gray-700">Time:</span> {getTimeText(preferences.timeOfDay)}</p>
+              <p><span className="font-medium text-gray-700">Mood:</span> {getMoodText(preferences.mood)}</p>
+              {preferences.country && (
+                <p><span className="font-medium text-gray-700">Country:</span> {preferences.country}</p>
+              )}
+              {preferences.streamingServices && preferences.streamingServices.length > 0 && (
+                <p><span className="font-medium text-gray-700">Services:</span> {preferences.streamingServices.join(", ")}</p>
+              )}
+              {preferences.viewingParty && preferences.viewingParty.length > 0 && (
+                <p><span className="font-medium text-gray-700">Party:</span> {preferences.viewingParty.length} friend{preferences.viewingParty.length !== 1 ? "s" : ""}</p>
+              )}
             </div>
-            
-            {/* Blurred content below */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-8 filter blur-sm">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-96 bg-white rounded-lg overflow-hidden shadow-lg border border-blue-100">
-                  <Skeleton className="w-full h-64 bg-blue-100" />
-                  <div className="p-4">
-                    <Skeleton className="h-6 w-3/4 mb-2 bg-blue-100" />
-                    <Skeleton className="h-4 w-1/2 mb-4 bg-blue-100" />
-                    <Skeleton className="h-16 w-full bg-blue-100" />
-                  </div>
-                </div>
+            <div className="flex gap-2 flex-wrap">
+              {(["all", "mainstream", "indie"] as const).map(type => (
+                <Button
+                  key={type}
+                  data-testid={`button-filter-${type}`}
+                  onClick={() => setFilterType(type)}
+                  variant={filterType === type ? "default" : "outline"}
+                  size="sm"
+                  className="text-xs h-7 px-3"
+                >
+                  {type === "all" ? "All Films" : type === "mainstream" ? "Mainstream" : "Indie / Foreign"}
+                </Button>
               ))}
             </div>
-          </>
-        ) : recommendations.length === 0 ? (
-          <div className="bg-white p-8 rounded-lg text-center border border-blue-100 shadow-md">
-            <div className="text-primary opacity-40 text-5xl mb-4">¯\_(ツ)_/¯</div>
-            <p className="text-xl text-gray-800 font-medium">No recommendations found for these preferences.</p>
-            <p className="mt-2 text-gray-600 mb-4">Try a different combination of settings to get better results.</p>
-            <Button onClick={onReset} variant="secondary" className="mt-2">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Try different preferences
-            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Main swipe area */}
+      <div className="flex flex-col flex-1 items-center justify-start pt-4 pb-4 px-4">
+        {/* Progress indicator */}
+        {total > 0 && (
+          <div
+            data-testid="text-card-progress"
+            className="text-sm font-medium text-gray-500 mb-3 tabular-nums"
+          >
+            {currentIndex + 1} / {total}
+          </div>
+        )}
+
+        {/* Swipeable card area */}
+        {currentFilm ? (
+          <div
+            {...swipeHandlers}
+            className="w-full max-w-sm mx-auto touch-pan-y select-none"
+          >
+            <FilmCard
+              key={currentFilm.id}
+              film={currentFilm}
+              swipeMode
+              recommendationContext={{
+                ...preferences,
+                isOnboarding: false,
+              }}
+              onDisliked={onDisliked}
+            />
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-8">
-              {filteredRecommendations.map((film) => (
-                <FilmCard 
-                  key={film.id} 
-                  film={film} 
-                  recommendationContext={{
-                    ...preferences,
-                    // Explicitly mark this as not an onboarding recommendation
-                    isOnboarding: false
-                  }}
-                  onDisliked={onDisliked}
+          <div className="bg-white p-6 rounded-2xl text-center border border-blue-100 shadow-md max-w-sm w-full">
+            <p className="text-gray-800">No {filterType} films in your recommendations.</p>
+            <Button onClick={() => setFilterType("all")} variant="link" className="mt-2">
+              Show all recommendations
+            </Button>
+          </div>
+        )}
+
+        {/* Navigation row */}
+        {total > 0 && (
+          <div className="flex items-center justify-between w-full max-w-sm mx-auto mt-4 gap-3">
+            <Button
+              data-testid="button-prev-card"
+              variant="outline"
+              size="icon"
+              onClick={goPrev}
+              disabled={currentIndex === 0}
+              className="rounded-full h-11 w-11 shadow-sm"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+
+            {/* Dot indicators */}
+            <div className="flex gap-1.5 flex-wrap justify-center flex-1">
+              {filteredRecommendations.map((_, i) => (
+                <button
+                  key={i}
+                  data-testid={`button-dot-${i}`}
+                  onClick={() => setCurrentIndex(i)}
+                  className={`rounded-full transition-all duration-200 ${
+                    i === currentIndex
+                      ? "w-4 h-2 bg-primary"
+                      : "w-2 h-2 bg-gray-300 hover:bg-gray-400"
+                  }`}
                 />
               ))}
             </div>
-            
-            {filteredRecommendations.length === 0 && (
-              <div className="bg-white p-6 rounded-lg text-center border border-blue-100 shadow-md mt-6">
-                <p className="text-gray-800">No {filterType} films found in your recommendations.</p>
-                <Button onClick={() => setFilterType("all")} variant="link" className="mt-2">
-                  Show all recommendations
-                </Button>
-              </div>
-            )}
-          </>
+
+            <Button
+              data-testid="button-next-card"
+              variant="outline"
+              size="icon"
+              onClick={goNext}
+              disabled={currentIndex === total - 1}
+              className="rounded-full h-11 w-11 shadow-sm"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
         )}
 
-        <div className="mt-10 flex flex-wrap justify-center gap-4">
+        {/* Bottom actions */}
+        <div className="mt-5 flex flex-wrap justify-center gap-3">
           <Button
+            data-testid="button-start-over"
             onClick={onReset}
             variant="default"
-            size="lg"
-            className="px-8 py-3 bg-primary text-white hover:bg-primary/90 rounded-lg transition-colors"
+            size="sm"
+            className="px-6"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Start Over
           </Button>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

@@ -25,9 +25,10 @@ interface FilmCardProps {
   film: Film;
   recommendationContext?: OnboardingAwareRecommendationContext;
   onDisliked?: (filmId: number) => void;
+  swipeMode?: boolean;
 }
 
-export default function FilmCard({ film, recommendationContext, onDisliked }: FilmCardProps) {
+export default function FilmCard({ film, recommendationContext, onDisliked, swipeMode = false }: FilmCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   // Removed usage of setLocation to prevent redirects when buttons are clicked
@@ -471,7 +472,220 @@ export default function FilmCard({ film, recommendationContext, onDisliked }: Fi
     ? film.genres 
     : ["Drama"];
   const matchPercentage = film.matchPercentage || 90;
-  
+
+  // ─── Swipe-mode (mobile full-screen card) ────────────────────────────────
+  if (swipeMode) {
+    return (
+      <div
+        data-testid={`card-film-${film.id}`}
+        className={`flex flex-col rounded-2xl overflow-hidden shadow-xl border bg-white dark:bg-zinc-900 w-full ${
+          feedbackSubmitted === 'liked'
+            ? 'border-green-300'
+            : feedbackSubmitted === 'disliked'
+            ? 'border-amber-300'
+            : 'border-blue-100'
+        }`}
+      >
+        {/* Poster / gradient header */}
+        <div className="relative flex-shrink-0">
+          {film.posterUrl && film.posterUrl.startsWith('http') ? (
+            <div className="w-full h-64 relative overflow-hidden bg-blue-50">
+              <img
+                src={film.posterUrl}
+                alt={`${title} poster`}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const p = e.currentTarget.parentElement;
+                  if (p) p.style.background = getBackgroundGradient();
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                <h3 className="text-2xl font-bold leading-tight">{title}</h3>
+                <p className="text-white/80 text-sm mt-0.5">{year} · {director}</p>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="w-full h-64 flex flex-col items-center justify-end p-4 text-white"
+              style={{ background: getBackgroundGradient() }}
+            >
+              <FilmIcon className="w-10 h-10 text-white/60 mb-6" />
+              <div className="w-full">
+                <h3 className="text-2xl font-bold leading-tight">{title}</h3>
+                <p className="text-white/80 text-sm mt-0.5">{year} · {director}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Badges overlay – top left */}
+          <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
+            <Badge variant="outline" className="bg-white/90 text-gray-700 border-blue-200 text-xs px-2 py-0.5">
+              {film.type === "indie" ? "Independent" : "Mainstream"}
+            </Badge>
+            {film.voteAverage && (
+              <Badge variant="outline" className="bg-amber-50/90 text-amber-700 border-amber-200 text-xs px-2 py-0.5">
+                <Star className="w-3 h-3 mr-0.5 text-amber-500 inline" />
+                {film.voteAverage.toFixed(1)}/10
+              </Badge>
+            )}
+          </div>
+
+          {/* Match % badge – top right */}
+          <div className="absolute top-3 right-3 z-10 flex flex-col gap-1 items-end">
+            <Badge className="bg-primary text-white text-xs px-2 py-0.5">
+              <Star className="w-3 h-3 mr-0.5 inline" />
+              {matchPercentage}% Match
+            </Badge>
+            {film.runtime && (
+              <Badge variant="outline" className="bg-blue-50/90 text-blue-700 border-blue-200 text-xs px-2 py-0.5">
+                <Clock className="w-3 h-3 mr-0.5 inline" />
+                {Math.floor(film.runtime / 60)}h {film.runtime % 60}m
+              </Badge>
+            )}
+            {isWatchlisted && (
+              <div className="bg-blue-600 text-white p-1.5 rounded-full shadow-md">
+                <BookmarkCheck className="w-3.5 h-3.5" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Scrollable content area */}
+        <div className="flex flex-col flex-1 overflow-y-auto">
+          <div className="p-4 space-y-3">
+            {/* Genre badges */}
+            <div className="flex flex-wrap gap-1.5">
+              {genres.map((genre, i) => (
+                <Badge key={i} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                  {genre}
+                </Badge>
+              ))}
+            </div>
+
+            {/* Synopsis */}
+            <p className="text-sm text-gray-700 leading-relaxed">{synopsis}</p>
+
+            {/* Match reason */}
+            <div className="flex items-start gap-1.5">
+              <Award className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+              <p className="text-sm">
+                <span className="text-primary font-medium">Why it matches: </span>
+                <span className="text-gray-600">{film.matchReason || 'Matches your preferences'}</span>
+              </p>
+            </div>
+
+            {/* Cast */}
+            <p className="text-xs text-gray-500">
+              <span className="font-medium text-gray-600">Cast:</span>{' '}
+              {actors.slice(0, 3).join(', ')}
+            </p>
+
+            {/* Streaming */}
+            {film.availableOn && film.availableOn.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-primary mb-1.5">Available on:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {film.availableOn.filter((s, i, arr) => arr.indexOf(s) === i).map((service, i) => (
+                    <Badge key={i} variant="secondary" className="bg-green-100 text-green-800 border-green-200 text-xs">
+                      {service}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Feedback submitted state */}
+            {feedbackSubmitted && (
+              <div className={`rounded-lg p-3 flex items-center justify-between ${
+                feedbackSubmitted === 'liked' ? 'bg-green-50' : 'bg-amber-50'
+              }`}>
+                <div className="flex items-center gap-2">
+                  {feedbackSubmitted === 'liked'
+                    ? <ThumbsUp className="h-4 w-4 text-green-600" />
+                    : <ThumbsDown className="h-4 w-4 text-amber-600" />}
+                  <span className={`text-sm font-medium ${feedbackSubmitted === 'liked' ? 'text-green-700' : 'text-amber-700'}`}>
+                    {feedbackSubmitted === 'liked' ? "We'll recommend more like this." : "We'll show fewer like this."}
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs"
+                  onClick={(e) => { e.preventDefault(); setFeedbackSubmitted(null); }}
+                >
+                  Undo
+                </Button>
+              </div>
+            )}
+
+            {/* Watchlist confirmation */}
+            {showConfirmation && (
+              <div className="rounded-lg bg-blue-50 p-3 flex items-center gap-2">
+                <Check className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                <span className="text-sm text-blue-700 font-medium">Added to watchlist!</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom action bar */}
+        <div className="border-t bg-white dark:bg-zinc-900 px-4 py-3 flex gap-2">
+          {/* Dislike */}
+          <Button
+            data-testid={`button-dislike-${film.id}`}
+            variant="outline"
+            type="button"
+            className="flex-1 border-red-200 hover:bg-red-50 hover:text-red-700 text-sm h-11"
+            onClick={(e) => { e.preventDefault(); recommendationFeedbackMutation.mutate('dislike'); }}
+            disabled={recommendationFeedbackMutation.isPending || !!feedbackSubmitted}
+          >
+            <ThumbsDown className="w-4 h-4 mr-1.5 text-red-400" />
+            Skip
+          </Button>
+
+          {/* Watchlist */}
+          <Button
+            data-testid={`button-watchlist-${film.id}`}
+            variant={isWatchlisted ? "default" : "outline"}
+            type="button"
+            className={`flex-1 h-11 text-sm ${isWatchlisted ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'border-blue-200 hover:bg-blue-50 hover:text-blue-700'}`}
+            onClick={(e) => {
+              e.preventDefault();
+              if (!isWatchlisted) addToWatchlistMutation.mutate();
+            }}
+            disabled={addToWatchlistMutation.isPending}
+          >
+            {isWatchlisted ? (
+              <><BookmarkCheck className="w-4 h-4 mr-1.5" />Saved</>
+            ) : addToWatchlistMutation.isPending ? (
+              <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" />Saving</>
+            ) : (
+              <><BookmarkPlus className="w-4 h-4 mr-1.5" />Save</>
+            )}
+          </Button>
+
+          {/* Like */}
+          <Button
+            data-testid={`button-like-${film.id}`}
+            variant="outline"
+            type="button"
+            className="flex-1 border-green-200 hover:bg-green-50 hover:text-green-700 text-sm h-11"
+            onClick={(e) => { e.preventDefault(); recommendationFeedbackMutation.mutate('like'); }}
+            disabled={recommendationFeedbackMutation.isPending || !!feedbackSubmitted}
+          >
+            <ThumbsUp className="w-4 h-4 mr-1.5 text-green-500" />
+            Like
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  // ─── End swipe mode ───────────────────────────────────────────────────────
+
   return (
     <Card className={`recommendation-card bg-white rounded-lg overflow-hidden shadow-[0_4px_14px_0_rgba(59,130,246,0.2)] border group hover:shadow-[0_8px_20px_0_rgba(59,130,246,0.25)] transition-all duration-200 h-full flex flex-col ${
       feedbackSubmitted ? 

@@ -31,9 +31,13 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize the database
-  await initializeDatabase();
-  
+  // Initialize the database — non-fatal: server continues if DB unavailable
+  try {
+    await initializeDatabase();
+  } catch (err) {
+    console.warn("Database initialization failed — app will start without DB:", (err as Error).message);
+  }
+
   // Setup authentication routes and middleware
   setupAuth(app);
   
