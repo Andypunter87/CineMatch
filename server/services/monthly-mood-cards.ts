@@ -154,7 +154,7 @@ export async function generateMoodCard(
       return existingCard[0] as MoodCardData;
     }
 
-    // Generate mood analysis using OpenAI
+    // Generate mood analysis using Claude
     const moodData = await generateMoodFromFilms(topFilms);
     console.log(`Generated mood data:`, moodData);
 

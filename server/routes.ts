@@ -20,6 +20,7 @@ import { safelyParseRecommendations } from "./services/recommendation-helper";
 import { generateAndSaveMoodLabels, getMoodLabelsFromFirestore } from "./services/moodLabels";
 
 const scryptAsync = promisify(scrypt);
+const anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // Function to check if user is authenticated, return 401 otherwise
 const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
@@ -49,7 +50,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register test API routes
   app.use('/api/test', testApiRoutes);
   
-  // Test endpoint for streaming availability (bypass OpenAI)
+  // Test endpoint for streaming availability (bypass AI)
   // Test chat data persistence and recommendation enhancement
   app.get('/api/test-chat-data', isAuthenticated, async (req: Request, res: Response) => {
     try {
@@ -911,7 +912,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Chat endpoint: Process "Other" input using OpenAI
+  // Chat endpoint: Process "Other" input using Claude
   app.post('/api/chat/process-other', isAuthenticated, async (req, res) => {
     try {
       const { step, userInput, availableOptions } = req.body;
@@ -933,8 +934,7 @@ Please respond with JSON containing:
 
 Be flexible and understanding. If their input doesn't clearly match any option, pick the most reasonable default.`;
 
-      const claudeClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-      const claudeResponse = await claudeClient.messages.create({
+      const claudeResponse = await anthropicClient.messages.create({
         model: 'claude-opus-4-5',
         max_tokens: 150,
         messages: [{ role: 'user', content: prompt }]

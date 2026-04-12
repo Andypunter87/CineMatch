@@ -408,7 +408,7 @@ export class DatabaseStorage implements IStorage {
 
   async getRecommendations(preferences: RecommendationRequest): Promise<Film[]> {
     try {
-      // Use enhanced recommendations that combine OpenAI with TMDB data for streaming availability
+      // Use enhanced recommendations that combine AI with TMDB data for streaming availability
       // If this is a "Show More" request with a batch size and exclusions, log it
       if (preferences.requestedBatchSize) {
         console.log(`Processing recommendation request with batch size: ${preferences.requestedBatchSize}`);
@@ -422,7 +422,7 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error getting enhanced recommendations, falling back to local algorithm:", error);
       
-      // Fallback to local algorithm if OpenAI fails
+      // Fallback to local algorithm if AI recommendations fail
       const scoredFilms = this.films.map(film => {
         let score = 0;
         let matchReason = "";
