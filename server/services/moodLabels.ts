@@ -1,8 +1,8 @@
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { getFirestoreDb } from '../firebase-admin';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 interface UserRatedFilm {
@@ -21,7 +21,6 @@ interface UserData {
   viewingContext: ViewingContext;
 }
 
-// Fallback mood labels for when OpenAI fails
 const fallbackMoodLabels = [
   "Something that feels like a warm hug",
   "Let me escape into another world",
@@ -30,16 +29,10 @@ const fallbackMoodLabels = [
   "A film that surprises me"
 ];
 
-/**
- * Generate personalized mood labels based on user's watch history and context
- * @param userData Object containing user's rated films and viewing context
- * @returns Array of 5 personalized mood label strings
- */
 export async function generateMoodLabels(userData: UserData): Promise<string[]> {
   try {
-    // Create context for the LLM based on user's preferences
     const userContext = buildUserContext(userData);
-    
+
     const systemPrompt = `You are CineMate, a warm and clever film-obsessed friend who describes moods and vibes in delightfully quirky ways.
 
 Given a user's past preferences, generate 5 mood labels they might pick from when deciding what film to watch.
@@ -57,7 +50,7 @@ Examples:
 - "A film that feels like a secret handshake"
 - "Something slightly surreal but very warm"
 
-Return exactly 5 labels as a JSON array of strings.`;
+Return exactly 5 labels as a JSON array of strings and nothing else.`;
 
     const userPrompt = `Generate 5 personalized mood labels for this user:
 
@@ -69,46 +62,49 @@ Current viewing context:
 
 Return as a JSON array of exactly 5 mood label strings.`;
 
-    console.log('Generating personalized mood labels with OpenAI...');
-    
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      temperature: 0.8,
+    console.log('Generating personalized mood labels with Claude...');
+
+    const response = await anthropic.messages.create({
+      model: "claude-opus-4-5",
       max_tokens: 300,
+      system: systemPrompt,
+      messages: [
+        { role: "user", content: userPrompt }
+      ]
     });
 
-    const responseContent = response.choices[0]?.message?.content;
-    if (!responseContent) {
-      throw new Error('No response from OpenAI');
+    const block = response.content[0];
+    if (!block || block.type !== "text" || !block.text) {
+      throw new Error('No response from Claude');
     }
 
-    // Parse the JSON response - handle markdown code blocks if present
+    const responseContent = block.text;
+
     let moodLabels: string[];
     try {
-      // Clean the response content by removing markdown code blocks
       let cleanedContent = responseContent.trim();
-      
-      // Remove ```json and ``` if present
+
       if (cleanedContent.startsWith('```json')) {
         cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
       } else if (cleanedContent.startsWith('```')) {
         cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
       }
-      
-      console.log('Cleaned OpenAI response:', cleanedContent);
-      
+
+      const arrayMatch = cleanedContent.match(/\[[\s\S]*\]/);
+      if (arrayMatch) {
+        cleanedContent = arrayMatch[0];
+      }
+
+      console.log('Cleaned Claude response:', cleanedContent);
+
       moodLabels = JSON.parse(cleanedContent);
       if (!Array.isArray(moodLabels) || moodLabels.length !== 5) {
         throw new Error('Invalid response format');
       }
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', parseError);
+      console.error('Failed to parse Claude response:', parseError);
       console.error('Original response content:', responseContent);
-      throw new Error('Invalid JSON response from OpenAI');
+      throw new Error('Invalid JSON response from Claude');
     }
 
     console.log('Generated mood labels:', moodLabels);
@@ -121,28 +117,23 @@ Return as a JSON array of exactly 5 mood label strings.`;
   }
 }
 
-/**
- * Build context string from user's rating history for the LLM
- */
 function buildUserContext(userData: UserData): string {
   const { userRatedFilms } = userData;
-  
+
   if (!userRatedFilms || userRatedFilms.length === 0) {
     return "New user with no rating history yet.";
   }
 
-  // Analyze user's preferences
   const highRatedFilms = userRatedFilms.filter(film => film.rating >= 4);
   const lowRatedFilms = userRatedFilms.filter(film => film.rating <= 2);
-  
-  // Get genre preferences
+
   const genreFrequency: Record<string, number> = {};
   highRatedFilms.forEach(film => {
     film.genres.forEach(genre => {
       genreFrequency[genre] = (genreFrequency[genre] || 0) + 1;
     });
   });
-  
+
   const preferredGenres = Object.entries(genreFrequency)
     .sort(([,a], [,b]) => b - a)
     .slice(0, 3)
@@ -158,14 +149,14 @@ function buildUserContext(userData: UserData): string {
   }
 
   if (highRatedFilms.length > 0) {
-    const topFilms = highRatedFilms.slice(0, 5).map(film => 
+    const topFilms = highRatedFilms.slice(0, 5).map(film =>
       `"${film.title}" (${film.genres.join(", ")}) - ${film.rating} stars`
     );
     context += `\n- Top rated films: ${topFilms.join("; ")}`;
   }
 
   if (lowRatedFilms.length > 0) {
-    const dislikedFilms = lowRatedFilms.slice(0, 3).map(film => 
+    const dislikedFilms = lowRatedFilms.slice(0, 3).map(film =>
       `"${film.title}" (${film.genres.join(", ")}) - ${film.rating} stars`
     );
     context += `\n- Films they didn't enjoy: ${dislikedFilms.join("; ")}`;
@@ -174,15 +165,9 @@ function buildUserContext(userData: UserData): string {
   return context;
 }
 
-/**
- * Save mood labels to Firestore for the user
- * @param userId User ID
- * @param moodLabels Array of mood label strings
- * @param sessionId Optional session ID for tracking
- */
 export async function saveMoodLabelsToFirestore(
-  userId: string, 
-  moodLabels: string[], 
+  userId: string,
+  moodLabels: string[],
   sessionId?: string
 ): Promise<void> {
   try {
@@ -200,20 +185,14 @@ export async function saveMoodLabelsToFirestore(
       version: '1.0'
     };
 
-    // Save to user's mood labels collection
     await db.collection('userMoodLabels').doc(userId).set(moodLabelsData);
-    
+
     console.log(`Saved ${moodLabels.length} mood labels for user ${userId}`);
   } catch (error) {
     console.error('Error saving mood labels to Firestore:', error);
   }
 }
 
-/**
- * Retrieve mood labels from Firestore for the user
- * @param userId User ID
- * @returns Array of mood label strings or null if not found
- */
 export async function getMoodLabelsFromFirestore(userId: string): Promise<string[] | null> {
   try {
     const db = getFirestoreDb();
@@ -223,7 +202,7 @@ export async function getMoodLabelsFromFirestore(userId: string): Promise<string
     }
 
     const doc = await db.collection('userMoodLabels').doc(userId).get();
-    
+
     if (!doc.exists) {
       return null;
     }
@@ -236,13 +215,6 @@ export async function getMoodLabelsFromFirestore(userId: string): Promise<string
   }
 }
 
-/**
- * Generate and save mood labels for a user
- * @param userId User ID
- * @param userData User's rating history and context
- * @param sessionId Optional session ID
- * @returns Generated mood labels
- */
 export async function generateAndSaveMoodLabels(
   userId: string,
   userData: UserData,

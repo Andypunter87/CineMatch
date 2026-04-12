@@ -1,34 +1,25 @@
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { RecommendationRequest, Film } from "@shared/schema";
 
-// Initialize OpenAI client
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const MODEL = "gpt-4o";
+const MODEL = "claude-opus-4-5";
 
 interface AIRecommendationResponse {
   recommendations: Film[];
 }
 
-// Create a cache object to store recent recommendation results
-// This is a simple in-memory cache to avoid repeated identical requests
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
+const CACHE_TTL = 60 * 60 * 1000;
 const recommendationCache = new Map<string, {timestamp: number, data: Film[]}>();
 
 export async function getAIRecommendations(preferences: RecommendationRequest): Promise<Film[]> {
-  // Set timeout to 20 seconds to ensure we get quality recommendations
   const TIMEOUT_MS = 20000;
   const MAX_RETRIES = 2;
-  
-  // Create a cache key based on the preferences
-  // Exclude excludeFilmIds from the cache key as these change frequently
+
   const { excludeFilmIds, viewingParty, userRatedFilms, requestedBatchSize, ...cacheablePreferences } = preferences;
-  
-  // Create a consistent batch size for caching - we'll filter results post-cache
-  // This way, the cache works consistently regardless of different batch sizes for the same preferences
-  const standardBatchSize = 6; // Always cache a standard number of items
-  
+
+  const standardBatchSize = 6;
+
   const cacheKey = JSON.stringify({
     location: cacheablePreferences.location,
     audience: cacheablePreferences.audience,
@@ -36,51 +27,40 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
     timeOfDay: cacheablePreferences.timeOfDay,
     runtime: cacheablePreferences.runtime,
     country: cacheablePreferences.country,
-    // Use a standard batch size for caching
     batchSize: standardBatchSize,
-    // Include a summarized version of streaming services (sorted to ensure consistent keys)
     streamingServices: cacheablePreferences.streamingServices?.sort() || [],
-    // Include information about viewing party
     hasViewingParty: !!viewingParty,
     friendCount: viewingParty?.length || 0,
-    // Include summary of user ratings to make the cache key user-specific
     hasUserRatings: !!userRatedFilms?.length,
     userRatingsCount: userRatedFilms?.length || 0
   });
-  
-  // Check if we have a valid cached result
+
   const now = Date.now();
   const cachedResult = recommendationCache.get(cacheKey);
-  
+
   if (cachedResult && (now - cachedResult.timestamp) < CACHE_TTL) {
     console.log('Using cached recommendation results');
-    
-    // First, filter by excluded film IDs
+
     let filteredResults = cachedResult.data;
     if (excludeFilmIds?.length) {
       filteredResults = filteredResults.filter(film => !excludeFilmIds.includes(film.id));
       console.log(`Filtered ${cachedResult.data.length - filteredResults.length} excluded films from cache results`);
     }
-    
-    // Apply the requested batch size
+
     const actualBatchSize = requestedBatchSize || 6;
     if (filteredResults.length > actualBatchSize) {
-      console.log(`Limiting cached results to requested batch size of ${actualBatchSize}`);
       filteredResults = filteredResults.slice(0, actualBatchSize);
     }
-    
+
     return filteredResults;
   }
-  
-  // Create a promise that rejects after the timeout
+
   const createTimeoutPromise = () => new Promise((_, reject) => {
-    setTimeout(() => reject(new Error("OpenAI request timed out")), TIMEOUT_MS);
+    setTimeout(() => reject(new Error("Claude request timed out")), TIMEOUT_MS);
   });
 
-  // Convert timeOfDay array to string for better readability in the prompt
   const timeOfDayString = preferences.timeOfDay.join(", ");
 
-  // Create the system prompt - enhanced for streaming service filtering by country
   const systemPrompt = `You are a film recommendation expert with deep knowledge of global cinema. 
 Provide personalized movie recommendations based on the user's preferences.
 
@@ -127,9 +107,8 @@ Return the requested number of films that match the criteria:
 - Include films with complete information (especially those that have runtime data available)
 - When user has rated films, prioritize recommendations that match their apparent taste
 
-Format your response as a JSON object with a 'recommendations' array.`;
+Respond with a JSON object with a 'recommendations' array and nothing else.`;
 
-  // Create the user query - enhanced for streaming service filtering by country
   const userQuery = `I'm looking for movie recommendations with these preferences:
 - Setting: ${preferences.location}
 - Audience: ${preferences.audience || "solo"} 
@@ -197,56 +176,52 @@ IMPORTANT ABOUT AVAILABILITY:
 
 DO NOT include a posterUrl field in your response.`;
 
-  // Define the API call function that we'll retry if needed
-  const makeOpenAICall = async (retryCount = 0): Promise<Film[]> => {
+  const makeClaudeCall = async (retryCount = 0): Promise<Film[]> => {
     try {
-      console.log(`Making OpenAI request (attempt ${retryCount + 1}/${MAX_RETRIES + 1})...`);
-      
-      // Make the API call with a timeout
-      const responsePromise = openai.chat.completions.create({
+      console.log(`Making Claude request (attempt ${retryCount + 1}/${MAX_RETRIES + 1})...`);
+
+      const responsePromise = anthropic.messages.create({
         model: MODEL,
+        max_tokens: 1024,
+        system: systemPrompt,
         messages: [
-          { role: "system", content: systemPrompt },
           { role: "user", content: userQuery }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.7,
-        max_tokens: 1000 // Adjusted token limit for better performance
+        ]
       });
 
-      // Race between the API call and the timeout
       const response = await Promise.race([responsePromise, createTimeoutPromise()]) as any;
 
-      // Parse the response
       let parsedContent: AIRecommendationResponse;
       try {
-        const content = response.choices[0].message.content;
-        if (!content) {
-          throw new Error("Empty response from OpenAI");
+        const block = response.content[0];
+        if (!block || block.type !== "text" || !block.text) {
+          throw new Error("Empty response from Claude");
         }
-        
-        parsedContent = JSON.parse(content) as AIRecommendationResponse;
-        
-        // Validate the structure of the response
+
+        let text = block.text.trim();
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          text = jsonMatch[0];
+        }
+
+        parsedContent = JSON.parse(text) as AIRecommendationResponse;
+
         if (!parsedContent.recommendations || !Array.isArray(parsedContent.recommendations) || parsedContent.recommendations.length === 0) {
-          throw new Error("Invalid recommendations structure in OpenAI response");
+          throw new Error("Invalid recommendations structure in Claude response");
         }
-        
+
         console.log(`Successfully received AI recommendations (attempt ${retryCount + 1})`);
       } catch (parseError) {
-        console.error(`Error parsing OpenAI response (attempt ${retryCount + 1}):`, parseError);
-        
-        // If we have retries left, try again
+        console.error(`Error parsing Claude response (attempt ${retryCount + 1}):`, parseError);
+
         if (retryCount < MAX_RETRIES) {
-          console.log(`Retrying OpenAI request after parsing error...`);
-          return makeOpenAICall(retryCount + 1);
+          console.log(`Retrying Claude request after parsing error...`);
+          return makeClaudeCall(retryCount + 1);
         }
         throw new Error("Failed to parse AI recommendations after multiple attempts");
       }
-      
-      // Format and structure the recommendations to match our Film type
+
       return parsedContent.recommendations.map(film => {
-        // Use a hardcoded set of colorful poster backgrounds
         const backgrounds = [
           "linear-gradient(135deg, #3498db, #2c3e50)",
           "linear-gradient(135deg, #e74c3c, #c0392b)",
@@ -254,11 +229,10 @@ DO NOT include a posterUrl field in your response.`;
           "linear-gradient(135deg, #9b59b6, #8e44ad)",
           "linear-gradient(135deg, #f1c40f, #f39c12)"
         ];
-        
-        // Choose a background based on the first letter of the title
+
         const firstChar = (film.title || "A").charAt(0).toLowerCase();
         const backgroundIndex = firstChar.charCodeAt(0) % backgrounds.length;
-        
+
         return {
           id: film.id || Math.floor(Math.random() * 10000),
           title: film.title,
@@ -268,52 +242,44 @@ DO NOT include a posterUrl field in your response.`;
           synopsis: film.synopsis || "No synopsis available",
           genres: Array.isArray(film.genres) ? film.genres.slice(0, 3) : ["Drama"],
           type: (film.type === "mainstream" || film.type === "indie") ? film.type : "mainstream",
-          posterUrl: "", // We'll generate it on the client side
+          posterUrl: "",
           matchPercentage: typeof film.matchPercentage === 'number' ? film.matchPercentage : 85,
           matchReason: film.matchReason || `Great match for ${preferences.mood} mood`,
           availableOn: Array.isArray(film.availableOn) ? film.availableOn : []
         };
       });
     } catch (error) {
-      // If timeout or any other error and we have retries left
       if (retryCount < MAX_RETRIES) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.log(`Retrying OpenAI request after error: ${errorMessage}`);
-        // Add a small delay before retrying to avoid rate limits
+        console.log(`Retrying Claude request after error: ${errorMessage}`);
         await new Promise(resolve => setTimeout(resolve, 1000));
-        return makeOpenAICall(retryCount + 1);
+        return makeClaudeCall(retryCount + 1);
       }
-      
-      // If we've used all retries, propagate the error
+
       const errorDetails = error instanceof Error ? error.message : 'Unknown error';
       console.error(`Error getting AI recommendations after ${retryCount + 1} attempts: ${errorDetails}`);
       throw new Error("Failed to get AI recommendations after multiple attempts");
     }
   };
 
-  // Start the API call process with retries
   try {
-    // Get the recommendations
-    const recommendations = await makeOpenAICall();
-    
-    // Store in cache for future requests
+    const recommendations = await makeClaudeCall();
+
     recommendationCache.set(cacheKey, {
       timestamp: Date.now(),
       data: recommendations
     });
-    
-    // Check for and delete expired cache entries (cache maintenance)
-    // Convert entries to array to avoid iteration issues
+
     Array.from(recommendationCache.entries()).forEach(([key, value]) => {
       if (now - value.timestamp > CACHE_TTL) {
         recommendationCache.delete(key);
       }
     });
-    
+
     return recommendations;
   } catch (error) {
     const errorDetails = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`All OpenAI request attempts failed: ${errorDetails}`);
+    console.error(`All Claude request attempts failed: ${errorDetails}`);
     throw new Error("Failed to get AI recommendations");
   }
 }
