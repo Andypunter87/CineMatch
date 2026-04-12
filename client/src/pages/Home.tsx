@@ -74,7 +74,7 @@ export default function Home() {
     }
     
     // Make sure Firestore data is loaded on component mount
-    engine.ensureFirestoreDataLoaded();
+    engine.ensurePreferencesLoaded();
   }, [engine]);
   
   // Helper function to wrap the engine's submitQuestionnaire function

@@ -12,8 +12,8 @@ const PREFERENCES_STORAGE_KEY = "cinematch_preferences";
 
 /**
  * A comprehensive hook that manages film recommendations by integrating:
- * - User preferences from Firestore
- * - User ratings from Firestore
+ * * - User preferences from PostgreSQL
+ * * - User ratings from PostgreSQL
  * - Recommendation history
  * - Local preferences storage as fallback
  */
@@ -99,7 +99,7 @@ export function useRecommendationEngine() {
       if (!currentPreferences) return [];
       
       // Check if film ratings are loaded and sync from Firestore if needed
-      await ensureFirestoreDataLoaded();
+      await ensurePreferencesLoaded();
       
       // If this is a request for more films, get the requestedBatchSize from meta
       const requestedBatchSize = meta?.requestedBatchSize as number | undefined;
@@ -111,7 +111,7 @@ export function useRecommendationEngine() {
       // Start with the base preferences
       const basePreferences = { ...currentPreferences };
       
-      // Add Firestore preferences (if available) or fall back to user profile data
+      // Add preferences (if available) or fall back to user profile data
       const userStreamingServices = preferences.preferences.streamingServices?.length > 0
         ? preferences.preferences.streamingServices
         : user?.streamingServices && user.streamingServices.length > 0
@@ -156,8 +156,8 @@ export function useRecommendationEngine() {
     }
   });
   
-  // Helper function to ensure Firestore data is loaded
-  const ensureFirestoreDataLoaded = async () => {
+  // Helper function to ensure preferences data is loaded
+  const ensurePreferencesLoaded = async () => {
     const tasks = [];
 
     if (!preferences.preferences.lastUpdated) {
@@ -207,10 +207,10 @@ export function useRecommendationEngine() {
       
       console.log(`Requesting ${batchSize} more recommendations, excluding ${combinedExclusions.length} previously seen films`);
       
-      // Ensure Firestore data is loaded before making request
-      await ensureFirestoreDataLoaded();
+      // Ensure preferences data is loaded before making request
+      await ensurePreferencesLoaded();
       
-      // Get user preferences from Firestore
+      // Get user preferences from PostgreSQL API
       const userStreamingServices = preferences.preferences.streamingServices?.length > 0
         ? preferences.preferences.streamingServices
         : user?.streamingServices && user.streamingServices.length > 0
@@ -225,14 +225,14 @@ export function useRecommendationEngine() {
       
       const requestBody = {
         ...currentPreferences,
-        // Add user preferences from Firestore
+        // Add user preferences
         streamingServices: userStreamingServices,
         country: userCountry,
         // Add combined exclusions
         excludeFilmIds: combinedExclusions,
         // Add batch size
         requestedBatchSize: batchSize,
-        // Add user ratings from Firestore
+        // Add user ratings
         userRatings: filmRating.ratings.length > 0 ? filmRating.ratings : undefined,
         // Special flags for more diverse recommendations
         _bypassStreamingFilter: true,
@@ -303,10 +303,10 @@ export function useRecommendationEngine() {
     }
   };
   
-  // Force a refresh of recommendations by pulling latest Firestore data
+  // Force a refresh of recommendations
   const refreshRecommendations = async () => {
-    // First make sure Firestore data is loaded
-    await ensureFirestoreDataLoaded();
+    // First make sure preferences are loaded
+    await ensurePreferencesLoaded();
     // Then refetch recommendations
     refetchRecommendations();
   };
@@ -344,6 +344,6 @@ export function useRecommendationEngine() {
     hasMoreToGenerate: recommendations && recommendations.length > 0,
     
     // Helper to ensure Firestore data is loaded
-    ensureFirestoreDataLoaded,
+    ensurePreferencesLoaded,
   };
 }

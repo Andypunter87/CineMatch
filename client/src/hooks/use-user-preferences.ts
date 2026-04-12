@@ -22,7 +22,7 @@ export function useUserPreferences(isOnboarding = false) {
 
   const apiPreferencesEndpoint = isOnboarding
     ? '/api/onboarding/preferences'
-    : '/api/user/preferences';
+    : '/api/preferences';
 
   const apiStreamingEndpoint = '/api/user/streaming';
   const apiCountryEndpoint = '/api/user/country';
@@ -53,7 +53,8 @@ export function useUserPreferences(isOnboarding = false) {
 
   const savePreferencesMutation = useMutation({
     mutationFn: async (preferences: UserPreferences) => {
-      const res = await apiRequest('POST', apiPreferencesEndpoint, preferences);
+      const method = isOnboarding ? 'POST' : 'PUT';
+      const res = await apiRequest(method, apiPreferencesEndpoint, preferences);
       return res.json();
     },
     onSuccess: () => {
@@ -158,11 +159,7 @@ export function useUserPreferences(isOnboarding = false) {
     isUpdatingCountry: updateCountryMutation.isPending,
     isUpdatingOnboardingStatus: updateOnboardingStatusMutation.isPending,
 
-    // No-op stubs for backward compatibility
     syncPreferences: async () => true,
     syncOnboardingStatus: async () => true,
-    savePreferencesToFirestore: async () => false,
-    loadPreferencesFromFirestore: async () => null,
-    firestore: null,
   };
 }
