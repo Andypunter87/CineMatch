@@ -61,6 +61,13 @@ export default function Recommendations({
     setCurrentIndex(0);
   }, [filterType]);
 
+  // Clamp currentIndex if the filtered list shrinks (e.g. after filter change lands)
+  useEffect(() => {
+    if (total > 0 && currentIndex >= total) {
+      setCurrentIndex(total - 1);
+    }
+  }, [total, currentIndex]);
+
   const swipeHandlers = useSwipeable({
     onSwipedLeft: goNext,
     onSwipedRight: goPrev,
@@ -278,6 +285,18 @@ export default function Recommendations({
 
         {/* Bottom actions */}
         <div className="mt-5 flex flex-wrap justify-center gap-3">
+          {hasMoreToGenerate && onGenerateMore && (
+            <Button
+              data-testid="button-generate-more"
+              onClick={onGenerateMore}
+              variant="outline"
+              size="sm"
+              className="px-6"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              More Recommendations
+            </Button>
+          )}
           <Button
             data-testid="button-start-over"
             onClick={onReset}
