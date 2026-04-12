@@ -79,9 +79,6 @@ export function useFilmRating(isOnboarding = false) {
     },
   });
 
-  const loadRatingsFromFirestore = async (): Promise<FilmRating[]> => [];
-  const syncRatings = async () => true;
-
   return {
     getFilmsQuery,
     ratings: ratingsData?.ratings || [],
@@ -91,7 +88,5 @@ export function useFilmRating(isOnboarding = false) {
     rateBatch: rateBatchMutation.mutate,
     isRatingFilm: rateFilmMutation.isPending,
     isRatingBatch: rateBatchMutation.isPending,
-    loadRatingsFromFirestore,
-    syncRatings,
   };
 }

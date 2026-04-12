@@ -258,14 +258,12 @@ export function OnboardingTest() {
                 This test page merely demonstrates that the ratings are being stored in Firestore.
               </p>
               
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full"
-                onClick={() => filmRating.loadRatingsFromFirestore().then(ratings => 
-                  console.log("Loaded ratings from Firestore:", ratings)
-                )}
+                onClick={() => console.log("Ratings loaded from API:", filmRating.ratings)}
               >
-                Load Ratings from Firestore
+                Log Current Ratings
               </Button>
             </div>
           </CardContent>

@@ -159,18 +159,11 @@ export function useRecommendationEngine() {
   // Helper function to ensure Firestore data is loaded
   const ensureFirestoreDataLoaded = async () => {
     const tasks = [];
-    
-    // Sync preferences from Firestore if they're not already loaded
+
     if (!preferences.preferences.lastUpdated) {
       tasks.push(preferences.syncPreferences());
     }
-    
-    // Load film ratings from Firestore if they're not already loaded
-    if (filmRating.ratings.length === 0) {
-      tasks.push(filmRating.loadRatingsFromFirestore());
-    }
-    
-    // Wait for both tasks to complete
+
     if (tasks.length > 0) {
       await Promise.all(tasks);
     }
