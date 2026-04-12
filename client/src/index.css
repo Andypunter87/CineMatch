@@ -5,9 +5,23 @@
 @layer base {
   * {
     @apply border-border;
+    /* Remove tap highlight on iOS */
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    /* Disable overscroll bounce on iOS WebView / Safari */
+    overscroll-behavior: none;
+    /* Respect iPhone notch / Dynamic Island / home indicator */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Prevent text size adjustment on orientation change (iOS Safari) */
+  html {
+    -webkit-text-size-adjust: 100%;
   }
 }

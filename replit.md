@@ -124,6 +124,70 @@ CineMatch is a sophisticated film recommendation platform that uses AI to provid
 - Graceful fallbacks for email services and external API failures
 - CORS and security headers configured for production deployment
 
+## iOS App Store Packaging
+
+CineMatch is configured to be packaged as a native iOS app using [Capacitor](https://capacitorjs.com/). The Xcode project lives in the `ios/` directory and is ready to be opened and built on a Mac.
+
+### What's Configured
+
+- **Bundle ID**: `uk.co.cinematch.app`
+- **App Name**: CineMatch
+- **Minimum iOS Version**: 16.0
+- **Web build directory**: `dist/public` (output of Vite build)
+- **App icon**: 1024×1024 PNG at `ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png`
+- **Splash screen**: `ios/App/App/Assets.xcassets/Splash.imageset/`
+- **Capacitor config**: `capacitor.config.ts` in the project root
+- **Safe-area / notch support**: `env(safe-area-inset-*)` CSS variables applied globally
+- **Native feel**: overscroll bounce disabled, tap highlight removed, text-size-adjust locked
+
+### Developer Workflow (requires macOS + Xcode)
+
+To build and submit to the App Store you need:
+- A Mac running macOS 13+
+- Xcode 15+ installed from the Mac App Store
+- An Apple Developer Program account ($99/year)
+- CocoaPods installed: `sudo gem install cocoapods`
+
+**Steps after cloning the repo on a Mac:**
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Build the web app
+npm run build
+
+# 3. Sync the web build into the Xcode project and install pods
+npx cap sync ios
+
+# 4. Open the Xcode project
+npx cap open ios
+```
+
+**Inside Xcode:**
+
+1. Select your development team under *Signing & Capabilities*
+2. Replace the placeholder app icon in `Assets.xcassets/AppIcon.appiconset` with your custom 1024×1024 PNG
+3. Bump the version number / build number in the *General* tab
+4. Choose *Any iOS Device (arm64)* as the build target
+5. Select *Product → Archive* to create an App Store archive
+6. Use *Organizer → Distribute App* to upload to App Store Connect
+
+**After every code change:**
+
+```bash
+npm run build          # Rebuild the web app
+npx cap sync ios       # Copy new build into the Xcode project
+npx cap open ios       # Re-open in Xcode (only needed if Xcode is closed)
+```
+
+### Notes
+
+- CocoaPods is skipped in the Replit (Linux) environment — this is expected and harmless; the iOS native dependencies are installed when you run `npx cap sync ios` on macOS.
+- The `ios/App/App/public/` directory (synced web assets) is git-ignored as it's regenerated on every sync.
+- The Replit web preview continues to work normally using the Vite dev server — the Capacitor setup only affects the native iOS build.
+- To replace placeholder icons/splash screens, swap out the PNG files in `ios/App/App/Assets.xcassets/` and re-run `npx cap sync ios`.
+
 ## Changelog
 - June 23, 2025: Implemented chat data persistence to Firestore
   - Created useChatPersistence hook for saving chat sessions and vibe preferences
