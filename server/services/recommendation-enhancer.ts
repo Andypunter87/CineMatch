@@ -118,7 +118,7 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
   // Performance optimization: start timestamp
   const startTime = Date.now();
   
-  // Get user feedback from Firestore if userId is provided
+  // Get user feedback from PostgreSQL if userId is provided
   let userFeedback: any[] = [];
   let feedbackWeights = { moodWeights: {}, runtimeWeights: {}, hasPreferences: false };
   
@@ -126,14 +126,14 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
   const isCoWatching = !!preferences.friendUserId;
   
   if (preferences.userId) {
-    console.log(`Retrieving Firestore feedback for user ID: ${preferences.userId}`);
+    console.log(`Retrieving PostgreSQL feedback for user ID: ${preferences.userId}`);
     userFeedback = await getUserFilmFeedback(preferences.userId);
     
     if (userFeedback.length > 0) {
-      console.log(`Found ${userFeedback.length} feedback entries in Firestore to influence recommendations`);
+      console.log(`Found ${userFeedback.length} feedback entries in PostgreSQL to influence recommendations`);
       feedbackWeights = extractPreferenceWeights(userFeedback);
     } else {
-      console.log('No feedback found in Firestore for this user');
+      console.log('No feedback found in PostgreSQL for this user');
     }
   }
   

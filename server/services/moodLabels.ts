@@ -169,7 +169,7 @@ export async function saveMoodLabels(userId: string, moodLabels: string[]): Prom
   moodLabelCache.set(userId, { labels: moodLabels, timestamp: Date.now() });
 }
 
-export async function getMoodLabelsFromFirestore(userId: string): Promise<string[] | null> {
+export async function getMoodLabels(userId: string): Promise<string[] | null> {
   const cached = moodLabelCache.get(userId);
   if (cached && Date.now() - cached.timestamp < MOOD_LABEL_CACHE_TTL) {
     return cached.labels;

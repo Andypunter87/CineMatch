@@ -63,29 +63,53 @@ export function useChatPersistence() {
 
   const saveVibePreference = async (
     vibeText: string,
-    _source: VibePreference['source'] = 'user_custom'
+    source: VibePreference['source'] = 'user_custom'
   ): Promise<boolean> => {
     if (!user) {
       setError('User not authenticated');
       return false;
     }
-    // Vibe preferences are persisted as part of chat sessions (customVibes field)
-    // This is a no-op stub kept for interface compatibility
-    console.log(`Vibe preference noted: "${vibeText}"`);
-    return true;
+    try {
+      await apiRequest('POST', '/api/vibes', { customVibe: vibeText, source });
+      return true;
+    } catch (err) {
+      console.error('Error saving vibe preference:', err);
+      setError('Failed to save vibe preference');
+      return false;
+    }
   };
 
   const savePersonalizedMoods = async (moods: string[]): Promise<boolean> => {
     if (!user || !moods.length) return false;
-    // Personalized moods are persisted as part of chat sessions
-    // This is a no-op stub kept for interface compatibility
-    console.log(`Personalized moods noted: ${moods.join(', ')}`);
-    return true;
+    try {
+      await Promise.all(
+        moods.map((mood) =>
+          apiRequest('POST', '/api/vibes', { customVibe: mood, source: 'ai_generated' })
+        )
+      );
+      return true;
+    } catch (err) {
+      console.error('Error saving personalized moods:', err);
+      setError('Failed to save personalized moods');
+      return false;
+    }
   };
 
   const getTopVibePreferences = async (_limit: number = 10): Promise<VibePreference[]> => {
-    // Not implemented — vibes are embedded in chat sessions
-    return [];
+    if (!user) return [];
+    try {
+      const res = await apiRequest('GET', '/api/vibes');
+      const data = await res.json();
+      const vibes = Array.isArray(data) ? data : data.vibes || [];
+      return vibes.map((v: Record<string, unknown>) => ({
+        text: v.customVibe as string,
+        frequency: (v.useCount as number) || 1,
+        lastUsed: (v.lastUsed as string) || new Date().toISOString(),
+        source: (v.source as VibePreference['source']) || 'user_custom',
+      }));
+    } catch {
+      return [];
+    }
   };
 
   return {

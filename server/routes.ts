@@ -15,7 +15,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { sendFriendInvitationEmail, sendFriendRequestAcceptedEmails } from "./services/email";
 import { safelyParseRecommendations } from "./services/recommendation-helper";
-import { generateAndSaveMoodLabels, getMoodLabelsFromFirestore } from "./services/moodLabels";
+import { generateAndSaveMoodLabels, getMoodLabels } from "./services/moodLabels";
 
 const scryptAsync = promisify(scrypt);
 const anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -175,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         country = req.user.country;
       }
       
-      // Check if user ratings were provided from Firestore
+      // Check if user ratings were provided from PostgreSQL
       let userRatings = req.body.userRatings || [];
       
       // Get user rated films if logged in
@@ -247,7 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Recommendation request with batch size: ${preferences.requestedBatchSize || "default"}`);
       
       // Get recommendations based on user preferences
-      // Add userId to preferences for Firestore feedback integration
+      // Add userId to preferences for PostgreSQL feedback integration
       if (req.isAuthenticated() && req.user) {
         preferences.userId = req.user.id;
       }
@@ -1004,7 +1004,7 @@ Be flexible and understanding. If their input doesn't clearly match any option, 
   app.get('/api/mood-labels', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id.toString();
-      const moodLabels = await getMoodLabelsFromFirestore(userId);
+      const moodLabels = await getMoodLabels(userId);
       
       if (!moodLabels) {
         return res.status(404).json({ message: 'No mood labels found' });
