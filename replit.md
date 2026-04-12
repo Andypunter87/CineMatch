@@ -173,13 +173,13 @@ npx cap open ios
 5. Select *Product → Archive* to create an App Store archive
 6. Use *Organizer → Distribute App* to upload to App Store Connect
 
-**After every code change:**
+**After every code change (run all three in sequence):**
 
 ```bash
-npm run build          # Rebuild the web app
-npx cap sync ios       # Copy new build into the Xcode project
-npx cap open ios       # Re-open in Xcode (only needed if Xcode is closed)
+npm run build && npx cap sync ios && npx cap open ios
 ```
+
+This is the equivalent of `npm run ios` — it rebuilds the web app, syncs assets into the Xcode project, and re-opens Xcode.
 
 ### Notes
 
