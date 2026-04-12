@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, json, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, json, boolean, jsonb, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -70,7 +70,7 @@ export const users = pgTable("users", {
   streamingServices: text("streaming_services").array(),
   country: text("country"),
   authProvider: text("auth_provider").default("local"),
-  googleId: text("google_id"), // Google OAuth subject ID (sub)
+  googleId: text("google_id").unique(), // Google OAuth subject ID (sub), unique per user
   providerId: text("provider_id"), // kept for backwards-compat, prefer googleId
   isAdmin: boolean("is_admin").default(false),
   onboardingState: jsonb("onboarding_state").default({
