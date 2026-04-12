@@ -171,7 +171,34 @@ export const userRecommendations = pgTable("user_recommendations", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// 9. Monthly Mood Cards table
+// 9. Film Feedback table (replaces Firestore feedback collection)
+export const filmFeedback = pgTable("film_feedback", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  filmId: integer("film_id").notNull(),
+  filmTitle: text("film_title").notNull(),
+  liked: boolean("liked").notNull(),
+  moodContext: text("mood_context"),
+  runtimePreference: text("runtime_preference").array(),
+  recommendationContext: jsonb("recommendation_context").$type<RecommendationRequest>(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [unique().on(t.userId, t.filmId)]);
+
+// 10. Chat Sessions table (replaces Firestore chat_sessions collection)
+export const chatSessions = pgTable("chat_sessions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  sessionKey: text("session_key").notNull().unique(),
+  messages: jsonb("messages").$type<Array<{ id: string; sender: string; text: string; timestamp: string }>>().default([]),
+  preferences: jsonb("preferences").$type<RecommendationRequest>(),
+  customVibes: text("custom_vibes").array().default([]),
+  personalizedMoods: text("personalized_moods").array().default([]),
+  completed: boolean("completed").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// 11. Monthly Mood Cards table
 export const monthlyMoodCards = pgTable("monthly_mood_cards", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -203,6 +230,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   relatedNotifications: many(notifications, { relationName: "relatedUserNotifications" }),
   recommendations: many(userRecommendations),
   moodCards: many(monthlyMoodCards),
+  filmFeedback: many(filmFeedback),
+  chatSessions: many(chatSessions),
 }));
 
 // Watchlist relations
@@ -261,6 +290,22 @@ export const notificationRelations = relations(notifications, ({ one }) => ({
 export const monthlyMoodCardRelations = relations(monthlyMoodCards, ({ one }) => ({
   user: one(users, {
     fields: [monthlyMoodCards.userId],
+    references: [users.id],
+  }),
+}));
+
+// Film feedback relations
+export const filmFeedbackRelations = relations(filmFeedback, ({ one }) => ({
+  user: one(users, {
+    fields: [filmFeedback.userId],
+    references: [users.id],
+  }),
+}));
+
+// Chat sessions relations
+export const chatSessionsRelations = relations(chatSessions, ({ one }) => ({
+  user: one(users, {
+    fields: [chatSessions.userId],
     references: [users.id],
   }),
 }));
@@ -376,3 +421,36 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 export type UserRecommendations = typeof userRecommendations.$inferSelect;
 export type InsertUserRecommendations = z.infer<typeof insertUserRecommendationsSchema>;
+
+// Film feedback insert schema
+export const insertFilmFeedbackSchema = createInsertSchema(filmFeedback, {
+  createdAt: z.date().optional(),
+}).pick({
+  userId: true,
+  filmId: true,
+  filmTitle: true,
+  liked: true,
+  moodContext: true,
+  runtimePreference: true,
+  recommendationContext: true,
+});
+
+// Chat sessions insert schema
+export const insertChatSessionSchema = createInsertSchema(chatSessions, {
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+}).pick({
+  userId: true,
+  sessionKey: true,
+  messages: true,
+  preferences: true,
+  customVibes: true,
+  personalizedMoods: true,
+  completed: true,
+});
+
+export type FilmFeedback = typeof filmFeedback.$inferSelect;
+export type InsertFilmFeedback = z.infer<typeof insertFilmFeedbackSchema>;
+
+export type ChatSession = typeof chatSessions.$inferSelect;
+export type InsertChatSession = z.infer<typeof insertChatSessionSchema>;

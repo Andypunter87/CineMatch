@@ -6,6 +6,8 @@ import {
   friendRequests,
   notifications,
   userRecommendations,
+  filmFeedback,
+  chatSessions,
   type User,
   type InsertUser,
   type Film,
@@ -19,7 +21,11 @@ import {
   type Notification,
   type InsertNotification,
   type UserRecommendations,
-  type InsertUserRecommendations
+  type InsertUserRecommendations,
+  type FilmFeedback,
+  type InsertFilmFeedback,
+  type ChatSession,
+  type InsertChatSession,
 } from "@shared/schema";
 import { films } from "./data/films";
 import { db } from "./db";
@@ -96,6 +102,18 @@ export interface IStorage {
   markAllNotificationsAsRead(userId: number): Promise<void>;
   getUnreadNotificationsCount(userId: number): Promise<number>;
   
+  // Film feedback operations
+  saveFilmFeedback(feedback: InsertFilmFeedback): Promise<FilmFeedback>;
+  getFilmFeedback(userId: number, filmId: number): Promise<FilmFeedback | undefined>;
+  getAllFilmFeedback(userId: number): Promise<FilmFeedback[]>;
+  getUserFeedbackForRecommendations(userId: number): Promise<FilmFeedback[]>;
+
+  // Chat session operations
+  saveChatSession(session: InsertChatSession): Promise<ChatSession>;
+  getChatSession(sessionKey: string): Promise<ChatSession | undefined>;
+  getLatestChatSession(userId: number): Promise<ChatSession | undefined>;
+  updateChatSession(sessionKey: string, updates: Partial<InsertChatSession>): Promise<ChatSession>;
+
   sessionStore: any; // Using any for session store to avoid type issues
 }
 
@@ -320,39 +338,6 @@ export class DatabaseStorage implements IStorage {
         email: user.email,
         onboardingState: user.onboardingState
       });
-      
-      // Also create the user in Firestore for recommendation data
-      try {
-        const { getFirestoreDb } = await import('../server/firebase-admin');
-        const firestore = getFirestoreDb();
-        
-        if (firestore) {
-          console.log(`Creating Firestore preferences for user ${user.id}...`);
-          
-          // Create user preferences document in Firestore
-          const userDocRef = firestore
-            .collection('users')
-            .doc(user.id.toString())
-            .collection('preferences')
-            .doc('settings');
-          
-          await userDocRef.set({
-            email: user.email,
-            name: user.name || '',
-            country: user.country || '',
-            streamingServices: user.streamingServices || [],
-            createdAt: new Date(),
-            lastUpdated: new Date()
-          });
-          
-          console.log(`✅ Created Firestore user preferences for user ${user.id}`);
-        } else {
-          console.warn(`Firestore not available for user ${user.id}`);
-        }
-      } catch (firestoreError) {
-        console.warn(`Failed to create Firestore user preferences for user ${user.id}:`, firestoreError);
-        // Don't throw error - Firestore creation is non-critical for user registration
-      }
       
       return user;
     } catch (error) {
@@ -1216,6 +1201,160 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error(`Error getting watchlist item for user ${userId} and film ${filmId}:`, error);
       return undefined;
+    }
+  }
+
+  // =====================
+  // FILM FEEDBACK OPERATIONS
+  // =====================
+
+  async saveFilmFeedback(feedback: InsertFilmFeedback): Promise<FilmFeedback> {
+    try {
+      const [existing] = await db
+        .select()
+        .from(filmFeedback)
+        .where(and(
+          eq(filmFeedback.userId, feedback.userId),
+          eq(filmFeedback.filmId, feedback.filmId)
+        ));
+
+      if (existing) {
+        const [updated] = await db
+          .update(filmFeedback)
+          .set({
+            liked: feedback.liked,
+            moodContext: feedback.moodContext,
+            runtimePreference: feedback.runtimePreference,
+            recommendationContext: feedback.recommendationContext,
+          })
+          .where(eq(filmFeedback.id, existing.id))
+          .returning();
+        return updated;
+      }
+
+      const [created] = await db
+        .insert(filmFeedback)
+        .values(feedback)
+        .returning();
+      return created;
+    } catch (error) {
+      console.error("Error saving film feedback:", error);
+      throw new Error("Failed to save film feedback");
+    }
+  }
+
+  async getFilmFeedback(userId: number, filmId: number): Promise<FilmFeedback | undefined> {
+    try {
+      const [item] = await db
+        .select()
+        .from(filmFeedback)
+        .where(and(
+          eq(filmFeedback.userId, userId),
+          eq(filmFeedback.filmId, filmId)
+        ));
+      return item;
+    } catch (error) {
+      console.error("Error getting film feedback:", error);
+      return undefined;
+    }
+  }
+
+  async getAllFilmFeedback(userId: number): Promise<FilmFeedback[]> {
+    try {
+      return await db
+        .select()
+        .from(filmFeedback)
+        .where(eq(filmFeedback.userId, userId))
+        .orderBy(desc(filmFeedback.createdAt));
+    } catch (error) {
+      console.error("Error getting all film feedback:", error);
+      return [];
+    }
+  }
+
+  async getUserFeedbackForRecommendations(userId: number): Promise<FilmFeedback[]> {
+    try {
+      return await db
+        .select()
+        .from(filmFeedback)
+        .where(eq(filmFeedback.userId, userId))
+        .orderBy(desc(filmFeedback.createdAt));
+    } catch (error) {
+      console.error("Error getting user feedback for recommendations:", error);
+      return [];
+    }
+  }
+
+  // =====================
+  // CHAT SESSION OPERATIONS
+  // =====================
+
+  async saveChatSession(sessionData: InsertChatSession): Promise<ChatSession> {
+    try {
+      const [existing] = await db
+        .select()
+        .from(chatSessions)
+        .where(eq(chatSessions.sessionKey, sessionData.sessionKey));
+
+      if (existing) {
+        const [updated] = await db
+          .update(chatSessions)
+          .set({ ...sessionData, updatedAt: new Date() })
+          .where(eq(chatSessions.sessionKey, sessionData.sessionKey))
+          .returning();
+        return updated;
+      }
+
+      const [created] = await db
+        .insert(chatSessions)
+        .values(sessionData)
+        .returning();
+      return created;
+    } catch (error) {
+      console.error("Error saving chat session:", error);
+      throw new Error("Failed to save chat session");
+    }
+  }
+
+  async getChatSession(sessionKey: string): Promise<ChatSession | undefined> {
+    try {
+      const [session] = await db
+        .select()
+        .from(chatSessions)
+        .where(eq(chatSessions.sessionKey, sessionKey));
+      return session;
+    } catch (error) {
+      console.error("Error getting chat session:", error);
+      return undefined;
+    }
+  }
+
+  async getLatestChatSession(userId: number): Promise<ChatSession | undefined> {
+    try {
+      const [session] = await db
+        .select()
+        .from(chatSessions)
+        .where(eq(chatSessions.userId, userId))
+        .orderBy(desc(chatSessions.updatedAt))
+        .limit(1);
+      return session;
+    } catch (error) {
+      console.error("Error getting latest chat session:", error);
+      return undefined;
+    }
+  }
+
+  async updateChatSession(sessionKey: string, updates: Partial<InsertChatSession>): Promise<ChatSession> {
+    try {
+      const [updated] = await db
+        .update(chatSessions)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(chatSessions.sessionKey, sessionKey))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error("Error updating chat session:", error);
+      throw new Error("Failed to update chat session");
     }
   }
 }

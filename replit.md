@@ -11,7 +11,7 @@ CineMatch is a sophisticated film recommendation platform that uses AI to provid
 - **UI Library**: Shadcn/ui components built on Radix UI primitives
 - **Styling**: Tailwind CSS with custom theming
 - **State Management**: TanStack Query for server state management
-- **Authentication**: Session-based authentication with Firebase integration
+- **Authentication**: Session-based authentication with Google OAuth 2.0 SSO
 - **Build Tool**: Vite with hot module replacement for development
 
 ### Backend Architecture
@@ -24,23 +24,22 @@ CineMatch is a sophisticated film recommendation platform that uses AI to provid
 - **Email Service**: Brevo (formerly Sendinblue) for transactional emails
 
 ### Data Storage Solutions
-- **Primary Database**: PostgreSQL with structured tables for users, watchlists, analytics, friends, and recommendations
-- **Real-time Data**: Firestore for user preferences, feedback, and social features
+- **Primary Database**: PostgreSQL with structured tables for users, watchlists, analytics, friends, recommendations, film_feedback, and chat_sessions
 - **ORM**: Drizzle for type-safe database operations
-- **Migrations**: Custom migration system for database schema updates
+- **Migrations**: `npm run db:push` via drizzle-kit
 
 ## Key Components
 
 ### Authentication & User Management
 - Session-based authentication with Passport.js
-- Firebase Admin SDK for custom token generation
+- Google OAuth 2.0 (SSO) via Passport-Google-OAuth20
 - User onboarding flow with film preference collection
 - Social features including friend requests and shared recommendations
 
 ### AI-Powered Recommendation Engine
 - Anthropic Claude integration for intelligent film matching
 - Context-aware recommendations based on mood, time, location, and audience
-- Feedback loop system using Firestore for continuous learning
+- Feedback loop system using PostgreSQL (`film_feedback` table) for continuous learning
 - Personalization through user rating history and preference analysis
 
 ### Monthly Mood Cards

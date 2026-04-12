@@ -1,5 +1,4 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { getFirestoreDb } from '../firebase-admin';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -28,6 +27,10 @@ const fallbackMoodLabels = [
   "Something beautifully melancholic",
   "A film that surprises me"
 ];
+
+// In-memory cache for mood labels (per user, keyed by userId)
+const moodLabelCache = new Map<string, { labels: string[]; timestamp: number }>();
+const MOOD_LABEL_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function generateMoodLabels(userData: UserData): Promise<string[]> {
   try {
@@ -95,15 +98,12 @@ Return as a JSON array of exactly 5 mood label strings.`;
         cleanedContent = arrayMatch[0];
       }
 
-      console.log('Cleaned Claude response:', cleanedContent);
-
       moodLabels = JSON.parse(cleanedContent);
       if (!Array.isArray(moodLabels) || moodLabels.length !== 5) {
         throw new Error('Invalid response format');
       }
     } catch (parseError) {
       console.error('Failed to parse Claude response:', parseError);
-      console.error('Original response content:', responseContent);
       throw new Error('Invalid JSON response from Claude');
     }
 
@@ -165,54 +165,16 @@ function buildUserContext(userData: UserData): string {
   return context;
 }
 
-export async function saveMoodLabelsToFirestore(
-  userId: string,
-  moodLabels: string[],
-  sessionId?: string
-): Promise<void> {
-  try {
-    const db = getFirestoreDb();
-    if (!db) {
-      console.error('Firestore not available');
-      return;
-    }
-
-    const moodLabelsData = {
-      userId,
-      labels: moodLabels,
-      createdAt: new Date(),
-      sessionId: sessionId || null,
-      version: '1.0'
-    };
-
-    await db.collection('userMoodLabels').doc(userId).set(moodLabelsData);
-
-    console.log(`Saved ${moodLabels.length} mood labels for user ${userId}`);
-  } catch (error) {
-    console.error('Error saving mood labels to Firestore:', error);
-  }
+export async function saveMoodLabels(userId: string, moodLabels: string[]): Promise<void> {
+  moodLabelCache.set(userId, { labels: moodLabels, timestamp: Date.now() });
 }
 
 export async function getMoodLabelsFromFirestore(userId: string): Promise<string[] | null> {
-  try {
-    const db = getFirestoreDb();
-    if (!db) {
-      console.error('Firestore not available');
-      return null;
-    }
-
-    const doc = await db.collection('userMoodLabels').doc(userId).get();
-
-    if (!doc.exists) {
-      return null;
-    }
-
-    const data = doc.data();
-    return data?.labels || null;
-  } catch (error) {
-    console.error('Error retrieving mood labels from Firestore:', error);
-    return null;
+  const cached = moodLabelCache.get(userId);
+  if (cached && Date.now() - cached.timestamp < MOOD_LABEL_CACHE_TTL) {
+    return cached.labels;
   }
+  return null;
 }
 
 export async function generateAndSaveMoodLabels(
@@ -221,6 +183,6 @@ export async function generateAndSaveMoodLabels(
   sessionId?: string
 ): Promise<string[]> {
   const moodLabels = await generateMoodLabels(userData);
-  await saveMoodLabelsToFirestore(userId, moodLabels, sessionId);
+  await saveMoodLabels(userId, moodLabels);
   return moodLabels;
 }

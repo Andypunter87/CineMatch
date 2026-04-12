@@ -11,8 +11,6 @@ import adminRoutes from "./admin";
 import onboardingRoutes from "./routes/onboarding";
 import imageProxyRoutes from "./routes/image-proxy";
 import testApiRoutes from "./routes/test-api";
-import firebaseTestRoutes from "./routes/firebase-test";
-import publicFirebaseTestRoutes from "./routes/public-firebase-test";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { sendFriendInvitationEmail, sendFriendRequestAcceptedEmails } from "./services/email";
@@ -124,12 +122,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Streaming test failed' });
     }
   });
-  
-  // Register Firebase/Firestore test routes
-  app.use('/api/firebase', firebaseTestRoutes);
-  
-  // Register public Firebase test routes (no authentication required)
-  app.use('/api/public-firebase', publicFirebaseTestRoutes);
   
   // Special endpoint specifically for "Show More Films" functionality
   app.post('/api/recommendations/more', async (req, res) => {
@@ -719,179 +711,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Debug route to check feedback entries in Firestore
-  app.get('/api/debug/feedback/:userId', async (req, res) => {
+  // Debug route to check feedback entries in PostgreSQL
+  app.get('/api/debug/feedback/:userId', isAuthenticated, async (req, res) => {
     try {
-      const userId = req.params.userId;
-      console.log(`🔍 Debug: Checking feedback entries for user ${userId}`);
-      
-      const { getFirestoreDb } = await import('./firebase-admin.js');
-      const db = getFirestoreDb();
-      
-      if (!db) {
-        return res.status(500).json({ error: 'Firestore not available' });
+      const userId = parseInt(req.params.userId, 10);
+      if (!req.user!.isAdmin && req.user!.id !== userId) {
+        return res.status(403).json({ error: 'Access denied' });
       }
-      
-      // Query the feedback collection
-      const feedbackCollection = db.collection(`users/${userId}/feedback`);
-      const snapshot = await feedbackCollection.get();
-      
-      const feedbackEntries: any[] = [];
-      snapshot.forEach(doc => {
-        feedbackEntries.push({
-          id: doc.id,
-          data: doc.data(),
-          path: `users/${userId}/feedback/${doc.id}`
-        });
-      });
-      
-      console.log(`🔍 Debug: Found ${feedbackEntries.length} feedback entries for user ${userId}`);
-      feedbackEntries.forEach(entry => {
-        console.log(`  - ${entry.path}: ${entry.data.liked ? 'LIKED' : 'DISLIKED'} "${entry.data.filmTitle}"`);
-      });
-      
-      res.json({
-        userId,
-        feedbackCount: feedbackEntries.length,
-        feedbackEntries
-      });
-      
+      const feedbackEntries = await storage.getAllFilmFeedback(userId);
+      res.json({ userId, feedbackCount: feedbackEntries.length, feedbackEntries });
     } catch (error) {
-      console.error('❌ Debug feedback error:', error);
-      res.status(500).json({ error: 'Failed to fetch feedback debug info' });
+      console.error('Debug feedback error:', error);
+      res.status(500).json({ error: 'Failed to fetch feedback' });
     }
   });
 
-  // Handle user feedback on recommendations (for "Because you liked X" feature)
+  // Handle user feedback on recommendations (like/dislike)
   app.post('/api/feedback', isAuthenticated, async (req, res) => {
     try {
-      console.log(`🎬 FEEDBACK REQUEST - Starting feedback processing...`);
-      
-      // Extract and validate input data
-      const { filmId, filmTitle, feedback, recommendationContext } = req.body;
+      const { filmId, filmTitle, feedback, moodContext, runtimePreference, recommendationContext } = req.body;
       const userId = req.user!.id;
-      
-      // Input validation with detailed logging
-      console.log(`📋 VALIDATION - Checking required fields:`);
-      console.log(`  - userId: ${userId} (type: ${typeof userId}, valid: ${!!userId})`);
-      console.log(`  - filmId: ${filmId} (type: ${typeof filmId}, valid: ${!!filmId})`);
-      console.log(`  - filmTitle: "${filmTitle}" (type: ${typeof filmTitle})`);
-      console.log(`  - feedback: ${feedback} (type: ${typeof feedback}, valid: ${feedback === 'like' || feedback === 'dislike'})`);
-      
-      // Validate required fields
-      if (!userId) {
-        console.error('❌ VALIDATION FAILED: Missing userId');
-        return res.status(400).json({ error: 'User ID is required' });
+
+      if (!filmId || !feedback || (feedback !== 'like' && feedback !== 'dislike')) {
+        return res.status(400).json({ error: 'filmId and feedback ("like" or "dislike") are required' });
       }
-      
-      if (!filmId) {
-        console.error('❌ VALIDATION FAILED: Missing filmId');
-        return res.status(400).json({ error: 'Film ID is required' });
-      }
-      
-      if (!feedback || (feedback !== 'like' && feedback !== 'dislike')) {
-        console.error('❌ VALIDATION FAILED: Invalid feedback value');
-        return res.status(400).json({ error: 'Feedback must be "like" or "dislike"' });
-      }
-      
-      console.log(`✅ VALIDATION PASSED - All required fields present`);
-      
-      // Convert feedback to boolean
+
       const liked = feedback === 'like';
-      console.log(`📝 PROCESSING - User ${userId}: ${liked ? 'LIKED' : 'DISLIKED'} "${filmTitle}" (filmId: ${filmId})`);
-      
-      // Import Firebase admin to save to Firestore
-      const { getFirestoreDb } = await import('./firebase-admin.js');
-      const db = getFirestoreDb();
-      
-      if (!db) {
-        console.error('❌ FIRESTORE ERROR: Database not available');
-        return res.status(500).json({ error: 'Database not available' });
-      }
-      
-      console.log(`✅ FIRESTORE CONNECTION: Database available`);
-      
-      // Prepare Firestore write
-      const feedbackPath = `users/${userId}/feedback/${filmId}`;
-      const timestamp = new Date().toISOString();
-      const feedbackData = {
-        liked,
-        timestamp,
+
+      const saved = await storage.saveFilmFeedback({
+        userId,
+        filmId: parseInt(filmId, 10),
         filmTitle: filmTitle || 'Unknown',
-        recommendationContext: recommendationContext || null
-      };
-      
-      console.log(`📍 FIRESTORE PATH: ${feedbackPath}`);
-      console.log(`📊 FEEDBACK DATA:`, JSON.stringify(feedbackData, null, 2));
-      
-      // Attempt Firestore write with comprehensive error handling
-      try {
-        console.log(`🔥 FIRESTORE WRITE - Attempting to save feedback...`);
-        await db.doc(feedbackPath).set(feedbackData, { merge: true });
-        console.log(`✅ FIRESTORE SUCCESS - Feedback saved to: ${feedbackPath}`);
-        
-        // Verify the write by reading it back
-        try {
-          const savedDoc = await db.doc(feedbackPath).get();
-          if (savedDoc.exists) {
-            const savedData = savedDoc.data();
-            console.log(`✅ VERIFICATION SUCCESS - Document exists with data:`, JSON.stringify(savedData, null, 2));
-          } else {
-            console.log(`⚠️ VERIFICATION WARNING - Document was not found after write`);
-          }
-        } catch (verifyError) {
-          console.error(`❌ VERIFICATION ERROR - Could not read back document:`, verifyError);
-        }
-        
-      } catch (firestoreError: any) {
-        console.error(`❌ FIRESTORE WRITE ERROR - Failed to save feedback:`, firestoreError);
-        console.error(`❌ Error details:`, {
-          message: firestoreError?.message,
-          code: firestoreError?.code,
-          stack: firestoreError?.stack
-        });
-        return res.status(500).json({ 
-          error: 'Failed to save feedback to database',
-          details: firestoreError?.message || 'Unknown error'
-        });
-      }
-      
-      // Track the feedback event for analytics
+        liked,
+        moodContext: moodContext || null,
+        runtimePreference: runtimePreference || null,
+        recommendationContext: recommendationContext || null,
+      });
+
+      // Track analytics (non-fatal)
       try {
         await storage.trackEvent({
           eventType: 'recommendation_feedback',
           userId,
-          data: {
-            filmId,
-            filmTitle,
-            feedback,
-            hasRecommendationContext: !!recommendationContext
-          } as Record<string, any>,
+          data: { filmId, filmTitle, feedback, hasRecommendationContext: !!recommendationContext } as Record<string, any>,
           ip: req.ip || req.headers['x-forwarded-for'] as string || 'unknown',
           userAgent: req.headers['user-agent'] as string || 'unknown'
         });
-        console.log(`📊 ANALYTICS - Feedback event tracked successfully`);
-      } catch (trackingError) {
-        console.error('⚠️ ANALYTICS WARNING - Error tracking feedback event:', trackingError);
-        // Don't fail the request if analytics tracking fails
+      } catch (_) { /* non-fatal */ }
+
+      res.json({ success: true, message: 'Feedback saved', feedbackSaved: true, id: saved.id });
+    } catch (error: any) {
+      console.error('Error processing feedback:', error);
+      res.status(500).json({ error: 'Failed to save feedback', details: error.message });
+    }
+  });
+
+  // Get all feedback for the authenticated user
+  app.get('/api/feedback', isAuthenticated, async (req, res) => {
+    try {
+      const feedback = await storage.getAllFilmFeedback(req.user!.id);
+      res.json({ feedback });
+    } catch (error: any) {
+      console.error('Error retrieving feedback:', error);
+      res.status(500).json({ error: 'Failed to retrieve feedback' });
+    }
+  });
+
+  // Get feedback for a specific film
+  app.get('/api/feedback/:filmId', isAuthenticated, async (req, res) => {
+    try {
+      const filmId = parseInt(req.params.filmId, 10);
+      const feedback = await storage.getFilmFeedback(req.user!.id, filmId);
+      res.json({ feedback: feedback || null });
+    } catch (error: any) {
+      console.error('Error retrieving film feedback:', error);
+      res.status(500).json({ error: 'Failed to retrieve feedback' });
+    }
+  });
+
+  // Chat session routes
+  app.post('/api/chat-sessions', isAuthenticated, async (req, res) => {
+    try {
+      const { messages, preferences, customVibes, personalizedMoods, completed } = req.body;
+      const sessionKey = `chat_${req.user!.id}_${Date.now()}`;
+      const saved = await storage.saveChatSession({
+        userId: req.user!.id,
+        sessionKey,
+        messages: messages || [],
+        preferences: preferences || null,
+        customVibes: customVibes || [],
+        personalizedMoods: personalizedMoods || [],
+        completed: completed || false,
+      });
+      res.json({ success: true, session: saved });
+    } catch (error: any) {
+      console.error('Error saving chat session:', error);
+      res.status(500).json({ error: 'Failed to save chat session' });
+    }
+  });
+
+  app.get('/api/chat-sessions/latest', isAuthenticated, async (req, res) => {
+    try {
+      const session = await storage.getLatestChatSession(req.user!.id);
+      res.json({ session: session || null });
+    } catch (error: any) {
+      console.error('Error retrieving chat session:', error);
+      res.status(500).json({ error: 'Failed to retrieve chat session' });
+    }
+  });
+
+  app.patch('/api/chat-sessions/:sessionKey', isAuthenticated, async (req, res) => {
+    try {
+      const session = await storage.getChatSession(req.params.sessionKey);
+      if (!session || session.userId !== req.user!.id) {
+        return res.status(404).json({ error: 'Session not found' });
       }
-      
-      // Return success response
-      console.log(`🎉 FEEDBACK COMPLETE - Successfully processed feedback for user ${userId}`);
-      res.json({ 
-        success: true, 
-        message: 'Feedback saved successfully',
-        feedbackSaved: true,
-        firestorePath: feedbackPath,
-        timestamp: timestamp
-      });
-      
-    } catch (error) {
-      console.error('❌ FEEDBACK ERROR - Unexpected error processing feedback:', error);
-      res.status(500).json({ 
-        error: 'Failed to save feedback',
-        details: error.message 
-      });
+      const updated = await storage.updateChatSession(req.params.sessionKey, req.body);
+      res.json({ success: true, session: updated });
+    } catch (error: any) {
+      console.error('Error updating chat session:', error);
+      res.status(500).json({ error: 'Failed to update chat session' });
     }
   });
 
@@ -1013,69 +952,6 @@ Be flexible and understanding. If their input doesn't clearly match any option, 
     } catch (error) {
       console.error('Error retrieving mood labels:', error);
       res.status(500).json({ error: 'Failed to retrieve mood labels' });
-    }
-  });
-
-  // Debug endpoint: Get user's feedback data from Firestore
-  app.get('/api/debug/feedback/:userId', isAuthenticated, async (req, res) => {
-    try {
-      const userId = req.params.userId;
-      
-      // Only allow users to view their own feedback or admins
-      if (req.user!.id.toString() !== userId && !req.user!.isAdmin) {
-        return res.status(403).json({ message: 'Access denied' });
-      }
-      
-      console.log(`🔍 Retrieving all feedback data for user ${userId}`);
-      
-      const { getFirestoreDb } = await import('./firebase-admin.js');
-      const db = getFirestoreDb();
-      
-      if (!db) {
-        console.error('❌ Firestore not available');
-        return res.status(500).json({ message: 'Database not available' });
-      }
-      
-      // Get all feedback documents
-      const feedbackPath = `users/${userId}/recommendationFeedback`;
-      console.log(`📍 Querying Firestore path: ${feedbackPath}`);
-      
-      const feedbackCollection = db.collection(feedbackPath);
-      const snapshot = await feedbackCollection.get();
-      
-      if (snapshot.empty) {
-        console.log(`📭 No feedback documents found for user ${userId}`);
-        return res.json({ 
-          userId, 
-          feedbackCount: 0, 
-          feedback: [],
-          firestorePath: feedbackPath
-        });
-      }
-      
-      const feedback: any[] = [];
-      snapshot.forEach(doc => {
-        feedback.push({
-          id: doc.id,
-          ...doc.data()
-        });
-      });
-      
-      console.log(`📊 Found ${feedback.length} feedback documents for user ${userId}`);
-      feedback.forEach(item => {
-        console.log(`  - ${item.liked ? '👍' : '👎'} "${item.filmTitle}" (ID: ${item.id}) at ${item.timestamp}`);
-      });
-      
-      res.json({
-        userId,
-        feedbackCount: feedback.length,
-        feedback,
-        firestorePath: feedbackPath
-      });
-      
-    } catch (error) {
-      console.error('❌ Error retrieving feedback:', error);
-      res.status(500).json({ message: 'Failed to retrieve feedback' });
     }
   });
 

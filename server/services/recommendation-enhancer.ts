@@ -13,7 +13,7 @@ import {
   getUserFilmFeedback, 
   extractPreferenceWeights,
   applyFeedbackWeights 
-} from './firestore-feedback-reader';
+} from './feedback-reader';
 
 /**
  * Map user country input to TMDB country codes

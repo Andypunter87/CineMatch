@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, User, LogOut, Settings, Bookmark, Home, BarChart, Users, Bug, Database, Sparkles, MessageCircle } from "lucide-react";
+import { Loader2, User, LogOut, Settings, Bookmark, Home, BarChart, Users, Database, Sparkles, MessageCircle } from "lucide-react";
 import { NotificationBell } from "./notifications/NotificationBell";
 
 interface MoodCardData {
@@ -156,39 +156,6 @@ export default function Header() {
                     </Link>
                   )}
                   
-                  {user.isAdmin && (
-                    <>
-                      <div className="px-2 py-1.5">
-                        <div className="h-px bg-border" />
-                      </div>
-                      
-                      {/* Debug menu section - Admin only */}
-                      <DropdownMenuItem className="flex items-center py-2 px-3 font-medium text-xs opacity-70 cursor-default">
-                        <Bug className="mr-2 h-4 w-4" />
-                        <span>Developer Debug Tools</span>
-                      </DropdownMenuItem>
-                      <Link href="/firebase-auth-debug">
-                        <DropdownMenuItem className="cursor-pointer pl-6" onClick={() => setIsMenuOpen(false)}>
-                          <span>Firebase Auth Debug</span>
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link href="/firestore-test-debug">
-                        <DropdownMenuItem className="cursor-pointer pl-6" onClick={() => setIsMenuOpen(false)}>
-                          <span>Firestore Debug</span>
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link href="/firestore-test">
-                        <DropdownMenuItem className="cursor-pointer pl-6" onClick={() => setIsMenuOpen(false)}>
-                          <span>Firestore Test</span>
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link href="/firestore-test-report">
-                        <DropdownMenuItem className="cursor-pointer pl-6" onClick={() => setIsMenuOpen(false)}>
-                          <span>Firestore Report</span>
-                        </DropdownMenuItem>
-                      </Link>
-                    </>
-                  )}
                   <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Logout</span>

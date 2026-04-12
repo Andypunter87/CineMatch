@@ -13,8 +13,6 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { trackEvent, AnalyticsEvents } from '@/lib/analytics';
-import { useSafeFirestore } from '@/hooks/use-safe-firestore';
-import { logPreferenceOperation, LogLevel, logSuccess, logFirestoreError, LogCategory } from '@/lib/firestore-test-logger';
 
 // Same streaming services and countries arrays as in profile-page
 const streamingServices = [
@@ -80,7 +78,6 @@ interface UserPreferencesFormProps {
 const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete }) => {
   const { user, updateStreamingMutation, updateCountryMutation } = useAuth();
   const { toast } = useToast();
-  const safeFirestore = useSafeFirestore();
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -167,134 +164,14 @@ const UserPreferencesForm: React.FC<UserPreferencesFormProps> = ({ onComplete })
           throw new Error(errorData.error || 'Failed to save preferences');
         }
         
-        // Continue with onboarding flow immediately after API call succeeds
-        // This ensures we don't delay the user experience due to Firebase issues
-        
-        // Proceed to next step immediately after server confirms 
-        // the preferences have been saved
         console.log('Preferences saved successfully, continuing to next step');
-        // This ensures we move to the next step regardless of what happens with Firestore
         onComplete();
         
-        // Show informative message that preferences were saved successfully
         toast({
           title: "Preferences saved",
           description: "Your preferences have been saved successfully",
           variant: "default"
         });
-        
-        // Try to save to Firestore in the background without awaiting
-        // This ensures the UI flow is not blocked by any Firestore errors
-        try {
-          if (user?.id) {
-            // Log user is attempting to save preferences
-            console.log('Attempting to save preferences to Firestore for user ID:', user.id);
-            
-            // Create a document reference using the helper
-            const prefsDocRef = safeFirestore.createDocRef('user_preferences', user.id);
-            
-            // Create test ID to track related operations
-            const testId = `test-${Date.now()}`;
-            
-            // Log detailed information about the Firestore operation
-            logPreferenceOperation(LogLevel.INFO, 'Firestore Write Test: Saving Preferences', {
-              userId: user.id,
-              collectionPath: 'user_preferences',
-              documentPath: prefsDocRef.path,
-              operationType: 'write',
-              additionalInfo: {
-                testId,
-                timestamp: new Date().toISOString(),
-                source: 'onboarding/preferences-form'
-              }
-            });
-            
-            // Prepare data for Firestore
-            const firestoreData = {
-              userId: user.id,
-              country: countryCode,
-              streamingServices: servicesCodes,
-              lastUpdated: new Date().toISOString(),
-              testInfo: {
-                testId,
-                timestamp: new Date().toISOString(),
-                source: 'onboarding-flow',
-                isTestRun: true
-              }
-            };
-            
-            // Save to Firestore in the background (don't await)
-            safeFirestore.safeSetDoc(prefsDocRef, firestoreData, {
-              retryWithAnonymousAuth: true,
-              // Suppress errors during onboarding to avoid confusing users
-              suppressErrors: true,
-              userFacingErrorMessage: 'Cloud sync unavailable. Your preferences are saved on the server, but may not sync across devices.'
-            }).then((success: boolean) => {
-              if (success) {
-                // Log success with detailed information
-                logSuccess(LogCategory.PREFERENCE, 'Firestore Test Success: Preferences saved', {
-                  userId: user.id,
-                  documentPath: prefsDocRef.path,
-                  operationType: 'write',
-                  additionalInfo: {
-                    testId,
-                    timestamp: new Date().toISOString(),
-                    collectionName: 'user_preferences',
-                    documentId: `user-${user.id}`
-                  }
-                });
-                
-                // Show success message to user
-                toast({
-                  title: "Cloud sync complete",
-                  description: "Your preferences are now synced to the cloud",
-                  variant: "default"
-                });
-              } else {
-                // Log failure with detailed information
-                logPreferenceOperation(LogLevel.WARNING, 'Firestore Test Failure: Preferences not saved', {
-                  userId: user.id,
-                  documentPath: prefsDocRef.path,
-                  operationType: 'write',
-                  additionalInfo: {
-                    testId,
-                    timestamp: new Date().toISOString(),
-                    reason: 'Operation returned false'
-                  }
-                });
-                
-                console.warn('Failed to save preferences to Firestore, but this is non-blocking');
-              }
-            }).catch((error: Error) => {
-              // Log error with detailed diagnostics
-              logFirestoreError(LogCategory.PREFERENCE, 'Firestore Test Error: Exception during save', error, {
-                userId: user.id,
-                documentPath: prefsDocRef.path,
-                operationType: 'write',
-                additionalInfo: {
-                  testId,
-                  timestamp: new Date().toISOString()
-                }
-              });
-              
-              console.error('Firestore error (non-blocking):', error);
-            });
-          }
-        } catch (firestoreError) {
-          // Completely isolate any Firestore errors
-          console.error('Error setting up Firestore save (non-blocking):', firestoreError);
-          
-          // Log error with detailed diagnostics for outer try-catch
-          logFirestoreError(LogCategory.PREFERENCE, 'Firestore Test Error: Exception setting up operation', firestoreError as Error, {
-            userId: user?.id,
-            operationType: 'setup', // Now a valid operation type
-            additionalInfo: {
-              timestamp: new Date().toISOString(),
-              errorLocation: 'outer_catch_block',
-              errorType: 'setup_error'
-            }
-          });
-        }
       } else {
         // For non-onboarding pages, use the mutations from useAuth
         await Promise.all([
