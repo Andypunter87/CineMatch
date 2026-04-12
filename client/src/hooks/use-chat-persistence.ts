@@ -103,9 +103,9 @@ export function useChatPersistence() {
       const vibes = Array.isArray(data) ? data : data.vibes || [];
       return vibes.map((v: Record<string, unknown>) => ({
         text: v.customVibe as string,
-        frequency: (v.useCount as number) || 1,
+        frequency: (v.count as number) || 1,
         lastUsed: (v.lastUsed as string) || new Date().toISOString(),
-        source: (v.source as VibePreference['source']) || 'user_custom',
+        source: 'user_custom' as VibePreference['source'],
       }));
     } catch {
       return [];
