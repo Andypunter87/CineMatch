@@ -1,3 +1,4 @@
+import Anthropic from "@anthropic-ai/sdk";
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -29,8 +30,12 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize the database
-  await initializeDatabase();
+  // Initialize the database (non-fatal — server still starts if DB is temporarily unavailable)
+  try {
+    await initializeDatabase();
+  } catch (err) {
+    console.error("Database initialization failed, continuing without DB:", err instanceof Error ? err.message : err);
+  }
   
   // Setup authentication routes and middleware
   setupAuth(app);
@@ -919,7 +924,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
-      // Map user input to closest available option using OpenAI
+      // Map user input to closest available option using Claude
       const prompt = `You are helping map user input to predefined options for a film recommendation system.
       
 Step: ${step}
@@ -932,25 +937,21 @@ Please respond with JSON containing:
 
 Be flexible and understanding. If their input doesn't clearly match any option, pick the most reasonable default.`;
 
-      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.3,
-          max_tokens: 150
-        })
+      const claudeClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      const claudeResponse = await claudeClient.messages.create({
+        model: 'claude-opus-4-5',
+        max_tokens: 150,
+        messages: [{ role: 'user', content: prompt }]
       });
 
-      const openaiData = await openaiResponse.json();
-      const content = openaiData.choices[0].message.content;
-      
+      const block = claudeResponse.content[0];
+      const content = block.type === 'text' ? block.text : '';
+
       try {
-        const parsed = JSON.parse(content);
+        let cleanContent = content.trim();
+        const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) cleanContent = jsonMatch[0];
+        const parsed = JSON.parse(cleanContent);
         res.json(parsed);
       } catch (parseError) {
         // Fallback: use first available option

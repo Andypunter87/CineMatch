@@ -1,27 +1,25 @@
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
-// Initialize OpenAI client
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// Simple test function
-async function testOpenAI() {
+async function testClaude() {
   try {
-    console.log("Testing OpenAI API...");
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+    console.log("Testing Anthropic Claude API...");
+    const response = await anthropic.messages.create({
+      model: "claude-opus-4-5",
+      max_tokens: 10,
       messages: [
-        { role: "system", content: "You are a helpful assistant." },
         { role: "user", content: "Say hi!" }
-      ],
-      max_tokens: 10
+      ]
     });
 
-    console.log("OpenAI API test successful!");
-    console.log("Response:", response.choices[0].message.content);
+    const block = response.content[0];
+    const text = block.type === "text" ? block.text : "";
+    console.log("Claude API test successful!");
+    console.log("Response:", text);
   } catch (error) {
-    console.error("OpenAI API test failed:", error);
+    console.error("Claude API test failed:", error);
   }
 }
 
-// Run the test
-testOpenAI();
+testClaude();
