@@ -8,6 +8,8 @@ import {
   userRecommendations,
   filmFeedback,
   chatSessions,
+  userPreferences,
+  vibePreferences,
   type User,
   type InsertUser,
   type Film,
@@ -26,6 +28,10 @@ import {
   type InsertFilmFeedback,
   type ChatSession,
   type InsertChatSession,
+  type UserPreference,
+  type InsertUserPreference,
+  type VibePreference,
+  type InsertVibePreference,
 } from "@shared/schema";
 import { films } from "./data/films";
 import { db } from "./db";
@@ -113,6 +119,17 @@ export interface IStorage {
   getChatSession(sessionKey: string): Promise<ChatSession | undefined>;
   getLatestChatSession(userId: number): Promise<ChatSession | undefined>;
   updateChatSession(sessionKey: string, updates: Partial<InsertChatSession>): Promise<ChatSession>;
+  getAllChatSessions(userId: number): Promise<ChatSession[]>;
+
+  // User preferences operations
+  getUserPreferences(userId: number): Promise<UserPreference | undefined>;
+  saveUserPreferences(prefs: InsertUserPreference): Promise<UserPreference>;
+  updateUserPreferences(userId: number, updates: Partial<InsertUserPreference>): Promise<UserPreference>;
+
+  // Vibe preferences operations
+  getVibePreferences(userId: number): Promise<VibePreference[]>;
+  saveVibePreference(vibe: InsertVibePreference): Promise<VibePreference>;
+  incrementVibeCount(userId: number, customVibe: string): Promise<VibePreference>;
 
   sessionStore: any; // Using any for session store to avoid type issues
 }
@@ -1356,6 +1373,106 @@ export class DatabaseStorage implements IStorage {
       console.error("Error updating chat session:", error);
       throw new Error("Failed to update chat session");
     }
+  }
+
+  async getAllChatSessions(userId: number): Promise<ChatSession[]> {
+    try {
+      return await db
+        .select()
+        .from(chatSessions)
+        .where(eq(chatSessions.userId, userId))
+        .orderBy(desc(chatSessions.updatedAt));
+    } catch (error) {
+      console.error("Error getting chat sessions:", error);
+      return [];
+    }
+  }
+
+  async getUserPreferences(userId: number): Promise<UserPreference | undefined> {
+    try {
+      const [prefs] = await db
+        .select()
+        .from(userPreferences)
+        .where(eq(userPreferences.userId, userId));
+      return prefs;
+    } catch (error) {
+      console.error("Error getting user preferences:", error);
+      return undefined;
+    }
+  }
+
+  async saveUserPreferences(prefs: InsertUserPreference): Promise<UserPreference> {
+    try {
+      const existing = await this.getUserPreferences(prefs.userId);
+      if (existing) {
+        const [updated] = await db
+          .update(userPreferences)
+          .set({ ...prefs, lastUpdated: new Date() })
+          .where(eq(userPreferences.userId, prefs.userId))
+          .returning();
+        return updated;
+      }
+      const [created] = await db
+        .insert(userPreferences)
+        .values(prefs)
+        .returning();
+      return created;
+    } catch (error) {
+      console.error("Error saving user preferences:", error);
+      throw new Error("Failed to save user preferences");
+    }
+  }
+
+  async updateUserPreferences(userId: number, updates: Partial<InsertUserPreference>): Promise<UserPreference> {
+    try {
+      const existing = await this.getUserPreferences(userId);
+      if (!existing) {
+        return this.saveUserPreferences({ userId, ...updates } as InsertUserPreference);
+      }
+      const [updated] = await db
+        .update(userPreferences)
+        .set({ ...updates, lastUpdated: new Date() })
+        .where(eq(userPreferences.userId, userId))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error("Error updating user preferences:", error);
+      throw new Error("Failed to update user preferences");
+    }
+  }
+
+  async getVibePreferences(userId: number): Promise<VibePreference[]> {
+    try {
+      return await db
+        .select()
+        .from(vibePreferences)
+        .where(eq(vibePreferences.userId, userId))
+        .orderBy(desc(vibePreferences.count));
+    } catch (error) {
+      console.error("Error getting vibe preferences:", error);
+      return [];
+    }
+  }
+
+  async saveVibePreference(vibe: InsertVibePreference): Promise<VibePreference> {
+    try {
+      const [created] = await db
+        .insert(vibePreferences)
+        .values(vibe)
+        .onConflictDoUpdate({
+          target: [vibePreferences.userId, vibePreferences.customVibe],
+          set: { count: sql`${vibePreferences.count} + 1`, lastUsed: new Date() },
+        })
+        .returning();
+      return created;
+    } catch (error) {
+      console.error("Error saving vibe preference:", error);
+      throw new Error("Failed to save vibe preference");
+    }
+  }
+
+  async incrementVibeCount(userId: number, customVibe: string): Promise<VibePreference> {
+    return this.saveVibePreference({ userId, customVibe, count: 1 });
   }
 }
 

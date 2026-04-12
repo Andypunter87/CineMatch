@@ -219,28 +219,46 @@ export function useFirestoreCollections() {
   // ── Friends ───────────────────────────────────────────────────────────────
   const addFriend = async (
     _userId: string | number,
-    _friendId: string | number,
+    friendId: string | number,
     _friendData?: any,
     _options: any = {}
   ): Promise<boolean> => {
-    return true;
+    try {
+      await apiRequest('POST', '/api/friends/add', { friendId });
+      return true;
+    } catch (err) {
+      setError(err as Error);
+      return false;
+    }
   };
 
   const updateFriendStatus = async (
     _userId: string | number,
-    _friendId: string | number,
-    _status: string,
+    friendId: string | number,
+    status: string,
     _options: any = {}
   ): Promise<boolean> => {
-    return true;
+    try {
+      await apiRequest('PATCH', '/api/friends/update', { friendId, status });
+      return true;
+    } catch (err) {
+      setError(err as Error);
+      return false;
+    }
   };
 
   const removeFriend = async (
     _userId: string | number,
-    _friendId: string | number,
+    friendId: string | number,
     _options: any = {}
   ): Promise<boolean> => {
-    return true;
+    try {
+      await apiRequest('DELETE', `/api/friends/${friendId}`);
+      return true;
+    } catch (err) {
+      setError(err as Error);
+      return false;
+    }
   };
 
   const getFriends = async (
@@ -258,17 +276,28 @@ export function useFirestoreCollections() {
   // ── Shared Recommendations ────────────────────────────────────────────────
   const saveSharedRecommendation = async (
     _userId: string | number,
-    _data: any,
+    data: any,
     _options: any = {}
   ): Promise<boolean> => {
-    return true;
+    try {
+      await apiRequest('POST', '/api/shared-recommendations', data);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const getSharedRecommendations = async (
     _userId: string | number,
     _options: any = {}
   ): Promise<any[]> => {
-    return [];
+    try {
+      const res = await apiRequest('GET', '/api/shared-recommendations');
+      const data = await res.json();
+      return Array.isArray(data) ? data : data.recommendations || [];
+    } catch {
+      return [];
+    }
   };
 
   // ── Generic helpers ───────────────────────────────────────────────────────

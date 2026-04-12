@@ -198,7 +198,28 @@ export const chatSessions = pgTable("chat_sessions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// 11. Monthly Mood Cards table
+// 11. User Preferences table (replaces Firestore user_preferences collection)
+export const userPreferences = pgTable("user_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id).unique(),
+  country: text("country").default(""),
+  streamingServices: text("streaming_services").array().default([]),
+  language: text("language").default("en"),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// 12. Vibe Preferences table (replaces Firestore vibe_preferences collection)
+export const vibePreferences = pgTable("vibe_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  customVibe: text("custom_vibe").notNull(),
+  count: integer("count").default(1),
+  lastUsed: timestamp("last_used").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [unique().on(t.userId, t.customVibe)]);
+
+// 13. Monthly Mood Cards table
 export const monthlyMoodCards = pgTable("monthly_mood_cards", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -232,6 +253,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   moodCards: many(monthlyMoodCards),
   filmFeedback: many(filmFeedback),
   chatSessions: many(chatSessions),
+  userPreferences: many(userPreferences),
+  vibePreferences: many(vibePreferences),
 }));
 
 // Watchlist relations
@@ -306,6 +329,22 @@ export const filmFeedbackRelations = relations(filmFeedback, ({ one }) => ({
 export const chatSessionsRelations = relations(chatSessions, ({ one }) => ({
   user: one(users, {
     fields: [chatSessions.userId],
+    references: [users.id],
+  }),
+}));
+
+// User preferences relations
+export const userPreferencesRelations = relations(userPreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [userPreferences.userId],
+    references: [users.id],
+  }),
+}));
+
+// Vibe preferences relations
+export const vibePreferencesRelations = relations(vibePreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [vibePreferences.userId],
     references: [users.id],
   }),
 }));
@@ -454,3 +493,30 @@ export type InsertFilmFeedback = z.infer<typeof insertFilmFeedbackSchema>;
 
 export type ChatSession = typeof chatSessions.$inferSelect;
 export type InsertChatSession = z.infer<typeof insertChatSessionSchema>;
+
+// User preferences insert schema
+export const insertUserPreferencesSchema = createInsertSchema(userPreferences, {
+  lastUpdated: z.date().optional(),
+  createdAt: z.date().optional(),
+}).pick({
+  userId: true,
+  country: true,
+  streamingServices: true,
+  language: true,
+});
+
+// Vibe preferences insert schema
+export const insertVibePreferenceSchema = createInsertSchema(vibePreferences, {
+  lastUsed: z.date().optional(),
+  createdAt: z.date().optional(),
+}).pick({
+  userId: true,
+  customVibe: true,
+  count: true,
+});
+
+export type UserPreference = typeof userPreferences.$inferSelect;
+export type InsertUserPreference = z.infer<typeof insertUserPreferencesSchema>;
+
+export type VibePreference = typeof vibePreferences.$inferSelect;
+export type InsertVibePreference = z.infer<typeof insertVibePreferenceSchema>;

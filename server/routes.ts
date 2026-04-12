@@ -789,7 +789,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User preferences routes (dedicated preference table)
+  app.get('/api/preferences', isAuthenticated, async (req, res) => {
+    try {
+      const prefs = await storage.getUserPreferences(req.user!.id);
+      res.json({ preferences: prefs || null });
+    } catch (error: any) {
+      console.error('Error getting user preferences:', error);
+      res.status(500).json({ error: 'Failed to get preferences' });
+    }
+  });
+
+  app.put('/api/preferences', isAuthenticated, async (req, res) => {
+    try {
+      const { country, streamingServices, language } = req.body;
+      const updated = await storage.saveUserPreferences({
+        userId: req.user!.id,
+        country: country || '',
+        streamingServices: streamingServices || [],
+        language: language || 'en',
+      });
+      res.json({ success: true, preferences: updated });
+    } catch (error: any) {
+      console.error('Error saving user preferences:', error);
+      res.status(500).json({ error: 'Failed to save preferences' });
+    }
+  });
+
+  // Vibe preferences routes
+  app.get('/api/vibes', isAuthenticated, async (req, res) => {
+    try {
+      const vibes = await storage.getVibePreferences(req.user!.id);
+      res.json({ vibes });
+    } catch (error: any) {
+      console.error('Error getting vibe preferences:', error);
+      res.status(500).json({ error: 'Failed to get vibes' });
+    }
+  });
+
+  app.post('/api/vibes', isAuthenticated, async (req, res) => {
+    try {
+      const { customVibe } = req.body;
+      if (!customVibe || typeof customVibe !== 'string') {
+        return res.status(400).json({ error: 'customVibe is required' });
+      }
+      const saved = await storage.incrementVibeCount(req.user!.id, customVibe);
+      res.json({ success: true, vibe: saved });
+    } catch (error: any) {
+      console.error('Error saving vibe preference:', error);
+      res.status(500).json({ error: 'Failed to save vibe' });
+    }
+  });
+
   // Chat session routes
+  app.get('/api/chat-sessions', isAuthenticated, async (req, res) => {
+    try {
+      const sessions = await storage.getAllChatSessions(req.user!.id);
+      res.json({ sessions });
+    } catch (error: any) {
+      console.error('Error getting chat sessions:', error);
+      res.status(500).json({ error: 'Failed to get chat sessions' });
+    }
+  });
+
   app.post('/api/chat-sessions', isAuthenticated, async (req, res) => {
     try {
       const { messages, preferences, customVibes, personalizedMoods, completed } = req.body;
