@@ -7,6 +7,6 @@ xcuserdata
 # Cordova plugins for Capacitor
 capacitor-cordova-ios-plugins
 
-# Generated Config files
-App/App/capacitor.config.json
-App/App/config.xml
+# Generated Config files (committed intentionally for immediate Xcode builds)
+# App/App/capacitor.config.json  — committed
+# App/App/config.xml             — committed
