@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#4A86E8"/>
+  
+  <!-- Gradient overlay -->
+  <rect width="1200" height="630" fill="url(#paint0_linear)"/>
+  
+  <!-- Film cards -->
+  <rect x="250" y="180" width="200" height="300" rx="20" fill="#FFCC00"/>
+  <rect x="500" y="180" width="200" height="300" rx="20" fill="#E74C3C"/>
+  <rect x="750" y="180" width="200" height="300" rx="20" fill="#27AE60"/>
+  
+  <!-- Film strip icon on each card -->
+  <path d="M350 300L350 300Z" fill="white"/>
+  <rect x="325" y="260" width="50" height="50" rx="2" stroke="white" stroke-width="4"/>
+  
+  <path d="M600 300L600 300Z" fill="white"/>
+  <rect x="575" y="260" width="50" height="50" rx="2" stroke="white" stroke-width="4"/>
+  
+  <path d="M850 300L850 300Z" fill="white"/>
+  <rect x="825" y="260" width="50" height="50" rx="2" stroke="white" stroke-width="4"/>
+  
+  <!-- CineMatch Logo -->
+  <text x="600" y="140" font-family="Montserrat, sans-serif" font-size="70" font-weight="800" text-anchor="middle" fill="white">CineMatch</text>
+  
+  <!-- Tagline -->
+  <text x="600" y="520" font-family="Roboto, sans-serif" font-size="28" text-anchor="middle" fill="white">Personalized Film Recommendations</text>
+  
+  <!-- Linear gradient definition -->
+  <defs>
+    <linearGradient id="paint0_linear" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4A86E8" stop-opacity="1"/>
+      <stop offset="1" stop-color="#2C5499" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+</svg>

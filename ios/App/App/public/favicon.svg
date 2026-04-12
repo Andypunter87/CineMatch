@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background rounded rectangle -->
+  <rect width="32" height="32" rx="6" fill="#4A86E8"/>
+  
+  <!-- Film strip icon -->
+  <path d="M24 8H8C6.89543 8 6 8.89543 6 10V22C6 23.1046 6.89543 24 8 24H24C25.1046 24 26 23.1046 26 22V10C26 8.89543 25.1046 8 24 8Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Film perforations -->
+  <rect x="10" y="8" width="2" height="2" fill="white"/>
+  <rect x="14" y="8" width="2" height="2" fill="white"/>
+  <rect x="18" y="8" width="2" height="2" fill="white"/>
+  <rect x="22" y="8" width="2" height="2" fill="white"/>
+  
+  <rect x="10" y="22" width="2" height="2" fill="white"/>
+  <rect x="14" y="22" width="2" height="2" fill="white"/>
+  <rect x="18" y="22" width="2" height="2" fill="white"/>
+  <rect x="22" y="22" width="2" height="2" fill="white"/>
+  
+  <!-- Letter C for CineMatch -->
+  <path d="M18.5 15.5C18.5 17.7091 16.7091 19.5 14.5 19.5C12.2909 19.5 10.5 17.7091 10.5 15.5C10.5 13.2909 12.2909 11.5 14.5 11.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

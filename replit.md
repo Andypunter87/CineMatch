@@ -183,8 +183,10 @@ This is the equivalent of `npm run ios` — it rebuilds the web app, syncs asset
 
 ### Notes
 
+- **Capacitor version**: All three packages (`@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`) are pinned to v7.x, which is compatible with Node.js 20 (the version in this Replit). Capacitor v8 requires Node.js 22+.
+- **No `npm run ios` script**: A convenience `npm run ios` entry cannot be added to `package.json` in this environment (system restriction). Use the one-liner above directly in your terminal on macOS.
 - CocoaPods is skipped in the Replit (Linux) environment — this is expected and harmless; the iOS native dependencies are installed when you run `npx cap sync ios` on macOS.
-- The `ios/App/App/public/` directory (synced web assets) is git-ignored as it's regenerated on every sync.
+- `ios/App/App/public/` (synced web assets) is **committed to git** for immediate Xcode builds — no manual sync required on a fresh clone.
 - The Replit web preview continues to work normally using the Vite dev server — the Capacitor setup only affects the native iOS build.
 - To replace placeholder icons/splash screens, swap out the PNG files in `ios/App/App/Assets.xcassets/` and re-run `npx cap sync ios`.
 
