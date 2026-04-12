@@ -43,7 +43,9 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByProviderId(providerId: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserGoogleId(userId: number, googleId: string): Promise<User>;
   updateUserStreamingServices(userId: number, streamingServices: string[]): Promise<User>;
   updateUserCountry(userId: number, country: string): Promise<User>;
   updateUserPassword(userId: number, passwordHash: string): Promise<User>;
@@ -279,6 +281,25 @@ export class DatabaseStorage implements IStorage {
       console.error("Error retrieving user by provider ID:", error);
       return undefined;
     }
+  }
+
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
+      return user;
+    } catch (error) {
+      console.error("Error retrieving user by Google ID:", error);
+      return undefined;
+    }
+  }
+
+  async updateUserGoogleId(userId: number, googleId: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ googleId, authProvider: "google" })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {

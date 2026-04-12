@@ -46,20 +46,26 @@ export function setupAuth(app: Express) {
             profile.emails?.[0]?.value ?? `${profile.id}@google.invalid`;
           const name = profile.displayName ?? "";
 
-          // Try to find existing user by Google provider ID
-          let user = await storage.getUserByProviderId(profile.id);
+          // 1. Try to find existing user by googleId (primary key for Google auth)
+          let user = await storage.getUserByGoogleId(profile.id);
 
           if (!user) {
-            // Try to find by email (existing local account)
+            // 2. Fallback: find by legacy providerId field
+            user = await storage.getUserByProviderId(profile.id);
+          }
+
+          if (!user) {
+            // 3. Try to find by email (existing local/password account — link it)
             user = await storage.getUserByEmail(email);
           }
 
           if (!user) {
-            // Create a new user
+            // 4. No existing account — create a new one
             user = await storage.createUser({
               username: email.split("@")[0],
               email,
               name,
+              googleId: profile.id,
               providerId: profile.id,
               authProvider: "google",
               streamingServices: [],
@@ -93,10 +99,9 @@ export function setupAuth(app: Express) {
                 userAgent: "unknown",
               })
               .catch((err) => console.error("Analytics error:", err));
-          } else if (!user.providerId) {
-            // Link Google ID to existing account that was created another way
-            // (just update in-memory; full update handled on next DB call)
-            user = { ...user, providerId: profile.id, authProvider: "google" };
+          } else if (!user.googleId) {
+            // Persist the Google ID linkage so future logins use the fast path
+            user = await storage.updateUserGoogleId(user.id, profile.id);
           }
 
           return done(null, user);

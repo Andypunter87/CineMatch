@@ -63,19 +63,20 @@ export type RecommendationRequest = z.infer<typeof recommendationRequestSchema>;
 // 1. Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username"), // Made optional to match new requirements
+  username: text("username"),
   email: text("email").notNull().unique(),
-  password: text("password"),
+  password: text("password"), // nullable — not set for Google SSO users
   name: text("name"),
   streamingServices: text("streaming_services").array(),
   country: text("country"),
   authProvider: text("auth_provider").default("local"),
-  providerId: text("provider_id"),
+  googleId: text("google_id"), // Google OAuth subject ID (sub)
+  providerId: text("provider_id"), // kept for backwards-compat, prefer googleId
   isAdmin: boolean("is_admin").default(false),
   onboardingState: jsonb("onboarding_state").default({
     completed: false,
-    currentStep: "intro", // intro, preferences, ratings, completed
-    progress: 0, // 0-100 percent progress
+    currentStep: "intro",
+    progress: 0,
     lastUpdated: new Date().toISOString(),
   }),
 });
@@ -277,6 +278,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   streamingServices: true,
   country: true,
   authProvider: true,
+  googleId: true,
   providerId: true,
   isAdmin: true,
   onboardingState: true,
