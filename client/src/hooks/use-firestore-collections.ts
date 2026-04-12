@@ -49,7 +49,13 @@ export function useFirestoreCollections() {
     _options: any = {}
   ): Promise<boolean> => {
     try {
-      await apiRequest('DELETE', `/api/watchlist/${filmId}`);
+      const items = await getWatchlist(_userId);
+      const item = items.find((i: any) => i.filmId === filmId);
+      if (!item?.id) {
+        console.warn(`Watchlist item with filmId ${filmId} not found`);
+        return false;
+      }
+      await apiRequest('DELETE', `/api/watchlist/${item.id}`);
       return true;
     } catch (err) {
       setError(err as Error);
@@ -63,7 +69,8 @@ export function useFirestoreCollections() {
   ): Promise<any[]> => {
     try {
       const res = await apiRequest('GET', '/api/watchlist');
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
     } catch (err) {
       setError(err as Error);
       return [];

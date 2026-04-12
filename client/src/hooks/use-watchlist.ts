@@ -3,16 +3,7 @@ import { queryClient, getQueryFn, apiRequest } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useErrorToast } from "@/lib/error-utils";
-
-interface WatchlistItem {
-  filmId: number;
-  title: string;
-  posterUrl?: string;
-  year?: number;
-  genres?: string[];
-  addedAt: string;
-  watched?: boolean;
-}
+import { WatchlistItem } from "@shared/schema";
 
 export function useWatchlist() {
   const { toast } = useToast();
@@ -20,15 +11,13 @@ export function useWatchlist() {
   const { user } = useAuth();
 
   const apiEndpoint = '/api/watchlist';
-  const apiAddEndpoint = '/api/watchlist/add';
-  const apiRemoveEndpoint = '/api/watchlist/remove';
 
   const {
-    data: watchlistData,
+    data: watchlistItems,
     isLoading: isLoadingWatchlist,
     refetch: refetchWatchlist,
     error: watchlistError,
-  } = useQuery<{ items: WatchlistItem[] }>({
+  } = useQuery<WatchlistItem[]>({
     queryKey: [apiEndpoint],
     queryFn: getQueryFn({
       on401: "returnNull",
@@ -41,8 +30,15 @@ export function useWatchlist() {
   });
 
   const addToWatchlistMutation = useMutation({
-    mutationFn: async (film: WatchlistItem) => {
-      const res = await apiRequest('POST', apiAddEndpoint, film);
+    mutationFn: async (film: {
+      filmId: number;
+      filmTitle: string;
+      filmYear?: number;
+      filmGenres?: string[];
+      filmPosterUrl?: string;
+      recommendationContext?: unknown;
+    }) => {
+      const res = await apiRequest('POST', apiEndpoint, film);
       return res.json();
     },
     onSuccess: () => {
@@ -58,8 +54,8 @@ export function useWatchlist() {
   });
 
   const removeFromWatchlistMutation = useMutation({
-    mutationFn: async (filmId: number) => {
-      const res = await apiRequest('DELETE', `${apiRemoveEndpoint}/${filmId}`);
+    mutationFn: async (id: number) => {
+      const res = await apiRequest('DELETE', `${apiEndpoint}/${id}`);
       return res.json();
     },
     onSuccess: () => {
@@ -74,22 +70,42 @@ export function useWatchlist() {
     },
   });
 
+  const updateWatchlistItemMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: number; updates: Partial<WatchlistItem> }) => {
+      const res = await apiRequest('PUT', `${apiEndpoint}/${id}`, updates);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [apiEndpoint] });
+    },
+    onError: (error: Error) => {
+      showErrorToast(error, "Failed to Update Watchlist Item");
+    },
+  });
+
   const isInWatchlist = (filmId: number): boolean => {
-    return watchlistData?.items.some((item) => item.filmId === filmId) || false;
+    return watchlistItems?.some((item) => item.filmId === filmId) || false;
+  };
+
+  const getWatchlistItem = (filmId: number): WatchlistItem | undefined => {
+    return watchlistItems?.find((item) => item.filmId === filmId);
   };
 
   return {
-    watchlist: watchlistData?.items || [],
+    watchlist: watchlistItems || [],
     isLoadingWatchlist,
     refetchWatchlist,
     watchlistError,
 
     addToWatchlist: addToWatchlistMutation.mutate,
     removeFromWatchlist: removeFromWatchlistMutation.mutate,
+    updateWatchlistItem: updateWatchlistItemMutation.mutate,
 
     isAddingToWatchlist: addToWatchlistMutation.isPending,
     isRemovingFromWatchlist: removeFromWatchlistMutation.isPending,
+    isUpdatingWatchlistItem: updateWatchlistItemMutation.isPending,
 
     isInWatchlist,
+    getWatchlistItem,
   };
 }
