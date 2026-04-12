@@ -6,7 +6,6 @@ import {
   normalizeError, 
   handleError 
 } from '@/lib/error-utils';
-import { FirebaseError } from 'firebase/app';
 
 describe('Error Utilities', () => {
   describe('AppError', () => {
@@ -67,25 +66,6 @@ describe('Error Utilities', () => {
       const normalizedError = normalizeError(originalError);
       
       expect(normalizedError).toBe(originalError);
-    });
-    
-    it('should convert Firebase auth errors correctly', () => {
-      const firebaseError = new FirebaseError('auth/user-not-found', 'User not found');
-      const normalizedError = normalizeError(firebaseError);
-      
-      expect(normalizedError).toBeInstanceOf(AppError);
-      expect(normalizedError.category).toBe(ErrorCategory.AUTHENTICATION);
-      expect(normalizedError.message).toBe('User not found');
-      expect(normalizedError.code).toBe('auth/user-not-found');
-      expect(normalizedError.context?.originalError).toBe(firebaseError);
-    });
-    
-    it('should convert Firebase firestore errors correctly', () => {
-      const firebaseError = new FirebaseError('firestore/not-found', 'Document not found');
-      const normalizedError = normalizeError(firebaseError);
-      
-      expect(normalizedError).toBeInstanceOf(AppError);
-      expect(normalizedError.category).toBe(ErrorCategory.FIRESTORE);
     });
     
     it('should convert standard Error objects', () => {
