@@ -896,27 +896,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Friends endpoint: Get user's friends for ChatRecommender
-  app.get('/api/friends', isAuthenticated, async (req, res) => {
-    try {
-      const userId = req.user!.id;
-      
-      const userFriends = await storage.getFriends(userId);
-      
-      // Transform to simple format for ChatRecommender
-      const friendsList = userFriends.map(friend => ({
-        id: friend.id,
-        name: friend.name || friend.email || `Friend ${friend.id}`,
-        email: friend.email || ''
-      }));
-      
-      res.json(friendsList);
-    } catch (error) {
-      console.error('Error fetching friends:', error);
-      res.status(500).json({ error: 'Failed to fetch friends' });
-    }
-  });
-
   // Chat endpoint: Process "Other" input using Claude
   app.post('/api/chat/process-other', isAuthenticated, async (req, res) => {
     try {
