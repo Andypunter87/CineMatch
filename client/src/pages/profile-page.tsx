@@ -4,23 +4,9 @@ import { Redirect } from "wouter";
 import { Loader2, Save, Edit2, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { queryClient } from "@/lib/queryClient";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -67,34 +53,13 @@ const countries = [
   "Sweden",
 ];
 
-// Password change schema
-const passwordChangeSchema = z.object({
-  currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string(),
-}).refine(data => data.newPassword === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"]
-});
-
-type PasswordChangeFormValues = z.infer<typeof passwordChangeSchema>;
-
 export default function ProfilePage() {
-  const { user, isLoading, updateStreamingMutation, updateCountryMutation, changePasswordMutation } = useAuth();
+  const { user, isLoading, updateStreamingMutation, updateCountryMutation } = useAuth();
   const { toast } = useToast();
   const [editingStreamingServices, setEditingStreamingServices] = useState(false);
   const [editingCountry, setEditingCountry] = useState(false);
   const [selectedServices, setSelectedServices] = useState<string[]>(user?.streamingServices || []);
   const [selectedCountry, setSelectedCountry] = useState<string>(user?.country || "");
-
-  const passwordForm = useForm<PasswordChangeFormValues>({
-    resolver: zodResolver(passwordChangeSchema),
-    defaultValues: {
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    },
-  });
 
   // If user is not authenticated, redirect to auth page
   if (!isLoading && !user) {
@@ -152,29 +117,6 @@ export default function ProfilePage() {
         toast({
           title: "Error",
           description: error.message || "Failed to update country.",
-          variant: "destructive",
-        });
-      }
-    });
-  };
-
-  // Handle password change
-  const onPasswordSubmit = (data: PasswordChangeFormValues) => {
-    changePasswordMutation.mutate({
-      currentPassword: data.currentPassword,
-      newPassword: data.newPassword
-    }, {
-      onSuccess: () => {
-        passwordForm.reset();
-        toast({
-          title: "Success",
-          description: "Your password has been changed.",
-        });
-      },
-      onError: (error) => {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to change password.",
           variant: "destructive",
         });
       }
@@ -375,68 +317,6 @@ export default function ProfilePage() {
           </div>
         </Card>
 
-        {/* Change Password */}
-        <Card className="p-6 shadow-lg border border-blue-50">
-          <h2 className="text-xl font-semibold mb-4">Change Password</h2>
-
-          <Form {...passwordForm}>
-            <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
-              <FormField
-                control={passwordForm.control}
-                name="currentPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Current Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={passwordForm.control}
-                name="newPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>New Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={passwordForm.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm New Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button 
-                type="submit" 
-                className="mt-2 bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
-                disabled={changePasswordMutation.isPending}
-              >
-                {changePasswordMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : null}
-                Change Password
-              </Button>
-            </form>
-          </Form>
-        </Card>
-        
         {/* Developer Tools - Only shown in development */}
         {import.meta.env.MODE !== 'production' && (
           <Card className="p-6 mt-6 shadow-lg border border-blue-50 bg-amber-50/30">

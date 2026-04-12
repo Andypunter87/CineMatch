@@ -1,319 +1,116 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth, loginSchema, registerSchema } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Mail, User, Lock } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { SiGoogle } from "react-icons/si";
 
 export default function AuthPage() {
-  const { user, loginMutation, registerMutation } = useAuth();
-  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
-  
-  // Login form
-  const loginForm = useForm({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
+  const { user } = useAuth();
 
-  // Register form
-  const registerForm = useForm({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      email: "",
-      name: "",
-      password: "",
-      confirmPassword: "",
-      acceptTerms: false,
-    },
-  });
-
-  const onLoginSubmit = (data: any) => {
-    loginMutation.mutate(data);
-  };
-
-  const onRegisterSubmit = (data: any) => {
-    registerMutation.mutate(data);
-  };
-
-  // Redirect if user is already logged in
   if (user) {
     return <Redirect to="/" />;
   }
 
+  const handleGoogleSignIn = () => {
+    window.location.href = "/api/auth/google";
+  };
+
   return (
     <div className="flex min-h-screen">
-      {/* Left side - Forms */}
+      {/* Left side - Sign in */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-8">
         <Card className="w-full max-w-md">
-          <CardHeader>
+          <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
               CineMatch
             </CardTitle>
             <CardDescription>
-              {activeTab === "login" 
-                ? "Sign in to get personalized movie recommendations"
-                : "Create an account for tailored movie recommendations"}
+              Sign in to get personalised movie recommendations
             </CardDescription>
           </CardHeader>
-          
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "register")}>
-            <TabsList className="grid w-80 max-w-full mx-auto grid-cols-2 mb-4">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
-            </TabsList>
-            
-            {/* Login Form */}
-            <TabsContent value="login">
-              <CardContent>
-                <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                    <FormField
-                      control={loginForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-                              <Input className="pl-10" type="email" placeholder="Enter your email" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={loginForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-                              <Input className="pl-10" type="password" placeholder="Enter your password" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
-                      disabled={loginMutation.isPending}
-                    >
-                      {loginMutation.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : null}
-                      Sign In
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-            </TabsContent>
-            
-            {/* Register Form */}
-            <TabsContent value="register">
-              <CardContent>
-                <Form {...registerForm}>
-                  <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
 
-                    
+          <CardContent className="flex flex-col items-center gap-4 pt-2">
+            <Button
+              data-testid="button-google-signin"
+              size="lg"
+              className="w-full gap-3 bg-white text-gray-800 border border-gray-300 hover:bg-gray-50 dark:bg-white dark:text-gray-800 dark:hover:bg-gray-50"
+              onClick={handleGoogleSignIn}
+            >
+              <SiGoogle className="h-5 w-5" />
+              Continue with Google
+            </Button>
 
-                    
-                    <FormField
-                      control={registerForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-                              <Input className="pl-10" type="email" placeholder="Enter your email" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={registerForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>First Name &amp; Last Name</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-                              <Input className="pl-10" placeholder="Your full name" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={registerForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-                              <Input className="pl-10" type="password" placeholder="Create a password" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={registerForm.control}
-                      name="confirmPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Confirm Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-                              <Input className="pl-10" type="password" placeholder="Confirm your password" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    {/* Removed country and streaming service fields - these will be set during onboarding */}
-                    
-                    <FormField
-                      control={registerForm.control}
-                      name="acceptTerms"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-3">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel className="text-sm font-normal">
-                              I agree to the{" "}
-                              <a 
-                                href="https://material-wave-7a1.notion.site/Terms-of-Service-1cde201190c980039e7cdecc08746433?pvs=4" 
-                                target="_blank" 
-                                className="text-blue-500 hover:underline"
-                              >
-                                Terms of Service
-                              </a>{" "}
-                              and{" "}
-                              <a 
-                                href="https://material-wave-7a1.notion.site/Privacy-Policy-1cde201190c980d4bb60d1ed8dff7b70?pvs=4" 
-                                target="_blank" 
-                                className="text-blue-500 hover:underline"
-                              >
-                                Privacy Policy
-                              </a>
-                            </FormLabel>
-                            <FormMessage />
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500"
-                      disabled={registerMutation.isPending}
-                    >
-                      {registerMutation.isPending ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : null}
-                      Create Account
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-            </TabsContent>
-          </Tabs>
-          
-          <CardFooter className="flex flex-col items-center justify-center pt-4">
-            <p className="text-sm text-slate-500">
-              {activeTab === "login" 
-                ? "Don't have an account?" 
-                : "Already have an account?"}
-              <Button 
-                variant="link" 
-                className="p-0 pl-1 text-blue-500" 
-                onClick={() => setActiveTab(activeTab === "login" ? "register" : "login")}
+            <p className="text-xs text-center text-slate-500 mt-2">
+              By signing in you agree to our{" "}
+              <a
+                href="https://material-wave-7a1.notion.site/Terms-of-Service-1cde201190c980039e7cdecc08746433?pvs=4"
+                target="_blank"
+                className="text-blue-500 hover:underline"
               >
-                {activeTab === "login" ? "Sign up" : "Sign in"}
-              </Button>
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a
+                href="https://material-wave-7a1.notion.site/Privacy-Policy-1cde201190c980d4bb60d1ed8dff7b70?pvs=4"
+                target="_blank"
+                className="text-blue-500 hover:underline"
+              >
+                Privacy Policy
+              </a>
+              .
             </p>
-          </CardFooter>
+          </CardContent>
         </Card>
       </div>
-      
-      {/* Right side - Hero section */}
+
+      {/* Right side - Hero */}
       <div className="hidden md:flex md:w-1/2 bg-gradient-to-b from-blue-400 to-cyan-500 flex-col justify-center items-center p-8 text-white">
         <div className="max-w-xl">
           <h1 className="text-4xl font-bold mb-4">The Right Movie For Right Now</h1>
           <p className="text-xl mb-6">
-            CineMatch uses advanced AI to recommend movies based on your mood, time availability, and preferences.
+            CineMatch uses advanced AI to recommend movies based on your mood, time
+            availability, and preferences.
           </p>
           <div className="space-y-4">
-            <div className="flex items-start">
-              <div className="bg-white/20 rounded-full p-2 mr-3">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
+            {[
+              {
+                title: "Personalised Recommendations",
+                desc: "Movies that match your unique preferences",
+                icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+              },
+              {
+                title: "Discover Hidden Gems",
+                desc: "Find amazing indie and foreign films",
+                icon: "M13 10V3L4 14h7v7l9-11h-7z",
+              },
+              {
+                title: "Connect Your Streaming Services",
+                desc: "Filter recommendations by what you can watch now",
+                icon: "M12 6v6m0 0v6m0-6h6m-6 0H6",
+              },
+            ].map((item) => (
+              <div key={item.title} className="flex items-start">
+                <div className="bg-white/20 rounded-full p-2 mr-3 shrink-0">
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d={item.icon}
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold">{item.title}</h3>
+                  <p className="text-white/80">{item.desc}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold">Personalized Recommendations</h3>
-                <p className="text-white/80">Movies that match your unique preferences</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <div className="bg-white/20 rounded-full p-2 mr-3">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold">Discover Hidden Gems</h3>
-                <p className="text-white/80">Find amazing indie and foreign films</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <div className="bg-white/20 rounded-full p-2 mr-3">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold">Connect Your Streaming Services</h3>
-                <p className="text-white/80">Filter recommendations by what you can watch now</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>

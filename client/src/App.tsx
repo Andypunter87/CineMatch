@@ -12,18 +12,8 @@ import PrivacyPage from "@/pages/privacy-page";
 import AdminDashboard from "@/pages/admin-dashboard";
 import FriendsPage from "@/pages/friends-page";
 import OnboardingPage from "@/pages/onboarding-page";
-import OnboardingTestPage from "@/pages/onboarding-test-page";
-import ErrorHandlingDemo from "@/pages/error-handling-demo";
-import FirestoreDemoPage from "@/pages/firestore-demo";
-import FirestoreTestReport from "@/pages/firestore-test-report";
-import FirebaseAuthDebug from "@/pages/firebase-auth-debug";
-import FirestoreTestPage from "@/pages/firestore-test-page";
-import FirestoreTestDebug from "@/pages/firestore-test-debug";
-import FirebaseTestPage from "@/pages/firebase-test-page";
-import FirebaseDiagnosticPage from "@/pages/firebase-diagnostic-page";
 import MoodCard from "@/pages/MoodCard";
 import ChatRecommenderPage from "@/pages/chat-recommender-page";
-import ChatDataDemo from "@/pages/ChatDataDemo";
 import { AuthProvider } from "@/hooks/use-auth";
 import { FirebaseAuthProvider } from "@/components/FirebaseAuthProvider";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -40,21 +30,11 @@ function Router() {
       <ProtectedRoute path="/friends" component={FriendsPage} />
       <ProtectedRoute path="/admin" component={AdminDashboard} adminOnly={true} />
       <ProtectedRoute path="/onboarding" component={OnboardingPage} />
-      <ProtectedRoute path="/onboarding-test" component={OnboardingTestPage} />
       <ProtectedRoute path="/chat" component={ChatRecommenderPage} />
-      <ProtectedRoute path="/chat-data-demo" component={ChatDataDemo} />
+      <ProtectedRoute path="/mymood/:year-:month" component={MoodCard} adminOnly={true} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
-      <Route path="/error-handling-demo" component={ErrorHandlingDemo} />
-      <ProtectedRoute path="/firestore-demo" component={FirestoreDemoPage} />
-      <ProtectedRoute path="/firestore-test-report" component={FirestoreTestReport} />
-      <ProtectedRoute path="/firebase-auth-debug" component={FirebaseAuthDebug} />
-      <ProtectedRoute path="/firestore-test" component={FirestoreTestPage} />
-      <ProtectedRoute path="/firestore-test-debug" component={FirestoreTestDebug} />
-      <ProtectedRoute path="/firebase-test" component={FirebaseTestPage} />
-      <ProtectedRoute path="/firebase-diagnostic" component={FirebaseDiagnosticPage} />
-      <ProtectedRoute path="/mymood/:year-:month" component={MoodCard} adminOnly={true} />
       <Route component={NotFound} />
     </Switch>
   );
