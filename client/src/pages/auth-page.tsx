@@ -25,7 +25,35 @@ export default function AuthPage() {
   }
 
   const handleGoogleSignIn = () => {
-    window.location.href = "/api/auth/google";
+    // Detect if we're running inside an iframe (e.g. Replit canvas preview).
+    // Google's OAuth page refuses to load inside iframes, so we use a popup
+    // in that case. For a direct browser visit we just navigate normally.
+    const inIframe = (() => {
+      try { return window.self !== window.top; } catch { return true; }
+    })();
+
+    if (inIframe) {
+      const w = 500, h = 650;
+      const left = Math.max(0, (window.screen.width  - w) / 2);
+      const top  = Math.max(0, (window.screen.height - h) / 2);
+      const popup = window.open(
+        "/api/auth/google",
+        "GoogleAuth",
+        `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`
+      );
+      if (popup) {
+        const check = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(check);
+            // After popup closes (whether auth succeeded or user dismissed),
+            // send the user home — the app will redirect back to /auth if still unauthed.
+            window.location.href = "/";
+          }
+        }, 500);
+      }
+    } else {
+      window.location.href = "/api/auth/google";
+    }
   };
 
   return (
@@ -63,8 +91,8 @@ export default function AuthPage() {
             welcome to
           </p>
           <h1
-            className="font-caveat font-bold text-ink"
-            style={{ fontSize: 52, lineHeight: 0.95, marginTop: 2 }}
+            className="font-nunito font-extrabold text-ink"
+            style={{ fontSize: 48, lineHeight: 0.95, marginTop: 2 }}
           >
             cinematch<span className="text-pink">.</span>
           </h1>
@@ -89,8 +117,8 @@ export default function AuthPage() {
             <Cine size={36} mood="happy" />
             <div>
               <p
-                className="font-caveat font-bold text-ink"
-                style={{ fontSize: 18, lineHeight: 1 }}
+                className="font-nunito font-extrabold text-ink"
+                style={{ fontSize: 16, lineHeight: 1 }}
               >
                 hi, i'm Cine!
               </p>

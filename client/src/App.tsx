@@ -20,6 +20,7 @@ import FilmDeckPage from "@/pages/film-deck-page";
 import PostWatchPage from "@/pages/post-watch-page";
 import GroupInvitePage from "@/pages/group-invite-page";
 import GroupJoinPage from "@/pages/group-join-page";
+import AuthSuccessPage from "@/pages/auth-success-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import Layout from "@/components/Layout";
@@ -48,6 +49,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
+      <Route path="/auth/success" component={AuthSuccessPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/g/:code" component={GroupJoinPage} />

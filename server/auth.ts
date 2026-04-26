@@ -166,8 +166,9 @@ export function setupAuth(app: Express) {
     },
     passport.authenticate("google", { failureRedirect: "/auth?error=google" }),
     (_req, res) => {
-      console.log("[OAuth callback] success — redirecting to /");
-      res.redirect("/");
+      console.log("[OAuth callback] success");
+      // If opened as a popup (/auth/success closes it & redirects opener)
+      res.redirect("/auth/success");
     }
   );
 
