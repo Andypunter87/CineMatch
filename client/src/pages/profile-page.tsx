@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
-import { Loader2, Save, Edit2, Check, X } from "lucide-react";
+import { Loader2, Save, Edit2, Check, X, Fingerprint } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,6 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CINEMATCH_FILMS, CINEMATCH_TAG_MAP, CinematchFilm } from "@/lib/films";
+import { StoredFingerprintProfile } from "@/lib/fingerprint";
 
 // Streaming services options (matching those in the questionnaire)
 const streamingServices = [
@@ -52,6 +54,125 @@ const countries = [
   "Netherlands",
   "Sweden",
 ];
+
+function getFingerprint(onboardingState: unknown): StoredFingerprintProfile | null {
+  if (!onboardingState || typeof onboardingState !== "object") return null;
+  const state = onboardingState as Record<string, unknown>;
+  const fp = state.fingerprint;
+  if (!fp || typeof fp !== "object") return null;
+  const f = fp as Record<string, unknown>;
+  if (typeof f.nickname !== "string" || !f.nickname) return null;
+  return {
+    nickname: f.nickname,
+    topTags: Array.isArray(f.topTags) ? (f.topTags as string[]) : [],
+    topFilmIds: Array.isArray(f.topFilmIds) ? (f.topFilmIds as number[]) : [],
+    genres: Array.isArray(f.genres) ? (f.genres as string[]) : [],
+    vibeTraits:
+      f.vibeTraits && typeof f.vibeTraits === "object"
+        ? (f.vibeTraits as StoredFingerprintProfile["vibeTraits"])
+        : undefined,
+    tagWeights:
+      f.tagWeights && typeof f.tagWeights === "object"
+        ? (f.tagWeights as Record<string, number>)
+        : undefined,
+    vibeProfile:
+      f.vibeProfile && typeof f.vibeProfile === "object"
+        ? (f.vibeProfile as Record<string, number>)
+        : undefined,
+  };
+}
+
+function CinematicFingerprintCard({ onboardingState }: { onboardingState: unknown }) {
+  const fp = getFingerprint(onboardingState);
+  if (!fp) return null;
+
+  const topTags = fp.topTags ?? [];
+  const topFilmIds = fp.topFilmIds ?? [];
+  const vibeTraits = fp.vibeTraits;
+
+  const signatureFilms: CinematchFilm[] = topFilmIds
+    .map((id) => CINEMATCH_FILMS.find((f) => f.id === id))
+    .filter((f): f is CinematchFilm => f !== undefined);
+
+  const traitLabels = topTags.slice(0, 5).map((tag) => {
+    const mapped = CINEMATCH_TAG_MAP[tag];
+    return mapped ? mapped.label : tag;
+  });
+
+  const dnaTraits: { label: string; value: string }[] = [
+    vibeTraits?.tone ? { label: "Tone", value: vibeTraits.tone } : null,
+    vibeTraits?.style ? { label: "Style", value: vibeTraits.style } : null,
+    vibeTraits?.pace ? { label: "Pace", value: vibeTraits.pace } : null,
+  ].filter((t): t is { label: string; value: string } => t !== null);
+
+  return (
+    <Card className="p-6 mb-6 shadow-lg border border-blue-50 bg-gradient-to-br from-primary/5 to-blue-50/60" data-testid="fingerprint-card">
+      <div className="flex items-center gap-2 mb-4">
+        <Fingerprint className="h-5 w-5 text-primary" />
+        <h2 className="text-xl font-semibold">My Cinematic Fingerprint</h2>
+      </div>
+
+      <div className="mb-4">
+        <p className="text-sm text-slate-500 mb-1">Your taste type</p>
+        <p className="text-2xl font-bold text-primary" data-testid="fingerprint-nickname">{fp.nickname}</p>
+      </div>
+
+      {traitLabels.length > 0 && (
+        <div className="mb-4">
+          <p className="text-sm text-slate-500 mb-2">Top traits</p>
+          <div className="flex flex-wrap gap-2" data-testid="fingerprint-traits">
+            {traitLabels.map((label) => (
+              <Badge key={label} className="bg-primary/10 text-primary border-primary/20 capitalize">
+                {label}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {dnaTraits.length > 0 && (
+        <div className="mb-4">
+          <p className="text-sm text-slate-500 mb-2">Cinematic DNA</p>
+          <div className="flex flex-wrap gap-3" data-testid="fingerprint-dna">
+            {dnaTraits.map(({ label, value }) => (
+              <div key={label} className="flex flex-col items-center bg-white rounded-lg px-3 py-2 border border-blue-100 shadow-sm min-w-[72px]">
+                <span className="text-xs text-slate-400 uppercase tracking-wide">{label}</span>
+                <span className="text-sm font-semibold text-slate-700 capitalize mt-0.5">{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {signatureFilms.length > 0 && (
+        <div>
+          <p className="text-sm text-slate-500 mb-2">Signature picks</p>
+          <div className="flex gap-3 flex-wrap" data-testid="fingerprint-films">
+            {signatureFilms.map((film) => (
+              <div key={film.id} className="flex flex-col items-center" data-testid={`fingerprint-film-${film.id}`}>
+                <div className="w-16 h-24 rounded-md overflow-hidden shadow-md border border-slate-200">
+                  {film.posterUrl ? (
+                    <img
+                      src={film.posterUrl}
+                      alt={film.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full"
+                      style={{ background: `linear-gradient(135deg, ${film.colors[0]}, ${film.colors[1]}, ${film.colors[2]})` }}
+                    />
+                  )}
+                </div>
+                <p className="text-xs text-slate-600 mt-1 text-center max-w-[64px] leading-tight">{film.title}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
 
 export default function ProfilePage() {
   const { user, isLoading, updateStreamingMutation, updateCountryMutation } = useAuth();
@@ -157,6 +278,9 @@ export default function ProfilePage() {
             </div>
           </div>
         </Card>
+
+        {/* Cinematic Fingerprint Card */}
+        <CinematicFingerprintCard onboardingState={user.onboardingState} />
 
         {/* Streaming Services Card */}
         <Card className="p-6 mb-6 shadow-lg border border-blue-50">

@@ -177,19 +177,25 @@ export function setupAuth(app: Express) {
     const { password, ...userWithoutPassword } = req.user as SelectUser;
 
     let needsOnboarding = true;
+    let parsedOnboardingState: Record<string, unknown> | null = null;
+
     if (userWithoutPassword.onboardingState) {
       try {
-        const onboardingState =
+        parsedOnboardingState =
           typeof userWithoutPassword.onboardingState === "string"
             ? JSON.parse(userWithoutPassword.onboardingState)
-            : userWithoutPassword.onboardingState;
-        needsOnboarding = !onboardingState.completed;
+            : (userWithoutPassword.onboardingState as Record<string, unknown>);
+        needsOnboarding = !parsedOnboardingState?.completed;
       } catch {
         needsOnboarding = true;
       }
     }
 
-    res.json({ ...userWithoutPassword, needsOnboarding } as any);
+    res.json({
+      ...userWithoutPassword,
+      onboardingState: parsedOnboardingState ?? userWithoutPassword.onboardingState,
+      needsOnboarding,
+    } as any);
   });
 
   app.put("/api/user/streaming", async (req, res, next) => {

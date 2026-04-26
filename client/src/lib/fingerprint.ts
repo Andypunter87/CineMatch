@@ -5,6 +5,20 @@ export interface FilmRatingInput {
   rating: number;
 }
 
+export interface StoredFingerprintProfile {
+  nickname: string;
+  topTags?: string[];
+  topFilmIds?: number[];
+  genres?: string[];
+  vibeTraits?: {
+    tone: string;
+    style: string;
+    pace: string;
+  };
+  tagWeights?: Record<string, number>;
+  vibeProfile?: Record<string, number>;
+}
+
 export interface CinematicFingerprint {
   nickname: string;
   topTags: string[];
