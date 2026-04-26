@@ -129,28 +129,6 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // ── Debug route — shows the exact OAuth URL + callback registered ─────────
-  app.get("/api/auth/debug", (_req, res) => {
-    res.json({
-      callbackURL,
-      clientIDPrefix: (process.env.GOOGLE_CLIENT_ID || "").slice(0, 12) + "...",
-      replit_dev_domain: process.env.REPLIT_DEV_DOMAIN || null,
-    });
-  });
-
-  // ── Session write test — verifies cookie+store round-trip ────────────────
-  app.get("/api/auth/session-test", (req: any, res) => {
-    req.session.testValue = Date.now();
-    req.session.save((err: any) => {
-      if (err) {
-        console.error("[session-test] save error:", err);
-        return res.status(500).json({ error: err.message });
-      }
-      console.log("[session-test] saved sid:", req.sessionID, "val:", req.session.testValue);
-      res.json({ ok: true, sid: req.sessionID, val: req.session.testValue });
-    });
-  });
-
   // ── OAuth routes ──────────────────────────────────────────────────────────
 
   app.get(
@@ -160,14 +138,8 @@ export function setupAuth(app: Express) {
 
   app.get(
     "/api/auth/google/callback",
-    (req, res, next) => {
-      console.log("[OAuth callback] hit — query:", JSON.stringify(req.query));
-      next();
-    },
     passport.authenticate("google", { failureRedirect: "/auth?error=google" }),
     (_req, res) => {
-      console.log("[OAuth callback] success");
-      // If opened as a popup (/auth/success closes it & redirects opener)
       res.redirect("/auth/success");
     }
   );
