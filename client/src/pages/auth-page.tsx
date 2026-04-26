@@ -63,7 +63,7 @@ export default function AuthPage() {
             welcome to
           </p>
           <h1
-            className="font-nunito font-extrabold text-ink"
+            className="font-caveat font-bold text-ink"
             style={{ fontSize: 52, lineHeight: 0.95, marginTop: 2 }}
           >
             cinematch<span className="text-pink">.</span>
@@ -89,7 +89,7 @@ export default function AuthPage() {
             <Cine size={36} mood="happy" />
             <div>
               <p
-                className="font-nunito font-extrabold text-ink"
+                className="font-caveat font-bold text-ink"
                 style={{ fontSize: 18, lineHeight: 1 }}
               >
                 hi, i'm Cine!
@@ -98,7 +98,7 @@ export default function AuthPage() {
                 className="font-nunito text-ink"
                 style={{ fontSize: 13, lineHeight: 1.35, marginTop: 3 }}
               >
-                sign in and i'll find your perfect film — just your vibe, no browsing.
+                sign in and i'll find your perfect film, just your vibe, no endless scrolling.
               </p>
             </div>
           </div>
