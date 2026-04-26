@@ -1,8 +1,21 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { SiGoogle } from "react-icons/si";
+import { Cine } from "@/components/ui/cinematch/Cine";
+import { FilmPoster } from "@/components/ui/cinematch/FilmPoster";
+import { PillBtn } from "@/components/ui/cinematch/PillBtn";
+
+const POSTER_STRIP: Array<{
+  colors: [string, string, string];
+  stripe: "horizontal" | "diagonal" | "vertical" | "burst" | "flame" | "splash" | "neon";
+  rotate: number;
+}> = [
+  { colors: ["#E8A4C4", "#F0C8A8", "#C8A0B4"], stripe: "horizontal", rotate: -6 },
+  { colors: ["#FF6B9D", "#FFB84D", "#4DBFB8"], stripe: "burst",      rotate: -3 },
+  { colors: ["#1A3A5C", "#4A6B8C", "#2C4C6D"], stripe: "diagonal",   rotate:  0 },
+  { colors: ["#E85D75", "#F4C2C2", "#A8455C"], stripe: "horizontal", rotate:  3 },
+  { colors: ["#E91E63", "#1A1A2E", "#16213E"], stripe: "neon",       rotate:  6 },
+];
 
 export default function AuthPage() {
   const { user } = useAuth();
@@ -16,103 +29,161 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-screen">
-      {/* Left side - Sign in */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-8">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
-              CineMatch
-            </CardTitle>
-            <CardDescription>
-              Sign in to get personalised movie recommendations
-            </CardDescription>
-          </CardHeader>
+    <div
+      className="flex flex-col items-center justify-center min-h-screen px-6 py-10"
+      style={{
+        background: "#FAF6EE",
+        backgroundImage: `
+          radial-gradient(circle at 15% 20%, rgba(255,201,60,0.12) 0%, transparent 40%),
+          radial-gradient(circle at 85% 70%, rgba(255,77,143,0.08) 0%, transparent 45%)
+        `,
+      }}
+    >
+      <div className="w-full max-w-sm flex flex-col gap-5">
+        {/* Poster strip */}
+        <div className="flex justify-center gap-1.5 mb-1">
+          {POSTER_STRIP.map((p, i) => (
+            <FilmPoster
+              key={i}
+              colors={p.colors}
+              stripe={p.stripe}
+              width={46}
+              height={64}
+              style={{ transform: `rotate(${p.rotate}deg)` }}
+            />
+          ))}
+        </div>
 
-          <CardContent className="flex flex-col items-center gap-4 pt-2">
-            <Button
-              data-testid="button-google-signin"
-              size="lg"
-              className="w-full gap-3 bg-white text-gray-800 border border-gray-300 hover:bg-gray-50 dark:bg-white dark:text-gray-800 dark:hover:bg-gray-50"
-              onClick={handleGoogleSignIn}
-            >
-              <SiGoogle className="h-5 w-5" />
-              Continue with Google
-            </Button>
-
-            <p className="text-xs text-center text-slate-500 mt-2">
-              By signing in you agree to our{" "}
-              <a
-                href="https://material-wave-7a1.notion.site/Terms-of-Service-1cde201190c980039e7cdecc08746433?pvs=4"
-                target="_blank"
-                className="text-blue-500 hover:underline"
-              >
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a
-                href="https://material-wave-7a1.notion.site/Privacy-Policy-1cde201190c980d4bb60d1ed8dff7b70?pvs=4"
-                target="_blank"
-                className="text-blue-500 hover:underline"
-              >
-                Privacy Policy
-              </a>
-              .
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Right side - Hero */}
-      <div className="hidden md:flex md:w-1/2 bg-gradient-to-b from-blue-400 to-cyan-500 flex-col justify-center items-center p-8 text-white">
-        <div className="max-w-xl">
-          <h1 className="text-4xl font-bold mb-4">The Right Movie For Right Now</h1>
-          <p className="text-xl mb-6">
-            CineMatch uses advanced AI to recommend movies based on your mood, time
-            availability, and preferences.
+        {/* Wordmark */}
+        <div>
+          <p
+            className="font-spaceMono text-inkSoft uppercase"
+            style={{ fontSize: 10, letterSpacing: "0.2em" }}
+          >
+            welcome to
           </p>
-          <div className="space-y-4">
-            {[
-              {
-                title: "Personalised Recommendations",
-                desc: "Movies that match your unique preferences",
-                icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
-              },
-              {
-                title: "Discover Hidden Gems",
-                desc: "Find amazing indie and foreign films",
-                icon: "M13 10V3L4 14h7v7l9-11h-7z",
-              },
-              {
-                title: "Connect Your Streaming Services",
-                desc: "Filter recommendations by what you can watch now",
-                icon: "M12 6v6m0 0v6m0-6h6m-6 0H6",
-              },
-            ].map((item) => (
-              <div key={item.title} className="flex items-start">
-                <div className="bg-white/20 rounded-full p-2 mr-3 shrink-0">
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d={item.icon}
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold">{item.title}</h3>
-                  <p className="text-white/80">{item.desc}</p>
-                </div>
-              </div>
-            ))}
+          <h1
+            className="font-caveat font-bold text-ink"
+            style={{ fontSize: 52, lineHeight: 0.95, marginTop: 2 }}
+          >
+            cinematch<span className="text-pink">.</span>
+          </h1>
+          <p
+            className="font-nunito text-inkSoft"
+            style={{ fontSize: 14, lineHeight: 1.35, marginTop: 8 }}
+          >
+            find a film that fits tonight — no scrolling, just your vibe.
+          </p>
+        </div>
+
+        {/* Cine intro card */}
+        <div
+          className="bg-paper2 rounded-2xl"
+          style={{
+            border: "2px solid #1A1A1A",
+            padding: "12px 14px",
+            boxShadow: "3px 3px 0 #1A1A1A",
+          }}
+        >
+          <div className="flex gap-2.5 items-start">
+            <Cine size={36} mood="happy" />
+            <div>
+              <p
+                className="font-caveat font-bold text-ink"
+                style={{ fontSize: 18, lineHeight: 1 }}
+              >
+                hi, i'm Cine!
+              </p>
+              <p
+                className="font-nunito text-ink"
+                style={{ fontSize: 13, lineHeight: 1.35, marginTop: 3 }}
+              >
+                sign in and i'll find your perfect film — just your vibe, no browsing.
+              </p>
+            </div>
           </div>
         </div>
+
+        {/* Auth section */}
+        <div className="flex flex-col gap-3">
+          <p
+            className="font-spaceMono text-inkSoft uppercase"
+            style={{ fontSize: 10, letterSpacing: "0.2em" }}
+          >
+            create your account
+          </p>
+
+          {/* Google SSO button */}
+          <button
+            data-testid="button-google-signin"
+            onClick={handleGoogleSignIn}
+            className="w-full flex items-center gap-3.5 bg-paper text-ink rounded-full"
+            style={{
+              padding: "13px 18px",
+              border: "2px solid #1A1A1A",
+              boxShadow: "3px 3px 0 #1A1A1A",
+              cursor: "pointer",
+              transition: "transform 0.08s, box-shadow 0.08s",
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = "translate(2px,2px)";
+              e.currentTarget.style.boxShadow = "1px 1px 0 #1A1A1A";
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = "";
+              e.currentTarget.style.boxShadow = "3px 3px 0 #1A1A1A";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "";
+              e.currentTarget.style.boxShadow = "3px 3px 0 #1A1A1A";
+            }}
+          >
+            <div
+              className="flex items-center justify-center flex-shrink-0"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                background: "#4285F422",
+                border: "1.5px solid #4285F444",
+              }}
+            >
+              <SiGoogle size={16} color="#4285F4" />
+            </div>
+            <span
+              className="font-nunito font-bold text-ink flex-1 text-left"
+              style={{ fontSize: 15 }}
+            >
+              Continue with Google
+            </span>
+          </button>
+        </div>
+
+        {/* Footer */}
+        <p
+          className="font-spaceMono text-center text-inkLight"
+          style={{ fontSize: 9, letterSpacing: "0.05em", lineHeight: 1.7 }}
+        >
+          by continuing you agree to our
+          <br />
+          <a
+            href="https://material-wave-7a1.notion.site/Terms-of-Service-1cde201190c980039e7cdecc08746433?pvs=4"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            terms of service
+          </a>
+          {" · "}
+          <a
+            href="https://material-wave-7a1.notion.site/Privacy-Policy-1cde201190c980d4bb60d1ed8dff7b70?pvs=4"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            privacy policy
+          </a>
+        </p>
       </div>
     </div>
   );

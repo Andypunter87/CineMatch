@@ -20,21 +20,31 @@ import Layout from "@/components/Layout";
 import CookieConsent from "@/components/CookieConsent";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 
+function AppShellRoutes() {
+  return (
+    <Layout>
+      <Switch>
+        <ProtectedRoute path="/" component={Home} />
+        <ProtectedRoute path="/profile" component={ProfilePage} />
+        <ProtectedRoute path="/watchlist" component={WatchlistPage} />
+        <ProtectedRoute path="/friends" component={FriendsPage} />
+        <ProtectedRoute path="/admin" component={AdminDashboard} adminOnly={true} />
+        <ProtectedRoute path="/onboarding" component={OnboardingPage} />
+        <ProtectedRoute path="/chat" component={ChatRecommenderPage} />
+        <ProtectedRoute path="/mymood/:year-:month" component={MoodCard} adminOnly={true} />
+        <Route component={NotFound} />
+      </Switch>
+    </Layout>
+  );
+}
+
 function Router() {
   return (
     <Switch>
-      <ProtectedRoute path="/" component={Home} />
-      <ProtectedRoute path="/profile" component={ProfilePage} />
-      <ProtectedRoute path="/watchlist" component={WatchlistPage} />
-      <ProtectedRoute path="/friends" component={FriendsPage} />
-      <ProtectedRoute path="/admin" component={AdminDashboard} adminOnly={true} />
-      <ProtectedRoute path="/onboarding" component={OnboardingPage} />
-      <ProtectedRoute path="/chat" component={ChatRecommenderPage} />
-      <ProtectedRoute path="/mymood/:year-:month" component={MoodCard} adminOnly={true} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
-      <Route component={NotFound} />
+      <Route component={AppShellRoutes} />
     </Switch>
   );
 }
@@ -44,11 +54,9 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-            <Layout>
-              <Router />
-            </Layout>
-            <CookieConsent />
-            <Toaster />
+          <Router />
+          <CookieConsent />
+          <Toaster />
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

@@ -189,6 +189,29 @@ This is the equivalent of `npm run ios` — it rebuilds the web app, syncs asset
 - The Replit web preview continues to work normally using the Vite dev server — the Capacitor setup only affects the native iOS build.
 - To replace placeholder icons/splash screens, swap out the PNG files in `ios/App/App/Assets.xcassets/` and re-run `npx cap sync ios`.
 
+## Design System (Cinematch Rebrand — April 2026)
+
+### Brand Tokens
+- **Colours**: paper (#FAF6EE), paper2 (#F3ECDA), ink (#1A1A1A), inkSoft (#4A4A4A), inkLight (#8A8478), plus cine.pink/yellow/blue/mint/lilac/coral
+- **Typography**: Caveat 700 (display), Nunito 400–700 (body/default sans), Space Mono 400/700 (labels/meta)
+- **Shadow style**: hard offset (3px 3px 0 #1A1A1A), no blur, no dark mode
+
+### New Files
+- `client/src/components/ui/cinematch/Cine.tsx` — yellow circle mascot, configurable size + mood
+- `client/src/components/ui/cinematch/CineBubble.tsx` — speech bubble with hard shadow
+- `client/src/components/ui/cinematch/PillBtn.tsx` — pill button (primary / outline / ghost variants)
+- `client/src/components/ui/cinematch/Chip.tsx` — small pill tags with colour variants
+- `client/src/components/ui/cinematch/FilmPoster.tsx` — CSS-gradient striped poster generator
+- `client/src/components/BottomNav.tsx` — sticky bottom tab bar (Home · Watchlist · Profile)
+
+### Updated Files
+- `client/index.html` — Google Fonts: Caveat + Nunito + Space Mono
+- `tailwind.config.ts` — brand colour names + fontFamily entries
+- `client/src/index.css` — warm cream CSS variables, no dark mode variables
+- `client/src/pages/auth-page.tsx` — full redesign: poster strip, Caveat wordmark, Cine card, Google SSO pill
+- `client/src/components/Header.tsx` — sticky cream header, Caveat wordmark, Cine-yellow user avatar
+- `client/src/components/Layout.tsx` — uses BottomNav instead of Footer
+
 ## Changelog
 - June 23, 2025: Implemented chat data persistence to Firestore
   - Created useChatPersistence hook for saving chat sessions and vibe preferences

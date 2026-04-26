@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import Header from "./Header";
-import Footer from "./Footer";
+import BottomNav from "./BottomNav";
 
 interface LayoutProps {
   children: ReactNode;
@@ -9,12 +9,15 @@ interface LayoutProps {
 
 export default function Layout({ children, hideFooter = false }: LayoutProps) {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div
+      className="flex flex-col min-h-screen"
+      style={{ background: "#FAF6EE" }}
+    >
       <Header />
-      <main className="flex-grow bg-white">
+      <main className="flex-grow" style={{ background: "#FAF6EE" }}>
         {children}
       </main>
-      {!hideFooter && <Footer />}
+      {!hideFooter && <BottomNav />}
     </div>
   );
 }
