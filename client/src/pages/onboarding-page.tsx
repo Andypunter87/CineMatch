@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { useState, useEffect, useMemo } from 'react';
+import { useLocation, useSearch } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
 import { User } from '@shared/schema';
 import { HowItWorks } from '../components/onboarding/HowItWorks';
@@ -14,8 +14,15 @@ type OnboardingStep = 'how-it-works' | 'taste-test' | 'fingerprint';
 
 const OnboardingPage = () => {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const { user } = useAuth();
-  const [step, setStep] = useState<OnboardingStep>('how-it-works');
+
+  const isRetake = useMemo(() => {
+    const params = new URLSearchParams(search);
+    return params.get('retake') === '1';
+  }, [search]);
+
+  const [step, setStep] = useState<OnboardingStep>(isRetake ? 'taste-test' : 'how-it-works');
   const [picks, setPicks] = useState<FilmPick[]>([]);
 
   useEffect(() => {
@@ -23,11 +30,12 @@ const OnboardingPage = () => {
       setLocation('/auth');
       return;
     }
-    // Returning users who have already completed onboarding go straight to home
-    if ((user as AuthUser).needsOnboarding === false) {
+    // Returning users who have already completed onboarding go straight to home,
+    // unless they're explicitly retaking the taste test from their profile.
+    if (!isRetake && (user as AuthUser).needsOnboarding === false) {
       setLocation('/');
     }
-  }, [user, setLocation]);
+  }, [user, setLocation, isRetake]);
 
   const handleTasteTestComplete = (filmPicks: FilmPick[]) => {
     setPicks(filmPicks);
@@ -36,11 +44,11 @@ const OnboardingPage = () => {
 
   const handleRestart = () => {
     setPicks([]);
-    setStep('how-it-works');
+    setStep(isRetake ? 'taste-test' : 'how-it-works');
   };
 
   if (!user) return null;
-  if ((user as AuthUser).needsOnboarding === false) return null;
+  if (!isRetake && (user as AuthUser).needsOnboarding === false) return null;
 
   if (step === 'how-it-works') {
     return <HowItWorks onStart={() => setStep('taste-test')} />;
@@ -54,6 +62,7 @@ const OnboardingPage = () => {
     <FingerprintScreen
       picks={picks}
       onRestart={handleRestart}
+      retakeMode={isRetake}
     />
   );
 };

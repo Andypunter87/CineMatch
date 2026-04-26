@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { computeFingerprint } from '@/lib/fingerprint';
 import { CINEMATCH_FILMS, getStripeGradient, CinematchFilm } from '@/lib/films';
@@ -8,6 +9,7 @@ import { FilmPick } from './TasteTest';
 interface FingerprintScreenProps {
   picks: FilmPick[];
   onRestart: () => void;
+  retakeMode?: boolean;
 }
 
 function MiniPoster({ film, rot }: { film: CinematchFilm; rot: number }) {
@@ -46,7 +48,8 @@ function TraitRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function FingerprintScreen({ picks, onRestart }: FingerprintScreenProps) {
+export function FingerprintScreen({ picks, onRestart, retakeMode = false }: FingerprintScreenProps) {
+  const [, setLocation] = useLocation();
   const fp = computeFingerprint(picks);
   const sigFilms = fp.topFilmIds
     .map(id => CINEMATCH_FILMS.find(f => f.id === id))
@@ -69,6 +72,11 @@ export function FingerprintScreen({ picks, onRestart }: FingerprintScreenProps) 
       : "you haven't seen many of those — perfect. we'll start fresh and find what fits.";
 
   const pendingDoneRef = useRef(false);
+
+  const finishRetake = () => {
+    queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+    setLocation('/profile');
+  };
 
   const completeOnboardingMutation = useMutation({
     mutationFn: async () => {
@@ -116,15 +124,26 @@ export function FingerprintScreen({ picks, onRestart }: FingerprintScreenProps) 
       });
     },
     onSuccess: () => {
+      if (retakeMode) {
+        queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      }
       if (pendingDoneRef.current) {
         pendingDoneRef.current = false;
-        completeOnboardingMutation.mutate();
+        if (retakeMode) {
+          finishRetake();
+        } else {
+          completeOnboardingMutation.mutate();
+        }
       }
     },
     onError: () => {
       if (pendingDoneRef.current) {
         pendingDoneRef.current = false;
-        completeOnboardingMutation.mutate();
+        if (retakeMode) {
+          finishRetake();
+        } else {
+          completeOnboardingMutation.mutate();
+        }
       }
     },
   });
@@ -136,6 +155,8 @@ export function FingerprintScreen({ picks, onRestart }: FingerprintScreenProps) 
   const handleDone = () => {
     if (savePreferencesMutation.isPending) {
       pendingDoneRef.current = true;
+    } else if (retakeMode) {
+      finishRetake();
     } else {
       completeOnboardingMutation.mutate();
     }
@@ -277,7 +298,13 @@ export function FingerprintScreen({ picks, onRestart }: FingerprintScreenProps) 
             className="w-full font-nunito font-bold text-[18px] text-paper bg-ink rounded-full py-3.5 leading-none disabled:opacity-60"
             style={{ border: '2px solid #1A1A1A', boxShadow: '3px 3px 0 #1A1A1A' }}
           >
-            {completeOnboardingMutation.isPending ? 'loading…' : savePreferencesMutation.isPending ? 'saving…' : 'find my first film →'}
+            {completeOnboardingMutation.isPending
+              ? 'loading…'
+              : savePreferencesMutation.isPending
+                ? 'saving…'
+                : retakeMode
+                  ? 'back to profile →'
+                  : 'find my first film →'}
           </button>
           <div className="flex gap-2.5 justify-center">
             <button

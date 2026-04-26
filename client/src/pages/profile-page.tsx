@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect } from "wouter";
-import { Loader2, Save, Edit2, Check, X, Fingerprint } from "lucide-react";
+import { Redirect, Link } from "wouter";
+import { Loader2, Save, Edit2, Check, X, Fingerprint, RefreshCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -107,9 +107,21 @@ function CinematicFingerprintCard({ onboardingState }: { onboardingState: unknow
 
   return (
     <Card className="p-6 mb-6 shadow-lg border border-blue-50 bg-gradient-to-br from-primary/5 to-blue-50/60" data-testid="fingerprint-card">
-      <div className="flex items-center gap-2 mb-4">
-        <Fingerprint className="h-5 w-5 text-primary" />
-        <h2 className="text-xl font-semibold">My Cinematic Fingerprint</h2>
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2">
+          <Fingerprint className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-semibold">My Cinematic Fingerprint</h2>
+        </div>
+        <Link href="/onboarding?retake=1">
+          <Button
+            variant="outline"
+            size="sm"
+            data-testid="button-retake-taste-test"
+          >
+            <RefreshCcw className="h-4 w-4 mr-2" />
+            Retake
+          </Button>
+        </Link>
       </div>
 
       <div className="mb-4">
