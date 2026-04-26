@@ -141,7 +141,7 @@ export const FEEL_MAP: Record<string, Partial<Record<string, number>>> = {
   swoony:      { romantic: 2, cosy: 1 },
 };
 
-const FLAVOUR_MAP: Record<string, Partial<Record<string, number>>> = {
+export const FLAVOUR_MAP: Record<string, Partial<Record<string, number>>> = {
   'neon + rain': { tense: 2, thinky: 1 },
   'cosy':        { cosy: 2, funny: 1 },
   'slow burn':   { thinky: 2, romantic: 1 },

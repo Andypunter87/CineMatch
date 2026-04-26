@@ -154,6 +154,7 @@ export interface IStorage {
   joinGroupSession(sessionId: number, member: Omit<InsertGroupSessionMember, 'sessionId'>): Promise<GroupSessionMember>;
   markMemberReady(sessionId: number, userId: number): Promise<GroupSessionMember>;
   getSessionGroupTaste(sessionId: number): Promise<Record<string, number>>;
+  saveMemberReelSelections(memberId: number, reels: Array<{ i: number; opts: string[] }>): Promise<void>;
 
   sessionStore: any; // Using any for session store to avoid type issues
 }
@@ -1533,14 +1534,12 @@ export class DatabaseStorage implements IStorage {
         .insert(groupSessions)
         .values(sessionData)
         .returning();
-      if (sessionData.hostUserId) {
-        await db.insert(groupSessionMembers).values({
-          sessionId: created.id,
-          userId: sessionData.hostUserId,
-          displayName: null,
-          status: "ready",
-        });
-      }
+      await db.insert(groupSessionMembers).values({
+        sessionId: created.id,
+        userId: sessionData.hostUserId ?? null,
+        displayName: sessionData.hostUserId ? null : 'Host',
+        status: "ready",
+      });
       return created;
     } catch (error) {
       console.error("Error creating group session:", error);
@@ -1633,6 +1632,18 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error marking member ready:", error);
       throw new Error("Failed to mark member ready");
+    }
+  }
+
+  async saveMemberReelSelections(memberId: number, reels: Array<{ i: number; opts: string[] }>): Promise<void> {
+    try {
+      await db
+        .update(groupSessionMembers)
+        .set({ reelSelections: reels })
+        .where(eq(groupSessionMembers.id, memberId));
+    } catch (error) {
+      console.error("Error saving member reel selections:", error);
+      throw new Error("Failed to save reel selections");
     }
   }
 

@@ -32,6 +32,7 @@ export async function createRecommenderTables() {
         "status" TEXT NOT NULL DEFAULT 'waiting',
         "joined_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE "group_session_members" ADD COLUMN IF NOT EXISTS "reel_selections" JSONB;
     `);
 
     console.log("Recommender tables ready");

@@ -86,10 +86,16 @@ export default function GroupJoinPage() {
         body: JSON.stringify({ displayName: trimmedName, sessionCode: code }),
       });
       if (!r.ok) throw new Error(`join failed: ${r.status}`);
+      const joinData = await r.json();
       setMembers(prev => [...prev, { name: trimmedName, color: C.yellow, ready: true, isMe: true }]);
       setJoined(true);
       setTimeout(() => {
-        localStorage.setItem('cinematch_session', JSON.stringify({ sessionId: resolvedSessionId, sessionCode: code }));
+        localStorage.setItem('cinematch_session', JSON.stringify({
+          sessionId: resolvedSessionId,
+          sessionCode: code,
+          memberId: joinData?.member?.id ?? null,
+          displayName: trimmedName,
+        }));
         setLocation('/group/slot');
       }, 900);
     } catch {

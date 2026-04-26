@@ -2037,7 +2037,9 @@ Sitemap: ${baseUrl}/sitemap.xml`);
         return res.status(500).json({ message: 'Failed to generate unique session code' });
       }
       const link = `${req.headers.origin || ''}/g/${session.sessionCode}`;
-      res.status(201).json({ sessionId: session.id, sessionCode: session.sessionCode, link });
+      const fullSession = await storage.getGroupSession(session.id);
+      const hostMember = fullSession?.members.find(m => m.userId === hostUserId);
+      res.status(201).json({ sessionId: session.id, sessionCode: session.sessionCode, link, memberId: hostMember?.id ?? null });
     } catch (error) {
       console.error('Error creating session:', error);
       res.status(500).json({ message: 'Failed to create session' });
@@ -2106,6 +2108,32 @@ Sitemap: ${baseUrl}/sitemap.xml`);
     } catch (error) {
       console.error('Error joining session:', error);
       res.status(500).json({ message: 'Failed to join session' });
+    }
+  });
+
+  // POST /api/sessions/:id/reels — save a member's reel selections
+  // Requires sessionCode as proof of session membership to prevent IDOR overwrites
+  app.post('/api/sessions/:id/reels', async (req: Request, res: Response) => {
+    try {
+      const sessionId = parseInt(req.params.id, 10);
+      if (isNaN(sessionId)) return res.status(400).json({ message: 'Invalid session id' });
+      const memberId = typeof req.body.memberId === 'number' ? req.body.memberId : parseInt(req.body.memberId, 10);
+      const sessionCode = typeof req.body.sessionCode === 'string' ? req.body.sessionCode.trim() : null;
+      const reels = req.body.reels;
+      if (isNaN(memberId) || !sessionCode || !Array.isArray(reels)) {
+        return res.status(400).json({ message: 'memberId, sessionCode, and reels are required' });
+      }
+      const session = await storage.getGroupSession(sessionId);
+      if (!session || session.sessionCode !== sessionCode) {
+        return res.status(403).json({ message: 'Invalid session or session code' });
+      }
+      const member = session.members.find(m => m.id === memberId);
+      if (!member) return res.status(403).json({ message: 'Member does not belong to this session' });
+      await storage.saveMemberReelSelections(memberId, reels);
+      res.json({ ok: true });
+    } catch (error) {
+      console.error('Error saving reel selections:', error);
+      res.status(500).json({ message: 'Failed to save reel selections' });
     }
   });
 

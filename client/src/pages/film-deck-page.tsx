@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { C, CATALOGUE_FILMS, getPosterBackground, getStreamingUrl, WHY_TEXT, type CatalogueFilm } from "@/lib/cinema-catalogue";
+import { C, CATALOGUE_FILMS, getPosterBackground, getStreamingUrl, WHY_TEXT, FEEL_MAP, FLAVOUR_MAP, matchFilmsGroup, type CatalogueFilm } from "@/lib/cinema-catalogue";
 
 function Chip({ text, color }: { text: string; color?: string }) {
   return (
@@ -38,13 +38,32 @@ function VibeBars({ film }: { film: CatalogueFilm }) {
   );
 }
 
+function blendMemberReels(members: Array<{ reelSelections?: Array<{ i: number; opts: string[] }> | null }>): Record<string, number> {
+  const TASTE_KEYS = ['cosy', 'thinky', 'funny', 'tense', 'romantic'];
+  const totals: Record<string, number> = Object.fromEntries(TASTE_KEYS.map(k => [k, 0]));
+  let count = 0;
+  for (const m of members) {
+    if (!m.reelSelections || m.reelSelections.length < 2) continue;
+    const feel = m.reelSelections[0]?.opts?.[m.reelSelections[0].i] ?? '';
+    const flavour = m.reelSelections[1]?.opts?.[m.reelSelections[1].i] ?? '';
+    const feelWants = FEEL_MAP[feel] || {};
+    const flavourWants = FLAVOUR_MAP[flavour] || {};
+    for (const k of TASTE_KEYS) {
+      totals[k] += ((feelWants[k] || 0) * 33) + ((flavourWants[k] || 0) * 22);
+    }
+    count++;
+  }
+  if (count === 0) return { cosy: 60, thinky: 55, funny: 65, tense: 40, romantic: 55 };
+  return Object.fromEntries(TASTE_KEYS.map(k => [k, Math.min(100, Math.round(totals[k] / count))]));
+}
+
 export default function FilmDeckPage() {
   const [, setLocation] = useLocation();
-  const films: CatalogueFilm[] = (() => {
+  const [films, setFilms] = useState<CatalogueFilm[]>(() => {
     try {
       return JSON.parse(localStorage.getItem('cinematch_films') || '[]');
     } catch { return CATALOGUE_FILMS.slice(0, 5); }
-  })();
+  });
 
   const reelsRaw = (() => {
     try { return JSON.parse(localStorage.getItem('cinematch_reels') || '[]'); } catch { return []; }
@@ -57,6 +76,40 @@ export default function FilmDeckPage() {
   const [watching, setWatching] = useState(false);
   const [posterErrors, setPosterErrors] = useState<Record<number, boolean>>({});
   const dragRef = useRef({ x: 0, active: false });
+
+  useEffect(() => {
+    if (!isGroup) return;
+    let cancelled = false;
+    let prevReelsSnapshot = '';
+
+    function fetchAndBlend() {
+      try {
+        const session = JSON.parse(localStorage.getItem('cinematch_session') || 'null');
+        const sessionCode = session?.sessionCode;
+        if (!sessionCode) return;
+        fetch(`/api/sessions/${sessionCode}`)
+          .then(r => r.ok ? r.json() : null)
+          .then((data: { members?: Array<{ reelSelections?: Array<{ i: number; opts: string[] }> | null }> } | null) => {
+            if (cancelled || !data?.members) return;
+            const membersWithReels = data.members.filter(m => m.reelSelections && m.reelSelections.length >= 2);
+            if (membersWithReels.length === 0) return;
+            const snapshot = JSON.stringify(membersWithReels.map(m => m.reelSelections));
+            if (snapshot !== prevReelsSnapshot) {
+              prevReelsSnapshot = snapshot;
+              const blendedTaste = blendMemberReels(membersWithReels);
+              const updatedFilms = matchFilmsGroup(reelsRaw, blendedTaste);
+              setFilms(updatedFilms);
+            }
+          })
+          .catch(() => {});
+      } catch {}
+    }
+
+    fetchAndBlend();
+    const poll = setInterval(fetchAndBlend, 5000);
+    return () => { cancelled = true; clearInterval(poll); };
+  }, [isGroup]);
+
   const [dragX, setDragX] = useState(0);
   const [flying, setFlying] = useState<'left' | 'right' | null>(null);
 

@@ -72,6 +72,21 @@ export default function SlotMachinePage({ isGroup = false }: SlotMachinePageProp
     localStorage.setItem('cinematch_reels', JSON.stringify(reelData));
     localStorage.setItem('cinematch_films', JSON.stringify(films));
     localStorage.setItem('cinematch_is_group', isGroup ? '1' : '0');
+    if (isGroup) {
+      try {
+        const session = JSON.parse(localStorage.getItem('cinematch_session') || 'null');
+        const memberId = session?.memberId;
+        const sessionId = session?.sessionId;
+        const sessionCode = session?.sessionCode;
+        if (memberId && sessionId && sessionCode) {
+          fetch(`/api/sessions/${sessionId}/reels`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ memberId, sessionCode, reels: reelData }),
+          }).catch(() => {});
+        }
+      } catch {}
+    }
     setLocation('/loading');
   }
 

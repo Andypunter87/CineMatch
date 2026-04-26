@@ -274,6 +274,7 @@ export const groupSessionMembers = pgTable("group_session_members", {
   displayName: text("display_name"),
   status: text("status").notNull().default("waiting"),
   joinedAt: timestamp("joined_at").defaultNow(),
+  reelSelections: jsonb("reel_selections").$type<Array<{ i: number; opts: string[] }>>(),
 });
 
 // =====================
