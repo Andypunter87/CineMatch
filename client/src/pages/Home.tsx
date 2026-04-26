@@ -1,11 +1,37 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { C } from "@/lib/cinema-catalogue";
+import { CINEMATCH_TAG_MAP } from "@/lib/films";
+
+type FingerprintSummary = {
+  nickname: string;
+  topTraitLabel: string | null;
+};
+
+function getFingerprintSummary(onboardingState: unknown): FingerprintSummary | null {
+  if (!onboardingState || typeof onboardingState !== "object") return null;
+  const state = onboardingState as Record<string, unknown>;
+  const fp = state.fingerprint;
+  if (!fp || typeof fp !== "object") return null;
+  const f = fp as Record<string, unknown>;
+  if (typeof f.nickname !== "string" || !f.nickname) return null;
+  const topTags = Array.isArray(f.topTags) ? (f.topTags as string[]) : [];
+  const firstTag = topTags[0];
+  const topTraitLabel = firstTag
+    ? (CINEMATCH_TAG_MAP[firstTag]?.label ?? firstTag)
+    : null;
+  return { nickname: f.nickname, topTraitLabel };
+}
 
 export default function Home() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+
+  const fingerprint = useMemo(
+    () => getFingerprintSummary(user?.onboardingState),
+    [user],
+  );
 
   useEffect(() => {
     if (user) {
@@ -52,6 +78,49 @@ export default function Home() {
             margin: 0,
             color: C.ink,
           }}>who's watching?</h1>
+          {fingerprint ? (
+            <div
+              data-testid="fingerprint-greeting"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                marginTop: 10,
+                padding: '6px 10px',
+                background: C.paper,
+                border: `1.5px solid ${C.ink}`,
+                borderRadius: 999,
+                boxShadow: `2px 2px 0 ${C.ink}`,
+                fontFamily: 'Nunito, sans-serif',
+                fontSize: 12,
+                fontWeight: 700,
+                color: C.ink,
+                maxWidth: '100%',
+              }}
+            >
+              <span aria-hidden style={{ fontSize: 14 }}>🎬</span>
+              <span data-testid="text-fingerprint-nickname">
+                picks for the {fingerprint.nickname}
+              </span>
+              {fingerprint.topTraitLabel && (
+                <span
+                  data-testid="text-fingerprint-top-trait"
+                  style={{
+                    fontWeight: 700,
+                    textTransform: 'lowercase',
+                    color: C.ink,
+                    background: C.yellow,
+                    border: `1.5px solid ${C.ink}`,
+                    borderRadius: 999,
+                    padding: '1px 8px',
+                    marginLeft: 2,
+                  }}
+                >
+                  {fingerprint.topTraitLabel}
+                </span>
+              )}
+            </div>
+          ) : null}
           <p style={{
             fontFamily: 'Nunito, sans-serif',
             fontSize: 14,
