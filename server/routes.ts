@@ -1922,6 +1922,120 @@ Sitemap: ${baseUrl}/sitemap.xml`);
     }
   });
 
+  // POST /api/watch-choices — log that a user chose to watch a film
+  app.post('/api/watch-choices', async (req: Request, res: Response) => {
+    try {
+      const { filmId, vibe, ts } = req.body;
+      if (!filmId || typeof filmId !== 'number') {
+        return res.status(400).json({ message: 'filmId (number) is required' });
+      }
+      const userId: number | null = req.isAuthenticated() ? req.user!.id : null;
+      const watchedAt: Date | undefined = ts ? new Date(ts) : undefined;
+      const choice = await storage.saveWatchChoice({
+        filmId,
+        vibe: typeof vibe === 'string' ? vibe : null,
+        userId,
+        ts: watchedAt,
+      });
+      res.status(201).json(choice);
+    } catch (error) {
+      console.error('Error saving watch choice:', error);
+      res.status(500).json({ message: 'Failed to save watch choice' });
+    }
+  });
+
+  // POST /api/sessions — create a group session
+  app.post('/api/sessions', async (req: Request, res: Response) => {
+    try {
+      const hostUserId: number | null = req.isAuthenticated() ? req.user!.id : null;
+      const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+      const chars   = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      const MAX_RETRIES = 5;
+      let session: Awaited<ReturnType<typeof storage.createGroupSession>> | null = null;
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        let code = letters[Math.floor(Math.random() * letters.length)];
+        for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+        const existing = await storage.getGroupSessionByCode(code);
+        if (existing) continue;
+        session = await storage.createGroupSession({ hostUserId, sessionCode: code, status: 'waiting' });
+        break;
+      }
+      if (!session) {
+        return res.status(500).json({ message: 'Failed to generate unique session code' });
+      }
+      const link = `${req.headers.origin || ''}/g/${session.sessionCode}`;
+      res.status(201).json({ sessionId: session.id, sessionCode: session.sessionCode, link });
+    } catch (error) {
+      console.error('Error creating session:', error);
+      res.status(500).json({ message: 'Failed to create session' });
+    }
+  });
+
+  // GET /api/sessions/:id — look up session by invite code (public) or numeric ID (host only)
+  // Numeric IDs must be all-digits to avoid misclassifying codes starting with a digit
+  app.get('/api/sessions/:id', async (req: Request, res: Response) => {
+    try {
+      const param = req.params.id;
+      if (/^\d+$/.test(param)) {
+        if (!req.isAuthenticated()) {
+          return res.status(401).json({ message: 'Authentication required to look up session by ID' });
+        }
+        const sessionId = parseInt(param, 10);
+        const session = await storage.getGroupSession(sessionId);
+        if (!session) return res.status(404).json({ message: 'Session not found' });
+        const userId = req.user!.id;
+        const isMember = session.members.some(m => m.userId === userId);
+        if (session.hostUserId !== userId && !isMember) {
+          return res.status(403).json({ message: 'Access denied' });
+        }
+        return res.json(session);
+      }
+      const byCode = await storage.getGroupSessionByCode(param);
+      if (!byCode) return res.status(404).json({ message: 'Session not found' });
+      const full = await storage.getGroupSession(byCode.id);
+      return res.json(full);
+    } catch (error) {
+      console.error('Error getting session:', error);
+      res.status(500).json({ message: 'Failed to get session' });
+    }
+  });
+
+  // GET /api/sessions/:code/taste — aggregated group taste from session members' watch history
+  app.get('/api/sessions/:code/taste', async (req: Request, res: Response) => {
+    try {
+      const code = req.params.code;
+      const session = await storage.getGroupSessionByCode(code);
+      if (!session) return res.status(404).json({ message: 'Session not found' });
+      const taste = await storage.getSessionGroupTaste(session.id);
+      res.json(taste);
+    } catch (error) {
+      console.error('Error fetching session taste:', error);
+      res.status(500).json({ message: 'Failed to fetch group taste' });
+    }
+  });
+
+  // POST /api/sessions/:id/join — join a session; requires sessionCode proof to prevent enumeration
+  app.post('/api/sessions/:id/join', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: 'Invalid session id' });
+      const sessionCode = typeof req.body.sessionCode === 'string' ? req.body.sessionCode.trim() : null;
+      if (!sessionCode) return res.status(400).json({ message: 'sessionCode is required' });
+      const session = await storage.getGroupSession(id);
+      if (!session || session.sessionCode !== sessionCode) {
+        return res.status(403).json({ message: 'Invalid session code' });
+      }
+      const userId: number | null = req.isAuthenticated() ? req.user!.id : null;
+      const displayName: string | null = typeof req.body.displayName === 'string' ? req.body.displayName.trim() || null : null;
+      const member = await storage.joinGroupSession(id, { userId, displayName, status: 'ready' });
+      const updatedSession = await storage.getGroupSession(id);
+      res.json({ member, session: updatedSession });
+    } catch (error) {
+      console.error('Error joining session:', error);
+      res.status(500).json({ message: 'Failed to join session' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

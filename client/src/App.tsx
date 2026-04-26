@@ -14,6 +14,12 @@ import FriendsPage from "@/pages/friends-page";
 import OnboardingPage from "@/pages/onboarding-page";
 import MoodCard from "@/pages/MoodCard";
 import ChatRecommenderPage from "@/pages/chat-recommender-page";
+import SlotMachinePage from "@/pages/slot-machine-page";
+import LoadingPage from "@/pages/loading-page";
+import FilmDeckPage from "@/pages/film-deck-page";
+import PostWatchPage from "@/pages/post-watch-page";
+import GroupInvitePage from "@/pages/group-invite-page";
+import GroupJoinPage from "@/pages/group-join-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import Layout from "@/components/Layout";
@@ -44,6 +50,13 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/g/:code" component={GroupJoinPage} />
+      <Route path="/slot" component={SlotMachinePage} />
+      <Route path="/group/slot" component={() => <SlotMachinePage isGroup={true} />} />
+      <Route path="/group/invite" component={GroupInvitePage} />
+      <Route path="/loading" component={LoadingPage} />
+      <Route path="/films" component={FilmDeckPage} />
+      <Route path="/rating" component={PostWatchPage} />
       <Route component={AppShellRoutes} />
     </Switch>
   );

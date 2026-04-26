@@ -10,6 +10,9 @@ import {
   chatSessions,
   userPreferences,
   vibePreferences,
+  watchChoices,
+  groupSessions,
+  groupSessionMembers,
   type User,
   type InsertUser,
   type Film,
@@ -32,10 +35,16 @@ import {
   type InsertUserPreference,
   type VibePreference,
   type InsertVibePreference,
+  type WatchChoice,
+  type InsertWatchChoice,
+  type GroupSession,
+  type InsertGroupSession,
+  type GroupSessionMember,
+  type InsertGroupSessionMember,
 } from "@shared/schema";
 import { films } from "./data/films";
 import { db } from "./db";
-import { eq, and, or, desc, gte, lte, sql, count, SQL, inArray } from "drizzle-orm";
+import { eq, and, or, desc, gte, lte, sql, count, SQL, inArray, isNull } from "drizzle-orm";
 import session from "express-session";
 import { getAIRecommendations } from "./services/openai";
 import { getEnhancedRecommendations } from "./services/recommendation-enhancer";
@@ -130,6 +139,17 @@ export interface IStorage {
   getVibePreferences(userId: number): Promise<VibePreference[]>;
   saveVibePreference(vibe: InsertVibePreference): Promise<VibePreference>;
   incrementVibeCount(userId: number, customVibe: string): Promise<VibePreference>;
+
+  // Watch choices operations
+  saveWatchChoice(choice: InsertWatchChoice): Promise<WatchChoice>;
+
+  // Group session operations
+  createGroupSession(session: InsertGroupSession): Promise<GroupSession>;
+  getGroupSession(id: number): Promise<(GroupSession & { members: GroupSessionMember[] }) | undefined>;
+  getGroupSessionByCode(code: string): Promise<GroupSession | undefined>;
+  joinGroupSession(sessionId: number, member: Omit<InsertGroupSessionMember, 'sessionId'>): Promise<GroupSessionMember>;
+  markMemberReady(sessionId: number, userId: number): Promise<GroupSessionMember>;
+  getSessionGroupTaste(sessionId: number): Promise<Record<string, number>>;
 
   sessionStore: any; // Using any for session store to avoid type issues
 }
@@ -1473,6 +1493,187 @@ export class DatabaseStorage implements IStorage {
 
   async incrementVibeCount(userId: number, customVibe: string): Promise<VibePreference> {
     return this.saveVibePreference({ userId, customVibe, count: 1 });
+  }
+
+  async saveWatchChoice(choice: InsertWatchChoice): Promise<WatchChoice> {
+    try {
+      const [created] = await db
+        .insert(watchChoices)
+        .values(choice)
+        .returning();
+      return created;
+    } catch (error) {
+      console.error("Error saving watch choice:", error);
+      throw new Error("Failed to save watch choice");
+    }
+  }
+
+  async createGroupSession(sessionData: InsertGroupSession): Promise<GroupSession> {
+    try {
+      const [created] = await db
+        .insert(groupSessions)
+        .values(sessionData)
+        .returning();
+      if (sessionData.hostUserId) {
+        await db.insert(groupSessionMembers).values({
+          sessionId: created.id,
+          userId: sessionData.hostUserId,
+          displayName: null,
+          status: "ready",
+        });
+      }
+      return created;
+    } catch (error) {
+      console.error("Error creating group session:", error);
+      throw new Error("Failed to create group session");
+    }
+  }
+
+  async getGroupSession(id: number): Promise<(GroupSession & { members: GroupSessionMember[] }) | undefined> {
+    try {
+      const [session] = await db
+        .select()
+        .from(groupSessions)
+        .where(eq(groupSessions.id, id));
+      if (!session) return undefined;
+      const members = await db
+        .select()
+        .from(groupSessionMembers)
+        .where(eq(groupSessionMembers.sessionId, id));
+      return { ...session, members };
+    } catch (error) {
+      console.error("Error getting group session:", error);
+      return undefined;
+    }
+  }
+
+  async getGroupSessionByCode(code: string): Promise<GroupSession | undefined> {
+    try {
+      const [session] = await db
+        .select()
+        .from(groupSessions)
+        .where(eq(groupSessions.sessionCode, code));
+      return session;
+    } catch (error) {
+      console.error("Error getting group session by code:", error);
+      return undefined;
+    }
+  }
+
+  async joinGroupSession(sessionId: number, member: Omit<InsertGroupSessionMember, 'sessionId'>): Promise<GroupSessionMember> {
+    try {
+      let existing: GroupSessionMember[] = [];
+      if (member.userId) {
+        existing = await db
+          .select()
+          .from(groupSessionMembers)
+          .where(and(
+            eq(groupSessionMembers.sessionId, sessionId),
+            eq(groupSessionMembers.userId, member.userId)
+          ));
+      } else if (member.displayName) {
+        existing = await db
+          .select()
+          .from(groupSessionMembers)
+          .where(and(
+            eq(groupSessionMembers.sessionId, sessionId),
+            isNull(groupSessionMembers.userId),
+            eq(groupSessionMembers.displayName, member.displayName)
+          ));
+      }
+      if (existing.length > 0) {
+        const [updated] = await db
+          .update(groupSessionMembers)
+          .set({ status: "ready" })
+          .where(eq(groupSessionMembers.id, existing[0].id))
+          .returning();
+        return updated;
+      }
+      const [created] = await db
+        .insert(groupSessionMembers)
+        .values({ ...member, sessionId })
+        .returning();
+      return created;
+    } catch (error) {
+      console.error("Error joining group session:", error);
+      throw new Error("Failed to join group session");
+    }
+  }
+
+  async markMemberReady(sessionId: number, userId: number): Promise<GroupSessionMember> {
+    try {
+      const [updated] = await db
+        .update(groupSessionMembers)
+        .set({ status: "ready" })
+        .where(and(
+          eq(groupSessionMembers.sessionId, sessionId),
+          eq(groupSessionMembers.userId, userId)
+        ))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error("Error marking member ready:", error);
+      throw new Error("Failed to mark member ready");
+    }
+  }
+
+  async getSessionGroupTaste(sessionId: number): Promise<Record<string, number>> {
+    const VIBE_TO_TASTE: Record<string, Partial<Record<string, number>>> = {
+      cosy:         { cosy: 3, funny: 1 },
+      warm:         { cosy: 3 },
+      whimsical:    { cosy: 2, funny: 2 },
+      funny:        { funny: 3 },
+      witty:        { funny: 2, thinky: 1 },
+      silly:        { funny: 3 },
+      clever:       { thinky: 2, funny: 1 },
+      thinky:       { thinky: 3 },
+      poetic:       { thinky: 2, romantic: 1 },
+      quiet:        { thinky: 2, cosy: 1 },
+      slow:         { thinky: 2 },
+      architectural:{ thinky: 2 },
+      sharp:        { thinky: 2, tense: 1 },
+      honest:       { thinky: 2 },
+      tense:        { tense: 3 },
+      dark:         { tense: 2, thinky: 1 },
+      chaotic:      { funny: 1, tense: 1 },
+      wild:         { funny: 2, tense: 1 },
+      neon:         { tense: 1 },
+      moody:        { thinky: 1, tense: 1 },
+      romantic:     { romantic: 3 },
+      intimate:     { romantic: 2, thinky: 1 },
+      melancholic:  { romantic: 1, thinky: 2 },
+      bittersweet:  { romantic: 2, thinky: 1 },
+      emotional:    { romantic: 1, thinky: 1 },
+      stylised:     { thinky: 1 },
+      fast:         { funny: 1, tense: 1 },
+      weird:        { thinky: 1, funny: 1 },
+    };
+    const DEFAULTS: Record<string, number> = { cosy: 60, thinky: 55, funny: 65, tense: 40, romantic: 55 };
+    try {
+      const members = await db
+        .select()
+        .from(groupSessionMembers)
+        .where(eq(groupSessionMembers.sessionId, sessionId));
+      const memberUserIds = members.map(m => m.userId).filter((id): id is number => id !== null);
+      if (memberUserIds.length === 0) return DEFAULTS;
+      const choices = await db
+        .select()
+        .from(watchChoices)
+        .where(inArray(watchChoices.userId, memberUserIds));
+      if (choices.length === 0) return DEFAULTS;
+      const agg: Record<string, number> = { cosy: 0, thinky: 0, funny: 0, tense: 0, romantic: 0 };
+      choices.forEach(c => {
+        const vibe = (c.vibe || '').toLowerCase();
+        const weights = VIBE_TO_TASTE[vibe] || {};
+        Object.entries(weights).forEach(([attr, w]) => { agg[attr] = (agg[attr] || 0) + (w || 0); });
+      });
+      const max = Math.max(...Object.values(agg), 1);
+      const scaled: Record<string, number> = {};
+      Object.entries(agg).forEach(([k, v]) => { scaled[k] = Math.round((v / max) * 100); });
+      return scaled;
+    } catch {
+      return DEFAULTS;
+    }
   }
 }
 

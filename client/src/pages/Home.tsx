@@ -1,145 +1,160 @@
-import { useState, useEffect } from "react";
-import ChatRecommender from "@/components/ChatRecommender";
-import Recommendations from "@/components/Recommendations";
-import { type RecommendationRequest, type Film } from "@shared/schema";
+import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
-import { useRecommendationEngine } from "@/hooks/use-recommendation-engine";
 import { useLocation } from "wouter";
-
-// Local storage key is now managed in the recommendation engine hook
+import { C } from "@/lib/cinema-catalogue";
 
 export default function Home() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
-  
-  // Check if user needs onboarding and redirect if necessary
+
   useEffect(() => {
     if (user) {
-      // Use the server-provided needsOnboarding field
       const needsOnboarding = (user as any).needsOnboarding;
-      
-      // Skip onboarding redirect if URL contains bypass parameters
       const urlParams = new URLSearchParams(window.location.search);
-      const justCompletedOnboarding = urlParams.has('just_completed_onboarding');
-      const bypassOnboarding = urlParams.has('bypass_onboarding') || justCompletedOnboarding;
-      
-      // Only redirect to onboarding if the server says we need it and we're not bypassing
+      const bypassOnboarding = urlParams.has('bypass_onboarding') || urlParams.has('just_completed_onboarding');
       if (needsOnboarding && !bypassOnboarding) {
         setLocation('/onboarding');
         return;
       }
     }
   }, [user, setLocation]);
-  
-  // Use our new recommendation engine hook that integrates with Firestore
-  const engine = useRecommendationEngine();
-  
-  // Check for a "just_completed_onboarding" flag in the URL
-  const justCompletedOnboarding = () => {
-    const params = new URLSearchParams(window.location.search);
-    return params.has('just_completed_onboarding');
-  };
-  
-  // Check for show_questionnaire parameter in the URL
-  const shouldShowQuestionnaire = () => {
-    const params = new URLSearchParams(window.location.search);
-    return params.has('show_questionnaire');
-  };
-  
-  // Initialize questionnaire state
-  const [showQuestionnaire, setShowQuestionnaire] = useState(() => {
-    // If URL explicitly requests showing the questionnaire, honor that request
-    if (shouldShowQuestionnaire()) {
-      return true; // Always show questionnaire when requested via URL
-    }
-    
-    // If user just completed onboarding but didn't request questionnaire, don't show it
-    if (justCompletedOnboarding() && !shouldShowQuestionnaire()) {
-      return false;
-    }
-    
-    // Show questionnaire if no preferences exist
-    return !engine.currentPreferences;
-  });
-  
-  // Clean up URL parameters after component mounts
-  useEffect(() => {
-    // Check if we need to clean up any URL parameters
-    if (justCompletedOnboarding() || shouldShowQuestionnaire()) {
-      // Clean up the URL by removing all parameters 
-      // This prevents unwanted behavior if page is refreshed
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
-    }
-    
-    // Make sure Firestore data is loaded on component mount
-    engine.ensurePreferencesLoaded();
-  }, [engine]);
-  
-  // Helper function to wrap the engine's submitQuestionnaire function
-  const handleSubmitChat = (data: RecommendationRequest) => {
-    engine.submitQuestionnaire(data);
-    setShowQuestionnaire(false);
-  };
-  
-  // Helper function to wrap the engine's reset function
-  const handleReset = () => {
-    engine.reset();
-    setShowQuestionnaire(true);
-  };
 
   return (
-    <div className="container mx-auto px-4 py-6 bg-white">
-      <div className="mb-4">
-        <h1 className="text-4xl font-bold text-center mb-2 bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
-          The Right Movie For Right Now
-        </h1>
-        <p className="text-center text-gray-600 max-w-2xl mx-auto">
-          Tell us about your mood and preferences, and we'll recommend the perfect films for you to watch.
-        </p>
-      </div>
-      
-      {/* Firebase Auth Status component removed */}
-      
-      <div className="max-w-4xl mx-auto">
-        {showQuestionnaire ? (
-          <div className="py-8">
-            <ChatRecommender 
-              key={`chat-${user?.id}-${showQuestionnaire}`}
-              onComplete={handleSubmitChat}
-              userId={user?.id}
-            />
-          </div>
-        ) : (
-          <>
-            {engine.isShowingHistory && (
-              <div className="mb-4 text-center text-sm bg-indigo-50 border border-indigo-100 rounded-lg p-3 max-w-2xl mx-auto shadow-[0_4px_14px_0_rgba(79,70,229,0.2)]">
-                <span className="font-medium text-indigo-700">Welcome back!</span> We've loaded your previous recommendations.
-              </div>
-            )}
-            {/* Only show recommendations if we have preferences */}
-            {engine.currentPreferences ? (
-              <Recommendations 
-                recommendations={engine.recommendations} 
-                isLoading={engine.isLoading} 
-                preferences={engine.currentPreferences} 
-                onReset={handleReset}
-                onGenerateMore={engine.getMoreSuggestions}
-                hasMoreToGenerate={engine.hasMoreToGenerate}
-                onDisliked={engine.handleFilmDisliked}
-              />
-            ) : (
-              // If we don't have preferences yet, show a simple loading state
-              <div className="text-center py-10">
-                <div className="flex flex-col items-center justify-center space-y-4">
-                  <div className="animate-spin h-10 w-10 rounded-full border-4 border-primary border-t-transparent"></div>
-                  <p className="text-lg text-primary">Preparing your recommendations...</p>
-                </div>
-              </div>
-            )}
-          </>
-        )}
+    <div style={{
+      minHeight: '100dvh',
+      background: '#E8DDC8',
+      backgroundImage: `
+        radial-gradient(circle at 15% 20%, rgba(255,201,60,.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 70%, rgba(255,77,143,.08) 0%, transparent 45%)
+      `,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px 20px',
+      fontFamily: 'Nunito, sans-serif',
+    }}>
+      <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div>
+          <div style={{
+            fontFamily: "'Space Mono', monospace",
+            fontSize: 10,
+            letterSpacing: '.18em',
+            color: C.inkSoft,
+            textTransform: 'uppercase',
+            marginBottom: 4,
+          }}>tonight</div>
+          <h1 style={{
+            fontFamily: 'Nunito, sans-serif',
+            fontWeight: 800,
+            fontSize: 46,
+            lineHeight: .95,
+            margin: 0,
+            color: C.ink,
+          }}>who's watching?</h1>
+          <p style={{
+            fontFamily: 'Nunito, sans-serif',
+            fontSize: 14,
+            lineHeight: 1.35,
+            color: C.inkSoft,
+            marginTop: 8,
+            marginBottom: 0,
+          }}>your answer changes everything about how i pick.</p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <button
+            data-testid="button-just-me"
+            onClick={() => setLocation('/slot')}
+            style={{
+              border: `2px solid ${C.ink}`,
+              borderRadius: 16,
+              padding: '16px 18px',
+              background: C.yellow,
+              boxShadow: `4px 4px 0 ${C.ink}`,
+              transform: 'rotate(-.5deg)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              cursor: 'pointer',
+              width: '100%',
+            }}
+          >
+            <div style={{ textAlign: 'left' }}>
+              <div style={{
+                fontFamily: 'Nunito, sans-serif',
+                fontWeight: 700,
+                fontSize: 26,
+                lineHeight: 1,
+                color: C.ink,
+              }}>Just me</div>
+              <div style={{
+                fontFamily: 'Nunito, sans-serif',
+                fontSize: 12,
+                color: C.inkSoft,
+                marginTop: 3,
+              }}>→ slot machine</div>
+            </div>
+            <div style={{ fontSize: 34 }}>🛋️</div>
+          </button>
+
+          <button
+            data-testid="button-me-plus-someone"
+            onClick={() => setLocation('/group/invite')}
+            style={{
+              border: `2px solid ${C.ink}`,
+              borderRadius: 16,
+              padding: '16px 18px',
+              background: C.pink,
+              boxShadow: `4px 4px 0 ${C.ink}`,
+              transform: 'rotate(.5deg)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              cursor: 'pointer',
+              width: '100%',
+            }}
+          >
+            <div style={{ textAlign: 'left' }}>
+              <div style={{
+                fontFamily: 'Nunito, sans-serif',
+                fontWeight: 700,
+                fontSize: 26,
+                lineHeight: 1,
+                color: 'white',
+              }}>Me + someone</div>
+              <div style={{
+                fontFamily: 'Nunito, sans-serif',
+                fontSize: 12,
+                color: 'rgba(255,255,255,.8)',
+                marginTop: 3,
+              }}>→ group vibe session</div>
+            </div>
+            <div style={{ fontSize: 34 }}>👯</div>
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <div style={{
+            width: 30, height: 30, borderRadius: '50%',
+            background: C.yellow, border: `2px solid ${C.ink}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: 16,
+            color: C.ink, boxShadow: `2px 2px 0 ${C.ink}`, flexShrink: 0,
+          }}>C</div>
+          <div style={{
+            background: C.paper,
+            border: `1.5px solid ${C.ink}`,
+            borderRadius: '4px 14px 14px 14px',
+            padding: '8px 12px',
+            fontFamily: 'Nunito, sans-serif',
+            fontSize: 13,
+            lineHeight: 1.35,
+            color: C.ink,
+            flex: 1,
+            boxShadow: `2px 2px 0 ${C.ink}`,
+          }}>haven't watched in a while? i'll factor in your fingerprint too 🎬</div>
+        </div>
       </div>
     </div>
   );

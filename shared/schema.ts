@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, json, boolean, jsonb, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, json, boolean, jsonb, unique, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -234,6 +234,34 @@ export const monthlyMoodCards = pgTable("monthly_mood_cards", {
   shareUrl: text("share_url"),
   emailSent: boolean("email_sent").default(false),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// 14. Watch Choices table
+export const watchChoices = pgTable("watch_choices", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  filmId: integer("film_id").notNull(),
+  vibe: text("vibe"),
+  ts: timestamp("ts").defaultNow(),
+});
+
+// 15. Group Sessions table
+export const groupSessions = pgTable("group_sessions", {
+  id: serial("id").primaryKey(),
+  hostUserId: integer("host_user_id").references(() => users.id),
+  sessionCode: text("session_code").notNull().unique(),
+  status: text("status").notNull().default("waiting"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// 16. Group Session Members table
+export const groupSessionMembers = pgTable("group_session_members", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id").notNull().references(() => groupSessions.id),
+  userId: integer("user_id").references(() => users.id),
+  displayName: text("display_name"),
+  status: text("status").notNull().default("waiting"),
+  joinedAt: timestamp("joined_at").defaultNow(),
 });
 
 // =====================
@@ -520,3 +548,41 @@ export type InsertUserPreference = z.infer<typeof insertUserPreferencesSchema>;
 
 export type VibePreference = typeof vibePreferences.$inferSelect;
 export type InsertVibePreference = z.infer<typeof insertVibePreferenceSchema>;
+
+// Watch choices insert schema
+export const insertWatchChoiceSchema = createInsertSchema(watchChoices, {
+  ts: z.date().optional(),
+}).pick({
+  userId: true,
+  filmId: true,
+  vibe: true,
+  ts: true,
+});
+
+// Group session insert schema
+export const insertGroupSessionSchema = createInsertSchema(groupSessions, {
+  createdAt: z.date().optional(),
+}).pick({
+  hostUserId: true,
+  sessionCode: true,
+  status: true,
+});
+
+// Group session member insert schema
+export const insertGroupSessionMemberSchema = createInsertSchema(groupSessionMembers, {
+  joinedAt: z.date().optional(),
+}).pick({
+  sessionId: true,
+  userId: true,
+  displayName: true,
+  status: true,
+});
+
+export type WatchChoice = typeof watchChoices.$inferSelect;
+export type InsertWatchChoice = z.infer<typeof insertWatchChoiceSchema>;
+
+export type GroupSession = typeof groupSessions.$inferSelect;
+export type InsertGroupSession = z.infer<typeof insertGroupSessionSchema>;
+
+export type GroupSessionMember = typeof groupSessionMembers.$inferSelect;
+export type InsertGroupSessionMember = z.infer<typeof insertGroupSessionMemberSchema>;
