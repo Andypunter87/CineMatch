@@ -129,6 +129,15 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // ── Debug route — shows the exact OAuth URL + callback registered ─────────
+  app.get("/api/auth/debug", (_req, res) => {
+    res.json({
+      callbackURL,
+      clientIDPrefix: (process.env.GOOGLE_CLIENT_ID || "").slice(0, 12) + "...",
+      replit_dev_domain: process.env.REPLIT_DEV_DOMAIN || null,
+    });
+  });
+
   // ── OAuth routes ──────────────────────────────────────────────────────────
 
   app.get(
@@ -138,8 +147,13 @@ export function setupAuth(app: Express) {
 
   app.get(
     "/api/auth/google/callback",
+    (req, res, next) => {
+      console.log("[OAuth callback] hit — query:", JSON.stringify(req.query));
+      next();
+    },
     passport.authenticate("google", { failureRedirect: "/auth?error=google" }),
     (_req, res) => {
+      console.log("[OAuth callback] success — redirecting to /");
       res.redirect("/");
     }
   );
