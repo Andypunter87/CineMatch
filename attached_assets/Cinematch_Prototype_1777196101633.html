@@ -1,0 +1,1440 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cinematch — Onboarding Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin:0; padding:0; height:100%; font-family:-apple-system, system-ui, sans-serif; }
+  body {
+    background: #E8DDC8;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(255,201,60,0.12) 0%, transparent 40%),
+      radial-gradient(circle at 85% 70%, rgba(255,77,143,0.08) 0%, transparent 45%);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px;
+    box-sizing: border-box;
+  }
+  .stage { display:flex; flex-direction:column; align-items:center; gap: 20px; transform-origin: top center; }
+  .sub { font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.15em; color:#4A4A4A; text-transform:uppercase; }
+  .reset-btn {
+    position: fixed; top: 20px; right: 20px;
+    padding: 8px 14px;
+    background: #FAF6EE;
+    border: 2px solid #1A1A1A;
+    border-radius: 100px;
+    font-family: 'Caveat', cursive; font-weight: 700; font-size: 16px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 #1A1A1A;
+    z-index: 100;
+  }
+  button { font-family: 'Nunito', sans-serif; }
+  * { -webkit-tap-highlight-color: transparent; }
+
+  /* Scale the whole stage so 390×844 phone fits in shorter viewports */
+  @media (max-height: 940px) {
+    body { align-items: flex-start; }
+    .stage { --scale: calc((100vh - 48px) / 920); transform: scale(var(--scale)); }
+  }
+</style>
+</head>
+<body>
+
+<button class="reset-btn" onclick="localStorage.removeItem('cine_step'); localStorage.removeItem('cine_picks'); location.reload();">↻ restart</button>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script>
+// Cinematch — films catalogue for the swipe taste test
+// Each film has: title, year, director, tags (mood descriptors), poster style
+// Tags drive the fingerprint at the end
+window.CINEMATCH_FILMS = [
+  { id: 1, title: 'The Grand Budapest Hotel', year: 2014, director: 'Wes Anderson',
+    tags: ['whimsical','symmetrical','witty','pastel','stylised'],
+    blurb: 'A concierge and his lobby boy, a stolen painting, a confection of a film.',
+    colors: ['#E8A4C4','#F0C8A8','#C8A0B4'], stripe: 'horizontal' },
+  { id: 2, title: 'Moonlight', year: 2016, director: 'Barry Jenkins',
+    tags: ['bittersweet','intimate','poetic','melancholic','slow'],
+    blurb: 'A young Black man\'s life told in three chapters. Luminous and tender.',
+    colors: ['#1A3A5C','#4A6B8C','#2C4C6D'], stripe: 'diagonal' },
+  { id: 3, title: 'Everything Everywhere All at Once', year: 2022, director: 'Daniels',
+    tags: ['chaotic','weird','emotional','wild','genre-blending'],
+    blurb: 'A laundromat owner saves every possible universe. With hot dog fingers.',
+    colors: ['#FF6B9D','#FFB84D','#4DBFB8'], stripe: 'burst' },
+  { id: 4, title: 'Past Lives', year: 2023, director: 'Celine Song',
+    tags: ['bittersweet','quiet','romantic','melancholic','slow'],
+    blurb: 'Two childhood friends, twenty years, a single question: what if?',
+    colors: ['#2E3B4E','#7B8FA6','#C9B8A8'], stripe: 'vertical' },
+  { id: 5, title: 'Parasite', year: 2019, director: 'Bong Joon-ho',
+    tags: ['tense','sharp','dark','clever','genre-blending'],
+    blurb: 'A poor family infiltrates a rich one. Then things get complicated.',
+    colors: ['#3A3A3A','#C4A876','#8B6F47'], stripe: 'horizontal' },
+  { id: 6, title: 'Portrait of a Lady on Fire', year: 2019, director: 'Céline Sciamma',
+    tags: ['romantic','poetic','slow','intimate','stylised'],
+    blurb: 'An 18th-century painter, her subject, and a brief, incandescent summer.',
+    colors: ['#6B4226','#E8C896','#8B5A3C'], stripe: 'flame' },
+  { id: 7, title: 'Hot Fuzz', year: 2007, director: 'Edgar Wright',
+    tags: ['funny','fast','silly','british','clever'],
+    blurb: 'Supercop gets exiled to a village. The village is not what it seems.',
+    colors: ['#D64545','#4A6B2F','#8B9467'], stripe: 'splash' },
+  { id: 8, title: 'In the Mood for Love', year: 2000, director: 'Wong Kar-wai',
+    tags: ['romantic','melancholic','stylised','slow','intimate'],
+    blurb: 'Two neighbours in 1960s Hong Kong. A rehearsal of what could be.',
+    colors: ['#8B1E3F','#D4A574','#3A2416'], stripe: 'diagonal' },
+  { id: 9, title: 'Columbus', year: 2017, director: 'Kogonada',
+    tags: ['quiet','architectural','slow','intimate','melancholic'],
+    blurb: 'In a town of modernist buildings, two strangers connect.',
+    colors: ['#E8E4D8','#7A8B7F','#4A5856'], stripe: 'vertical' },
+  { id: 10, title: 'The Worst Person in the World', year: 2021, director: 'Joachim Trier',
+    tags: ['bittersweet','funny','honest','romantic','chaotic'],
+    blurb: 'Julie is nearly thirty, in Oslo, figuring it out (or not).',
+    colors: ['#E85D75','#F4C2C2','#A8455C'], stripe: 'horizontal' },
+  { id: 11, title: 'Drive', year: 2011, director: 'Nicolas Winding Refn',
+    tags: ['stylised','tense','cool','moody','neon'],
+    blurb: 'A Hollywood stuntman moonlights as a getaway driver. Then he doesn\'t.',
+    colors: ['#E91E63','#1A1A2E','#16213E'], stripe: 'neon' },
+  { id: 12, title: 'Paddington 2', year: 2017, director: 'Paul King',
+    tags: ['whimsical','warm','funny','british','cosy'],
+    blurb: 'A bear, a pop-up book, Hugh Grant giving the performance of a lifetime.',
+    colors: ['#2A5D8F','#E8B547','#7FB3D3'], stripe: 'splash' },
+];
+
+// Tag → human-readable fingerprint category
+window.CINEMATCH_TAG_MAP = {
+  whimsical:      { cat: 'tone',  label: 'whimsical' },
+  symmetrical:    { cat: 'style', label: 'symmetrical' },
+  witty:          { cat: 'tone',  label: 'witty' },
+  pastel:         { cat: 'style', label: 'soft palette' },
+  stylised:       { cat: 'style', label: 'highly stylised' },
+  bittersweet:    { cat: 'tone',  label: 'bittersweet' },
+  intimate:       { cat: 'tone',  label: 'intimate' },
+  poetic:         { cat: 'style', label: 'poetic' },
+  melancholic:    { cat: 'tone',  label: 'melancholic' },
+  slow:           { cat: 'pace',  label: 'slow burn' },
+  chaotic:        { cat: 'pace',  label: 'chaotic energy' },
+  weird:          { cat: 'tone',  label: 'delightfully weird' },
+  emotional:      { cat: 'tone',  label: 'emotionally heavy' },
+  wild:           { cat: 'pace',  label: 'wild ride' },
+  'genre-blending': { cat: 'style', label: 'genre-blending' },
+  quiet:          { cat: 'pace',  label: 'quiet' },
+  romantic:       { cat: 'tone',  label: 'romantic' },
+  tense:          { cat: 'tone',  label: 'tense' },
+  sharp:          { cat: 'tone',  label: 'sharp' },
+  dark:           { cat: 'tone',  label: 'dark' },
+  clever:         { cat: 'tone',  label: 'clever' },
+  funny:          { cat: 'tone',  label: 'funny' },
+  fast:           { cat: 'pace',  label: 'fast-paced' },
+  silly:          { cat: 'tone',  label: 'silly' },
+  british:        { cat: 'flavour', label: 'very british' },
+  honest:         { cat: 'tone',  label: 'painfully honest' },
+  architectural:  { cat: 'style', label: 'architectural eye' },
+  cool:           { cat: 'tone',  label: 'cool' },
+  moody:          { cat: 'tone',  label: 'moody' },
+  neon:           { cat: 'style', label: 'neon-drenched' },
+  warm:           { cat: 'tone',  label: 'warm-hearted' },
+  cosy:           { cat: 'tone',  label: 'cosy' },
+};
+
+</script>
+<script type="text/babel" data-presets="react">
+
+// iOS.jsx — Simplified iOS 26 (Liquid Glass) device frame
+// Based on the iOS 26 UI Kit + Figma status bar spec. No assets, no deps.
+// Exports: IOSDevice, IOSStatusBar, IOSNavBar, IOSGlassPill, IOSList, IOSListRow, IOSKeyboard
+
+// ─────────────────────────────────────────────────────────────
+// Status bar
+// ─────────────────────────────────────────────────────────────
+function IOSStatusBar({ dark = false, time = '9:41' }) {
+  const c = dark ? '#fff' : '#000';
+  return (
+    <div style={{
+      display: 'flex', gap: 154, alignItems: 'center', justifyContent: 'center',
+      padding: '21px 24px 19px', boxSizing: 'border-box',
+      position: 'relative', zIndex: 20, width: '100%',
+    }}>
+      <div style={{ flex: 1, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 1.5 }}>
+        <span style={{
+          fontFamily: '-apple-system, "SF Pro", system-ui', fontWeight: 590,
+          fontSize: 17, lineHeight: '22px', color: c,
+        }}>{time}</span>
+      </div>
+      <div style={{ flex: 1, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, paddingTop: 1, paddingRight: 1 }}>
+        <svg width="19" height="12" viewBox="0 0 19 12">
+          <rect x="0" y="7.5" width="3.2" height="4.5" rx="0.7" fill={c}/>
+          <rect x="4.8" y="5" width="3.2" height="7" rx="0.7" fill={c}/>
+          <rect x="9.6" y="2.5" width="3.2" height="9.5" rx="0.7" fill={c}/>
+          <rect x="14.4" y="0" width="3.2" height="12" rx="0.7" fill={c}/>
+        </svg>
+        <svg width="17" height="12" viewBox="0 0 17 12">
+          <path d="M8.5 3.2C10.8 3.2 12.9 4.1 14.4 5.6L15.5 4.5C13.7 2.7 11.2 1.5 8.5 1.5C5.8 1.5 3.3 2.7 1.5 4.5L2.6 5.6C4.1 4.1 6.2 3.2 8.5 3.2Z" fill={c}/>
+          <path d="M8.5 6.8C9.9 6.8 11.1 7.3 12 8.2L13.1 7.1C11.8 5.9 10.2 5.1 8.5 5.1C6.8 5.1 5.2 5.9 3.9 7.1L5 8.2C5.9 7.3 7.1 6.8 8.5 6.8Z" fill={c}/>
+          <circle cx="8.5" cy="10.5" r="1.5" fill={c}/>
+        </svg>
+        <svg width="27" height="13" viewBox="0 0 27 13">
+          <rect x="0.5" y="0.5" width="23" height="12" rx="3.5" stroke={c} strokeOpacity="0.35" fill="none"/>
+          <rect x="2" y="2" width="20" height="9" rx="2" fill={c}/>
+          <path d="M25 4.5V8.5C25.8 8.2 26.5 7.2 26.5 6.5C26.5 5.8 25.8 4.8 25 4.5Z" fill={c} fillOpacity="0.4"/>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Liquid glass pill — blur + tint + shine
+// ─────────────────────────────────────────────────────────────
+function IOSGlassPill({ children, dark = false, style = {} }) {
+  return (
+    <div style={{
+      height: 44, minWidth: 44, borderRadius: 9999,
+      position: 'relative', overflow: 'hidden',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxShadow: dark
+        ? '0 2px 6px rgba(0,0,0,0.35), 0 6px 16px rgba(0,0,0,0.2)'
+        : '0 1px 3px rgba(0,0,0,0.07), 0 3px 10px rgba(0,0,0,0.06)',
+      ...style,
+    }}>
+      {/* blur + tint */}
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: 9999,
+        backdropFilter: 'blur(12px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+        background: dark ? 'rgba(120,120,128,0.28)' : 'rgba(255,255,255,0.5)',
+      }} />
+      {/* shine */}
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: 9999,
+        boxShadow: dark
+          ? 'inset 1.5px 1.5px 1px rgba(255,255,255,0.15), inset -1px -1px 1px rgba(255,255,255,0.08)'
+          : 'inset 1.5px 1.5px 1px rgba(255,255,255,0.7), inset -1px -1px 1px rgba(255,255,255,0.4)',
+        border: dark ? '0.5px solid rgba(255,255,255,0.15)' : '0.5px solid rgba(0,0,0,0.06)',
+      }} />
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', padding: '0 4px' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Navigation bar — glass pills + large title
+// ─────────────────────────────────────────────────────────────
+function IOSNavBar({ title = 'Title', dark = false, trailingIcon = true }) {
+  const muted = dark ? 'rgba(255,255,255,0.6)' : '#404040';
+  const text = dark ? '#fff' : '#000';
+  const pillIcon = (content) => (
+    <IOSGlassPill dark={dark}>
+      <div style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {content}
+      </div>
+    </IOSGlassPill>
+  );
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 10,
+      paddingTop: 62, paddingBottom: 10, position: 'relative', zIndex: 5,
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 16px',
+      }}>
+        {/* back chevron */}
+        {pillIcon(
+          <svg width="12" height="20" viewBox="0 0 12 20" fill="none" style={{ marginLeft: -1 }}>
+            <path d="M10 2L2 10l8 8" stroke={muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+        {/* trailing ellipsis */}
+        {trailingIcon && pillIcon(
+          <svg width="22" height="6" viewBox="0 0 22 6">
+            <circle cx="3" cy="3" r="2.5" fill={muted}/>
+            <circle cx="11" cy="3" r="2.5" fill={muted}/>
+            <circle cx="19" cy="3" r="2.5" fill={muted}/>
+          </svg>
+        )}
+      </div>
+      {/* large title */}
+      <div style={{
+        padding: '0 16px',
+        fontFamily: '-apple-system, system-ui',
+        fontSize: 34, fontWeight: 700, lineHeight: '41px',
+        color: text, letterSpacing: 0.4,
+      }}>{title}</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Grouped list (inset card, r:26) + row (52px)
+// ─────────────────────────────────────────────────────────────
+function IOSListRow({ title, detail, icon, chevron = true, isLast = false, dark = false }) {
+  const text = dark ? '#fff' : '#000';
+  const sec = dark ? 'rgba(235,235,245,0.6)' : 'rgba(60,60,67,0.6)';
+  const ter = dark ? 'rgba(235,235,245,0.3)' : 'rgba(60,60,67,0.3)';
+  const sep = dark ? 'rgba(84,84,88,0.65)' : 'rgba(60,60,67,0.12)';
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', minHeight: 52,
+      padding: '0 16px', position: 'relative',
+      fontFamily: '-apple-system, system-ui', fontSize: 17,
+      letterSpacing: -0.43,
+    }}>
+      {icon && (
+        <div style={{
+          width: 30, height: 30, borderRadius: 7, background: icon,
+          marginRight: 12, flexShrink: 0,
+        }} />
+      )}
+      <div style={{ flex: 1, color: text }}>{title}</div>
+      {detail && <span style={{ color: sec, marginRight: 6 }}>{detail}</span>}
+      {chevron && (
+        <svg width="8" height="14" viewBox="0 0 8 14" style={{ flexShrink: 0 }}>
+          <path d="M1 1l6 6-6 6" stroke={ter} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )}
+      {!isLast && (
+        <div style={{
+          position: 'absolute', bottom: 0, right: 0,
+          left: icon ? 58 : 16, height: 0.5, background: sep,
+        }} />
+      )}
+    </div>
+  );
+}
+
+function IOSList({ header, children, dark = false }) {
+  const hc = dark ? 'rgba(235,235,245,0.6)' : 'rgba(60,60,67,0.6)';
+  const bg = dark ? '#1C1C1E' : '#fff';
+  return (
+    <div>
+      {header && (
+        <div style={{
+          fontFamily: '-apple-system, system-ui', fontSize: 13,
+          color: hc, textTransform: 'uppercase',
+          padding: '8px 36px 6px', letterSpacing: -0.08,
+        }}>{header}</div>
+      )}
+      <div style={{
+        background: bg, borderRadius: 26,
+        margin: '0 16px', overflow: 'hidden',
+      }}>{children}</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Device frame
+// ─────────────────────────────────────────────────────────────
+function IOSDevice({
+  children, width = 402, height = 874, dark = false,
+  title, keyboard = false,
+}) {
+  return (
+    <div style={{
+      width, height, borderRadius: 48, overflow: 'hidden',
+      position: 'relative', background: dark ? '#000' : '#F2F2F7',
+      boxShadow: '0 40px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.12)',
+      fontFamily: '-apple-system, system-ui, sans-serif',
+      WebkitFontSmoothing: 'antialiased',
+    }}>
+      {/* dynamic island */}
+      <div style={{
+        position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+        width: 126, height: 37, borderRadius: 24, background: '#000', zIndex: 50,
+      }} />
+      {/* status bar (absolute) */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
+        <IOSStatusBar dark={dark} />
+      </div>
+      {/* nav + content */}
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {title !== undefined && <IOSNavBar title={title} dark={dark} />}
+        <div style={{ flex: 1, overflow: 'auto' }}>{children}</div>
+        {keyboard && <IOSKeyboard dark={dark} />}
+      </div>
+      {/* home indicator — always on top */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 60,
+        height: 34, display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
+        paddingBottom: 8, pointerEvents: 'none',
+      }}>
+        <div style={{
+          width: 139, height: 5, borderRadius: 100,
+          background: dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.25)',
+        }} />
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Keyboard — iOS 26 liquid glass
+// ─────────────────────────────────────────────────────────────
+function IOSKeyboard({ dark = false }) {
+  const glyph = dark ? 'rgba(255,255,255,0.7)' : '#595959';
+  const sugg = dark ? 'rgba(255,255,255,0.6)' : '#333';
+  const keyBg = dark ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.85)';
+
+  // special-key icons
+  const icons = {
+    shift: <svg width="19" height="17" viewBox="0 0 19 17"><path d="M9.5 1L1 9.5h4.5V16h8V9.5H18L9.5 1z" fill={glyph}/></svg>,
+    del: <svg width="23" height="17" viewBox="0 0 23 17"><path d="M7 1h13a2 2 0 012 2v11a2 2 0 01-2 2H7l-6-7.5L7 1z" fill="none" stroke={glyph} strokeWidth="1.6" strokeLinejoin="round"/><path d="M10 5l7 7M17 5l-7 7" stroke={glyph} strokeWidth="1.6" strokeLinecap="round"/></svg>,
+    ret: <svg width="20" height="14" viewBox="0 0 20 14"><path d="M18 1v6H4m0 0l4-4M4 7l4 4" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  };
+
+  const key = (content, { w, flex, ret, fs = 25, k } = {}) => (
+    <div key={k} style={{
+      height: 42, borderRadius: 8.5,
+      flex: flex ? 1 : undefined, width: w, minWidth: 0,
+      background: ret ? '#08f' : keyBg,
+      boxShadow: '0 1px 0 rgba(0,0,0,0.075)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: '-apple-system, "SF Compact", system-ui',
+      fontSize: fs, fontWeight: 458, color: ret ? '#fff' : glyph,
+    }}>{content}</div>
+  );
+
+  const row = (keys, pad = 0) => (
+    <div style={{ display: 'flex', gap: 6.5, justifyContent: 'center', padding: `0 ${pad}px` }}>
+      {keys.map(l => key(l, { flex: true, k: l }))}
+    </div>
+  );
+
+  return (
+    <div style={{
+      position: 'relative', zIndex: 15, borderRadius: 27, overflow: 'hidden',
+      padding: '11px 0 2px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      boxShadow: dark
+        ? '0 -2px 20px rgba(0,0,0,0.09)'
+        : '0 -1px 6px rgba(0,0,0,0.018), 0 -3px 20px rgba(0,0,0,0.012)',
+    }}>
+      {/* liquid glass bg — same recipe as nav pills */}
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: 27,
+        backdropFilter: 'blur(12px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+        background: dark ? 'rgba(120,120,128,0.14)' : 'rgba(255,255,255,0.25)',
+      }} />
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: 27,
+        boxShadow: dark
+          ? 'inset 1.5px 1.5px 1px rgba(255,255,255,0.15)'
+          : 'inset 1.5px 1.5px 1px rgba(255,255,255,0.7), inset -1px -1px 1px rgba(255,255,255,0.4)',
+        border: dark ? '0.5px solid rgba(255,255,255,0.15)' : '0.5px solid rgba(0,0,0,0.06)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* autocorrect bar */}
+      <div style={{
+        display: 'flex', gap: 20, alignItems: 'center',
+        padding: '8px 22px 13px', width: '100%', boxSizing: 'border-box',
+        position: 'relative',
+      }}>
+        {['"The"', 'the', 'to'].map((w, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <div style={{ width: 1, height: 25, background: '#ccc', opacity: 0.3 }} />}
+            <div style={{
+              flex: 1, textAlign: 'center',
+              fontFamily: '-apple-system, system-ui', fontSize: 17,
+              color: sugg, letterSpacing: -0.43, lineHeight: '22px',
+            }}>{w}</div>
+          </React.Fragment>
+        ))}
+      </div>
+
+      {/* key layout */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', gap: 13,
+        padding: '0 6.5px', width: '100%', boxSizing: 'border-box',
+        position: 'relative',
+      }}>
+        {row(['q','w','e','r','t','y','u','i','o','p'])}
+        {row(['a','s','d','f','g','h','j','k','l'], 20)}
+        <div style={{ display: 'flex', gap: 14.25, alignItems: 'center' }}>
+          {key(icons.shift, { w: 45, k: 'shift' })}
+          <div style={{ display: 'flex', gap: 6.5, flex: 1 }}>
+            {['z','x','c','v','b','n','m'].map(l => key(l, { flex: true, k: l }))}
+          </div>
+          {key(icons.del, { w: 45, k: 'del' })}
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {key('ABC', { w: 92.25, fs: 18, k: 'abc' })}
+          {key('', { flex: true, k: 'space' })}
+          {key(icons.ret, { w: 92.25, ret: true, k: 'ret' })}
+        </div>
+      </div>
+
+      {/* bottom spacer (emoji+mic area, icons omitted) */}
+      <div style={{ height: 56, width: '100%', position: 'relative' }} />
+    </div>
+  );
+}
+
+Object.assign(window, {
+  IOSDevice, IOSStatusBar, IOSNavBar, IOSGlassPill, IOSList, IOSListRow, IOSKeyboard,
+});
+
+</script>
+<script type="text/babel" data-presets="react">
+// Cinematch hi-fi onboarding prototype
+// Flow: welcome → intro → swipe → fingerprint
+// State: liked/disliked film ids → drives fingerprint
+
+const { useState, useEffect, useRef } = React;
+
+// ═══════════════════════════════════════════════════════════════
+// DESIGN TOKENS (hi-fi cinematch brand)
+// ═══════════════════════════════════════════════════════════════
+const C = {
+  paper:    '#FAF6EE',
+  paper2:   '#F3ECDA',
+  ink:      '#1A1A1A',
+  inkSoft:  '#4A4A4A',
+  inkLight: '#8A8478',
+  pink:     '#FF4D8F',
+  yellow:   '#FFC93C',
+  blue:     '#4D6EFF',
+  mint:     '#5FD4A8',
+  lilac:    '#C9A7FF',
+  coral:    '#FF8C5A',
+};
+
+// ═══════════════════════════════════════════════════════════════
+// STRIPED POSTER PLACEHOLDERS — the brand keeps them
+// ═══════════════════════════════════════════════════════════════
+function StripedPoster({ film, w = 260, h = 380, style = {} }) {
+  const [c1, c2, c3] = film.colors;
+  const patterns = {
+    horizontal: `repeating-linear-gradient(180deg, ${c1} 0, ${c1} 24px, ${c2} 24px, ${c2} 48px, ${c3} 48px, ${c3} 72px)`,
+    diagonal:   `repeating-linear-gradient(135deg, ${c1} 0, ${c1} 20px, ${c2} 20px, ${c2} 40px, ${c3} 40px, ${c3} 60px)`,
+    vertical:   `repeating-linear-gradient(90deg, ${c1} 0, ${c1} 28px, ${c2} 28px, ${c2} 56px, ${c3} 56px, ${c3} 84px)`,
+    burst:      `radial-gradient(circle at 50% 50%, ${c1} 0%, ${c2} 40%, ${c3} 80%)`,
+    flame:      `linear-gradient(180deg, ${c1} 0%, ${c1} 40%, ${c2} 55%, ${c3} 100%)`,
+    splash:     `radial-gradient(ellipse at 30% 30%, ${c1} 0%, ${c2} 45%, ${c3} 100%)`,
+    neon:       `linear-gradient(135deg, ${c2} 0%, ${c2} 50%, ${c3} 50%, ${c3} 100%)`,
+  };
+  const bg = patterns[film.stripe] || patterns.horizontal;
+
+  return (
+    <div style={{
+      width: w, height: h,
+      background: bg,
+      borderRadius: 14,
+      position: 'relative',
+      overflow: 'hidden',
+      boxShadow: '0 14px 40px rgba(0,0,0,0.22), 0 4px 12px rgba(0,0,0,0.16)',
+      border: `1.5px solid ${C.ink}`,
+      ...style,
+    }}>
+      {/* Title overlay */}
+      <div style={{
+        position: 'absolute',
+        left: 16, right: 16, bottom: 14,
+        background: 'rgba(250,246,238,0.94)',
+        border: `1.5px solid ${C.ink}`,
+        borderRadius: 8,
+        padding: '10px 12px',
+        backdropFilter: 'blur(4px)',
+      }}>
+        <div style={{
+          fontFamily: 'Caveat, cursive',
+          fontWeight: 700,
+          fontSize: w < 200 ? 20 : 26,
+          lineHeight: 1,
+          color: C.ink,
+        }}>{film.title}</div>
+        <div style={{
+          fontFamily: 'Space Mono, monospace',
+          fontSize: 9,
+          letterSpacing: '0.1em',
+          color: C.inkSoft,
+          marginTop: 3,
+          textTransform: 'uppercase',
+        }}>{film.year} · {film.director}</div>
+      </div>
+      {/* Grain texture */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.08) 100%)',
+        pointerEvents: 'none',
+      }}/>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAPER BACKGROUND — paper texture for non-screen contexts
+// ═══════════════════════════════════════════════════════════════
+function PaperBg({ children, color = C.paper, style = {} }) {
+  return (
+    <div style={{
+      width: '100%', height: '100%',
+      background: color,
+      position: 'relative',
+      overflow: 'hidden',
+      ...style,
+    }}>
+      {/* Paper texture overlay */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        backgroundImage: `
+          radial-gradient(circle at 20% 30%, rgba(139,127,107,0.04) 0%, transparent 50%),
+          radial-gradient(circle at 80% 70%, rgba(139,127,107,0.05) 0%, transparent 50%)`,
+        pointerEvents: 'none',
+      }}/>
+      <div style={{ position: 'relative', height: '100%' }}>{children}</div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CINE AVATAR — the yellow-C mascot
+// ═══════════════════════════════════════════════════════════════
+function Cine({ size = 36, wink = false }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%',
+      background: C.yellow,
+      border: `2px solid ${C.ink}`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: 'Caveat, cursive', fontWeight: 700, fontSize: size * 0.6,
+      color: C.ink, lineHeight: 1,
+      boxShadow: `2px 2px 0 ${C.ink}`,
+      flexShrink: 0,
+    }}>
+      {wink ? ';)' : 'C'}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CINE SPEECH BUBBLE
+// ═══════════════════════════════════════════════════════════════
+function CineSays({ children, size = 40, style = {} }) {
+  return (
+    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', ...style }}>
+      <Cine size={size}/>
+      <div style={{
+        background: C.paper2,
+        border: `1.5px solid ${C.ink}`,
+        borderRadius: '4px 16px 16px 16px',
+        padding: '10px 14px',
+        fontFamily: 'Nunito, cursive',
+        fontSize: 15,
+        lineHeight: 1.3,
+        color: C.ink,
+        flex: 1,
+        position: 'relative',
+        boxShadow: `2px 2px 0 ${C.ink}`,
+      }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BUTTON
+// ═══════════════════════════════════════════════════════════════
+function Btn({ children, onClick, primary, disabled, style = {}, small }) {
+  return (
+    <button onClick={disabled ? undefined : onClick} style={{
+      padding: small ? '10px 20px' : '14px 28px',
+      fontFamily: 'Caveat, cursive',
+      fontWeight: 700,
+      fontSize: small ? 18 : 22,
+      background: disabled ? C.paper2 : primary ? C.ink : C.paper,
+      color: disabled ? C.inkLight : primary ? C.paper : C.ink,
+      border: `2px solid ${disabled ? C.inkLight : C.ink}`,
+      borderRadius: 100,
+      boxShadow: disabled ? 'none' : `3px 3px 0 ${C.ink}`,
+      cursor: disabled ? 'default' : 'pointer',
+      letterSpacing: 0.2,
+      lineHeight: 1,
+      transition: 'transform 0.08s, box-shadow 0.08s',
+      ...style,
+    }}
+    onMouseDown={e => !disabled && (e.currentTarget.style.transform = 'translate(2px,2px)', e.currentTarget.style.boxShadow = `1px 1px 0 ${C.ink}`)}
+    onMouseUp={e => !disabled && (e.currentTarget.style.transform = '', e.currentTarget.style.boxShadow = `3px 3px 0 ${C.ink}`)}
+    onMouseLeave={e => !disabled && (e.currentTarget.style.transform = '', e.currentTarget.style.boxShadow = `3px 3px 0 ${C.ink}`)}
+    >
+      {children}
+    </button>
+  );
+}
+
+window.CinematchUI = { C, StripedPoster, PaperBg, Cine, CineSays, Btn };
+
+</script>
+<script type="text/babel" data-presets="react">
+// Welcome screen — fixed layout, fits 390×844 iOS device
+// No decorative overflows; concise, SSO leads to auth step
+
+function Welcome({ onStart }) {
+  const { C, Cine, Btn } = window.CinematchUI;
+  return (
+    <div style={{
+      width:'100%', height:'100%',
+      background: C.paper,
+      display:'flex', flexDirection:'column',
+      padding:'52px 24px 32px',
+      boxSizing:'border-box',
+      overflow:'hidden',
+      gap: 20,
+    }}>
+      {/* Decorative poster strip */}
+      <div style={{ display:'flex', gap:6, justifyContent:'center', flexShrink:0 }}>
+        {[
+          { colors:['#E8A4C4','#F0C8A8','#C8A0B4'], stripe:'horizontal' },
+          { colors:['#FF6B9D','#FFB84D','#4DBFB8'], stripe:'burst' },
+          { colors:['#1A3A5C','#4A6B8C','#2C4C6D'], stripe:'diagonal' },
+          { colors:['#E85D75','#F4C2C2','#A8455C'], stripe:'horizontal' },
+          { colors:['#E91E63','#1A1A2E','#16213E'], stripe:'neon' },
+        ].map((f, i) => {
+          const patterns = {
+            horizontal: `repeating-linear-gradient(180deg, ${f.colors[0]} 0 8px, ${f.colors[1]} 8px 16px, ${f.colors[2]} 16px 24px)`,
+            burst: `radial-gradient(circle at 50% 50%, ${f.colors[0]} 0%, ${f.colors[1]} 50%, ${f.colors[2]} 100%)`,
+            diagonal: `repeating-linear-gradient(135deg, ${f.colors[0]} 0 7px, ${f.colors[1]} 7px 14px, ${f.colors[2]} 14px 21px)`,
+            neon: `linear-gradient(135deg, ${f.colors[1]} 0 50%, ${f.colors[2]} 50% 100%)`,
+          };
+          return (
+            <div key={i} style={{
+              width:46, height:64, borderRadius:7,
+              background: patterns[f.stripe] || patterns.horizontal,
+              border:`1.5px solid ${C.ink}`,
+              boxShadow:`2px 2px 0 ${C.ink}`,
+              flexShrink:0,
+              transform:`rotate(${(i-2)*3}deg)`,
+            }}/>
+          );
+        })}
+      </div>
+
+      {/* Title */}
+      <div style={{ flexShrink:0 }}>
+        <div style={{ fontFamily:'Space Mono, monospace', fontSize:10, letterSpacing:'0.2em', color:C.inkSoft, textTransform:'uppercase' }}>welcome to</div>
+        <div style={{ fontFamily:'Caveat, cursive', fontWeight:700, fontSize:52, lineHeight:0.95, marginTop:2, color:C.ink }}>cinematch</div>
+        <div style={{ fontFamily:'Nunito, sans-serif', fontSize:14, lineHeight:1.35, color:C.inkSoft, marginTop:8 }}>
+          find a film that fits tonight — no scrolling, just your vibe.
+        </div>
+      </div>
+
+      {/* Cine intro */}
+      <div style={{
+        background:C.paper2, border:`2px solid ${C.ink}`,
+        borderRadius:14, padding:'10px 12px',
+        boxShadow:`3px 3px 0 ${C.ink}`, flexShrink:0,
+      }}>
+        <div style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
+          <Cine size={36}/>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontFamily:'Caveat, cursive', fontWeight:700, fontSize:18, lineHeight:1, color:C.ink }}>hi, i'm Cine!</div>
+            <div style={{ fontFamily:'Nunito, sans-serif', fontSize:12, lineHeight:1.35, color:C.ink, marginTop:3 }}>
+              i'll learn your taste in ~90 seconds, then pick your first film.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div style={{ flexShrink:0 }}>
+        <Btn primary onClick={onStart} style={{ width:'100%', justifyContent:'center' }}>
+          create account to start →
+        </Btn>
+        <div style={{ textAlign:'center', marginTop:8, fontFamily:'Space Mono, monospace', fontSize:9, letterSpacing:'0.1em', color:C.inkLight, textTransform:'uppercase' }}>
+          free · no card needed
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HowItWorks({ onStart, onBack }) {
+  const { C, Cine, Btn } = window.CinematchUI;
+  return (
+    <div style={{
+      width:'100%', height:'100%',
+      background:C.paper,
+      display:'flex', flexDirection:'column',
+      paddingTop:60,
+      boxSizing:'border-box',
+      overflow:'hidden',
+    }}>
+      <div style={{ padding:'0 20px 10px' }}>
+        <button onClick={onBack} style={{ background:'transparent', border:'none', fontFamily:'Caveat, cursive', fontSize:22, color:C.inkSoft, cursor:'pointer', padding:0, whiteSpace:'nowrap' }}>← back</button>
+      </div>
+
+      <div style={{ padding:'10px 24px 0' }}>
+        <div style={{ fontFamily:'Space Mono, monospace', fontSize:10, letterSpacing:'0.15em', color:C.inkSoft, textTransform:'uppercase' }}>step 2 of 2</div>
+        <div style={{ fontFamily:'Caveat, cursive', fontWeight:700, fontSize:40, lineHeight:1, marginTop:4, color:C.ink }}>the taste test</div>
+        <div style={{ fontFamily:'Nunito, sans-serif', fontSize:14, lineHeight:1.4, color:C.inkSoft, marginTop:8 }}>
+          i'll show you 12 films. rate each one 1–5 stars — or skip if you haven't seen it.
+        </div>
+      </div>
+
+      {/* Demo card illustration */}
+      <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'center', padding:'16px 24px' }}>
+        {/* Mini card demo */}
+        <div style={{
+          border:`2px solid ${C.ink}`, borderRadius:14, overflow:'hidden',
+          boxShadow:`3px 3px 0 ${C.ink}`, background:C.paper
+        }}>
+          <div style={{
+            height:100,
+            background:`repeating-linear-gradient(180deg, #E8A4C4 0 14px, #F0C8A8 14px 28px, #C8A0B4 28px 42px)`,
+            borderBottom:`1.5px solid ${C.ink}`,
+            display:'flex', alignItems:'flex-end', padding:8,
+          }}>
+            <div style={{background:'rgba(250,246,238,0.94)', border:`1px solid ${C.ink}`, borderRadius:6, padding:'4px 8px', fontFamily:'Caveat, cursive', fontWeight:700, fontSize:15, color:C.ink, lineHeight:1}}>Grand Budapest Hotel</div>
+          </div>
+          <div style={{ padding:'10px 14px' }}>
+            <div style={{ fontFamily:'Space Mono, monospace', fontSize:9, color:C.inkLight, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:8 }}>your rating</div>
+            <div style={{ display:'flex', gap:6 }}>
+              {[1,2,3,4,5].map(s => (
+                <div key={s} style={{
+                  width:32, height:32, borderRadius:'50%',
+                  border:`2px solid ${s<=4?C.pink:C.ink}`,
+                  background: s<=4?C.pink:C.paper,
+                  color: s<=4?'white':C.ink,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontFamily:'Caveat, cursive', fontWeight:700, fontSize:18,
+                  boxShadow: s===4?`2px 2px 0 ${C.ink}`:'none',
+                }}>{'★'}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ background:C.paper2, border:`1.5px dashed ${C.ink}`, borderRadius:12, padding:10, marginTop:14 }}>
+          <div style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+            <Cine size={28}/>
+            <div style={{ fontFamily:'Nunito, sans-serif', fontSize:12, lineHeight:1.4, color:C.ink }}>
+              haven't seen it? tap <b>?</b> — i'll still read your reaction to the poster.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding:'0 24px 28px' }}>
+        <Btn primary onClick={onStart} style={{ width:'100%', justifyContent:'center' }}>start rating →</Btn>
+      </div>
+    </div>
+  );
+}
+
+window.Welcome = Welcome;
+window.HowItWorks = HowItWorks;
+
+
+
+
+
+</script>
+<script type="text/babel" data-presets="react">
+// Auth screen — SSO account creation before onboarding
+// Step 1 in the flow: welcome → auth → how → swipe → fingerprint
+
+function AuthScreen({ onDone, onBack }) {
+  const { C, Cine, Btn } = window.CinematchUI;
+  const [loading, setLoading] = React.useState(null);
+
+  function handleSSO(provider) {
+    setLoading(provider);
+    setTimeout(() => { setLoading(null); onDone(); }, 900);
+  }
+
+  return (
+    <div style={{
+      width:'100%', height:'100%',
+      background: C.paper,
+      display:'flex', flexDirection:'column',
+      padding:'52px 24px 36px',
+      boxSizing:'border-box',
+      overflow:'hidden',
+      gap: 24,
+    }}>
+      {/* Back */}
+      <div style={{ flexShrink:0 }}>
+        <button onClick={onBack} style={{ background:'transparent', border:'none', fontFamily:'Caveat, cursive', fontSize:22, color:C.inkSoft, cursor:'pointer', padding:0, whiteSpace:'nowrap' }}>← back</button>
+      </div>
+
+      {/* Heading */}
+      <div style={{ flexShrink:0 }}>
+        <div style={{ fontFamily:'Space Mono, monospace', fontSize:10, letterSpacing:'0.2em', color:C.inkSoft, textTransform:'uppercase' }}>step 1 of 2</div>
+        <div style={{ fontFamily:'Caveat, cursive', fontWeight:700, fontSize:40, lineHeight:1, marginTop:4, color:C.ink }}>create your account</div>
+        <div style={{ fontFamily:'Nunito, sans-serif', fontSize:13, lineHeight:1.35, color:C.inkSoft, marginTop:8 }}>
+          your taste is personal. your account keeps it safe across devices.
+        </div>
+      </div>
+
+      {/* SSO Buttons */}
+      <div style={{ display:'flex', flexDirection:'column', gap:10, flexShrink:0 }}>
+        <SSOButton logo="G" label="Continue with Google" loading={loading==='google'} color="#4285F4" onClick={() => handleSSO('google')}/>
+
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ flex:1, height:1, background:C.inkLight, opacity:0.35 }}/>
+          <div style={{ fontFamily:'Space Mono, monospace', fontSize:10, color:C.inkLight, letterSpacing:'0.1em' }}>or</div>
+          <div style={{ flex:1, height:1, background:C.inkLight, opacity:0.35 }}/>
+        </div>
+
+        <button onClick={() => handleSSO('email')} style={{
+          background:'transparent', border:`1.5px dashed ${C.ink}`, borderRadius:100,
+          padding:'11px 20px', fontFamily:'Nunito, sans-serif', fontSize:14, color:C.inkSoft,
+          cursor:'pointer',
+        }}>
+          {loading==='email' ? '…signing in' : 'continue with email →'}
+        </button>
+      </div>
+
+      {/* Footer */}
+      <div style={{ flexShrink:0, textAlign:'center' }}>
+        <div style={{ fontFamily:'Space Mono, monospace', fontSize:9, color:C.inkLight, lineHeight:1.6, letterSpacing:'0.05em' }}>
+          by continuing you agree to our<br/>
+          <span style={{ textDecoration:'underline' }}>terms</span> · <span style={{ textDecoration:'underline' }}>privacy policy</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SSOButton({ logo, label, loading, color, dark, onClick }) {
+  const { C } = window.CinematchUI;
+  return (
+    <button onClick={loading ? undefined : onClick} style={{
+      width:'100%', display:'flex', alignItems:'center', gap:14,
+      padding:'13px 18px', borderRadius:100,
+      background: dark ? C.ink : C.paper,
+      border:`2px solid ${C.ink}`,
+      boxShadow:`3px 3px 0 ${C.ink}`,
+      cursor: loading ? 'default' : 'pointer',
+      transition:'transform 0.08s, box-shadow 0.08s',
+      opacity: loading ? 0.7 : 1,
+    }}
+    onMouseDown={e => !loading && (e.currentTarget.style.transform='translate(2px,2px)', e.currentTarget.style.boxShadow=`1px 1px 0 ${C.ink}`)}
+    onMouseUp={e => !loading && (e.currentTarget.style.transform='', e.currentTarget.style.boxShadow=`3px 3px 0 ${C.ink}`)}
+    onMouseLeave={e => !loading && (e.currentTarget.style.transform='', e.currentTarget.style.boxShadow=`3px 3px 0 ${C.ink}`)}
+    >
+      {/* Logo circle */}
+      <div style={{
+        width:32, height:32, borderRadius:'50%',
+        background: dark ? 'rgba(255,255,255,0.12)' : color+'22',
+        display:'flex', alignItems:'center', justifyContent:'center',
+        fontFamily: typeof logo === 'string' && logo.length === 1 && logo !== '🍎' ? 'Arial, sans-serif' : 'inherit',
+        fontWeight:700, fontSize: logo === '🍎' ? 18 : 17,
+        color: dark ? 'white' : color,
+        border: `1.5px solid ${dark ? 'rgba(255,255,255,0.15)' : color+'44'}`,
+        flexShrink:0,
+      }}>{logo}</div>
+
+      {/* Label */}
+      <div style={{
+        flex:1, textAlign:'left',
+        fontFamily:'Nunito, sans-serif', fontWeight:700, fontSize:15,
+        color: dark ? 'white' : C.ink,
+      }}>{loading ? '…' : label}</div>
+    </button>
+  );
+}
+
+window.AuthScreen = AuthScreen;
+
+
+
+</script>
+<script type="text/babel" data-presets="react">
+// Swipe taste test — draggable poster cards
+// User swipes right = love, left = skip. Records picks into state.
+
+// Swipe taste test — draggable poster cards
+// User swipes right = love, left = skip. Records picks into state.
+
+// Swipe taste test — 5-star rating system
+// Drag card to pre-select a rating, or tap stars below. ? = not seen.
+
+const { useState: useStateSwipe, useRef: useRefSwipe, useEffect: useEffectSwipe } = React;
+
+function SwipeTest({ films, onComplete, onBack }) {
+  const { C, StripedPoster, Cine } = window.CinematchUI;
+  const [idx, setIdx] = useStateSwipe(0);
+  const [picks, setPicks] = useStateSwipe({});
+  const [hoveredStar, setHoveredStar] = useStateSwipe(null);
+  const [exiting, setExiting] = useStateSwipe(null); // {dir: 'left'|'right', rating}
+
+  const film = films[idx];
+  const next = films[idx + 1];
+
+  function record(rating) {
+    const newPicks = { ...picks, [film.id]: rating }; // 0 = not seen, 1-5 = stars
+    setPicks(newPicks);
+    setExiting({ dir: rating === 0 ? 'left' : 'right', rating });
+    setTimeout(() => {
+      if (idx + 1 >= films.length) {
+        onComplete(newPicks);
+      } else {
+        setIdx(i => i + 1);
+        setExiting(null);
+        setHoveredStar(null);
+      }
+    }, 320);
+  }
+
+  const exitTransform = exiting
+    ? exiting.dir === 'right'
+      ? 'translate(460px, -80px) rotate(22deg)'
+      : 'translate(-460px, -80px) rotate(-22deg)'
+    : '';
+
+  const progress = idx / films.length;
+
+  return (
+    <div style={{
+      width:'100%', height:'100%', background:C.paper,
+      display:'flex', flexDirection:'column', paddingTop:56,
+      boxSizing:'border-box', overflow:'hidden',
+    }}>
+      {/* Header */}
+      <div style={{ padding:'0 20px 8px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <button onClick={onBack} style={{
+          background:'transparent', border:'none',
+          fontFamily:'Caveat, cursive', fontSize:20, color:C.inkSoft,
+          cursor:'pointer', padding:0, whiteSpace:'nowrap',
+        }}>← back</button>
+        <div style={{
+          fontFamily:'Space Mono, monospace', fontSize:10,
+          letterSpacing:'0.1em', color:C.inkSoft, textTransform:'uppercase',
+        }}>{idx + 1} / {films.length}</div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ padding:'0 20px', marginBottom:10 }}>
+        <div style={{
+          height:5, background:C.paper2,
+          border:`1.5px solid ${C.ink}`, borderRadius:10, overflow:'hidden',
+        }}>
+          <div style={{
+            height:'100%', width:`${progress * 100}%`,
+            background:C.pink, transition:'width 0.35s ease',
+          }}/>
+        </div>
+      </div>
+
+      {/* Cine prompt */}
+      <div style={{ padding:'0 20px 10px', display:'flex', gap:8, alignItems:'center' }}>
+        <Cine size={28}/>
+        <div style={{ fontFamily:'Nunito, sans-serif', fontSize:13, color:C.ink, lineHeight:1.2, flex:1, minWidth:0 }}>
+          <span style={{ fontFamily:'Caveat, cursive', fontWeight:700, fontSize:17 }}>{film.title}</span>
+          {' '}— how many stars?
+        </div>
+      </div>
+
+      {/* Card area */}
+      <div style={{
+        flex:1, display:'flex', alignItems:'center', justifyContent:'center',
+        position:'relative',
+      }}>
+        {/* Back card */}
+        {next && (
+          <div style={{
+            position:'absolute',
+            transform:'translateY(10px) scale(0.94)',
+            opacity:0.5, pointerEvents:'none',
+          }}>
+            <SwipeCard film={next}/>
+          </div>
+        )}
+        {/* Front card */}
+        <div style={{
+          transform: exiting ? exitTransform : 'none',
+          transition: exiting ? 'transform 0.32s cubic-bezier(0.4,0,0.2,1)' : 'none',
+          position:'relative',
+        }}>
+          <SwipeCard film={film}/>
+        </div>
+      </div>
+
+      {/* 5-star rating row */}
+      <div style={{ padding:'12px 20px 6px' }}>
+        <div style={{
+          background:C.paper2, border:`2px solid ${C.ink}`, borderRadius:16,
+          padding:'12px 16px', boxShadow:`3px 3px 0 ${C.ink}`,
+        }}>
+          <div style={{
+            fontFamily:'Space Mono, monospace', fontSize:9,
+            letterSpacing:'0.12em', color:C.inkLight, textTransform:'uppercase',
+            marginBottom:10,
+          }}>your rating</div>
+
+          <div style={{ display:'flex', gap:6, justifyContent:'center' }}>
+            {[1,2,3,4,5].map(star => {
+              const filled = hoveredStar !== null ? star <= hoveredStar : false;
+              return (
+                <button key={star}
+                  onClick={() => record(star)}
+                  onMouseEnter={() => setHoveredStar(star)}
+                  onMouseLeave={() => setHoveredStar(null)}
+                  onTouchStart={() => setHoveredStar(star)}
+                  style={{
+                    width:48, height:48, borderRadius:'50%',
+                    border:`2px solid ${filled ? C.pink : C.ink}`,
+                    background: filled ? C.pink : C.paper,
+                    color: filled ? 'white' : C.ink,
+                    fontSize:22, cursor:'pointer',
+                    boxShadow: filled ? `2px 2px 0 ${C.ink}` : 'none',
+                    transform: filled ? 'translate(-1px,-1px) scale(1.08)' : 'scale(1)',
+                    transition:'all 0.1s ease',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    lineHeight:1,
+                  }}>★</button>
+              );
+            })}
+          </div>
+
+          <div style={{ display:'flex', justifyContent:'space-between', marginTop:6, padding:'0 4px' }}>
+            <div style={{ fontFamily:'Space Mono, monospace', fontSize:8, color:C.inkLight, textTransform:'uppercase', letterSpacing:'0.08em' }}>no thanks</div>
+            <div style={{ fontFamily:'Space Mono, monospace', fontSize:8, color:C.inkLight, textTransform:'uppercase', letterSpacing:'0.08em' }}>loved it</div>
+          </div>
+        </div>
+
+        {/* Not seen button */}
+        <button onClick={() => record(0)} style={{
+          display:'block', width:'100%', marginTop:8,
+          background:'transparent', border:`1.5px dashed ${C.inkLight}`,
+          borderRadius:100, padding:'8px 0',
+          fontFamily:'Nunito, sans-serif', fontSize:13, color:C.inkSoft,
+          cursor:'pointer',
+        }}>
+          ? haven't seen it
+        </button>
+      </div>
+
+      {/* bottom spacer */}
+      <div style={{ height:16 }}/>
+    </div>
+  );
+}
+
+function SwipeCard({ film }) {
+  const { C } = window.CinematchUI;
+  const [c1,c2,c3] = film.colors;
+  const patterns = {
+    horizontal: `repeating-linear-gradient(180deg, ${c1} 0 24px, ${c2} 24px 48px, ${c3} 48px 72px)`,
+    diagonal:   `repeating-linear-gradient(135deg, ${c1} 0 20px, ${c2} 20px 40px, ${c3} 40px 60px)`,
+    vertical:   `repeating-linear-gradient(90deg, ${c1} 0 28px, ${c2} 28px 56px, ${c3} 56px 84px)`,
+    burst:      `radial-gradient(circle at 50% 50%, ${c1} 0%, ${c2} 40%, ${c3} 80%)`,
+    flame:      `linear-gradient(180deg, ${c1} 0%, ${c1} 40%, ${c2} 55%, ${c3} 100%)`,
+    splash:     `radial-gradient(ellipse at 30% 30%, ${c1} 0%, ${c2} 45%, ${c3} 100%)`,
+    neon:       `linear-gradient(135deg, ${c2} 0% 50%, ${c3} 50% 100%)`,
+  };
+
+  return (
+    <div style={{
+      width:270, background:C.paper,
+      border:`2px solid ${C.ink}`, borderRadius:18,
+      boxShadow:`5px 5px 0 ${C.ink}`, padding:12,
+    }}>
+      {/* Poster */}
+      <div style={{
+        height:320, borderRadius:12,
+        background: patterns[film.stripe] || patterns.horizontal,
+        border:`1.5px solid ${C.ink}`,
+        position:'relative', overflow:'hidden',
+      }}>
+        {/* Title overlay */}
+        <div style={{
+          position:'absolute', left:10, right:10, bottom:10,
+          background:'rgba(250,246,238,0.93)',
+          border:`1.5px solid ${C.ink}`,
+          borderRadius:8, padding:'8px 10px',
+        }}>
+          <div style={{ fontFamily:'Caveat, cursive', fontWeight:700, fontSize:22, lineHeight:1, color:C.ink }}>{film.title}</div>
+          <div style={{ fontFamily:'Space Mono, monospace', fontSize:8, letterSpacing:'0.1em', color:C.inkSoft, marginTop:3, textTransform:'uppercase' }}>{film.year} · {film.director}</div>
+        </div>
+      </div>
+      {/* Blurb */}
+      <div style={{
+        padding:'10px 2px 0',
+        fontFamily:'Nunito, sans-serif', fontSize:12, lineHeight:1.4,
+        color:C.inkSoft,
+      }}>{film.blurb}</div>
+    </div>
+  );
+}
+
+window.SwipeTest = SwipeTest;
+
+
+
+</script>
+<script type="text/babel" data-presets="react">
+// Fingerprint reveal — updated for 5-star picks (ratings 1-5, 0 = not seen)
+
+function Fingerprint({ picks, films, onDone, onRestart }) {
+  const { C, Cine, Btn } = window.CinematchUI;
+
+  // liked = rated 3+ stars
+  const liked = films.filter(f => (picks[f.id] || 0) >= 3);
+  const loved = films.filter(f => (picks[f.id] || 0) >= 4);
+  const seen  = films.filter(f => (picks[f.id] || 0) > 0);
+
+  // Tag counts weighted by rating
+  const tagCounts = {};
+  seen.forEach(f => {
+    const rating = picks[f.id] || 0;
+    const weight = rating / 5;
+    f.tags.forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + weight; });
+  });
+  const sorted = Object.entries(tagCounts).sort((a,b) => b[1] - a[1]);
+  const top = sorted.slice(0, 5).map(([t]) => t);
+  const mapped = top.map(t => window.CINEMATCH_TAG_MAP[t]?.label || t);
+
+  const nickname = liked.length === 0
+    ? 'The Curious Newcomer'
+    : mapped.length >= 2
+      ? capitalize(mapped[0]) + ' + ' + capitalize(mapped[1])
+      : capitalize(mapped[0] || 'Cinephile');
+
+  const paceTag  = top.find(t => window.CINEMATCH_TAG_MAP[t]?.cat === 'pace')   || 'slow';
+  const styleTag = top.find(t => window.CINEMATCH_TAG_MAP[t]?.cat === 'style')  || 'stylised';
+  const toneTag  = top.find(t => window.CINEMATCH_TAG_MAP[t]?.cat === 'tone')   || 'bittersweet';
+
+  const sigPicks = loved.slice(0, 3).length > 0 ? loved.slice(0, 3) : liked.slice(0, 3);
+
+  // avg rating
+  const ratings = films.map(f => picks[f.id] || 0).filter(r => r > 0);
+  const avg = ratings.length > 0 ? (ratings.reduce((a,b)=>a+b,0) / ratings.length).toFixed(1) : '—';
+
+  return (
+    <div style={{ width:'100%', height:'100%', background:C.paper2, display:'flex', flexDirection:'column', paddingTop:56, overflow:'auto', boxSizing:'border-box' }}>
+
+      <div style={{ padding:'0 20px 14px' }}>
+        <div style={{ fontFamily:'Space Mono, monospace', fontSize:10, letterSpacing:'0.15em', color:C.inkSoft, textTransform:'uppercase' }}>your cinematic fingerprint</div>
+        <div style={{ fontFamily:'Caveat, cursive', fontWeight:700, fontSize:40, lineHeight:1, marginTop:4, color:C.ink }}>all done! 🎬</div>
+      </div>
+
+      {/* Cine message */}
+      <div style={{ padding:'0 20px 16px' }}>
+        <div style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
+          <Cine size={38}/>
+          <div style={{
+            background:C.paper, border:`1.5px solid ${C.ink}`,
+            borderRadius:'4px 16px 16px 16px', padding:'10px 14px',
+            fontFamily:'Nunito, sans-serif', fontSize:13, lineHeight:1.4, color:C.ink,
+            flex:1, boxShadow:`2px 2px 0 ${C.ink}`,
+          }}>
+            {liked.length > 0
+              ? <>you lean <b>{mapped[0] || 'eclectic'}</b> with a soft spot for <b>{mapped[1] || 'the unexpected'}</b>. your avg rating: <b>{avg}★</b> — i see you have standards.</>
+              : "you haven't seen many of those — perfect. we'll start fresh and find what fits."}
+          </div>
+        </div>
+      </div>
+
+      {/* Shareable fingerprint card */}
+      <div style={{ padding:'0 20px 16px', display:'flex', justifyContent:'center' }}>
+        <div style={{
+          width:270, aspectRatio:'9/14',
+          borderRadius:18, border:`2.5px solid ${C.ink}`,
+          background:`linear-gradient(155deg, ${C.pink} 0%, ${C.coral} 45%, ${C.yellow} 100%)`,
+          boxShadow:`6px 6px 0 ${C.ink}`, transform:'rotate(-1.5deg)',
+          padding:'16px 16px 14px',
+          display:'flex', flexDirection:'column', justifyContent:'space-between',
+          overflow:'hidden', position:'relative',
+        }}>
+          <div>
+            <div style={{ fontFamily:'Space Mono, monospace', fontSize:8, letterSpacing:'0.2em', color:C.ink, textTransform:'uppercase', display:'flex', justifyContent:'space-between' }}>
+              <span>CINEMATCH</span><span>FINGERPRINT</span>
+            </div>
+            <div style={{ fontFamily:'Caveat, cursive', fontWeight:700, fontSize:30, lineHeight:0.95, marginTop:8, color:C.ink }}>{nickname}</div>
+            <div style={{ fontFamily:'Nunito, sans-serif', fontSize:11, marginTop:4, color:C.ink, opacity:0.75 }}>
+              {seen.length} films rated · avg {avg}★
+            </div>
+          </div>
+
+          {/* Mini posters */}
+          <div style={{ display:'flex', justifyContent:'center', gap:8 }}>
+            {sigPicks.length > 0 ? sigPicks.map((f, i) => (
+              <MiniPoster key={f.id} film={f} rot={(i-1)*5}/>
+            )) : (
+              <div style={{ fontFamily:'Nunito, sans-serif', fontSize:11, color:C.ink, opacity:0.7, textAlign:'center', padding:'10px 0' }}>rate a few films to fill this in</div>
+            )}
+          </div>
+
+          {/* DNA traits */}
+          <div>
+            <div style={{ fontFamily:'Space Mono, monospace', fontSize:8, letterSpacing:'0.15em', color:C.ink, textTransform:'uppercase', opacity:0.75, marginBottom:5 }}>your DNA</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+              <TraitRow label="tone"  value={window.CINEMATCH_TAG_MAP[toneTag]?.label  || toneTag}/>
+              <TraitRow label="style" value={window.CINEMATCH_TAG_MAP[styleTag]?.label || styleTag}/>
+              <TraitRow label="pace"  value={window.CINEMATCH_TAG_MAP[paceTag]?.label  || paceTag}/>
+            </div>
+          </div>
+
+          {/* Stamp */}
+          <div style={{
+            position:'absolute', top:14, right:-28, transform:'rotate(18deg)',
+            fontFamily:'Space Mono, monospace', fontSize:8,
+            letterSpacing:'0.2em', padding:'3px 34px',
+            border:`1.5px solid ${C.ink}`, background:C.yellow,
+            color:C.ink, textTransform:'uppercase',
+          }}>#001</div>
+        </div>
+      </div>
+
+      {/* Quick star summary */}
+      {seen.length > 0 && (
+        <div style={{ padding:'0 20px 10px' }}>
+          <div style={{ fontFamily:'Space Mono, monospace', fontSize:9, letterSpacing:'0.12em', color:C.inkSoft, textTransform:'uppercase', marginBottom:8 }}>your ratings</div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {films.filter(f => (picks[f.id]||0) > 0).sort((a,b)=>(picks[b.id]||0)-(picks[a.id]||0)).map(f => (
+              <div key={f.id} style={{
+                padding:'4px 10px',
+                background:C.paper, border:`1.5px solid ${C.ink}`, borderRadius:100,
+                fontFamily:'Nunito, sans-serif', fontSize:12, color:C.ink,
+                display:'flex', gap:5, alignItems:'center',
+              }}>
+                <span>{f.title.split(' ').slice(0,2).join(' ')}</span>
+                <span style={{ fontFamily:'Caveat, cursive', fontWeight:700, fontSize:14, color:C.pink }}>{'★'.repeat(picks[f.id]||0)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* CTAs */}
+      <div style={{ padding:'14px 20px 28px', display:'flex', flexDirection:'column', gap:10, alignItems:'stretch' }}>
+        <Btn primary onClick={onDone} style={{ width:'100%', justifyContent:'center' }}>
+          find my first film →
+        </Btn>
+        <div style={{ display:'flex', gap:10, justifyContent:'center' }}>
+          <Btn small onClick={onRestart}>↻ start over</Btn>
+          <Btn small>↗ share card</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TraitRow({ label, value }) {
+  const { C } = window.CinematchUI;
+  return (
+    <div style={{
+      display:'flex', alignItems:'center', gap:8,
+      background:'rgba(250,246,238,0.6)', border:`1.5px solid ${C.ink}`,
+      borderRadius:100, padding:'3px 10px',
+    }}>
+      <div style={{ fontFamily:'Space Mono, monospace', fontSize:8, letterSpacing:'0.12em', color:C.ink, opacity:0.65, width:36, textTransform:'uppercase' }}>{label}</div>
+      <div style={{ fontFamily:'Caveat, cursive', fontWeight:700, fontSize:15, color:C.ink, lineHeight:1 }}>{value}</div>
+    </div>
+  );
+}
+
+function MiniPoster({ film, rot }) {
+  const [c1,c2,c3] = film.colors;
+  const patterns = {
+    horizontal:`repeating-linear-gradient(180deg,${c1} 0 8px,${c2} 8px 16px,${c3} 16px 24px)`,
+    diagonal:`repeating-linear-gradient(135deg,${c1} 0 6px,${c2} 6px 12px,${c3} 12px 18px)`,
+    vertical:`repeating-linear-gradient(90deg,${c1} 0 8px,${c2} 8px 16px,${c3} 16px 24px)`,
+    burst:`radial-gradient(circle at 50% 50%,${c1} 0%,${c2} 50%,${c3} 100%)`,
+    flame:`linear-gradient(180deg,${c1} 0%,${c2} 55%,${c3} 100%)`,
+    splash:`radial-gradient(ellipse at 30% 30%,${c1} 0%,${c2} 50%,${c3} 100%)`,
+    neon:`linear-gradient(135deg,${c2} 0% 50%,${c3} 50% 100%)`,
+  };
+  return (
+    <div style={{
+      width:52, height:76, flexShrink:0,
+      background:patterns[film.stripe]||patterns.horizontal,
+      border:'1.5px solid #1A1A1A', borderRadius:4,
+      boxShadow:'1.5px 1.5px 0 #1A1A1A',
+      transform:`rotate(${rot}deg)`,
+    }}/>
+  );
+}
+
+function capitalize(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+
+window.Fingerprint = Fingerprint;
+
+
+</script>
+
+<script type="text/babel" data-presets="react">
+const { useState: useS, useEffect: useE } = React;
+
+function App() {
+  const [step, setStep] = useS(() => localStorage.getItem('cine_step') || 'welcome');
+  const [picks, setPicks] = useS(() => {
+    try { return JSON.parse(localStorage.getItem('cine_picks') || '{}'); } catch { return {}; }
+  });
+
+  useE(() => { localStorage.setItem('cine_step', step); }, [step]);
+  useE(() => { localStorage.setItem('cine_picks', JSON.stringify(picks)); }, [picks]);
+
+  const films = window.CINEMATCH_FILMS;
+
+  let content;
+  if (step === 'welcome') {
+    content = <window.Welcome onStart={() => setStep('auth')}/>;
+  } else if (step === 'auth') {
+    content = <window.AuthScreen onDone={() => setStep('how')} onBack={() => setStep('welcome')}/>;
+  } else if (step === 'how') {
+    content = <window.HowItWorks onStart={() => setStep('swipe')} onBack={() => setStep('auth')}/>;
+  } else if (step === 'swipe') {
+    content = <window.SwipeTest films={films} onComplete={(p) => { setPicks(p); setStep('fingerprint'); }} onBack={() => setStep('how')}/>;
+  } else if (step === 'fingerprint') {
+    content = <window.Fingerprint picks={picks} films={films} onDone={() => setStep('done')} onRestart={() => { setPicks({}); setStep('welcome'); }}/>;
+  } else {
+    content = <Done onRestart={() => { setPicks({}); setStep('welcome'); }}/>;
+  }
+
+  return (
+    <div className="stage" data-screen-label={`onboarding · ${step}`}>
+      <div className="sub">Cinematch · onboarding prototype</div>
+      <window.IOSDevice width={390} height={844}>
+        {content}
+      </window.IOSDevice>
+      <div className="sub" style={{opacity:0.6}}>user-test build · {step}</div>
+    </div>
+  );
+}
+
+function Done({ onRestart }) {
+  const { C, Cine, Btn } = window.CinematchUI;
+  return (
+    <div style={{ width:'100%', height:'100%', background:C.paper, display:'flex', flexDirection:'column', justifyContent:'center', padding:'40px 26px', textAlign:'center' }}>
+      <Cine size={80}/>
+      <div style={{ fontFamily:'Caveat', fontWeight:700, fontSize:44, lineHeight:1, marginTop:20, color:C.ink }}>
+        onboarding complete!
+      </div>
+      <div style={{ fontFamily:'Nunito', fontSize:16, lineHeight:1.35, color:C.inkSoft, marginTop:14 }}>
+        next in the real product: you'd land on the home screen and Cine would serve up a film matched to your fingerprint.
+      </div>
+      <div style={{ marginTop:28, fontFamily:'Space Mono', fontSize:10, letterSpacing:'0.1em', color:C.inkLight, textTransform:'uppercase' }}>— end of prototype —</div>
+      <div style={{ marginTop:20 }}>
+        <Btn onClick={onRestart}>↻ run again</Btn>
+      </div>
+    </div>
+  );
+}
+
+// Mount
+function tryMount(n) {
+  n = n || 0;
+  if (window.CinematchUI && window.Welcome && window.HowItWorks && window.AuthScreen && window.SwipeTest && window.Fingerprint && window.IOSDevice) {
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  } else if (n < 100) {
+    setTimeout(() => tryMount(n+1), 50);
+  }
+}
+tryMount();
+</script>
+
+</body>
+</html>

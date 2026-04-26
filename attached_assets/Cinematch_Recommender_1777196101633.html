@@ -1,0 +1,1261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Cinematch — Recommender Loop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  button,input,select,textarea{font-family:'Nunito',sans-serif;}
+  html,body{margin:0;padding:0;height:100%;background:#E8DDC8;font-family:'Nunito',sans-serif;}
+  body{
+    background-image:
+      radial-gradient(circle at 15% 20%,rgba(255,201,60,.12) 0%,transparent 40%),
+      radial-gradient(circle at 85% 70%,rgba(255,77,143,.08) 0%,transparent 45%);
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:24px;
+  }
+  .stage{display:flex;flex-direction:column;align-items:center;gap:16px;transform-origin:top center;}
+  .label{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.15em;color:#4A4A4A;text-transform:uppercase;}
+  button{font:inherit;cursor:pointer;}
+  .reset-btn{
+    position:fixed;top:16px;right:16px;
+    padding:7px 14px;background:#FAF6EE;
+    border:2px solid #1A1A1A;border-radius:100px;
+    font-family:'Caveat',cursive;font-weight:700;font-size:16px;
+    box-shadow:2px 2px 0 #1A1A1A;z-index:100;
+  }
+  @media(max-height:940px){
+    body{align-items:flex-start;}
+    .stage{--sc:calc((100vh - 48px)/900);transform:scale(var(--sc));}
+  }
+</style>
+</head>
+<body>
+
+<button class="reset-btn" onclick="localStorage.removeItem('cr_step');localStorage.removeItem('cr_group');location.reload();">↻ restart</button>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script>
+// ── Design tokens ──────────────────────────────────────────────
+const C = {
+  paper:'#FAF6EE', paper2:'#F3ECDA', ink:'#1A1A1A',
+  inkSoft:'#4A4A4A', inkLight:'#8A8478',
+  pink:'#FF4D8F', yellow:'#FFC93C', blue:'#4D6EFF',
+  mint:'#5FD4A8', lilac:'#C9A7FF', coral:'#FF8C5A',
+};
+
+// ── Films catalogue ────────────────────────────────────────────
+const FILMS = [
+  { id:1,  title:'The Grand Budapest Hotel', year:2014, director:'Wes Anderson',
+    tags:['whimsical','witty','stylised','funny'],
+    blurb:'A concierge, a lobby boy, and a stolen painting.',
+    why:{ cosy:90, thinky:45, funny:85, tense:30, romantic:40 },
+    streaming:'Disney+', runtime:'99 min', rating:'PG-13',
+    colors:['#E8A4C4','#F0C8A8','#C8A0B4'], stripe:'horizontal' },
+  { id:2,  title:'Moonlight', year:2016, director:'Barry Jenkins',
+    tags:['bittersweet','intimate','poetic','melancholic','slow'],
+    blurb:'Three chapters. One life. Luminous and tender.',
+    why:{ cosy:30, thinky:85, funny:10, tense:55, romantic:65 },
+    streaming:'MUBI', runtime:'111 min', rating:'R',
+    colors:['#1A3A5C','#4A6B8C','#2C4C6D'], stripe:'diagonal' },
+  { id:3,  title:'Everything Everywhere All at Once', year:2022, director:'Daniels',
+    tags:['chaotic','weird','emotional','wild','funny'],
+    blurb:'A laundromat owner saves every possible universe.',
+    why:{ cosy:40, thinky:75, funny:80, tense:60, romantic:50 },
+    streaming:'Netflix', runtime:'139 min', rating:'R',
+    colors:['#FF6B9D','#FFB84D','#4DBFB8'], stripe:'burst' },
+  { id:4,  title:'Past Lives', year:2023, director:'Celine Song',
+    tags:['bittersweet','quiet','romantic','melancholic','slow'],
+    blurb:'Two childhood friends, twenty years apart.',
+    why:{ cosy:50, thinky:70, funny:15, tense:25, romantic:95 },
+    streaming:'MUBI', runtime:'106 min', rating:'PG-13',
+    colors:['#2E3B4E','#7B8FA6','#C9B8A8'], stripe:'vertical' },
+  { id:5,  title:'Parasite', year:2019, director:'Bong Joon-ho',
+    tags:['tense','sharp','dark','clever'],
+    blurb:'A poor family infiltrates a rich one. Things escalate.',
+    why:{ cosy:15, thinky:90, funny:35, tense:95, romantic:20 },
+    streaming:'Prime', runtime:'132 min', rating:'R',
+    colors:['#3A3A3A','#C4A876','#8B6F47'], stripe:'horizontal' },
+  { id:6,  title:'Hot Fuzz', year:2007, director:'Edgar Wright',
+    tags:['funny','fast','silly','clever'],
+    blurb:'Supercop. Village. Not what it seems.',
+    why:{ cosy:55, thinky:40, funny:95, tense:70, romantic:20 },
+    streaming:'Netflix', runtime:'121 min', rating:'R',
+    colors:['#D64545','#4A6B2F','#8B9467'], stripe:'splash' },
+  { id:7,  title:'In the Mood for Love', year:2000, director:'Wong Kar-wai',
+    tags:['romantic','melancholic','stylised','slow','intimate'],
+    blurb:'Two neighbours. 1960s Hong Kong. A rehearsal.',
+    why:{ cosy:60, thinky:75, funny:10, tense:30, romantic:98 },
+    streaming:'MUBI', runtime:'98 min', rating:'PG',
+    colors:['#8B1E3F','#D4A574','#3A2416'], stripe:'diagonal' },
+  { id:8,  title:'The Worst Person in the World', year:2021, director:'Joachim Trier',
+    tags:['bittersweet','funny','honest','romantic'],
+    blurb:'Julie. Oslo. Nearly thirty. Figuring it out.',
+    why:{ cosy:60, thinky:65, funny:65, tense:30, romantic:75 },
+    streaming:'MUBI', runtime:'128 min', rating:'R',
+    colors:['#E85D75','#F4C2C2','#A8455C'], stripe:'horizontal' },
+  { id:9,  title:'Drive', year:2011, director:'Nicolas Winding Refn',
+    tags:['stylised','tense','cool','moody','neon'],
+    blurb:'Hollywood stuntman. Getaway driver. Consequences.',
+    why:{ cosy:20, thinky:55, funny:10, tense:90, romantic:55 },
+    streaming:'Prime', runtime:'100 min', rating:'R',
+    colors:['#E91E63','#1A1A2E','#16213E'], stripe:'neon' },
+  { id:10, title:'Paddington 2', year:2017, director:'Paul King',
+    tags:['whimsical','warm','funny','cosy'],
+    blurb:'A bear, a pop-up book, Hugh Grant\'s career highlight.',
+    why:{ cosy:98, thinky:20, funny:90, tense:25, romantic:30 },
+    streaming:'Netflix', runtime:'103 min', rating:'PG',
+    colors:['#2A5D8F','#E8B547','#7FB3D3'], stripe:'splash' },
+  { id:11, title:'Portrait of a Lady on Fire', year:2019, director:'Céline Sciamma',
+    tags:['romantic','poetic','slow','intimate','stylised'],
+    blurb:'A painter, her subject, an 18th-century summer.',
+    why:{ cosy:55, thinky:80, funny:5, tense:30, romantic:97 },
+    streaming:'MUBI', runtime:'122 min', rating:'NR',
+    colors:['#6B4226','#E8C896','#8B5A3C'], stripe:'flame' },
+  { id:12, title:'Columbus', year:2017, director:'Kogonada',
+    tags:['quiet','architectural','slow','intimate'],
+    blurb:'A town of modernist buildings. Two strangers.',
+    why:{ cosy:70, thinky:80, funny:10, tense:10, romantic:45 },
+    streaming:'MUBI', runtime:'104 min', rating:'NR',
+    colors:['#E8E4D8','#7A8B7F','#4A5856'], stripe:'vertical' },
+];
+
+// ── Slot machine options ──────────────────────────────────────
+const REELS = [
+  { l:'FEEL',    col: C.pink,
+    opts:['cosy','bittersweet','silly','thinky','tense','romantic','weird','swoony'] },
+  { l:'FLAVOUR', col: C.blue,
+    opts:['neon + rain','cosy','slow burn','wild ride','escapist','grounded','cinematic'] },
+  { l:'LENGTH',  col: C.yellow,
+    opts:['under 90m','~2 hrs','epic ok'] },
+  { l:'ERA',     col: C.mint,
+    opts:["today","'10s","'00s","'90s","'80s","classic"] },
+];
+
+// ── Film matching: slot reels → top 5 films ──────────────────
+function matchFilms(reels) {
+  const feel = reels[0].opts[reels[0].i];
+  const feelMap = {
+    cosy:{cosy:3,funny:1}, bittersweet:{romantic:2,thinky:2}, silly:{funny:3},
+    thinky:{thinky:3}, tense:{tense:3}, romantic:{romantic:3},
+    weird:{thinky:1,funny:1}, swoony:{romantic:2,cosy:1},
+  };
+  const wants = feelMap[feel] || {thinky:1};
+  return FILMS.map(f => {
+    let score = 0;
+    Object.entries(wants).forEach(([k,w]) => score += (f.why[k]||0) * w);
+    return { film:f, score };
+  }).sort((a,b)=>b.score-a.score).slice(0,5).map(r=>r.film);
+}
+
+// Streaming platform URLs
+const STREAMING_URLS = {
+  'Netflix':  'https://www.netflix.com/search?q=',
+  'Prime':    'https://www.amazon.co.uk/s?k=',
+  'MUBI':     'https://mubi.com/en/films/',
+  'Disney+':  'https://www.disneyplus.com/search/',
+};
+
+function getStreamingUrl(film) {
+  const base = STREAMING_URLS[film.streaming] || 'https://www.google.com/search?q=';
+  return base + encodeURIComponent(film.title);
+}
+
+// Simulate DB write — in production this posts to /api/watch-choices
+async function logWatchChoice(film, vibe) {
+  console.log('[Cinematch DB]', { action:'watch_choice', filmId:film.id, title:film.title, vibe, ts:new Date().toISOString() });
+  // POST /api/watch-choices { filmId, vibe, ts }
+  return true;
+}
+
+// ── Group taste blend: simulated member fingerprints ──────────
+const GROUP_MEMBERS = [
+  { n:'Andy',  taste:{ cosy:80, thinky:60, funny:75, tense:40, romantic:55 } },
+  { n:'Sam',   taste:{ cosy:70, thinky:80, funny:50, tense:60, romantic:70 } },
+  { n:'Tay',   taste:{ cosy:90, thinky:30, funny:85, tense:25, romantic:50 } },
+];
+
+function blendGroupTaste() {
+  const blend = { cosy:0, thinky:0, funny:0, tense:0, romantic:0 };
+  GROUP_MEMBERS.forEach(m => Object.keys(blend).forEach(k => blend[k] += m.taste[k]));
+  Object.keys(blend).forEach(k => blend[k] = Math.round(blend[k] / GROUP_MEMBERS.length));
+  return blend;
+}
+
+function matchFilmsGroup(reels) {
+  const feel = reels[0].opts[reels[0].i];
+  const feelMap = {
+    cosy:{cosy:3,funny:1}, bittersweet:{romantic:2,thinky:2}, silly:{funny:3},
+    thinky:{thinky:3}, tense:{tense:3}, romantic:{romantic:3},
+    weird:{thinky:1,funny:1}, swoony:{romantic:2,cosy:1},
+  };
+  const vibeWants = feelMap[feel] || {thinky:1};
+  const groupTaste = blendGroupTaste();
+
+  return FILMS.map(f => {
+    let score = 0;
+    // Vibe match (tonight's slot picks)
+    Object.entries(vibeWants).forEach(([k,w]) => score += (f.why[k]||0) * w * 1.5);
+    // Group taste blend
+    Object.entries(groupTaste).forEach(([k,v]) => score += (f.why[k]||0) * (v/100));
+    return { film:f, score };
+  }).sort((a,b)=>b.score-a.score).slice(0,5).map(r=>r.film);
+}
+
+window._C = C; window._FILMS = FILMS; window._REELS = REELS; window._matchFilms = matchFilms; window._matchFilmsGroup = matchFilmsGroup;
+</script>
+
+<script type="text/babel" data-presets="react">
+
+const { useState, useEffect, useRef } = React;
+
+// ── Helpers ───────────────────────────────────────────────────
+function Cine({ size = 34, mood = 'happy' }) {
+  const face = { happy: 'C', think: 'c...', wink: ';)', tada: '✨C' }[mood] || 'C';
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%',
+      background: C.yellow, border: `2px solid ${C.ink}`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: size * .55,
+      color: C.ink, lineHeight: 1, boxShadow: `2px 2px 0 ${C.ink}`, flexShrink: 0
+    }}>{face}</div>);
+
+}
+
+function CineBubble({ children, style = {} }) {
+  return (
+    <div style={{
+      background: C.paper, border: `1.5px solid ${C.ink}`,
+      borderRadius: '4px 14px 14px 14px', padding: '8px 12px',
+      fontFamily: 'Nunito,sans-serif', fontSize: 13, lineHeight: 1.35,
+      color: C.ink, flex: 1, boxShadow: `2px 2px 0 ${C.ink}`, ...style
+    }}>{children}</div>);
+
+}
+
+function Btn({ children, onClick, primary, outline, small, disabled, style = {} }) {
+  const bg = disabled ? C.paper2 : primary ? C.ink : outline ? 'transparent' : C.paper;
+  const col = disabled ? C.inkLight : primary ? C.paper : C.ink;
+  const border = outline ? `1.5px dashed ${C.ink}` : `2px solid ${disabled ? C.inkLight : C.ink}`;
+  return (
+    <button onClick={disabled ? undefined : onClick} style={{
+      padding: small ? '8px 18px' : '12px 24px',
+      fontFamily: 'Caveat,cursive', fontWeight: 700,
+      fontSize: small ? 17 : 21, background: bg, color: col,
+      border, borderRadius: 100,
+      boxShadow: disabled || outline ? 'none' : `3px 3px 0 ${C.ink}`,
+      cursor: disabled ? 'default' : 'pointer', lineHeight: 1, ...style
+    }}>{children}</button>);
+
+}
+
+function Screen({ children, bg = C.paper }) {
+  return (
+    <div style={{ width: '100%', height: '100%', background: bg,
+      display: 'flex', flexDirection: 'column',
+      paddingTop: 56, boxSizing: 'border-box', overflow: 'hidden'
+    }}>{children}</div>);
+
+}
+
+function PhoneWrap({ children }) {
+  // IOSDevice lite — inline bezel since external jsx doesn't load
+  return (
+    <div style={{
+      width: 390, height: 844, borderRadius: 48, overflow: 'hidden',
+      position: 'relative', background: C.paper2,
+      boxShadow: '0 40px 80px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.12)',
+      fontFamily: 'Nunito,sans-serif'
+    }}>
+      {/* Dynamic island */}
+      <div style={{ position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+        width: 126, height: 37, borderRadius: 24, background: '#000', zIndex: 50 }} />
+      {/* Status bar */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '18px 28px 0', fontFamily: 'Space Mono,monospace', fontSize: 13, fontWeight: 700,
+        color: C.ink }}>
+        <span>9:41</span>
+        <span style={{ display: 'flex', gap: 6, fontSize: 11 }}>●●● ✦ ▮▮</span>
+      </div>
+      {/* Content */}
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>{children}</div>
+      {/* Home indicator */}
+      <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+        width: 139, height: 5, borderRadius: 100, background: 'rgba(0,0,0,.25)', zIndex: 60, pointerEvents: 'none' }} />
+    </div>);
+
+}
+
+function PosterCard({ film, size = 'full' }) {
+  const [c1, c2, c3] = film.colors;
+  const pats = {
+    horizontal: `repeating-linear-gradient(180deg,${c1} 0 22px,${c2} 22px 44px,${c3} 44px 66px)`,
+    diagonal: `repeating-linear-gradient(135deg,${c1} 0 18px,${c2} 18px 36px,${c3} 36px 54px)`,
+    vertical: `repeating-linear-gradient(90deg,${c1} 0 26px,${c2} 26px 52px,${c3} 52px 78px)`,
+    burst: `radial-gradient(circle at 50% 50%,${c1} 0%,${c2} 40%,${c3} 80%)`,
+    flame: `linear-gradient(180deg,${c1} 0%,${c1} 40%,${c2} 55%,${c3} 100%)`,
+    splash: `radial-gradient(ellipse at 30% 30%,${c1} 0%,${c2} 45%,${c3} 100%)`,
+    neon: `linear-gradient(135deg,${c2} 0% 50%,${c3} 50% 100%)`
+  };
+  const h = size === 'full' ? 220 : 140;
+  return (
+    <div style={{
+      height: h, borderRadius: 12,
+      background: pats[film.stripe] || pats.horizontal,
+      border: `1.5px solid ${C.ink}`, position: 'relative', overflow: 'hidden'
+    }}>
+      <div style={{
+        position: 'absolute', left: 8, right: 8, bottom: 8,
+        background: 'rgba(250,246,238,.93)', border: `1.5px solid ${C.ink}`,
+        borderRadius: 8, padding: '6px 8px'
+      }}>
+        <div style={{ fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: size === 'full' ? 22 : 16, lineHeight: 1, color: C.ink }}>{film.title}</div>
+        <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 8, letterSpacing: '.1em', color: C.inkSoft, marginTop: 2, textTransform: 'uppercase' }}>{film.year} · {film.director}</div>
+      </div>
+    </div>);
+
+}
+
+// ── VibeBars ─────────────────────────────────────────────────
+function VibeBars({ film }) {
+  const bars = [
+  { l: 'cosy-ness', v: film.why.cosy, c: C.yellow },
+  { l: 'funny', v: film.why.funny, c: C.pink },
+  { l: 'thinky', v: film.why.thinky, c: C.blue },
+  { l: 'tense', v: film.why.tense, c: C.coral }];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {bars.map((b, i) =>
+      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontFamily: 'Nunito,sans-serif', fontSize: 11, color: C.inkSoft, width: 68, flexShrink: 0 }}>{b.l}</div>
+          <div style={{ flex: 1, height: 7, background: C.paper, border: `1.5px solid ${C.ink}`, borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{ width: `${b.v}%`, height: '100%', background: b.c, transition: 'width .6s ease' }} />
+          </div>
+          <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, color: C.inkLight, width: 26, textAlign: 'right' }}>{b.v}</div>
+        </div>
+      )}
+    </div>);
+
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN 1: FORK — who's watching?
+// ═══════════════════════════════════════════════════════════════
+function ForkScreen({ onSolo, onGroup }) {
+  return (
+    <Screen>
+      <div style={{ padding: '0 22px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 20 }}>
+        <div>
+          <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, letterSpacing: '.18em', color: C.inkSoft, textTransform: 'uppercase' }}>tonight</div>
+          <div style={{ fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 46, lineHeight: .95, marginTop: 4, color: C.ink }}>who's watching?</div>
+          <div style={{ fontFamily: 'Nunito,sans-serif', fontSize: 14, lineHeight: 1.35, color: C.inkSoft, marginTop: 8 }}>
+            your answer changes everything about how I pick.
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <button onClick={onSolo} style={{
+            border: `2px solid ${C.ink}`, borderRadius: 16, padding: '16px 18px',
+            background: C.yellow, boxShadow: `4px 4px 0 ${C.ink}`, transform: 'rotate(-.5deg)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer'
+          }}>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 26, lineHeight: 1, color: C.ink }}>Just me</div>
+              <div style={{ fontFamily: 'Nunito,sans-serif', fontSize: 12, color: C.inkSoft, marginTop: 3 }}>→ slot machine</div>
+            </div>
+            <div style={{ fontSize: 34 }}>🛋️</div>
+          </button>
+
+          <button onClick={onGroup} style={{
+            border: `2px solid ${C.ink}`, borderRadius: 16, padding: '16px 18px',
+            background: C.pink, boxShadow: `4px 4px 0 ${C.ink}`, transform: 'rotate(.5deg)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer'
+          }}>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 26, lineHeight: 1, color: 'white' }}>Me + someone</div>
+              <div style={{ fontFamily: 'Nunito,sans-serif', fontSize: 12, color: 'rgba(255,255,255,.8)', marginTop: 3 }}>→ group vibe session</div>
+            </div>
+            <div style={{ fontSize: 34 }}>👯</div>
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <Cine size={30} />
+          <CineBubble>haven't watched in a while? i'll factor in your fingerprint too 🎬</CineBubble>
+        </div>
+      </div>
+    </Screen>);
+
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN 2: SLOT MACHINE — solo
+// ═══════════════════════════════════════════════════════════════
+function SlotMachine({ onFind, onBack, isGroup }) {
+  const initReels = REELS.map((r, i) => ({ ...r, i: i === 0 ? 0 : i === 1 ? 1 : 0, locked: false }));
+  const [reels, setReels] = useState(initReels);
+  const [rolling, setRolling] = useState(false);
+  const touchStart = useRef({});
+
+  function setReelIdx(ri, ni) {
+    setReels((prev) => prev.map((r, i) => i === ri ? { ...r, i: (ni + r.opts.length) % r.opts.length } : r));
+  }
+  function toggleLock(ri) {
+    setReels((prev) => prev.map((r, i) => i === ri ? { ...r, locked: !r.locked } : r));
+  }
+  function roll() {
+    setRolling(true);
+    let count = 0;
+    const interval = setInterval(() => {
+      setReels((prev) => prev.map((r) => r.locked ? r : { ...r, i: Math.floor(Math.random() * r.opts.length) }));
+      count++;
+      if (count > 8) {clearInterval(interval);setRolling(false);}
+    }, 80);
+  }
+
+  const locked = reels.reduce((a, r) => a && r.locked, true);
+
+  // Touch swipe on each reel
+  function onTouchStart(ri, e) {
+    touchStart.current[ri] = e.touches[0].clientX;
+  }
+  function onTouchEnd(ri, e) {
+    const dx = e.changedTouches[0].clientX - (touchStart.current[ri] || 0);
+    if (Math.abs(dx) > 30) setReelIdx(ri, reels[ri].i + (dx < 0 ? 1 : -1));
+  }
+
+  return (
+    <Screen>
+      <div style={{ padding: '0 20px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', fontFamily: 'Caveat,cursive', fontSize: 20, color: C.inkSoft, padding: 0, whiteSpace: 'nowrap' }}>← back</button>
+        <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, letterSpacing: '.1em', color: C.inkSoft, textTransform: 'uppercase' }}>{isGroup ? 'group · 3 people' : 'just me'}</div>
+      </div>
+
+      <div style={{ padding: '0 20px 6px' }}>
+        <div style={{ fontWeight: 700, fontSize: 34, lineHeight: 1, color: C.ink, fontFamily: 'Caveat,cursive' }}>{isGroup ? "what's the group vibe?" : 'spin your mood'}</div>
+        <div style={{ fontFamily: 'Nunito,sans-serif', fontSize: 13, color: C.inkSoft, marginTop: 4 }}>{isGroup ? "set tonight's vibe — i'll blend everyone's taste to find the best match" : 'swipe ↔  ·  tap 🔒 to keep  ·  ROLL spins the rest'}</div>
+      </div>
+
+      <div style={{ padding: '0 20px', flex: 1, overflow: 'auto' }}>
+        {reels.map((r, ri) => {
+          const prev = r.opts[(r.i - 1 + r.opts.length) % r.opts.length];
+          const curr = r.opts[r.i];
+          const next = r.opts[(r.i + 1) % r.opts.length];
+          return (
+            <div key={ri} style={{
+              border: `2px solid ${C.ink}`, borderRadius: 14, marginTop: ri ? 10 : 0,
+              background: C.paper2, overflow: 'hidden',
+              boxShadow: r.locked ? `3px 3px 0 ${C.ink}` : 'none',
+              opacity: rolling && !r.locked ? .7 : 1,
+              transition: 'opacity .1s'
+            }}>
+              {/* Header */}
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '5px 10px', background: r.col,
+                color: ri === 2 ? C.ink : 'white',
+                fontFamily: 'Space Mono,monospace', fontSize: 10, letterSpacing: '.1em',
+                borderBottom: `2px solid ${C.ink}`
+              }}>
+                <span>{r.l}</span>
+                <span style={{ opacity: .8 }}>{r.i + 1}/{r.opts.length}</span>
+              </div>
+
+              {/* Swipe strip */}
+              <div style={{ padding: '10px 8px 4px', display: 'flex', alignItems: 'center', gap: 8 }}
+              onTouchStart={(e) => onTouchStart(ri, e)} onTouchEnd={(e) => onTouchEnd(ri, e)}>
+                {/* Lock */}
+                <button onClick={() => toggleLock(ri)} style={{
+                  width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                  border: `1.5px solid ${C.ink}`, fontSize: 14,
+                  background: r.locked ? C.yellow : C.paper,
+                  boxShadow: r.locked ? `1.5px 1.5px 0 ${C.ink}` : 'none'
+                }}>{r.locked ? '🔒' : '🔓'}</button>
+
+                {/* Options strip */}
+                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ fontFamily: 'Caveat,cursive', fontSize: 16, fontWeight: 700, opacity: .25, whiteSpace: 'nowrap' }}>{prev}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: C.ink, whiteSpace: 'nowrap', flex: 1, textAlign: 'center', fontFamily: "Nunito" }}>{curr}</div>
+                  <div style={{ fontFamily: 'Caveat,cursive', fontSize: 16, fontWeight: 700, opacity: .25, whiteSpace: 'nowrap' }}>{next}</div>
+                </div>
+
+                {/* Arrows */}
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button onClick={() => setReelIdx(ri, r.i - 1)} style={{ width: 24, height: 24, border: `1.5px solid ${C.ink}`, borderRadius: 6, background: C.paper, fontSize: 12 }}>‹</button>
+                  <button onClick={() => setReelIdx(ri, r.i + 1)} style={{ width: 24, height: 24, border: `1.5px solid ${C.ink}`, borderRadius: 6, background: C.paper, fontSize: 12 }}>›</button>
+                </div>
+              </div>
+
+              {/* Dot pagination */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 10px 8px', alignItems: 'center' }}>
+                <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 8, color: C.inkLight }}>‹ swipe ›</div>
+                <div style={{ display: 'flex', gap: 3 }}>
+                  {r.opts.map((_, oi) =>
+                  <div key={oi} style={{
+                    width: oi === r.i ? 10 : 4, height: 4, borderRadius: 2,
+                    background: oi === r.i ? C.ink : C.inkLight,
+                    opacity: oi === r.i ? 1 : .4,
+                    transition: 'width .2s'
+                  }} />
+                  )}
+                </div>
+              </div>
+            </div>);
+
+        })}
+
+        {/* Cine readback */}
+        <div style={{
+          margin: '12px 0 0', padding: '10px 12px',
+          border: `1.5px dashed ${C.ink}`, borderRadius: 12,
+          background: C.paper, display: 'flex', gap: 8, alignItems: 'flex-start'
+        }}>
+          <Cine size={26} />
+          <div style={{ fontFamily: 'Nunito,sans-serif', fontSize: 12, lineHeight: 1.35, color: C.ink, flex: 1 }}>
+            reading: <b style={{ fontFamily: 'Caveat,cursive', fontSize: 15 }}>{reels[0].opts[reels[0].i]}</b>
+            {' '}· <b style={{ fontFamily: 'Caveat,cursive', fontSize: 15 }}>{reels[1].opts[reels[1].i]}</b>
+            {' '}· <b style={{ fontFamily: 'Caveat,cursive', fontSize: 15 }}>{reels[2].opts[reels[2].i]}</b>
+          </div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div style={{ padding: '10px 20px 28px', display: 'flex', gap: 10 }}>
+        <Btn onClick={roll} small outline style={{ flex: 1, justifyContent: 'center' }}>🎲 ROLL</Btn>
+        <Btn onClick={() => onFind(reels, {})} primary small style={{ flex: 2, justifyContent: 'center' }}>🎬 find it →</Btn>
+      </div>
+    </Screen>);
+
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN 3: CINE LOADING — "let me think…"
+// ═══════════════════════════════════════════════════════════════
+function CineLoading({ film, onReady }) {
+  const [dot, setDot] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setDot((d) => (d + 1) % 4), 350);
+    const done = setTimeout(onReady, 2200);
+    return () => {clearInterval(t);clearTimeout(done);};
+  }, []);
+  return (
+    <Screen bg={C.paper2}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '0 32px', gap: 20 }}>
+        <div style={{
+          width: 80, height: 80, borderRadius: '50%',
+          background: C.yellow, border: `3px solid ${C.ink}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 36,
+          color: C.ink, boxShadow: `4px 4px 0 ${C.ink}`,
+          animation: 'none'
+        }}>C</div>
+        <div style={{ fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 30, lineHeight: 1, color: C.ink, textAlign: 'center' }}>
+          finding something perfect{'.' + (dot > 0 ? '.' : '') + (dot > 1 ? '.' : '') + (dot > 2 ? '.' : '')}
+        </div>
+        <div style={{ fontFamily: 'Nunito,sans-serif', fontSize: 14, color: C.inkSoft, textAlign: 'center', lineHeight: 1.4 }}>
+          finding you the perfect watch
+        </div>
+        <div style={{
+          background: C.paper, border: `2px solid ${C.ink}`, borderRadius: 14,
+          padding: '12px 16px', width: '100%', boxShadow: `3px 3px 0 ${C.ink}`
+        }}>
+          <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, letterSpacing: '.12em', color: C.inkLight, textTransform: 'uppercase', marginBottom: 4 }}>best match</div>
+          <div style={{ fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 22, color: C.ink, lineHeight: 1 }}>{film.title}</div>
+          <div style={{ fontFamily: 'Nunito,sans-serif', fontSize: 12, color: C.inkSoft, marginTop: 4 }}>checking {film.streaming} · {film.runtime}</div>
+        </div>
+      </div>
+    </Screen>);
+
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN 4: MOVIE DETAIL — swipeable deck of 5, hybrid bars
+// ═══════════════════════════════════════════════════════════════
+function MovieDetail({ films, reels, onWatch, onBack }) {
+  const [idx, setIdx] = useState(0);
+  const [saved, setSaved] = useState({});
+  const [watching, setWatching] = useState(false);
+  const dragRef = useRef({ x: 0, active: false });
+  const [dragX, setDragX] = useState(0);
+  const [flying, setFlying] = useState(null);
+
+  const film = films[idx];
+  const nextFilm = films[idx + 1];
+  const feel = reels ? reels[0]?.opts[reels[0]?.i] : 'cosy';
+
+  const why = {
+    cosy: `you said cosy — this one wraps you up like a blanket.`,
+    bittersweet: `${film.title} is bittersweet in the best way. exactly what you asked for.`,
+    thinky: `big ideas, careful filmmaking. this one'll stick around in your head.`,
+    tense: `buckle up. ${film.title} earns every minute.`,
+    romantic: `not a romcom. something better — it trusts you to feel it.`,
+    funny: `genuinely funny. not quirky, not charming — actually funny.`,
+    silly: `joyful and loose. perfect for tonight.`,
+    weird: `strange and wonderful. not for everyone — but definitely for you.`,
+    swoony: `slow-burn kind. let it wash over you.`
+  }[feel] || `${film.title} hits the vibe you're after.`;
+
+  function handleDown(e) {
+    const p = e.touches ? e.touches[0] : e;
+    dragRef.current = { x: p.clientX, active: true };
+  }
+  function handleMove(e) {
+    if (!dragRef.current.active) return;
+    const p = e.touches ? e.touches[0] : e;
+    setDragX(p.clientX - dragRef.current.x);
+  }
+  function handleUp() {
+    if (!dragRef.current.active) return;
+    dragRef.current.active = false;
+    if (dragX > 80) {flyCard('right');} else
+    if (dragX < -80) {flyCard('left');} else
+    setDragX(0);
+  }
+
+  useEffect(() => {
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    window.addEventListener('touchmove', handleMove);
+    window.addEventListener('touchend', handleUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleUp);
+    };
+  }, [dragX]);
+
+  function flyCard(dir) {
+    setFlying(dir);
+    setTimeout(() => {
+      setFlying(null);setDragX(0);
+      setIdx((i) => Math.min(i + 1, films.length - 1));
+    }, 300);
+  }
+
+  async function handleWatch() {
+    setWatching(true);
+    await logWatchChoice(film, feel);
+    setTimeout(() => {
+      onWatch(film);
+    }, 600);
+  }
+
+  const rot = dragX * 0.05;
+  const cardTransform = flying === 'right' ?
+  'translate(500px,-80px) rotate(25deg)' :
+  flying === 'left' ?
+  'translate(-500px,-80px) rotate(-25deg)' :
+  `translate(${dragX}px,0) rotate(${rot}deg)`;
+
+  const likeOpacity = Math.min(1, Math.max(0, dragX / 80));
+  const skipOpacity = Math.min(1, Math.max(0, -dragX / 80));
+
+  return (
+    <Screen bg={C.paper2}>
+      <div style={{ padding: '0 18px 6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', fontFamily: 'Caveat,cursive', fontSize: 20, color: C.inkSoft, padding: 0 }}>← back</button>
+        <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, letterSpacing: '.1em', color: C.inkSoft, textTransform: 'uppercase' }}>
+          {idx + 1} of {films.length}
+        </div>
+        <button onClick={() => setSaved((s) => ({ ...s, [film.id]: !s[film.id] }))} style={{
+          background: saved[film.id] ? C.pink : C.paper, color: saved[film.id] ? 'white' : C.ink,
+          border: `1.5px solid ${C.ink}`, borderRadius: '50%',
+          width: 32, height: 32, fontSize: 16,
+          boxShadow: saved[film.id] ? `2px 2px 0 ${C.ink}` : 'none'
+        }}>{saved[film.id] ? '♥' : '♡'}</button>
+      </div>
+
+      {/* Dot pagination */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginBottom: 8 }}>
+        {films.map((_, i) =>
+        <div key={i} style={{
+          width: i === idx ? 18 : 6, height: 6, borderRadius: 3,
+          background: i === idx ? C.pink : C.inkLight,
+          opacity: i === idx ? 1 : .35, transition: 'width .2s'
+        }} />
+        )}
+      </div>
+
+      {/* Card stack */}
+      <div style={{ flex: 1, padding: '0 18px', position: 'relative', display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+
+        {/* Back card hint */}
+        {nextFilm &&
+        <div style={{ position: 'absolute', top: 6, left: 28, right: 28, bottom: 0,
+          border: `2px solid ${C.ink}`, borderRadius: 16,
+          background: C.paper, opacity: .45, transform: 'rotate(2deg) translateY(6px)', zIndex: 0 }} />
+        }
+
+        {/* Front card */}
+        <div
+          onMouseDown={handleDown} onTouchStart={handleDown}
+          style={{
+            position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column',
+            transform: cardTransform,
+            transition: flying ? 'transform .3s ease-out' : dragRef.current.active ? 'none' : 'transform .2s ease',
+            cursor: 'grab', userSelect: 'none', touchAction: 'none'
+          }}>
+          <div style={{
+            border: `2px solid ${C.ink}`, borderRadius: 16,
+            background: C.paper, boxShadow: `5px 5px 0 ${C.ink}`,
+            padding: 14, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'
+          }}>
+            {/* LOVE / SKIP stamps */}
+            <div style={{ position: 'absolute', top: 20, right: 16, transform: 'rotate(14deg)',
+              padding: '5px 12px', border: `3px solid ${C.pink}`, color: C.pink,
+              fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 24, borderRadius: 6,
+              opacity: likeOpacity, background: 'rgba(255,77,143,.08)', pointerEvents: 'none', zIndex: 10 }}>LOVE ♥</div>
+            <div style={{ position: 'absolute', top: 20, left: 16, transform: 'rotate(-14deg)',
+              padding: '5px 12px', border: `3px solid ${C.inkSoft}`, color: C.inkSoft,
+              fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 24, borderRadius: 6,
+              opacity: skipOpacity, background: 'rgba(74,74,74,.06)', pointerEvents: 'none', zIndex: 10 }}>SKIP</div>
+
+            {/* Poster — fills remaining space */}
+            <div style={{ flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', position: 'relative', border: `1.5px solid ${C.ink}` }}>
+              {(() => {
+                const [c1, c2, c3] = film.colors;
+                const pats = {
+                  horizontal: `repeating-linear-gradient(180deg,${c1} 0 28px,${c2} 28px 56px,${c3} 56px 84px)`,
+                  diagonal: `repeating-linear-gradient(135deg,${c1} 0 22px,${c2} 22px 44px,${c3} 44px 66px)`,
+                  vertical: `repeating-linear-gradient(90deg,${c1} 0 32px,${c2} 32px 64px,${c3} 64px 96px)`,
+                  burst: `radial-gradient(circle at 50% 50%,${c1} 0%,${c2} 40%,${c3} 80%)`,
+                  flame: `linear-gradient(180deg,${c1} 0%,${c1} 40%,${c2} 55%,${c3} 100%)`,
+                  splash: `radial-gradient(ellipse at 30% 30%,${c1} 0%,${c2} 45%,${c3} 100%)`,
+                  neon: `linear-gradient(135deg,${c2} 0% 50%,${c3} 50% 100%)`
+                };
+                return <div style={{ width: '100%', height: '100%', background: pats[film.stripe] || pats.horizontal }} />;
+              })()}
+              {/* Title overlay */}
+              <div style={{ position: 'absolute', left: 10, right: 10, bottom: 10,
+                background: 'rgba(250,246,238,.93)', border: `1.5px solid ${C.ink}`,
+                borderRadius: 8, padding: '8px 10px' }}>
+                <div style={{ fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 24, lineHeight: 1, color: C.ink }}>{film.title}</div>
+                <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 8, letterSpacing: '.1em', color: C.inkSoft, marginTop: 3, textTransform: 'uppercase' }}>{film.year} · {film.director}</div>
+              </div>
+            </div>
+
+            {/* Chips */}
+            <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+              <Chip color={C.blue} text={film.streaming} />
+              <Chip text={film.runtime} />
+              <Chip text={film.rating} />
+            </div>
+
+            {/* Cine why */}
+            <div style={{
+              marginTop: 8, padding: '8px 10px',
+              background: C.yellow, border: `1.5px solid ${C.ink}`, borderRadius: 10
+            }}>
+              <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 8, letterSpacing: '.12em', color: C.ink, textTransform: 'uppercase', marginBottom: 3 }}>cine says ✦</div>
+              <div style={{ fontFamily: 'Nunito,sans-serif', fontSize: 12, lineHeight: 1.35, color: C.ink }}>"{why}"</div>
+            </div>
+
+            {/* Vibe bars */}
+            <div style={{ background: C.paper2, border: `1.5px solid ${C.ink}`, borderRadius: 10, padding: '8px 10px', marginTop: 8 }}>
+              <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 8, letterSpacing: '.1em', color: C.inkLight, textTransform: 'uppercase', marginBottom: 6 }}>what you're in for</div>
+              <VibeBars film={film} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div style={{ padding: '10px 18px 28px' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <button onClick={() => flyCard('left')} style={{
+            flex: 1, padding: '10px', border: `2px solid ${C.ink}`, borderRadius: 100,
+            background: C.paper, fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 18,
+            boxShadow: `3px 3px 0 ${C.ink}`, cursor: 'pointer'
+          }}>← next pick</button>
+          <button onClick={handleWatch} disabled={watching} style={{
+            flex: 2, padding: '10px 20px', border: `2px solid ${C.ink}`, borderRadius: 100,
+            background: watching ? C.paper2 : C.ink, color: watching ? C.inkLight : 'white',
+            fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 20,
+            boxShadow: watching ? 'none' : `3px 3px 0 ${C.ink}`, cursor: watching ? 'default' : 'pointer'
+          }}>{watching ? 'opening…' : '▶ watch it'}</button>
+        </div>
+        <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 8, letterSpacing: '.1em', color: C.inkLight, textTransform: 'uppercase', textAlign: 'center' }}>
+          swipe ← to skip · swipe → to save · tap watch to go
+        </div>
+      </div>
+    </Screen>);
+
+}
+
+function Chip({ text, color }) {
+  return (
+    <div style={{
+      padding: '3px 10px', background: color || C.paper,
+      border: `1.5px solid ${C.ink}`, borderRadius: 100,
+      fontFamily: 'Nunito,sans-serif', fontSize: 11, color: C.ink
+    }}>{text}</div>);
+
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN 5: POST-WATCH RATING + MOOD CARD DROP
+// ═══════════════════════════════════════════════════════════════
+function PostWatch({ film, onRate, onSkip }) {
+  const [hover, setHover] = useState(null);
+  const [rated, setRated] = useState(null);
+  const [showDrop, setShowDrop] = useState(false);
+
+  function handleRate(s) {
+    setRated(s);
+    // Open the streaming platform after rating
+    window.open(getStreamingUrl(film), '_blank');
+    setTimeout(() => setShowDrop(true), 400);
+  }
+
+  if (showDrop) return <MoodCardDrop film={film} rating={rated} onDone={onRate} />;
+
+  return (
+    <Screen>
+      <div style={{ padding: '0 22px', flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, letterSpacing: '.15em', color: C.inkSoft, textTransform: 'uppercase' }}>how was it?</div>
+          <div style={{ fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 36, lineHeight: 1, marginTop: 4, color: C.ink }}>{film.title}</div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <Cine size={30} mood="think" />
+          <CineBubble>good choice? give it some stars and i'll get better at this 🌟</CineBubble>
+        </div>
+
+        <div style={{
+          background: C.paper2, border: `2px solid ${C.ink}`, borderRadius: 16,
+          padding: '14px 16px', boxShadow: `3px 3px 0 ${C.ink}`
+        }}>
+          <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, letterSpacing: '.12em', color: C.inkLight, textTransform: 'uppercase', marginBottom: 12 }}>your rating</div>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+            {[1, 2, 3, 4, 5].map((s) =>
+            <button key={s}
+            onClick={() => handleRate(s)}
+            onMouseEnter={() => setHover(s)}
+            onMouseLeave={() => setHover(null)}
+            style={{
+              width: 50, height: 50, borderRadius: '50%',
+              border: `2px solid ${rated && s <= rated ? C.pink : hover && s <= hover ? C.pink : C.ink}`,
+              background: rated && s <= rated ? C.pink : hover && s <= hover ? C.pink : C.paper,
+              color: rated && s <= rated ? 'white' : hover && s <= hover ? 'white' : C.ink,
+              fontSize: 22,
+              boxShadow: (rated || hover) && s <= (rated || hover) ? `2px 2px 0 ${C.ink}` : 'none',
+              transform: (rated || hover) && s <= (rated || hover) ? 'translate(-1px,-1px)' : 'none',
+              transition: 'all .1s ease'
+            }}>★</button>
+            )}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, padding: '0 4px' }}>
+            <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 8, color: C.inkLight, textTransform: 'uppercase', letterSpacing: '.08em' }}>meh</div>
+            <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 8, color: C.inkLight, textTransform: 'uppercase', letterSpacing: '.08em' }}>loved it</div>
+          </div>
+        </div>
+
+        <button onClick={onSkip} style={{
+          background: 'none', border: 'none', fontFamily: 'Nunito,sans-serif',
+          fontSize: 13, color: C.inkSoft, textDecoration: 'underline', cursor: 'pointer', textAlign: 'center'
+        }}>skip for now</button>
+      </div>
+    </Screen>);
+
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MOOD CARD DROP — the rare reward
+// ═══════════════════════════════════════════════════════════════
+function MoodCardDrop({ film, rating, onDone }) {
+  const [revealed, setRevealed] = useState(false);
+
+  return (
+    <Screen bg={C.paper2}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 22px', gap: 16 }}>
+        {!revealed ?
+        <>
+            <div style={{
+            background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 14,
+            padding: '14px 16px', boxShadow: `4px 4px 0 ${C.ink}`, transform: 'rotate(-.8deg)'
+          }}>
+              <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, letterSpacing: '.15em', color: C.ink, textTransform: 'uppercase' }}>RARE DROP ✦</div>
+              <div style={{ fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 26, lineHeight: 1, marginTop: 6, color: C.ink }}>your april mood card is ready!</div>
+              <div style={{ fontFamily: 'Nunito,sans-serif', fontSize: 13, lineHeight: 1.35, color: C.ink, marginTop: 6 }}>
+                based on everything you've watched this month. drops like this happen 1–4× a month.
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <Cine size={30} mood="tada" />
+              <CineBubble>"Bittersweet & Beautiful" — that's the vibe of your april in film.</CineBubble>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Btn primary onClick={() => setRevealed(true)} small style={{ flex: 2, justifyContent: 'center' }}>reveal card →</Btn>
+              <Btn outline onClick={onDone} small style={{ flex: 1, justifyContent: 'center' }}>later</Btn>
+            </div>
+          </> :
+
+        <>
+            {/* The card */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div style={{
+              width: 240, aspectRatio: '9/14', borderRadius: 18,
+              border: `2.5px solid ${C.ink}`,
+              background: `linear-gradient(155deg,${C.pink} 0%,${C.coral} 45%,${C.yellow} 100%)`,
+              boxShadow: `6px 6px 0 ${C.ink}`, transform: 'rotate(-1.5deg)',
+              padding: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+              overflow: 'hidden', position: 'relative'
+            }}>
+                <div>
+                  <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 8, letterSpacing: '.2em', color: C.ink, textTransform: 'uppercase', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>CINEMATCH</span><span>APR '26</span>
+                  </div>
+                  <div style={{ fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 28, lineHeight: .95, marginTop: 8, color: C.ink }}>Bittersweet &amp; Beautiful</div>
+                  <div style={{ fontFamily: 'Nunito,sans-serif', fontSize: 11, marginTop: 4, color: C.ink, opacity: .75 }}>andy's april in film</div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
+                  {FILMS.slice(0, 3).map((f, i) => {
+                  const [c1, c2, c3] = f.colors;
+                  return <div key={i} style={{
+                    width: 46, height: 66, flexShrink: 0, borderRadius: 4,
+                    background: `repeating-linear-gradient(180deg,${c1} 0 8px,${c2} 8px 16px,${c3} 16px 24px)`,
+                    border: `1.5px solid ${C.ink}`, boxShadow: `1.5px 1.5px 0 ${C.ink}`,
+                    transform: `rotate(${(i - 1) * 5}deg)`
+                  }} />;
+                })}
+                </div>
+
+                <div>
+                  <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 7, letterSpacing: '.15em', color: C.ink, opacity: .7, marginBottom: 4, textTransform: 'uppercase' }}>top picks</div>
+                  {['Moonlight', 'Past Lives', 'The Worst Person in the World'].map((t, i) =>
+                <div key={i} style={{ fontFamily: 'Nunito,sans-serif', fontSize: 10, lineHeight: 1.25, color: C.ink }}>{i + 1}. {t}</div>
+                )}
+                </div>
+
+                <div style={{ position: 'absolute', top: 12, right: -28, transform: 'rotate(18deg)',
+                fontFamily: 'Space Mono,monospace', fontSize: 8, letterSpacing: '.15em',
+                padding: '3px 32px', border: `1.5px solid ${C.ink}`, background: C.yellow,
+                color: C.ink, textTransform: 'uppercase' }}>APR 2026</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <Btn primary small style={{ flex: 2, justifyContent: 'center' }}>↗ share</Btn>
+              <Btn small style={{ flex: 1, justifyContent: 'center' }}>save</Btn>
+            </div>
+            <Btn outline onClick={onDone} small style={{ width: '100%', justifyContent: 'center' }}>find another film →</Btn>
+            <div style={{ textAlign: 'center', fontFamily: 'Space Mono,monospace', fontSize: 8, letterSpacing: '.1em', color: C.inkLight, textTransform: 'uppercase' }}>next drop: sometime in may 🎲</div>
+          </>
+        }
+      </div>
+    </Screen>);
+
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GROUP FLOW — 3 steps
+// ═══════════════════════════════════════════════════════════════
+const GROUP_CHIPS = [
+{ t: 'cosy', c: C.yellow }, { t: 'funny', c: C.pink }, { t: 'thinky', c: C.blue },
+{ t: 'romantic', c: C.lilac }, { t: 'tense', c: C.coral }, { t: 'weird', c: C.mint },
+{ t: 'light', c: C.yellow }, { t: 'heavy', c: '' }];
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// INVITEE EXPERIENCE — lock screen notification
+// ═══════════════════════════════════════════════════════════════
+function NotificationScreen({ onTap, onDismiss }) {
+  const time = '9:41';
+  const date = 'Saturday, 26 April';
+  return (
+    <div style={{width:'100%',height:'100%',background:'linear-gradient(160deg,#1A1A2E 0%,#16213E 50%,#0F3460 100%)',display:'flex',flexDirection:'column',padding:'0 0 34px',overflow:'hidden'}}>
+      <div style={{textAlign:'center',paddingTop:80,flexShrink:0}}>
+        <div style={{fontFamily:'Caveat,cursive',fontWeight:700,fontSize:72,lineHeight:1,color:'white'}}>{time}</div>
+        <div style={{fontFamily:'Nunito,sans-serif',fontSize:15,color:'rgba(255,255,255,.7)',marginTop:4}}>{date}</div>
+      </div>
+      <div style={{flex:1,display:'flex',alignItems:'center',padding:'0 20px'}}>
+        <div onClick={onTap} style={{width:'100%',background:'rgba(255,255,255,.18)',backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',border:'1px solid rgba(255,255,255,.25)',borderRadius:20,padding:'14px 16px',cursor:'pointer'}}>
+          <div style={{display:'flex',gap:10,alignItems:'flex-start'}}>
+            <div style={{width:40,height:40,borderRadius:10,background:C.yellow,border:'2px solid rgba(255,255,255,.3)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Caveat,cursive',fontWeight:700,fontSize:22,color:C.ink,flexShrink:0}}>C</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:3}}>
+                <div style={{fontFamily:'Nunito,sans-serif',fontWeight:700,fontSize:13,color:'white'}}>Cinematch</div>
+                <div style={{fontFamily:'Space Mono,monospace',fontSize:10,color:'rgba(255,255,255,.6)'}}>now</div>
+              </div>
+              <div style={{fontFamily:'Nunito,sans-serif',fontWeight:700,fontSize:14,color:'white',lineHeight:1.2}}>Andy's invited you to a film session 🎬</div>
+              <div style={{fontFamily:'Nunito,sans-serif',fontSize:12,color:'rgba(255,255,255,.8)',marginTop:4,lineHeight:1.3}}>"fancy a film tonight? 3 of us picking together →"</div>
+            </div>
+          </div>
+          <div style={{display:'flex',gap:8,marginTop:12}}>
+            <button onClick={e=>{e.stopPropagation();onDismiss();}} style={{flex:1,padding:'9px',background:'rgba(255,255,255,.12)',border:'1px solid rgba(255,255,255,.2)',borderRadius:12,fontFamily:'Nunito,sans-serif',fontWeight:600,fontSize:13,color:'white',cursor:'pointer'}}>Dismiss</button>
+            <button onClick={onTap} style={{flex:1,padding:'9px',background:'rgba(255,201,60,.9)',border:'none',borderRadius:12,fontFamily:'Nunito,sans-serif',fontWeight:700,fontSize:13,color:C.ink,cursor:'pointer'}}>Join session →</button>
+          </div>
+        </div>
+      </div>
+      <div style={{textAlign:'center',paddingBottom:10}}>
+        <div style={{fontFamily:'Space Mono,monospace',fontSize:9,letterSpacing:'.1em',color:'rgba(255,255,255,.4)',textTransform:'uppercase'}}>tap notification to open · swipe to dismiss</div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INVITEE — join session screen
+// ═══════════════════════════════════════════════════════════════
+function JoinSession({ onJoin, onBack }) {
+  const [joining, setJoining] = useState(false);
+  function handleJoin() { setJoining(true); setTimeout(onJoin, 900); }
+  const members = [{n:'Andy',c:C.pink,ready:true},{n:'Sam',c:C.blue,ready:true},{n:'Tay',c:C.mint,ready:false,isMe:true}];
+  return (
+    <Screen>
+      <div style={{padding:'0 22px',flex:1,display:'flex',flexDirection:'column',gap:16}}>
+        <div style={{marginTop:8}}>
+          <div style={{fontFamily:'Space Mono,monospace',fontSize:10,letterSpacing:'.15em',color:C.inkSoft,textTransform:'uppercase'}}>you're invited</div>
+          <div style={{fontFamily:'Caveat,cursive',fontWeight:700,fontSize:40,lineHeight:1,marginTop:4,color:C.ink}}>film night 🎬</div>
+        </div>
+        <div style={{display:'flex',gap:10,alignItems:'flex-start'}}>
+          <div style={{width:36,height:36,borderRadius:'50%',background:C.pink,border:`2px solid ${C.ink}`,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Caveat,cursive',fontWeight:700,fontSize:18,color:'white',flexShrink:0}}>A</div>
+          <div style={{background:C.paper2,border:`1.5px solid ${C.ink}`,borderRadius:'4px 14px 14px 14px',padding:'8px 12px',fontFamily:'Nunito,sans-serif',fontSize:13,lineHeight:1.35,color:C.ink,flex:1,boxShadow:`2px 2px 0 ${C.ink}`}}>"fancy a film tonight? 3 of us picking together — join us!"</div>
+        </div>
+        <div style={{background:C.paper2,border:`2px solid ${C.ink}`,borderRadius:14,padding:'12px 14px',boxShadow:`3px 3px 0 ${C.ink}`}}>
+          <div style={{fontFamily:'Space Mono,monospace',fontSize:9,letterSpacing:'.12em',color:C.inkLight,textTransform:'uppercase',marginBottom:10}}>who's in</div>
+          <div style={{display:'flex',gap:10,alignItems:'center'}}>
+            {members.map((m,i)=>(
+              <div key={i} style={{textAlign:'center',flex:1}}>
+                <div style={{width:44,height:44,borderRadius:'50%',border:`2px solid ${C.ink}`,background:m.c,color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Caveat,cursive',fontWeight:700,fontSize:20,position:'relative',margin:'0 auto'}}>
+                  {m.n[0]}
+                  {(m.ready||(m.isMe&&joining))&&<div style={{position:'absolute',right:-3,bottom:-3,width:16,height:16,background:C.yellow,border:`1.5px solid ${C.ink}`,borderRadius:'50%',fontSize:9,display:'flex',alignItems:'center',justifyContent:'center'}}>✓</div>}
+                </div>
+                <div style={{fontFamily:'Nunito,sans-serif',fontSize:11,marginTop:3,color:C.ink}}>{m.n}{m.isMe?' (you)':''}</div>
+                <div style={{fontFamily:'Space Mono,monospace',fontSize:8,color:C.inkLight}}>{m.ready?'ready':joining&&m.isMe?'joining…':'waiting'}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{display:'flex',gap:8,alignItems:'flex-start'}}>
+          <Cine size={28}/>
+          <CineBubble>once everyone's in, we'll all spin the vibe together and i'll find something for the group 🍿</CineBubble>
+        </div>
+        <button onClick={handleJoin} disabled={joining} style={{width:'100%',padding:'14px',border:`2px solid ${C.ink}`,borderRadius:100,fontFamily:'Caveat,cursive',fontWeight:700,fontSize:22,background:joining?C.paper2:C.ink,color:joining?C.inkLight:'white',boxShadow:joining?'none':`3px 3px 0 ${C.ink}`,cursor:joining?'default':'pointer'}}>{joining?'joining…':"i'm in! 🙌"}</button>
+      </div>
+    </Screen>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HOST: GroupInvite — live status + invitee preview link
+// ═══════════════════════════════════════════════════════════════
+function GroupInvite({ onNext, onBack, onPreviewInvitee }) {
+  const [tayReady, setTayReady] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setTayReady(true), 4000); return () => clearTimeout(t); }, []);
+  const members = [{n:'Andy',c:C.pink,ready:true},{n:'Sam',c:C.blue,ready:true},{n:'Tay',c:C.mint,ready:tayReady}];
+  const allReady = members.every(m=>m.ready);
+  return (
+    <Screen>
+      <div style={{padding:'0 20px 8px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <button onClick={onBack} style={{background:'none',border:'none',fontFamily:'Caveat,cursive',fontSize:20,color:C.inkSoft,padding:0}}>← back</button>
+        <div style={{fontFamily:'Space Mono,monospace',fontSize:10,letterSpacing:'.1em',color:C.inkSoft,textTransform:'uppercase'}}>step 1/2</div>
+      </div>
+      <div style={{padding:'0 20px',flex:1,display:'flex',flexDirection:'column',gap:14}}>
+        <div>
+          <div style={{fontFamily:'Caveat,cursive',fontWeight:700,fontSize:36,lineHeight:1,color:C.ink}}>who's in?</div>
+          <div style={{fontFamily:'Nunito,sans-serif',fontSize:13,color:C.inkSoft,marginTop:6}}>send the link — i'll ping them a push notification. when everyone's ready, we spin together.</div>
+        </div>
+        <div style={{display:'flex',gap:10,justifyContent:'space-around'}}>
+          {members.map((m,i)=>(
+            <div key={i} style={{textAlign:'center'}}>
+              <div style={{width:52,height:52,borderRadius:'50%',border:`2px solid ${C.ink}`,background:m.c,color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Caveat,cursive',fontWeight:700,fontSize:22,boxShadow:m.ready?`2px 2px 0 ${C.ink}`:'none',position:'relative',margin:'0 auto',transition:'box-shadow .3s'}}>
+                {m.n[0]}
+                <div style={{position:'absolute',right:-4,bottom:-4,width:20,height:20,background:m.ready?C.yellow:C.paper2,border:`1.5px solid ${C.ink}`,borderRadius:'50%',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center',transition:'background .4s'}}>{m.ready?'✓':'…'}</div>
+              </div>
+              <div style={{fontFamily:'Nunito,sans-serif',fontSize:11,marginTop:6,color:C.ink}}>{m.n}</div>
+              <div style={{fontFamily:'Space Mono,monospace',fontSize:8,color:m.ready?C.ink:C.inkLight,transition:'color .4s'}}>{m.ready?'ready':'waiting'}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{background:tayReady?C.yellow:C.paper2,border:`1.5px solid ${C.ink}`,borderRadius:12,padding:'10px 12px',transition:'background .5s'}}>
+          <div style={{fontFamily:'Nunito,sans-serif',fontSize:13,color:C.ink}}>{tayReady ? "🎉 everyone's here — ready to pick!" : "waiting for Tay to join the session…"}</div>
+        </div>
+        <div style={{background:C.paper2,border:`1.5px dashed ${C.ink}`,borderRadius:12,padding:'10px 12px'}}>
+          <div style={{fontFamily:'Space Mono,monospace',fontSize:9,color:C.inkLight,textTransform:'uppercase',letterSpacing:'.1em',marginBottom:4}}>session link</div>
+          <div style={{fontFamily:'Caveat,cursive',fontWeight:700,fontSize:18,color:C.ink}}>cinematch.co/g/<span style={{color:C.pink}}>FR1DAY</span></div>
+        </div>
+        <div style={{display:'flex',gap:8,flexDirection:'column'}}>
+          <div style={{display:'flex',gap:8}}>
+            <button onClick={()=>{const msg=encodeURIComponent("hey! join me on Cinematch tonight 🎬 pick a film together → cinematch.co/g/FR1DAY");if(navigator.share){navigator.share({title:'Join my Cinematch session',text:"hey! join me on Cinematch tonight 🎬",url:'https://cinematch.co/g/FR1DAY'});}else{window.open('https://wa.me/?text='+msg,'_blank');}}} style={{flex:1,padding:'10px',border:`2px solid ${C.ink}`,borderRadius:100,background:C.paper,fontFamily:'Caveat,cursive',fontWeight:700,fontSize:18,boxShadow:`3px 3px 0 ${C.ink}`,cursor:'pointer'}}>↗ invite</button>
+            <button onClick={onNext} disabled={!allReady} style={{flex:2,padding:'10px 20px',border:`2px solid ${allReady?C.ink:C.inkLight}`,borderRadius:100,fontFamily:'Caveat,cursive',fontWeight:700,fontSize:20,background:allReady?C.ink:C.paper2,color:allReady?'white':C.inkLight,boxShadow:allReady?`3px 3px 0 ${C.ink}`:'none',cursor:allReady?'pointer':'default',transition:'all .4s'}}>{allReady?"let's pick! →":"waiting…"}</button>
+          </div>
+          <button onClick={onPreviewInvitee} style={{width:'100%',padding:'8px',background:'transparent',border:`1.5px dashed ${C.ink}`,borderRadius:100,fontFamily:'Nunito,sans-serif',fontSize:12,color:C.inkSoft,cursor:'pointer'}}>👁 preview: how Tay sees the invite</button>
+        </div>
+      </div>
+    </Screen>
+  );
+}
+
+function GroupVote({ onNext, onBack }) {
+  const [sel, setSel] = useState(new Set(['cosy', 'funny', 'light']));
+  function toggle(t) {setSel((s) => {const n = new Set(s);n.has(t) ? n.delete(t) : n.add(t);return n;});}
+  const votes = { cosy: 3, funny: 3, thinky: 1, romantic: 2, tense: 0, weird: 2, light: 3, heavy: 0 };
+  return (
+    <Screen>
+      <div style={{ padding: '0 20px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', fontFamily: 'Caveat,cursive', fontSize: 20, color: C.inkSoft, padding: 0 }}>← back</button>
+        <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, letterSpacing: '.1em', color: C.inkSoft, textTransform: 'uppercase' }}>step 2/3</div>
+      </div>
+      <div style={{ padding: '0 20px', flex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div>
+          <div style={{ fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 34, lineHeight: 1, color: C.ink }}>pick your vibes</div>
+          <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, letterSpacing: '.1em', color: C.inkSoft, marginTop: 6 }}>andy done · sam voting · tay voting</div>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {GROUP_CHIPS.map(({ t, c }, i) => {
+            const active = sel.has(t);
+            return (
+              <button key={i} onClick={() => toggle(t)} style={{
+                padding: '7px 12px', border: `1.5px solid ${C.ink}`, borderRadius: 100,
+                background: active ? c || C.paper2 : C.paper,
+                fontFamily: 'Nunito,sans-serif', fontSize: 13, color: C.ink,
+                boxShadow: active ? `2px 2px 0 ${C.ink}` : 'none',
+                transform: active ? 'translate(-1px,-1px)' : 'none',
+                display: 'flex', gap: 6, alignItems: 'center'
+              }}>
+                {active && '✓ '}{t}
+                <span style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, opacity: .6 }}>{votes[t] || 0}/3</span>
+              </button>);
+
+          })}
+        </div>
+
+        <div style={{ background: C.paper2, border: `1.5px dashed ${C.ink}`, borderRadius: 12, padding: 10 }}>
+          <div style={{ fontFamily: 'Nunito,sans-serif', fontSize: 12, color: C.ink }}>
+            <span style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, color: C.inkLight, textTransform: 'uppercase', letterSpacing: '.1em' }}>overlap so far: </span>
+            <b style={{ fontFamily: 'Caveat,cursive', fontSize: 16 }}>cosy + funny + light</b>
+          </div>
+        </div>
+
+        <Btn primary onClick={onNext} small style={{ width: '100%', justifyContent: 'center' }}>i'm done →</Btn>
+      </div>
+    </Screen>);
+
+}
+
+function GroupReveal({ onFind, onBack }) {
+  const film = FILMS.find((f) => f.id === 6); // Hot Fuzz — warm + funny
+  return (
+    <Screen>
+      <div style={{ padding: '0 20px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', fontFamily: 'Caveat,cursive', fontSize: 20, color: C.inkSoft, padding: 0 }}>← back</button>
+        <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 10, letterSpacing: '.1em', color: C.inkSoft, textTransform: 'uppercase' }}>step 3/3</div>
+      </div>
+      <div style={{ padding: '0 20px', flex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{
+          background: C.yellow, border: `2px solid ${C.ink}`, borderRadius: 14,
+          padding: '14px 16px', boxShadow: `3px 3px 0 ${C.ink}`, transform: 'rotate(-.8deg)'
+        }}>
+          <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, letterSpacing: '.12em', color: C.ink, textTransform: 'uppercase', marginBottom: 6 }}>you 3 agree on</div>
+          <div style={{ fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 28, lineHeight: .95, color: C.ink }}>warm-hearted comedy with a soft spot</div>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <Chip color={C.yellow} text="cosy 3/3" />
+          <Chip color={C.pink} text="funny 3/3" />
+          <Chip color={C.yellow} text="light 3/3" />
+          <span style={{ padding: '3px 10px', border: `1.5px solid ${C.ink}`, borderRadius: 100, fontFamily: 'Nunito,sans-serif', fontSize: 11, color: C.inkLight, textDecoration: 'line-through' }}>thinky 1/3</span>
+          <span style={{ padding: '3px 10px', border: `1.5px solid ${C.ink}`, borderRadius: 100, fontFamily: 'Nunito,sans-serif', fontSize: 11, color: C.inkLight, textDecoration: 'line-through' }}>tense 0/3</span>
+        </div>
+
+        <div style={{ background: C.paper2, border: `1.5px solid ${C.ink}`, borderRadius: 12, padding: '10px 12px' }}>
+          <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, letterSpacing: '.1em', color: C.inkLight, textTransform: 'uppercase', marginBottom: 4 }}>cine's pick</div>
+          <div style={{ fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 20, color: C.ink }}>{film.title}</div>
+          <div style={{ fontFamily: 'Nunito,sans-serif', fontSize: 12, color: C.inkSoft, marginTop: 2 }}>{film.blurb}</div>
+        </div>
+
+        <Btn primary onClick={() => onFind(film)} small style={{ width: '100%', justifyContent: 'center' }}>🍿 pick for us →</Btn>
+      </div>
+    </Screen>);
+
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DONE SCREEN
+// ═══════════════════════════════════════════════════════════════
+function DoneScreen({ onRestart }) {
+  return (
+    <Screen>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '40px 28px', gap: 20, textAlign: 'center' }}>
+        <Cine size={72} mood="tada" />
+        <div style={{ fontFamily: 'Caveat,cursive', fontWeight: 700, fontSize: 40, lineHeight: 1, color: C.ink }}>enjoy the film! 🎬</div>
+        <div style={{ fontFamily: 'Nunito,sans-serif', fontSize: 14, color: C.inkSoft, lineHeight: 1.4 }}>
+          in the real app, you'd be linked straight to your streaming service. see you on the other side.
+        </div>
+        <div style={{ fontFamily: 'Space Mono,monospace', fontSize: 9, letterSpacing: '.12em', color: C.inkLight, textTransform: 'uppercase' }}>— end of recommender prototype —</div>
+        <Btn onClick={onRestart}>↻ try again</Btn>
+      </div>
+    </Screen>);
+
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ROOT APP — wires all screens together
+// ═══════════════════════════════════════════════════════════════
+function App() {
+  const [step, setStep] = useState(() => {
+    const s = localStorage.getItem('cr_step') || 'fork';
+    return ['loading', 'detail', 'rating', 'done'].includes(s) ? 'fork' : s;
+  });
+  const [group, setGroup] = useState(() => localStorage.getItem('cr_group') === '1');
+  const [reels, setReels] = useState(null);
+  const [films, setFilms] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {localStorage.setItem('cr_step', step);}, [step]);
+  useEffect(() => {localStorage.setItem('cr_group', group ? '1' : '0');}, [group]);
+  useEffect(() => {setTimeout(() => setLoaded(true), 100);}, []);
+
+  function goFind(r, extra) {setReels(r);const fs = matchFilms(r);setFilms(fs);setStep('loading');}
+  function goGroupFilm(f) {setFilms([f, ...FILMS.filter((x) => x.id !== f.id).slice(0, 4)]);setStep('detail');}
+
+  let screen;
+  switch (step) {
+    case 'fork':screen = <ForkScreen onSolo={() => {setGroup(false);setStep('slot');}} onGroup={() => {setGroup(true);setStep('g1');}} />;break;
+    case 'slot':screen = <SlotMachine onFind={goFind} onBack={() => setStep('fork')} />;break;
+    case 'loading':screen = <CineLoading film={films[0]} onReady={() => setStep('detail')} />;break;
+    case 'detail':screen = <MovieDetail films={films} reels={reels} onWatch={(f) => {setFilms([f]);setStep('rating');}} onBack={() => setStep(group ? 'gslot' : 'slot')} />;break;
+    case 'rating':screen = <PostWatch film={films[0]} onRate={() => setStep('done')} onSkip={() => setStep('done')} />;break;
+    case 'g1':screen = <GroupInvite onNext={() => setStep('gslot')} onBack={() => setStep('fork')} onPreviewInvitee={() => setStep('notify')} />;break;
+    case 'notify':screen = <NotificationScreen onTap={() => setStep('join')} onDismiss={() => setStep('g1')} />;break;
+    case 'join':screen = <JoinSession onJoin={() => setStep('gslot')} onBack={() => setStep('notify')} />;break;
+    case 'gslot':screen = <SlotMachine isGroup onFind={(r)=>{ setReels(r); const fs=window._matchFilmsGroup(r); setFilms(fs); setStep('loading'); }} onBack={()=>setStep('g1')} />;break;
+    case 'g2':screen = <GroupVote onNext={() => setStep('g3')} onBack={() => setStep('g1')} />;break;
+    case 'g3':screen = <GroupReveal onFind={goGroupFilm} onBack={() => setStep('g2')} />;break;
+    case 'done':screen = <DoneScreen onRestart={() => setStep('fork')} />;break;
+    default:screen = <ForkScreen onSolo={() => setStep('slot')} onGroup={() => setStep('g1')} />;
+  }
+
+  return (
+    <div className="stage">
+      <div className="label">Cinematch · recommender loop</div>
+      <PhoneWrap>{screen}</PhoneWrap>
+      <div className="label" style={{ opacity: .5 }}>{group ? 'group' : 'solo'} · {step}</div>
+    </div>);
+
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

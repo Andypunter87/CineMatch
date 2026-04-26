@@ -1,0 +1,1923 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cinematch — Wireframe Exploration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ===== Cinematch Wireframes — sketchy, playful system ===== */
+
+:root {
+  --paper: #FAF6EE;
+  --paper-2: #F3ECDA;
+  --ink: #1a1a1a;
+  --ink-soft: #4a4a4a;
+  --ink-light: #8a8478;
+  --line: #1a1a1a;
+
+  --pink: #FF4D8F;
+  --yellow: #FFC93C;
+  --blue: #4D6EFF;
+  --mint: #5FD4A8;
+  --lilac: #C9A7FF;
+  --coral: #FF8C5A;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Nunito', 'Caveat', system-ui;
+  font-size: 16px;
+  line-height: 1.4;
+  min-height: 100vh;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(255,201,60,0.08), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(77,110,255,0.06), transparent 40%),
+    linear-gradient(var(--paper), var(--paper));
+}
+
+/* ============== TOP BAR ============== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--paper);
+  border-bottom: 2px dashed var(--ink);
+  padding: 18px 28px 10px;
+}
+
+.topbar-row {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.logo {
+  font-family: 'Caveat', cursive;
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo .dot {
+  width: 14px; height: 14px;
+  background: var(--pink);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  display: inline-block;
+  transform: rotate(-6deg);
+}
+.logo-sub {
+  font-family: 'Nunito';
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-weight: 400;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.tab {
+  font-family: 'Caveat', cursive;
+  font-size: 24px;
+  font-weight: 700;
+  padding: 6px 18px 8px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 22px 18px 24px 20px / 18px 22px 20px 24px;
+  cursor: pointer;
+  transition: transform .15s, background .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.tab:hover { transform: translateY(-2px) rotate(-1deg); }
+.tab.active {
+  background: var(--yellow);
+  box-shadow: 3px 3px 0 var(--ink);
+  transform: rotate(-1.5deg);
+}
+.tab .num {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 10px;
+  padding: 2px 7px;
+  font-weight: 700;
+}
+
+/* ============== GALLERY ============== */
+.gallery {
+  padding: 30px 28px 80px;
+  max-width: 1640px;
+  margin: 0 auto;
+}
+
+.gallery-head {
+  margin-bottom: 26px;
+  max-width: 720px;
+}
+.gallery-head h2 {
+  font-family: 'Caveat', cursive;
+  font-size: 48px;
+  line-height: 1;
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+.gallery-head p {
+  font-family: 'Nunito';
+  font-size: 16px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.gallery-head .legend {
+  margin-top: 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-light);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 40px 32px;
+  align-items: start;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.cell-tag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  margin-left: 18px;
+}
+.cell-num {
+  font-family: 'Caveat', cursive;
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  transform: rotate(-6deg);
+  color: var(--ink);
+}
+.cell-title {
+  font-family: 'Caveat', cursive;
+  font-size: 28px;
+  line-height: 1.05;
+  font-weight: 700;
+}
+.cell-desc {
+  font-family: 'Nunito';
+  font-size: 13px;
+  color: var(--ink-soft);
+  align-self: flex-start;
+  margin-left: 18px;
+  max-width: 300px;
+  margin-top: -6px;
+}
+
+/* ============== PHONE FRAME ============== */
+.phone {
+  --phone-w: 320px;
+  --phone-h: 660px;
+  width: var(--phone-w);
+  height: var(--phone-h);
+  background: var(--ink);
+  border-radius: 44px;
+  padding: 10px;
+  box-shadow:
+    6px 8px 0 rgba(26,26,26,0.15),
+    0 20px 40px rgba(26,26,26,0.08);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.screen {
+  width: 100%;
+  height: 100%;
+  background: var(--paper);
+  border-radius: 36px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.status {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
+  position: relative;
+  background: transparent;
+}
+.status::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 22px;
+  background: var(--ink);
+  border-radius: 14px;
+}
+.status .s-bat { display: inline-flex; gap: 3px; align-items: center; }
+.status .s-bat::after {
+  content: '';
+  width: 20px; height: 9px;
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--ink) 80%, transparent 80%);
+  background-size: 100%;
+  display: inline-block;
+}
+
+.screen-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Screen building blocks ===== */
+.sbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 10px;
+  border-bottom: 1.5px dashed rgba(26,26,26,0.35);
+}
+.sbar-title {
+  font-family: 'Caveat', cursive;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+.icon-btn {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  cursor: pointer;
+}
+.icon-btn.round { border-radius: 50%; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Nunito';
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1.5px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper);
+  line-height: 1.1;
+  cursor: pointer;
+  transition: transform .15s;
+}
+.chip:hover { transform: translateY(-1px); }
+.chip.chip-pink { background: var(--pink); color: white; }
+.chip.chip-yellow { background: var(--yellow); }
+.chip.chip-blue { background: var(--blue); color: white; }
+.chip.chip-mint { background: var(--mint); }
+.chip.chip-lilac { background: var(--lilac); }
+.chip.chip-coral { background: var(--coral); color: white; }
+.chip.chip-sel { box-shadow: 2px 2px 0 var(--ink); transform: translate(-1px,-1px); }
+
+.btn {
+  font-family: 'Caveat', cursive;
+  font-size: 22px;
+  font-weight: 700;
+  padding: 8px 22px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 18px 22px 20px 24px / 22px 18px 24px 20px;
+  background: var(--paper);
+  cursor: pointer;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn.btn-primary { background: var(--pink); color: white; box-shadow: 3px 3px 0 var(--ink); }
+.btn.btn-yellow { background: var(--yellow); box-shadow: 3px 3px 0 var(--ink); }
+.btn.btn-blue { background: var(--blue); color: white; box-shadow: 3px 3px 0 var(--ink); }
+.btn.btn-mint { background: var(--mint); box-shadow: 3px 3px 0 var(--ink); }
+
+/* Poster placeholder */
+.poster {
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(26,26,26,0.08) 0 1px,
+      transparent 1px 10px),
+    var(--paper-2);
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+.poster .poster-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  padding: 6px;
+  background: rgba(250,246,238,0.85);
+  width: 100%;
+  line-height: 1.1;
+}
+.poster.p-pink { background-color: color-mix(in oklab, var(--pink) 18%, var(--paper-2)); }
+.poster.p-blue { background-color: color-mix(in oklab, var(--blue) 18%, var(--paper-2)); }
+.poster.p-yellow { background-color: color-mix(in oklab, var(--yellow) 22%, var(--paper-2)); }
+.poster.p-mint { background-color: color-mix(in oklab, var(--mint) 22%, var(--paper-2)); }
+.poster.p-lilac { background-color: color-mix(in oklab, var(--lilac) 22%, var(--paper-2)); }
+.poster.p-coral { background-color: color-mix(in oklab, var(--coral) 20%, var(--paper-2)); }
+
+/* Bottom tab bar */
+.tabbar {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 8px 10px 14px;
+  border-top: 1.5px dashed rgba(26,26,26,0.35);
+  flex-shrink: 0;
+  gap: 4px;
+}
+.tabbar .t {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-light);
+  cursor: pointer;
+}
+.tabbar .t .t-ic {
+  width: 22px; height: 22px;
+  border: 1.5px solid var(--ink-light);
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+}
+.tabbar .t.active { color: var(--ink); }
+.tabbar .t.active .t-ic {
+  border-color: var(--ink);
+  background: var(--yellow);
+}
+
+/* Scrollable inner */
+.body-scroll {
+  flex: 1;
+  overflow: hidden;
+  padding: 14px 16px;
+  position: relative;
+}
+
+/* Headline inside phone */
+.h-big {
+  font-family: 'Caveat', cursive;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+.h-sub {
+  font-family: 'Nunito';
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0 0 12px;
+}
+.label-mono {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-light);
+}
+
+/* Progress dots */
+.dots {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+.dots i {
+  width: 8px; height: 8px; border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  display: inline-block;
+}
+.dots i.on { background: var(--ink); }
+
+/* Swipe card stack */
+.stack {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2/3;
+  margin: 8px 0 10px;
+}
+.stack .card {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--paper-2);
+  display: flex;
+  flex-direction: column;
+}
+.stack .card.back-1 { transform: rotate(-4deg) translate(-6px, 4px); opacity: 0.55; }
+.stack .card.back-2 { transform: rotate(3deg) translate(6px, 8px); opacity: 0.3; }
+.stack .card.front { box-shadow: 3px 4px 0 var(--ink); }
+
+.card-poster {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  padding: 12px;
+}
+.card-poster::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(26,26,26,0.08) 0 1px,
+      transparent 1px 10px);
+}
+.card-title {
+  font-family: 'Caveat', cursive;
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--ink);
+  position: relative;
+  z-index: 1;
+}
+.card-meta {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-soft);
+  position: relative;
+  z-index: 1;
+  margin-top: 2px;
+}
+.card-actions {
+  display: flex;
+  justify-content: space-around;
+  padding: 10px;
+  background: var(--paper);
+  border-top: 1.5px dashed var(--ink);
+}
+.circle-btn {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: 20px;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.circle-btn.pink { background: var(--pink); color: white; box-shadow: 2px 2px 0 var(--ink); }
+.circle-btn.yellow { background: var(--yellow); box-shadow: 2px 2px 0 var(--ink); }
+.circle-btn.blue { background: var(--blue); color: white; box-shadow: 2px 2px 0 var(--ink); }
+.circle-btn.mint { background: var(--mint); box-shadow: 2px 2px 0 var(--ink); }
+
+/* Annotation scribble */
+.annot {
+  font-family: 'Caveat', cursive;
+  font-size: 20px;
+  color: var(--ink-soft);
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.1;
+  max-width: 180px;
+  z-index: 5;
+  pointer-events: none;
+}
+.annot.tl { top: 30px; left: -150px; text-align: right; transform: rotate(-3deg); }
+.annot.tr { top: 30px; right: -150px; text-align: left; transform: rotate(3deg); }
+.annot.bl { bottom: 30px; left: -150px; text-align: right; transform: rotate(2deg); }
+.annot.br { bottom: 30px; right: -150px; text-align: left; transform: rotate(-2deg); }
+.annot .arrow { font-size: 26px; }
+
+/* ============== TWEAKS PANEL ============== */
+.tweaks {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 280px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 14px 16px 16px;
+  z-index: 100;
+  display: none;
+  font-family: 'Nunito';
+}
+.tweaks.open { display: block; }
+.tweaks h3 {
+  font-family: 'Caveat', cursive;
+  font-size: 26px;
+  margin: 0 0 10px;
+  line-height: 1;
+}
+.tweaks .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px 0;
+  gap: 8px;
+  font-size: 13px;
+}
+.tweaks .swatches {
+  display: flex; gap: 6px;
+}
+.tweaks .sw {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  cursor: pointer;
+}
+.tweaks .sw.active { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
+.tweaks .toggle {
+  width: 40px; height: 22px;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  background: var(--paper);
+  position: relative;
+  cursor: pointer;
+}
+.tweaks .toggle::after {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  background: var(--ink);
+  border-radius: 50%;
+  top: 2px; left: 2px;
+  transition: left .2s;
+}
+.tweaks .toggle.on { background: var(--mint); }
+.tweaks .toggle.on::after { left: 20px; }
+
+/* Fidelity: less-sketchy mode */
+body.mode-clean .logo, body.mode-clean .tab,
+body.mode-clean .cell-title, body.mode-clean .cell-num,
+body.mode-clean .h-big, body.mode-clean .sbar-title,
+body.mode-clean .card-title, body.mode-clean .btn,
+body.mode-clean .circle-btn, body.mode-clean .gallery-head h2 {
+  font-family: 'Nunito', system-ui !important;
+}
+
+/* Color intensity */
+body.mode-muted .tab.active,
+body.mode-muted .chip.chip-pink,
+body.mode-muted .chip.chip-yellow,
+body.mode-muted .chip.chip-blue,
+body.mode-muted .chip.chip-mint,
+body.mode-muted .chip.chip-lilac,
+body.mode-muted .chip.chip-coral,
+body.mode-muted .btn.btn-primary,
+body.mode-muted .btn.btn-blue,
+body.mode-muted .btn.btn-yellow,
+body.mode-muted .btn.btn-mint,
+body.mode-muted .circle-btn.pink,
+body.mode-muted .circle-btn.yellow,
+body.mode-muted .circle-btn.blue,
+body.mode-muted .circle-btn.mint {
+  filter: saturate(0.3) brightness(0.95);
+}
+
+.fab {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--ink);
+  z-index: 99;
+}
+
+/* Tiny helpers */
+.row-between { display:flex; align-items:center; justify-content:space-between; }
+.gap-6 { gap:6px; } .gap-8 { gap:8px; } .gap-10 { gap:10px; } .gap-12 { gap:12px; }
+.flex { display:flex; } .col { display:flex; flex-direction:column; }
+.wrap { flex-wrap: wrap; }
+.mt-4 { margin-top:4px; } .mt-6 { margin-top:6px; } .mt-8 { margin-top:8px; } .mt-10 { margin-top:10px; } .mt-12 { margin-top:12px; } .mt-16 { margin-top:16px; }
+.mb-4 { margin-bottom:4px; } .mb-6 { margin-bottom:6px; } .mb-8 { margin-bottom:8px; } .mb-10 { margin-bottom:10px; } .mb-12 { margin-bottom:12px; }
+.center { text-align:center; }
+.grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grid-3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+
+/* Subtle highlight strokes */
+.strike {
+  text-decoration: line-through;
+  text-decoration-color: var(--pink);
+  text-decoration-thickness: 2px;
+}
+.hi {
+  background: linear-gradient(transparent 60%, rgba(255,201,60,0.6) 60%);
+  padding: 0 3px;
+}
+.hi-pink {
+  background: linear-gradient(transparent 60%, rgba(255,77,143,0.4) 60%);
+  padding: 0 3px;
+}
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-row">
+    <div class="logo">
+      <span class="dot"></span>
+      cinematch
+      <span class="logo-sub">&nbsp;&nbsp;wireframe exploration · mid-fi · mobile</span>
+    </div>
+  </div>
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-tab="ob"><span class="num">1</span>onboarding</div>
+    <div class="tab" data-tab="mo"><span class="num">2</span>mood / vibe loop</div>
+    <div class="tab" data-tab="de"><span class="num">3</span>movie detail &amp; why</div>
+    <div class="tab" data-tab="system"><span class="num">★</span>design notes</div>
+  </div>
+</div>
+
+<div id="root"></div>
+
+<button class="fab" id="fab" title="Tweaks">✎</button>
+
+<div class="tweaks" id="tweaks">
+  <h3>Tweaks</h3>
+
+  <div class="row">
+    <span>Accent color</span>
+    <div class="swatches" id="swatches">
+      <div class="sw active" data-accent="pink" style="background:#FF4D8F"></div>
+      <div class="sw" data-accent="blue" style="background:#4D6EFF"></div>
+      <div class="sw" data-accent="yellow" style="background:#FFC93C"></div>
+      <div class="sw" data-accent="mint" style="background:#5FD4A8"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <span>Fidelity: sketchy</span>
+    <div class="toggle on" id="t-sketchy"></div>
+  </div>
+
+  <div class="row">
+    <span>Bright colours</span>
+    <div class="toggle on" id="t-colors"></div>
+  </div>
+
+  <div class="row">
+    <span>Show annotations</span>
+    <div class="toggle on" id="t-annots"></div>
+  </div>
+
+  <div style="margin-top:12px; font-family:'Space Mono', monospace; font-size:10px; color:var(--ink-light); letter-spacing:0.05em;">
+    toggle panel: click ✎
+  </div>
+</div>
+
+<!-- EDITMODE defaults -->
+<script>
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accent": "pink",
+  "sketchy": true,
+  "colors": true,
+  "annotations": true
+}/*EDITMODE-END*/;
+</script>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+
+<script type="text/babel" data-presets="react">
+// Onboarding variations — 6 mid-fi mobile wireframes
+const { useState } = React;
+
+// ========== Phone shell ==========
+function Phone({ children }) {
+  return (
+    <div className="phone">
+      <div className="screen">
+        <div className="status">
+          <span>9:41</span>
+          <span className="s-bat">100</span>
+        </div>
+        <div className="screen-body">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// Generic top bar within phone
+function SBar({ title, left = '←', right = 'skip' }) {
+  return (
+    <div className="sbar">
+      <div className="flex gap-8" style={{alignItems:'center'}}>
+        <div className="icon-btn">{left}</div>
+        <div className="sbar-title">{title}</div>
+      </div>
+      {right && <div className="label-mono" style={{cursor:'pointer'}}>{right}</div>}
+    </div>
+  );
+}
+
+// ---------- V1: One-question-at-a-time quiz (visual answers) ----------
+function OB_V1() {
+  return (
+    <Phone>
+      <div className="sbar">
+        <div className="dots">
+          <i className="on" /><i className="on" /><i className="on" /><i /><i /><i /><i />
+        </div>
+        <div className="label-mono">3 / 7</div>
+      </div>
+      <div className="body-scroll">
+        <div className="label-mono mb-4">question 3</div>
+        <h2 className="h-big">A movie ends and you...</h2>
+        <p className="h-sub">no wrong answers. probably.</p>
+
+        <div className="col gap-8 mt-10">
+          {[
+            { t: 'Sit in silence for 20 min', c: 'chip-pink' },
+            { t: 'Immediately google the ending', c: 'chip-yellow' },
+            { t: 'Start rating it before credits', c: 'chip-blue' },
+            { t: 'Text someone "you HAVE to see this"', c: 'chip-mint' },
+          ].map((o,i) => (
+            <div key={i} className={`chip ${o.c}`} style={{fontSize:14, padding:'12px 14px', borderRadius:'14px 18px 16px 14px', justifyContent:'flex-start'}}>
+              <span style={{fontFamily:'Space Mono', fontSize:10, opacity:0.7, marginRight:8}}>{String.fromCharCode(65+i)}</span>
+              {o.t}
+            </div>
+          ))}
+        </div>
+
+        <div className="row-between mt-16">
+          <div className="label-mono">tap to pick</div>
+          <div className="btn btn-primary">next →</div>
+        </div>
+      </div>
+    </Phone>
+  );
+}
+
+// ---------- V2: Film tinder — rapid-fire rating ----------
+function OB_V2() {
+  return (
+    <Phone>
+      <SBar title="quick taste check" right="done" />
+      <div className="body-scroll">
+        <div className="row-between mb-6">
+          <div className="label-mono">swipe 12 more</div>
+          <div className="dots">
+            <i className="on" /><i className="on" /><i className="on" /><i className="on" /><i /><i />
+          </div>
+        </div>
+
+        <div className="stack">
+          <div className="card back-2"><div className="card-poster p-mint"><div className="card-title">Parasite</div></div></div>
+          <div className="card back-1"><div className="card-poster p-blue"><div className="card-title">La La Land</div></div></div>
+          <div className="card front">
+            <div className="card-poster p-pink">
+              <div>
+                <div className="card-title">The Grand Budapest Hotel</div>
+                <div className="card-meta">2014 · 99min · Anderson</div>
+              </div>
+            </div>
+            <div className="card-actions">
+              <div className="circle-btn">✗</div>
+              <div className="circle-btn yellow">?</div>
+              <div className="circle-btn pink">♥</div>
+            </div>
+          </div>
+        </div>
+
+        <p className="h-sub center mt-10" style={{fontSize:12}}>
+          haven't seen it? <span className="hi">tap ?</span><br />no judgement here
+        </p>
+      </div>
+    </Phone>
+  );
+}
+
+// ---------- V3: Streaming service multi-select (playful) ----------
+function OB_V3() {
+  return (
+    <Phone>
+      <SBar title="where do you watch?" right="skip" />
+      <div className="body-scroll">
+        <h2 className="h-big">Your streaming setup</h2>
+        <p className="h-sub">we'll only suggest stuff you can actually watch 🙏</p>
+
+        <div className="grid-2 mt-10" style={{gap:10}}>
+          {[
+            { n: 'Netflix', c: 'chip-pink', sel: true },
+            { n: 'Disney+', c: 'chip-blue', sel: true },
+            { n: 'Prime', c: 'chip-yellow', sel: false },
+            { n: 'MUBI', c: 'chip-mint', sel: true },
+            { n: 'Apple TV+', c: 'chip-lilac', sel: false },
+            { n: 'NOW / Sky', c: 'chip-coral', sel: false },
+            { n: 'BBC iPlayer', c: '', sel: false },
+            { n: 'Criterion', c: '', sel: false },
+          ].map((s,i) => (
+            <div key={i} className={`chip ${s.c} ${s.sel ? 'chip-sel' : ''}`} style={{padding:'14px 8px', justifyContent:'center', fontSize:13, borderRadius:'12px 16px 14px 12px'}}>
+              {s.sel && <span style={{marginRight:4}}>✓</span>}
+              {s.n}
+            </div>
+          ))}
+        </div>
+
+        <p className="label-mono mt-16">3 of 8 selected · <span style={{color:'var(--ink)', fontFamily:'Nunito'}}>add more anytime</span></p>
+
+        <div className="flex mt-12" style={{justifyContent:'flex-end'}}>
+          <div className="btn btn-primary">looks good →</div>
+        </div>
+      </div>
+    </Phone>
+  );
+}
+
+// ---------- V4: Conversational intro / the "movie nerd" character ----------
+function OB_V4() {
+  return (
+    <Phone>
+      <div className="sbar">
+        <div className="flex gap-8" style={{alignItems:'center'}}>
+          <div className="icon-btn" style={{background:'var(--yellow)', fontFamily:'Caveat', fontSize:18}}>C</div>
+          <div>
+            <div className="sbar-title" style={{fontSize:18}}>Cine</div>
+            <div className="label-mono" style={{fontSize:8}}>your movie friend</div>
+          </div>
+        </div>
+        <div className="label-mono" style={{cursor:'pointer'}}>skip</div>
+      </div>
+      <div className="body-scroll">
+        <div className="col gap-8">
+          <Bubble from="cine">oh hi!! 👋 i'm Cine.</Bubble>
+          <Bubble from="cine">i'm going to ask you like 5 things then never bother you again (promise)</Bubble>
+          <Bubble from="cine">first — what's your name?</Bubble>
+          <div className="flex mt-8" style={{justifyContent:'flex-end'}}>
+            <div className="chip chip-yellow" style={{padding:'8px 14px', fontSize:13}}>Andy</div>
+          </div>
+          <Bubble from="cine">Andy!!! legendary. okay —<br/>pick the one that is a <span className="hi-pink">lie</span>:</Bubble>
+        </div>
+
+        <div className="col gap-6 mt-10">
+          <div className="chip" style={{padding:'10px 12px', fontSize:12, justifyContent:'flex-start'}}>I've seen The Godfather</div>
+          <div className="chip" style={{padding:'10px 12px', fontSize:12, justifyContent:'flex-start'}}>I've seen Pulp Fiction</div>
+          <div className="chip" style={{padding:'10px 12px', fontSize:12, justifyContent:'flex-start'}}>I understand Inception</div>
+          <div className="chip" style={{padding:'10px 12px', fontSize:12, justifyContent:'flex-start'}}>I've seen Shrek 2 (three times)</div>
+        </div>
+      </div>
+    </Phone>
+  );
+}
+
+function Bubble({ from, children }) {
+  const mine = from === 'me';
+  return (
+    <div style={{
+      alignSelf: mine ? 'flex-end' : 'flex-start',
+      maxWidth: '80%',
+      background: mine ? 'var(--yellow)' : 'var(--paper-2)',
+      border: '1.5px solid var(--ink)',
+      borderRadius: mine ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+      padding: '8px 12px',
+      fontFamily: 'Nunito',
+      fontSize: 13,
+      lineHeight: 1.3
+    }}>{children}</div>
+  );
+}
+
+// ---------- V5: Pick your "movie persona" — archetypes ----------
+function OB_V5() {
+  const archetypes = [
+    { n: 'The Crier', e: '😭', d: 'feel ALL the feelings', c: 'p-pink' },
+    { n: 'The Snob', e: '🎞️', d: 'subtitles & long takes', c: 'p-blue' },
+    { n: 'The Comfort Watcher', e: '🛋️', d: 'seen it 10 times? cozy', c: 'p-yellow' },
+    { n: 'The Chaos Gremlin', e: '🍿', d: 'weird > good', c: 'p-mint' },
+    { n: 'The Completionist', e: '📋', d: 'saw every Scorsese', c: 'p-lilac' },
+    { n: 'The Casual', e: '🧃', d: 'just pick something fun', c: 'p-coral' },
+  ];
+  return (
+    <Phone>
+      <SBar title="pick your vibe" right="skip" />
+      <div className="body-scroll">
+        <h2 className="h-big">Which one are you?</h2>
+        <p className="h-sub">(you can be more than one. we don't care.)</p>
+
+        <div className="grid-2 mt-10" style={{gap:10}}>
+          {archetypes.map((a,i) => (
+            <div key={i} className={`poster ${a.c}`} style={{
+              aspectRatio: '1/1.1', padding: 8, border:'1.5px solid var(--ink)',
+              borderRadius: 10, display:'flex', flexDirection:'column',
+              justifyContent:'space-between',
+              boxShadow: i === 3 ? '2px 2px 0 var(--ink)' : 'none',
+              transform: i === 3 ? 'rotate(-1deg)' : 'none',
+            }}>
+              <div style={{fontSize:28, lineHeight:1}}>{a.e}</div>
+              <div>
+                <div style={{fontFamily:'Caveat', fontSize:18, fontWeight:700, lineHeight:1}}>{a.n}</div>
+                <div className="label-mono" style={{marginTop:2, textTransform:'none', letterSpacing:0}}>{a.d}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <p className="label-mono mt-12 center">1 selected · tap to toggle</p>
+      </div>
+    </Phone>
+  );
+}
+
+// ---------- V6: Taste-o-meter summary ----------
+function OB_V6() {
+  return (
+    <Phone>
+      <SBar title="you're all set!" left="" right="" />
+      <div className="body-scroll">
+        <div className="center">
+          <div style={{fontSize:44, lineHeight:1}}>🎬</div>
+          <h2 className="h-big mt-4">Hey Andy — here's you</h2>
+          <p className="h-sub">your cinematic fingerprint™</p>
+        </div>
+
+        <div style={{
+          border: '2px solid var(--ink)',
+          borderRadius: 14,
+          padding: 14,
+          background: 'var(--paper-2)',
+          marginTop: 14,
+          position: 'relative'
+        }}>
+          <div className="label-mono mb-8">your top 3</div>
+          {['weird & wonderful', 'late-night thinker', 'soft spot for romcoms'].map((t,i)=>(
+            <div key={i} className="row-between" style={{margin:'6px 0'}}>
+              <span style={{fontFamily:'Nunito', fontSize:13}}>{t}</span>
+              <div style={{width:80, height:8, background:'var(--paper)', border:'1.5px solid var(--ink)', borderRadius:6, overflow:'hidden'}}>
+                <div style={{height:'100%', width:`${85 - i*15}%`, background: ['var(--pink)','var(--blue)','var(--yellow)'][i]}} />
+              </div>
+            </div>
+          ))}
+
+          <div style={{borderTop:'1.5px dashed var(--ink)', margin:'10px -14px', paddingTop:10, padding: '10px 14px 0'}}>
+            <div className="label-mono mb-4">you'll probably like</div>
+            <div className="flex wrap gap-6">
+              <div className="chip chip-yellow" style={{fontSize:11, padding:'3px 8px'}}>A24 stuff</div>
+              <div className="chip chip-pink" style={{fontSize:11, padding:'3px 8px'}}>Studio Ghibli</div>
+              <div className="chip chip-blue" style={{fontSize:11, padding:'3px 8px'}}>Korean thrillers</div>
+              <div className="chip" style={{fontSize:11, padding:'3px 8px'}}>90s romcoms</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="center mt-16">
+          <div className="btn btn-primary" style={{fontSize:20}}>show me movies →</div>
+          <div className="label-mono mt-10" style={{cursor:'pointer'}}>edit my vibe</div>
+        </div>
+      </div>
+    </Phone>
+  );
+}
+
+// ---------- Export all ----------
+window.OnboardingVariations = [
+  { num: '01', title: 'Quiz — one at a time',
+    desc: 'Questions with personality, visual answers. Big swing on playfulness.',
+    Comp: OB_V1, annots: [
+      {pos:'tr', text:'↖ progress dots, not a bar'},
+      {pos:'br', text:'← real copy, not "select one"'}
+    ]},
+  { num: '02', title: 'Film Tinder',
+    desc: 'Swipe through posters to learn taste. Fast, kinetic, no thinking.',
+    Comp: OB_V2, annots: [
+      {pos:'tl', text:'stack shows what\'s next ↘'},
+      {pos:'br', text:'"?" = haven\'t seen → key!'}
+    ]},
+  { num: '03', title: 'Streaming services',
+    desc: 'Where you watch. Multi-select chips in brand colors.',
+    Comp: OB_V3, annots: []},
+  { num: '04', title: 'Meet Cine (conversational)',
+    desc: 'The "movie nerd friend" arrives as a chat character from screen 1.',
+    Comp: OB_V4, annots: [
+      {pos:'tl', text:'Cine = brand mascot ↘'},
+      {pos:'br', text:'"2 truths & a lie" → taste signal'}
+    ]},
+  { num: '05', title: 'Pick your persona',
+    desc: 'Archetype cards — fast, flattering, gives you a category.',
+    Comp: OB_V5, annots: [
+      {pos:'tr', text:'multi-select ok'}
+    ]},
+  { num: '06', title: 'Cinematic fingerprint',
+    desc: 'Summary screen. Mini "mood card" appears here → foreshadows the big one.',
+    Comp: OB_V6, annots: [
+      {pos:'br', text:'↙ preview of monthly card'}
+    ]},
+];
+
+
+</script>
+<script type="text/babel" data-presets="react">
+// Mood / Vibe loop — expanded solo + group, with auto-routing
+function PhoneMV({ children }) {
+  return (
+    <div className="phone"><div className="screen">
+      <div className="status"><span>9:41</span><span className="s-bat">100</span></div>
+      <div className="screen-body">{children}</div>
+    </div></div>
+  );
+}
+function SB({ title, left='←', right }) {
+  return (
+    <div className="sbar">
+      <div className="flex gap-8" style={{alignItems:'center'}}>
+        {left && <div className="icon-btn">{left}</div>}
+        <div className="sbar-title">{title}</div>
+      </div>
+      {right && <div className="label-mono" style={{cursor:'pointer'}}>{right}</div>}
+    </div>
+  );
+}
+
+// ========== SOLO: the entry fork ==========
+function Mx_Fork() {
+  return (
+    <PhoneMV>
+      <SB title="tonight's film" left="" right="" />
+      <div className="body-scroll" style={{display:'flex', flexDirection:'column', justifyContent:'center'}}>
+        <div className="label-mono mb-4 center">first thing first</div>
+        <h2 className="h-big center" style={{fontSize:34}}>who's watching?</h2>
+        <p className="h-sub center">this changes everything</p>
+
+        <div className="col gap-10 mt-16">
+          <div style={{
+            border:'2px solid var(--ink)', borderRadius:16, padding:'14px 16px',
+            background:'var(--yellow)', boxShadow:'3px 3px 0 var(--ink)', transform:'rotate(-1deg)'
+          }}>
+            <div className="flex" style={{justifyContent:'space-between', alignItems:'center'}}>
+              <div>
+                <div style={{fontFamily:'Caveat', fontSize:26, fontWeight:700, lineHeight:1}}>Just me</div>
+                <div className="label-mono mt-4" style={{textTransform:'none'}}>→ slot machine</div>
+              </div>
+              <div style={{fontSize:30}}>🛋️</div>
+            </div>
+          </div>
+
+          <div style={{
+            border:'2px solid var(--ink)', borderRadius:16, padding:'14px 16px',
+            background:'var(--pink)', color:'white', boxShadow:'3px 3px 0 var(--ink)', transform:'rotate(1deg)'
+          }}>
+            <div className="flex" style={{justifyContent:'space-between', alignItems:'center'}}>
+              <div>
+                <div style={{fontFamily:'Caveat', fontSize:26, fontWeight:700, lineHeight:1}}>Me + someone</div>
+                <div className="label-mono mt-4" style={{textTransform:'none', color:'white', opacity:0.85}}>→ group vibe session</div>
+              </div>
+              <div style={{fontSize:30}}>👯</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <TabBar2 active="pick" />
+    </PhoneMV>
+  );
+}
+
+function TabBar2({ active='pick' }) {
+  const tabs=[['home','⌂'],['pick','◎'],['list','≡'],['friends','△'],['me','●']];
+  return (
+    <div className="tabbar">
+      {tabs.map(([k,ic])=>(
+        <div key={k} className={`t ${active===k?'active':''}`}>
+          <div className="t-ic">{ic}</div><span>{k}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ========== SOLO: Slot machine mashup — swipeable reels + lock-and-roll ==========
+// Mashup of swipeable reels (V2 feel) with lock-and-roll (V4 mechanic), plus
+// visual signifier of how many options are in each reel.
+
+function Mx_SoloMashup() {
+  // Each reel: label, options, current index, lock state, chipColor
+  const reels = [
+    { l:'FEEL',    opts:['cosy','thinky','bittersweet','silly','tense','swoony'], i:2, locked:true,  c:'var(--pink)' },
+    { l:'FLAVOUR', opts:['sunny','neon+rain','fog','warm kitchen','sci-fi cold'],  i:1, locked:false, c:'var(--blue)' },
+    { l:'LENGTH',  opts:['under 90m','~2 hrs','epic ok'],                          i:0, locked:true,  c:'var(--yellow)' },
+    { l:'ERA',     opts:["today","'10s","'00s","'90s","'80s","older"],              i:3, locked:false, c:'var(--mint)' },
+  ];
+
+  return (
+    <PhoneMV>
+      <SB title="spin your mood" right="done" />
+      <div className="body-scroll">
+        <p className="h-sub center mb-10">swipe each row ↔  ·  tap 🔒 to keep  ·  ROLL spins the rest</p>
+
+        {reels.map((r, idx) => (
+          <div key={idx} style={{
+            border:'2px solid var(--ink)', borderRadius:14, marginTop: idx ? 10 : 0,
+            background:'var(--paper-2)', overflow:'hidden', boxShadow:'3px 3px 0 var(--ink)',
+            opacity: r.locked ? 1 : 1
+          }}>
+            {/* colored header */}
+            <div style={{
+              padding:'4px 10px', background:r.c,
+              color: idx === 2 ? 'var(--ink)' : 'white',
+              fontFamily:'Space Mono', fontSize:10, letterSpacing:'0.1em',
+              borderBottom:'2px solid var(--ink)',
+              display:'flex', justifyContent:'space-between', alignItems:'center'
+            }}>
+              <span>{r.l}</span>
+              {/* count signifier */}
+              <span style={{opacity:0.85}}>
+                <b>{r.i + 1}</b>/{r.opts.length}
+              </span>
+            </div>
+
+            {/* swipeable options with lock */}
+            <div style={{padding:'10px 10px 6px', display:'flex', alignItems:'center', gap:8}}>
+              {/* lock button */}
+              <div className="icon-btn" style={{
+                width:28, height:28, fontSize:12, flexShrink:0,
+                background: r.locked ? 'var(--yellow)' : 'var(--paper)',
+                boxShadow: r.locked ? '1.5px 1.5px 0 var(--ink)' : 'none'
+              }}>{r.locked ? '🔒' : '🔓'}</div>
+
+              {/* swipeable preview strip */}
+              <div style={{flex:1, overflow:'hidden'}}>
+                <div style={{display:'flex', gap:12, alignItems:'center', justifyContent:'flex-start'}}>
+                  {r.opts.map((o, oi) => {
+                    const dist = Math.abs(oi - r.i);
+                    return (
+                      <div key={oi} style={{
+                        fontFamily:'Caveat',
+                        fontSize: oi === r.i ? 24 : 16,
+                        fontWeight:700,
+                        opacity: oi === r.i ? 1 : (dist === 1 ? 0.35 : 0.15),
+                        flexShrink:0, lineHeight:1, whiteSpace:'nowrap'
+                      }}>{o}</div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* dot pagination — count signifier */}
+            <div className="row-between" style={{padding:'0 10px 8px'}}>
+              <span style={{fontFamily:'Space Mono', fontSize:9, color:'var(--ink-light)'}}>‹ swipe ›</span>
+              <div style={{display:'flex', gap:3}}>
+                {r.opts.map((_, oi) => (
+                  <i key={oi} style={{
+                    width: oi === r.i ? 10 : 4,
+                    height:4,
+                    borderRadius:2,
+                    background: oi === r.i ? 'var(--ink)' : 'var(--ink-light)',
+                    opacity: oi === r.i ? 1 : 0.4,
+                    display:'inline-block'
+                  }}/>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* lock summary + roll CTA */}
+        <div style={{
+          marginTop:14, padding:10,
+          border:'1.5px dashed var(--ink)', borderRadius:12,
+          background:'var(--paper)',
+          display:'flex', justifyContent:'space-between', alignItems:'center'
+        }}>
+          <div style={{fontFamily:'Nunito', fontSize:12, lineHeight:1.2}}>
+            <span className="label-mono">locked:</span> <b>feel</b>, <b>length</b><br/>
+            <span className="label-mono">rolling:</span> flavour, era
+          </div>
+          <div className="btn btn-primary" style={{fontSize:18, padding:'8px 16px'}}>🎲 ROLL</div>
+        </div>
+
+        <div className="flex mt-10" style={{justifyContent:'center'}}>
+          <div className="btn btn-primary" style={{fontSize:20}}>🎬 find it →</div>
+        </div>
+      </div>
+    </PhoneMV>
+  );
+}
+
+// ========== GROUP FLOW (expanded, 3 steps) ==========
+
+// G1: Invite + waiting room
+function Mx_G_Invite() {
+  return (
+    <PhoneMV>
+      <SB title="group film club" right="" />
+      <div className="body-scroll">
+        <div className="label-mono mb-4">step 1 / 3 · invite</div>
+        <h2 className="h-big">Who's in tonight?</h2>
+
+        <div className="flex wrap gap-8 mt-10">
+          {[
+            {n:'Andy',c:'var(--pink)',ready:true},
+            {n:'Sam',c:'var(--blue)',ready:true},
+            {n:'Tay',c:'var(--mint)',ready:false},
+          ].map((p,i)=>(
+            <div key={i} style={{textAlign:'center'}}>
+              <div style={{
+                width:52, height:52, borderRadius:'50%', border:'2px solid var(--ink)',
+                background:p.c, color:'white', display:'flex', alignItems:'center', justifyContent:'center',
+                fontFamily:'Caveat', fontWeight:700, fontSize:22,
+                boxShadow:p.ready?'2px 2px 0 var(--ink)':'none',
+                position:'relative'
+              }}>{p.n[0]}
+                {p.ready && <div style={{position:'absolute', right:-4, bottom:-4, width:18, height:18, background:'var(--yellow)', border:'1.5px solid var(--ink)', borderRadius:'50%', fontSize:10, display:'flex', alignItems:'center', justifyContent:'center'}}>✓</div>}
+              </div>
+              <div style={{fontFamily:'Nunito', fontSize:11, marginTop:4}}>{p.n}</div>
+              <div className="label-mono" style={{fontSize:8}}>{p.ready?'ready':'...'}</div>
+            </div>
+          ))}
+          <div style={{textAlign:'center'}}>
+            <div style={{
+              width:52, height:52, borderRadius:'50%', border:'2px dashed var(--ink)',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              fontFamily:'Caveat', fontSize:26, color:'var(--ink-light)'
+            }}>+</div>
+            <div className="label-mono" style={{fontSize:8, marginTop:4}}>invite</div>
+          </div>
+        </div>
+
+        <div style={{
+          border:'1.5px dashed var(--ink)', borderRadius:10, padding:10, marginTop:14,
+          background:'var(--paper-2)', fontFamily:'Nunito', fontSize:12
+        }}>
+          share link: <span className="hi">cinematch.co/g/<b>FR1DAY</b></span>
+        </div>
+
+        <div className="flex mt-12 gap-8">
+          <div className="btn" style={{flex:1, justifyContent:'center'}}>↗ share</div>
+          <div className="btn btn-primary" style={{flex:1, justifyContent:'center'}}>next →</div>
+        </div>
+      </div>
+    </PhoneMV>
+  );
+}
+
+// G2: Everyone picks chips — live vote view
+function Mx_G_Vote() {
+  return (
+    <PhoneMV>
+      <SB title="pick your vibes" right="" />
+      <div className="body-scroll">
+        <div className="label-mono mb-4">step 2 / 3 · your chips count</div>
+        <p style={{fontFamily:'Nunito', fontSize:13, lineHeight:1.3}}>
+          pick 2–3 things you'd enjoy.<br/>
+          <span className="label-mono">live: <span style={{fontFamily:'Nunito', color:'var(--ink)'}}>andy done · sam voting · tay voting</span></span>
+        </p>
+
+        <div className="label-mono mt-10 mb-4">mood</div>
+        <div className="flex wrap gap-6">
+          {[['cosy','chip-yellow',3],['funny','chip-pink',3],['thinky','',1],['romantic','',2],['weird','chip-mint',2],['tense','',0]].map(([t,c,n],i)=>(
+            <div key={i} className={`chip ${c} ${n>=2?'chip-sel':''}`} style={{fontSize:12, position:'relative'}}>
+              {t}
+              {n>0 && <span style={{marginLeft:6, fontFamily:'Space Mono', fontSize:9, opacity:0.7}}>{n}/3</span>}
+            </div>
+          ))}
+        </div>
+
+        <div className="label-mono mt-10 mb-4">how heavy</div>
+        <div className="flex wrap gap-6">
+          {[['light','chip-yellow',3],['medium','',2],['heavy','',0]].map(([t,c,n],i)=>(
+            <div key={i} className={`chip ${c} ${n>=2?'chip-sel':''}`} style={{fontSize:12}}>
+              {t} <span style={{marginLeft:4, fontFamily:'Space Mono', fontSize:9, opacity:0.7}}>{n}/3</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={{
+          border:'1.5px dashed var(--ink)', borderRadius:10, padding:8, marginTop:12,
+          background:'var(--paper-2)', fontFamily:'Nunito', fontSize:12
+        }}>
+          <span className="label-mono">overlap so far:</span> cosy + funny + light
+        </div>
+
+        <div className="flex mt-12" style={{justifyContent:'flex-end'}}>
+          <div className="btn btn-primary">i'm done →</div>
+        </div>
+      </div>
+    </PhoneMV>
+  );
+}
+
+// G3: The "overlap" reveal + pick
+function Mx_G_Result() {
+  return (
+    <PhoneMV>
+      <SB title="the overlap" right="" />
+      <div className="body-scroll">
+        <div className="label-mono mb-4">step 3 / 3 · cine found it</div>
+
+        <div style={{
+          border:'2px solid var(--ink)', borderRadius:14, padding:14, marginTop:4,
+          background:'var(--yellow)', boxShadow:'3px 3px 0 var(--ink)', transform:'rotate(-0.8deg)'
+        }}>
+          <div className="label-mono mb-6">you 3 agree on:</div>
+          <div style={{fontFamily:'Caveat', fontSize:30, fontWeight:700, lineHeight:1}}>
+            <span className="hi-pink">warm-hearted</span><br/>
+            comedy with<br/>
+            a <span className="hi-pink">soft spot</span>
+          </div>
+        </div>
+
+        <div className="label-mono mt-14 mb-6">voted in</div>
+        <div className="flex wrap gap-6">
+          <div className="chip chip-yellow chip-sel" style={{fontSize:12}}>cosy <b>3/3</b></div>
+          <div className="chip chip-pink chip-sel" style={{fontSize:12}}>funny <b>3/3</b></div>
+          <div className="chip chip-mint chip-sel" style={{fontSize:12}}>under 2h <b>3/3</b></div>
+        </div>
+
+        <div className="label-mono mt-10 mb-6">only some wanted</div>
+        <div className="flex wrap gap-6">
+          <div className="chip" style={{fontSize:12, opacity:0.5}}><span className="strike">thinky</span> 1/3</div>
+          <div className="chip" style={{fontSize:12, opacity:0.5}}><span className="strike">tense</span> 0/3</div>
+        </div>
+
+        <div className="flex mt-16" style={{justifyContent:'center'}}>
+          <div className="btn btn-primary" style={{fontSize:22}}>🍿 pick for us →</div>
+        </div>
+      </div>
+    </PhoneMV>
+  );
+}
+
+window.MoodVariations = [
+  { num:'01', title:'The fork', desc:'First screen. "Just me" → slot machine. "Me + someone" → group session. Everything hangs off this choice.', Comp: Mx_Fork, annots:[
+    {pos:'tr', text:'↖ routing decision'}, {pos:'br', text:'no "surprise me" — shuffle lives later'}
+  ]},
+
+  { num:'02', title:'Solo · slot machine', desc:'The mashup you asked for: swipeable reels + lock-and-roll + a visible 3/6 count per reel so users know how many options are in each axis.', Comp: Mx_SoloMashup, annots:[
+    {pos:'tr', text:'↖ count signifier (3/6)'}, {pos:'tl', text:'🔒 lock · 🎲 roll the rest'}, {pos:'br', text:'swipe ↔ to scrub a reel'}
+  ]},
+
+  { num:'03', title:'Group · step 1: invite', desc:'Auto-selected when user chose "me + someone". Share link, see who\'s in, wait for ready.', Comp: Mx_G_Invite, annots:[
+    {pos:'tr', text:'checkmark = chips voted'}, {pos:'br', text:'link shares to any app'}
+  ]},
+
+  { num:'04', title:'Group · step 2: vote', desc:'Everyone picks chips in parallel. Counts appear live (3/3 = unanimous). No winners, overlap finds itself.', Comp: Mx_G_Vote, annots:[
+    {pos:'tl', text:'live status ↘'}, {pos:'br', text:'overlap updates each vote'}
+  ]},
+
+  { num:'05', title:'Group · step 3: overlap reveal', desc:'The big "here\'s what all 3 agree on" moment. Framed like a verdict. Then cine picks the film.', Comp: Mx_G_Result, annots:[
+    {pos:'tr', text:'hero moment ↘'}, {pos:'br', text:'struck-through = skipped'}
+  ]},
+];
+
+</script>
+<script type="text/babel" data-presets="react">
+// Movie Detail — Swipe deck (hero) + Breakdown bars toggle + Mood Card interstitial
+function PhD({ children }) {
+  return (
+    <div className="phone"><div className="screen">
+      <div className="status"><span>9:41</span><span className="s-bat">100</span></div>
+      <div className="screen-body">{children}</div>
+    </div></div>
+  );
+}
+
+// D1: Swipe deck (primary) — with "bars" toggle affordance
+function D_Swipe() {
+  return (
+    <PhD>
+      <div className="sbar">
+        <div className="icon-btn">✗</div>
+        <div className="label-mono">card 1 of 5</div>
+        <div className="icon-btn" title="breakdown bars">≡</div>
+      </div>
+      <div className="body-scroll" style={{padding:'12px 14px'}}>
+        <div className="stack" style={{aspectRatio:'2/2.6'}}>
+          <div className="card back-2"><div className="card-poster p-mint"><div className="card-title">next</div></div></div>
+          <div className="card back-1"><div className="card-poster p-blue"><div className="card-title">queued</div></div></div>
+          <div className="card front" style={{background:'var(--paper)'}}>
+            <div className="card-poster p-pink" style={{flex:'0 0 55%'}}>
+              <div>
+                <div className="card-title">Grand Budapest</div>
+                <div className="card-meta">2014 · 99m · Anderson</div>
+              </div>
+            </div>
+            <div style={{padding:10, fontSize:12, fontFamily:'Nunito', flex:1}}>
+              <div className="label-mono mb-4">why now</div>
+              <div style={{lineHeight:1.3}}>you said <span className="hi">cosy</span> + <span className="hi">sharp</span>. 99min fits.</div>
+              <div className="flex wrap gap-6 mt-6">
+                <div className="chip chip-yellow" style={{fontSize:10, padding:'2px 7px'}}>Disney+</div>
+                <div className="chip" style={{fontSize:10, padding:'2px 7px'}}>94% match</div>
+              </div>
+            </div>
+            <div className="card-actions">
+              <div className="circle-btn">✗</div>
+              <div className="circle-btn" style={{background:'var(--mint)'}}>≡</div>
+              <div className="circle-btn pink">▶</div>
+            </div>
+          </div>
+        </div>
+        <div className="label-mono center mt-10">← skip · tap ≡ for bars · swipe → watch</div>
+      </div>
+    </PhD>
+  );
+}
+
+// D2: Breakdown bars expanded (same card, pulled up)
+function D_Bars() {
+  return (
+    <PhD>
+      <div className="sbar">
+        <div className="icon-btn">←</div>
+        <div className="sbar-title" style={{fontSize:16}}>the breakdown</div>
+        <div className="icon-btn">♡</div>
+      </div>
+      <div className="body-scroll">
+        <div className="flex gap-10">
+          <div className="poster p-pink" style={{width:80, height:120, flexShrink:0}}>
+            <div className="poster-label">poster</div>
+          </div>
+          <div>
+            <div style={{fontFamily:'Caveat', fontSize:20, fontWeight:700, lineHeight:1}}>Grand Budapest Hotel</div>
+            <div className="label-mono mt-4">2014 · 99m · PG-13</div>
+            <div className="flex wrap gap-6 mt-6">
+              <div className="chip chip-yellow" style={{fontSize:10, padding:'2px 7px'}}>Disney+</div>
+              <div className="chip chip-pink" style={{fontSize:10, padding:'2px 7px'}}>94%</div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          border:'2px solid var(--ink)', borderRadius:12, padding:10, marginTop:12,
+          background:'var(--paper-2)'
+        }}>
+          <div className="label-mono mb-6">what you're in for</div>
+          {[
+            {l:'cosy-ness', v:85, c:'var(--yellow)'},
+            {l:'plot to follow', v:45, c:'var(--blue)'},
+            {l:'laugh-out-loud', v:70, c:'var(--pink)'},
+            {l:'sad bits', v:35, c:'var(--mint)'},
+            {l:'weird / stylized', v:95, c:'var(--lilac)'},
+            {l:'partner safe', v:88, c:'var(--coral)'},
+          ].map((m,i)=>(
+            <div key={i} className="row-between" style={{margin:'4px 0'}}>
+              <span style={{fontFamily:'Nunito', fontSize:12}}>{m.l}</span>
+              <div style={{width:110, height:8, border:'1.5px solid var(--ink)', borderRadius:6, overflow:'hidden', background:'var(--paper)'}}>
+                <div style={{width:`${m.v}%`, height:'100%', background:m.c}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{
+          border:'1.5px dashed var(--ink)', borderRadius:10, padding:10, marginTop:10,
+          background:'var(--yellow)', fontFamily:'Nunito', fontSize:12
+        }}>
+          <span className="label-mono" style={{marginRight:4}}>cine</span>
+          "if you liked <b>Moonrise Kingdom</b> you'll love this."
+        </div>
+
+        <div className="flex mt-12 gap-8">
+          <div className="btn" style={{flex:1, justifyContent:'center', fontSize:14}}>← back to swipe</div>
+          <div className="btn btn-primary" style={{flex:1, justifyContent:'center', fontSize:14}}>watch</div>
+        </div>
+      </div>
+    </PhD>
+  );
+}
+
+// D3: Swipe + bars INLINE below — hybrid
+function D_Hybrid() {
+  return (
+    <PhD>
+      <div className="sbar">
+        <div className="icon-btn">✗</div>
+        <div className="label-mono">card 1 of 5</div>
+        <div className="icon-btn">♡</div>
+      </div>
+      <div className="body-scroll" style={{padding:'10px 12px'}}>
+        {/* Smaller card on top */}
+        <div style={{
+          border:'2px solid var(--ink)', borderRadius:12, overflow:'hidden',
+          boxShadow:'3px 3px 0 var(--ink)', background:'var(--paper)'
+        }}>
+          <div className="poster p-pink" style={{height:160, borderRadius:0, border:'none', borderBottom:'1.5px solid var(--ink)'}}>
+            <div style={{position:'absolute', bottom:8, left:10, right:10}}>
+              <div style={{fontFamily:'Caveat', fontSize:22, fontWeight:700, lineHeight:1}}>Grand Budapest Hotel</div>
+              <div className="label-mono">2014 · 99m · Anderson</div>
+            </div>
+          </div>
+          <div style={{padding:'8px 10px', fontFamily:'Nunito', fontSize:12}}>
+            <span className="label-mono">why</span> — cosy + sharp · 99m · Disney+
+          </div>
+        </div>
+
+        {/* Bars inline */}
+        <div style={{
+          border:'1.5px dashed var(--ink)', borderRadius:10, padding:8, marginTop:10,
+          background:'var(--paper-2)'
+        }}>
+          <div className="label-mono mb-4">vibe bars</div>
+          {[
+            {l:'cosy', v:85, c:'var(--yellow)'},
+            {l:'funny', v:70, c:'var(--pink)'},
+            {l:'weird', v:95, c:'var(--lilac)'},
+            {l:'sad', v:35, c:'var(--mint)'},
+          ].map((m,i)=>(
+            <div key={i} className="row-between" style={{margin:'2px 0'}}>
+              <span style={{fontFamily:'Nunito', fontSize:11}}>{m.l}</span>
+              <div style={{width:110, height:6, border:'1.5px solid var(--ink)', borderRadius:4, overflow:'hidden', background:'var(--paper)'}}>
+                <div style={{width:`${m.v}%`, height:'100%', background:m.c}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex mt-10" style={{justifyContent:'space-around'}}>
+          <div className="circle-btn">✗</div>
+          <div className="circle-btn yellow">♡</div>
+          <div className="circle-btn pink">▶</div>
+        </div>
+        <div className="label-mono center mt-8">swipe or tap</div>
+      </div>
+    </PhD>
+  );
+}
+
+// D4: MOOD CARD INTERSTITIAL — the rare-reward surprise!
+function D_MoodCard() {
+  return (
+    <PhD>
+      <div className="sbar">
+        <div className="sbar-title">✨ surprise</div>
+        <div className="icon-btn">✗</div>
+      </div>
+      <div className="body-scroll" style={{padding:'10px 14px', background:'var(--paper-2)'}}>
+        <div className="center mb-8">
+          <div className="label-mono">your april mood card is ready</div>
+          <div style={{fontFamily:'Caveat', fontSize:22, fontWeight:700, lineHeight:1, marginTop:2}}>
+            <span className="hi">based on 12 films</span>
+          </div>
+        </div>
+
+        {/* The shareable card preview - instagram portrait */}
+        <div style={{
+          aspectRatio:'9/16', maxHeight:380,
+          margin:'0 auto', width:'88%',
+          border:'2px solid var(--ink)', borderRadius:14,
+          background:'linear-gradient(145deg, var(--pink) 0%, var(--coral) 50%, var(--yellow) 100%)',
+          padding:14, color:'var(--ink)',
+          boxShadow:'4px 4px 0 var(--ink)', transform:'rotate(-2deg)',
+          position:'relative', overflow:'hidden',
+          display:'flex', flexDirection:'column', justifyContent:'space-between'
+        }}>
+          <div>
+            <div style={{fontFamily:'Space Mono', fontSize:8, letterSpacing:'0.15em'}}>CINEMATCH · APR '26</div>
+            <div style={{fontFamily:'Caveat', fontSize:24, fontWeight:700, lineHeight:0.95, marginTop:4}}>
+              Bittersweet &<br/>Beautiful
+            </div>
+            <div style={{fontFamily:'Nunito', fontSize:10, marginTop:2, opacity:0.85}}>andy's april in film</div>
+          </div>
+
+          <div className="flex gap-4" style={{justifyContent:'center'}}>
+            {['p-blue','p-mint','p-lilac'].map((t,i)=>(
+              <div key={i} className={`poster ${t}`} style={{
+                width:40, height:60, border:'1.5px solid var(--ink)',
+                transform:`rotate(${(i-1)*4}deg)`, borderRadius:4
+              }}/>
+            ))}
+          </div>
+
+          <div>
+            <div style={{fontFamily:'Space Mono', fontSize:7, letterSpacing:'0.1em', opacity:0.7}}>TOP 5</div>
+            {['Moonlight','Past Lives','The Worst Person','Columbus','After Yang'].map((f,i)=>(
+              <div key={i} style={{fontFamily:'Nunito', fontSize:10, lineHeight:1.15}}>{i+1}. {f}</div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex mt-10 gap-6" style={{justifyContent:'center'}}>
+          <div className="btn btn-primary" style={{fontSize:14}}>↗ share</div>
+          <div className="btn" style={{fontSize:14}}>save</div>
+          <div className="btn" style={{fontSize:14}}>skip</div>
+        </div>
+        <p className="label-mono center mt-8" style={{fontSize:8}}>next one drops sometime in may 🎲</p>
+      </div>
+    </PhD>
+  );
+}
+
+// D5: Where the interstitial appears — post-watch "rate it" → reveal
+function D_Trigger() {
+  return (
+    <PhD>
+      <SB2 title="how was it?" />
+      <div className="body-scroll">
+        <div className="flex gap-10" style={{alignItems:'center'}}>
+          <div className="poster p-pink" style={{width:60, height:90, flexShrink:0}}>
+            <div className="poster-label">pstr</div>
+          </div>
+          <div>
+            <div style={{fontFamily:'Caveat', fontSize:18, fontWeight:700, lineHeight:1}}>Grand Budapest Hotel</div>
+            <div className="label-mono mt-2">watched sat · 9:14pm</div>
+          </div>
+        </div>
+
+        <div className="mt-12 center">
+          <div className="flex gap-8" style={{justifyContent:'center'}}>
+            {['😴','🙂','😍','🤯'].map((e,i)=>(
+              <div key={i} className="circle-btn" style={{
+                width:50, height:50, fontSize:22,
+                background: i===2?'var(--yellow)':'var(--paper)',
+                boxShadow: i===2?'2px 2px 0 var(--ink)':'none'
+              }}>{e}</div>
+            ))}
+          </div>
+          <div className="label-mono mt-6">tap your reaction</div>
+        </div>
+
+        {/* The reward reveals */}
+        <div style={{
+          marginTop:16, padding:12,
+          border:'2px dashed var(--ink)', borderRadius:14,
+          background:'var(--yellow)',
+          position:'relative',
+          transform:'rotate(-1deg)',
+          boxShadow:'3px 3px 0 var(--ink)'
+        }}>
+          <div className="label-mono">RARE DROP ✦</div>
+          <div style={{fontFamily:'Caveat', fontSize:24, fontWeight:700, lineHeight:1, marginTop:4}}>
+            your april mood card is ready!
+          </div>
+          <div style={{fontFamily:'Nunito', fontSize:12, marginTop:4}}>
+            <b>"Bittersweet & Beautiful"</b> — based on your last 12 watches
+          </div>
+          <div className="flex mt-8 gap-6">
+            <div className="btn btn-primary" style={{fontSize:13}}>reveal →</div>
+            <div className="btn" style={{fontSize:13}}>later</div>
+          </div>
+        </div>
+      </div>
+    </PhD>
+  );
+}
+
+// D6: Card gallery — "your collection" (past mood cards)
+function D_Gallery() {
+  return (
+    <PhD>
+      <SB2 title="your mood cards" right="share all" />
+      <div className="body-scroll">
+        <p className="h-sub" style={{fontSize:12}}>dropped at surprise moments. keep 'em all.</p>
+
+        <div className="label-mono mt-8 mb-4">2026</div>
+        <div className="grid-2" style={{gap:10}}>
+          {[
+            {m:'APR', t:'Bittersweet & Beautiful', c:'linear-gradient(145deg, var(--pink), var(--coral))', isNew:true},
+            {m:'MAR', t:'Quiet Weirdos', c:'linear-gradient(145deg, var(--blue), var(--lilac))'},
+            {m:'FEB', t:'French Chaos', c:'linear-gradient(145deg, var(--yellow), var(--mint))'},
+            {m:'JAN', t:'Late Night Thinker', c:'linear-gradient(145deg, var(--ink), var(--blue))', dark:true},
+          ].map((c,i)=>(
+            <div key={i} style={{
+              aspectRatio:'9/14', border:'2px solid var(--ink)', borderRadius:10,
+              background:c.c, color:c.dark?'white':'var(--ink)', padding:8,
+              position:'relative', overflow:'hidden',
+              boxShadow: c.isNew ? '3px 3px 0 var(--ink)' : 'none',
+              transform: c.isNew ? 'rotate(-1deg)' : 'none'
+            }}>
+              <div style={{fontFamily:'Space Mono', fontSize:7, letterSpacing:'0.1em'}}>{c.m} '26</div>
+              <div style={{fontFamily:'Caveat', fontSize:14, fontWeight:700, lineHeight:1, marginTop:4}}>{c.t}</div>
+              {c.isNew && <div style={{position:'absolute', top:-4, right:-4, background:'var(--yellow)', border:'1.5px solid var(--ink)', borderRadius:10, padding:'1px 6px', fontFamily:'Space Mono', fontSize:8, transform:'rotate(8deg)'}}>NEW</div>}
+            </div>
+          ))}
+        </div>
+
+        <div className="label-mono mt-12 mb-4">2025</div>
+        <div className="flex wrap gap-6">
+          {['DEC','NOV','OCT','SEP'].map((m,i)=>(
+            <div key={i} style={{width:52, height:72, border:'1.5px solid var(--ink)', borderRadius:6, background:'var(--paper-2)', fontFamily:'Space Mono', fontSize:8, padding:4, opacity:0.6}}>
+              {m}'25
+            </div>
+          ))}
+        </div>
+      </div>
+    </PhD>
+  );
+}
+
+function SB2({ title, right }) {
+  return (
+    <div className="sbar">
+      <div className="flex gap-8" style={{alignItems:'center'}}>
+        <div className="icon-btn">←</div>
+        <div className="sbar-title">{title}</div>
+      </div>
+      {right && <div className="label-mono" style={{cursor:'pointer'}}>{right}</div>}
+    </div>
+  );
+}
+
+window.DetailVariations = [
+  { num:'01', title:'★ Hybrid — poster + bars (LOCKED)', desc:'Your pick. One card, bars always live under the poster. No flipping. Includes all standard card actions (skip / save / watch).', Comp: D_Hybrid, annots:[
+    {pos:'tr', text:'↖ bars always visible'}, {pos:'br', text:'swipe-deck mechanics still apply'}
+  ]},
+  { num:'02', title:'Swipe deck (reference)', desc:'The stacked-card flow alt. Kept for comparison — same card content, just different posture.', Comp: D_Swipe, annots:[
+    {pos:'tr', text:'for reference only'}, {pos:'br', text:'locked-in alt is V01 ↑'}
+  ]},
+  { num:'03', title:'Breakdown bars — full (reference)', desc:'Bigger, dedicated bars screen with 6 vibe-meters + partner-safe. Useful as a "tell me more" expansion from the hybrid card.', Comp: D_Bars, annots:[
+    {pos:'tl', text:'could live behind a "more" tap'}, {pos:'br', text:'6 axes, not 4'}
+  ]},
+
+  { num:'04', title:'★ MOOD CARD drop', desc:'The rare-reward moment. Appears 1×/week–month max. Quiet "surprise" bar, then the card reveal.', Comp: D_MoodCard, annots:[
+    {pos:'tl', text:'variable reward schedule ↘'}, {pos:'br', text:'shareable to IG / stories'}
+  ]},
+  { num:'05', title:'★ Trigger — post-watch', desc:'After rating a film. If it\'s time for a drop, the card appears as a yellow "RARE DROP" card. Otherwise: just rate & move on.', Comp: D_Trigger, annots:[
+    {pos:'tr', text:'trigger = just after a rating'}, {pos:'br', text:'not every watch!'}
+  ]},
+  { num:'06', title:'★ Mood card collection', desc:'Lives in "me" tab. Past cards archive. Streaks, rarity, social-share fuel.', Comp: D_Gallery, annots:[
+    {pos:'tl', text:'dopamine: the wall ↘'}, {pos:'br', text:'share all → one big post'}
+  ]},
+];
+
+</script>
+
+
+<script>
+(function(){
+  const { useState, useEffect, createElement: h, Fragment } = React;
+
+  const GALLERIES = {
+    ob: { title: "Onboarding", subtitle: "6 directions for the first-time setup. The pain point today: it's boring. These lean hard into personality.", legend: "pick one, remix, or mash up", get variations(){ return window.OnboardingVariations || []; } },
+    mo: { title: "Mood / Vibe Loop", subtitle: "Who's watching sets the route. Solo → slot machine (mashup). Group → 3-step overlap flow.", legend: "locked flow — iterating on slot machine details", get variations(){ return window.MoodVariations || []; } },
+    de: { title: "Movie Detail + Why", subtitle: "Hybrid bars is locked in — poster, meta, vibe-bars and card actions on one screen. Mood card drops live here too.", legend: "locked: hybrid bars + mood card", get variations(){ return window.DetailVariations || []; } },
+    system: null,
+  };
+
+  function AnnotLayer({ annots }) {
+    if (!annots || !annots.length) return null;
+    return h(Fragment, null, annots.map((a, i) => h('div', {key:i, className:'annot '+a.pos}, a.text)));
+  }
+
+  function Cell({ v }) {
+    const Comp = v.Comp;
+    return h('div', {className:'cell'},
+      h('div', {className:'cell-tag'},
+        h('div', {className:'cell-num'}, v.num),
+        h('div', {className:'cell-title'}, v.title)
+      ),
+      h('div', {className:'cell-desc'}, v.desc),
+      h('div', {style:{position:'relative'}},
+        h(AnnotLayer, {annots: v.annots}),
+        h(Comp)
+      )
+    );
+  }
+
+  function Gallery({ data }) {
+    return h('div', {className:'gallery'},
+      h('div', {className:'gallery-head'},
+        h('h2', null, data.title),
+        h('p', null, data.subtitle),
+        h('div', {className:'legend'}, '// ' + data.legend)
+      ),
+      h('div', {className:'grid'}, data.variations.map((v, i) => h(Cell, {key:i, v})))
+    );
+  }
+
+  function Notes() {
+    const notes = [
+      ['The brief', 'Cinematch is redesigning from a browser-first app to mobile-first. Current onboarding/vibe questionnaire feels boring. New personality goal: "knowledgable movie nerd with a great personality" — we named them Cine and gave them a voice across every flow.'],
+      ['Visual system', '• Paper + ink background (warm cream, dark near-black) — a bright zine, not a dark theatre.\n• Four colour pops: hot pink · sunshine · electric blue · mint. Used as chip fills + accent stamps, never as whole backgrounds.\n• Type pairing: Caveat (hand-drawn display) + Nunito (body) + Space Mono (meta). Dashed borders, slight rotations, 3px hard shadows signal the sketchy stage.\n• Posters are striped placeholders — deliberately unreal so attention stays on structure, not hero images.'],
+      ['Updates this round', '✓ Onboarding locked: V2 swipe → V6 fingerprint is the chosen path.\n\n✓ Mood/vibe locked: "who\'s watching?" fork. Solo → slot-machine mashup (swipeable reels + lock-and-roll + n/of signifier). Group → 3-step overlap flow is final.\n\n✓ Detail locked: Hybrid bars (poster + vibe-bars + card actions on one screen). Mood-card rare-drop wired in.'],
+      ['Mood card — the rare-reward mechanic', 'Shareable Instagram-portrait asset summarising the user\'s month in film. Variable-ratio schedule: minimum 1/month, maximum 1/week — so it feels like a surprise, never predictable.\n\nTrigger: appears right after a film rating, only if the cooldown has passed AND there\'s enough watch data (≥3 films in window). Shown as a "RARE DROP" card ribbon with a reveal CTA.\n\nLives in: "me" tab → mood cards gallery. Past cards stay collectible (streaks, rarity, social fuel). "Share all" rolls up a multi-card post for end-of-year.\n\nSee Detail V4 (the card itself), V5 (the trigger screen), V6 (the collection).'],
+      ['Open questions', '• Does Cine have an avatar (and does it animate)? Currently a yellow "C" circle.\n• What\'s the exact cooldown logic — fully random within bounds, or "Monday morning after ≥3 new films"? Needs a product call.\n• Slot machine details: is ROLL a single CTA or always-visible dice button? How disruptive is the spin animation?\n• Hybrid bars — do we need a "more" affordance to reach the full 6-bar detail screen?'],
+      ['Suggested v1 hi-fi', 'Onboarding V2 swipe → V6 fingerprint. Mood: FORK → solo slot-machine mashup OR group 3-step. Detail: hybrid bars card. Mood Card drops via post-watch rating trigger on a variable schedule.'],
+    ];
+    return h('div', {className:'gallery'},
+      h('div', {className:'gallery-head'},
+        h('h2', null, 'Design notes'),
+        h('p', null, 'Context, decisions, and what each flow is testing.')
+      ),
+      h('div', {style:{maxWidth:780, fontFamily:'Nunito', fontSize:15, lineHeight:1.55}},
+        notes.map(([title, body], i) => h('div', {key:i},
+          h('h3', {style:{fontFamily:'Caveat', fontSize:32, margin:'20px 0 8px', lineHeight:1}}, title),
+          h('p', {style:{whiteSpace:'pre-wrap'}}, body)
+        ))
+      )
+    );
+  }
+
+  function App() {
+    const [tab, setTab] = useState(() => localStorage.getItem('cine_tab') || 'ob');
+
+    useEffect(() => {
+      localStorage.setItem('cine_tab', tab);
+      document.querySelectorAll('.tab').forEach(el => {
+        el.classList.toggle('active', el.dataset.tab === tab);
+      });
+    }, [tab]);
+
+    useEffect(() => {
+      const handler = (e) => {
+        const el = e.target.closest('.tab');
+        if (el) setTab(el.dataset.tab);
+      };
+      const tabsEl = document.getElementById('tabs');
+      tabsEl.addEventListener('click', handler);
+      return () => tabsEl.removeEventListener('click', handler);
+    }, []);
+
+    if (tab === 'system') return h(Notes);
+    const data = GALLERIES[tab];
+    if (!data || !data.variations.length) return h('div', {style:{padding:40}}, 'loading...');
+    return h(Gallery, {data});
+  }
+
+  function tryRender(attempts){
+    attempts = attempts || 0;
+    try {
+      if (window.OnboardingVariations && window.MoodVariations && window.DetailVariations) {
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(h(App));
+        return;
+      }
+    } catch (err) {
+      document.getElementById('root').innerHTML = '<pre style="padding:20px;color:#c00;font:11px monospace;white-space:pre-wrap;">'+(err.stack||err.message)+'</pre>';
+      return;
+    }
+    if (attempts < 100) setTimeout(() => tryRender(attempts + 1), 50);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => tryRender());
+  else tryRender();
+})();
+</script>
+
+</body>
+</html>
