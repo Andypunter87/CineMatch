@@ -138,6 +138,19 @@ export function setupAuth(app: Express) {
     });
   });
 
+  // ── Session write test — verifies cookie+store round-trip ────────────────
+  app.get("/api/auth/session-test", (req: any, res) => {
+    req.session.testValue = Date.now();
+    req.session.save((err: any) => {
+      if (err) {
+        console.error("[session-test] save error:", err);
+        return res.status(500).json({ error: err.message });
+      }
+      console.log("[session-test] saved sid:", req.sessionID, "val:", req.session.testValue);
+      res.json({ ok: true, sid: req.sessionID, val: req.session.testValue });
+    });
+  });
+
   // ── OAuth routes ──────────────────────────────────────────────────────────
 
   app.get(

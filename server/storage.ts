@@ -49,6 +49,9 @@ import session from "express-session";
 import { getAIRecommendations } from "./services/openai";
 import { getEnhancedRecommendations } from "./services/recommendation-enhancer";
 import connectPg from "connect-pg-simple";
+// pg is CommonJS; access Pool via default import
+import pgPkg from "pg";
+const { Pool: PgPool } = pgPkg;
 
 // Define watchlist item structure
 export type WatchlistItem = typeof watchlist.$inferSelect;
@@ -157,6 +160,9 @@ export interface IStorage {
 // PostgreSQL session store
 const PostgresSessionStore = connectPg(session);
 
+// Shared pg.Pool for session store — confirmed working with Replit's sslmode=disable DB
+const sessionPool = new PgPool({ connectionString: process.env.DATABASE_URL });
+
 // Database Storage Implementation
 export class DatabaseStorage implements IStorage {
   private films: Film[];
@@ -165,12 +171,9 @@ export class DatabaseStorage implements IStorage {
   constructor() {
     this.films = films;
     
-    // Initialize session store with PostgreSQL
-    // Replit's internal Postgres uses sslmode=disable — no ssl option needed
+    // Pass the pre-verified Pool directly; createTableIfMissing handles DDL if needed
     this.sessionStore = new PostgresSessionStore({
-      conObject: {
-        connectionString: process.env.DATABASE_URL,
-      },
+      pool: sessionPool,
       createTableIfMissing: true,
       tableName: "session",
     });
