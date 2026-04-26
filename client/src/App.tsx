@@ -21,6 +21,7 @@ import PostWatchPage from "@/pages/post-watch-page";
 import GroupInvitePage from "@/pages/group-invite-page";
 import GroupJoinPage from "@/pages/group-join-page";
 import AuthSuccessPage from "@/pages/auth-success-page";
+import HistoryPage from "@/pages/history-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import Layout from "@/components/Layout";
@@ -38,6 +39,7 @@ function AppShellRoutes() {
         <ProtectedRoute path="/admin" component={AdminDashboard} adminOnly={true} />
         <ProtectedRoute path="/onboarding" component={OnboardingPage} />
         <ProtectedRoute path="/chat" component={ChatRecommenderPage} />
+        <ProtectedRoute path="/history" component={HistoryPage} />
         <ProtectedRoute path="/mymood/:year-:month" component={MoodCard} adminOnly={true} />
         <Route component={NotFound} />
       </Switch>

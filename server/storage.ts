@@ -145,6 +145,7 @@ export interface IStorage {
 
   // Watch choices operations
   saveWatchChoice(choice: InsertWatchChoice): Promise<WatchChoice>;
+  getWatchChoices(userId: number, limit?: number): Promise<WatchChoice[]>;
 
   // Group session operations
   createGroupSession(session: InsertGroupSession): Promise<GroupSession>;
@@ -1509,6 +1510,20 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error saving watch choice:", error);
       throw new Error("Failed to save watch choice");
+    }
+  }
+
+  async getWatchChoices(userId: number, limit = 50): Promise<WatchChoice[]> {
+    try {
+      return await db
+        .select()
+        .from(watchChoices)
+        .where(eq(watchChoices.userId, userId))
+        .orderBy(desc(watchChoices.ts))
+        .limit(limit);
+    } catch (error) {
+      console.error("Error retrieving watch choices:", error);
+      throw new Error("Failed to retrieve watch choices");
     }
   }
 

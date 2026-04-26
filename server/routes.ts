@@ -1981,6 +1981,20 @@ Sitemap: ${baseUrl}/sitemap.xml`);
     }
   });
 
+  // GET /api/watch-choices — return the current user's watch choice history
+  app.get('/api/watch-choices', async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    try {
+      const choices = await storage.getWatchChoices(req.user!.id);
+      res.json(choices);
+    } catch (error) {
+      console.error('Error fetching watch choices:', error);
+      res.status(500).json({ message: 'Failed to fetch watch choices' });
+    }
+  });
+
   // POST /api/watch-choices — log that a user chose to watch a film
   app.post('/api/watch-choices', async (req: Request, res: Response) => {
     try {

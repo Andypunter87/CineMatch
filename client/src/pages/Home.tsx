@@ -134,6 +134,39 @@ export default function Home() {
           </button>
         </div>
 
+        <button
+          data-testid="button-recent-picks"
+          onClick={() => setLocation('/history')}
+          style={{
+            border: `1.5px solid ${C.ink}`,
+            borderRadius: 12,
+            padding: '10px 14px',
+            background: C.paper,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            cursor: 'pointer',
+            width: '100%',
+          }}
+        >
+          <div style={{ textAlign: 'left' }}>
+            <div style={{
+              fontFamily: 'Nunito, sans-serif',
+              fontWeight: 700,
+              fontSize: 15,
+              lineHeight: 1,
+              color: C.ink,
+            }}>recent picks</div>
+            <div style={{
+              fontFamily: 'Nunito, sans-serif',
+              fontSize: 11,
+              color: C.inkSoft,
+              marginTop: 2,
+            }}>→ revisit your history</div>
+          </div>
+          <div style={{ fontSize: 22 }}>🎞️</div>
+        </button>
+
         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <div style={{
             width: 30, height: 30, borderRadius: '50%',
