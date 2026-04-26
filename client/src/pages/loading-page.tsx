@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { C, CATALOGUE_FILMS } from "@/lib/cinema-catalogue";
+import { C, CATALOGUE_FILMS, type CatalogueFilm } from "@/lib/cinema-catalogue";
 
 export default function LoadingPage() {
   const [, setLocation] = useLocation();
   const [dot, setDot] = useState(0);
+  const [posterError, setPosterError] = useState(false);
 
   const films = (() => {
     try {
@@ -12,7 +13,7 @@ export default function LoadingPage() {
     } catch { return CATALOGUE_FILMS.slice(0, 5); }
   })();
 
-  const topFilm = films[0] || CATALOGUE_FILMS[0];
+  const topFilm: CatalogueFilm = films[0] || CATALOGUE_FILMS[0];
 
   useEffect(() => {
     const t = setInterval(() => setDot(d => (d + 1) % 4), 350);
@@ -21,6 +22,8 @@ export default function LoadingPage() {
   }, [setLocation]);
 
   const dots = '.'.repeat(dot + 1);
+  const [c1, c2, c3] = topFilm?.colors || [C.pink, C.yellow, C.blue];
+  const stripeBg = `repeating-linear-gradient(180deg,${c1} 0 8px,${c2} 8px 16px,${c3} 16px 24px)`;
 
   return (
     <div style={{
@@ -69,28 +72,55 @@ export default function LoadingPage() {
         width: '100%',
         maxWidth: 320,
         boxShadow: `3px 3px 0 ${C.ink}`,
+        display: 'flex',
+        gap: 12,
+        alignItems: 'center',
       }}>
         <div style={{
-          fontFamily: "'Space Mono', monospace",
-          fontSize: 9,
-          letterSpacing: '.12em',
-          color: C.inkLight,
-          textTransform: 'uppercase',
-          marginBottom: 4,
-        }}>best match</div>
-        <div style={{
-          fontFamily: 'Nunito, sans-serif',
-          fontWeight: 700,
-          fontSize: 22,
-          color: C.ink,
-          lineHeight: 1,
-        }}>{topFilm?.title || 'Loading…'}</div>
-        <div style={{
-          fontFamily: 'Nunito, sans-serif',
-          fontSize: 12,
-          color: C.inkSoft,
-          marginTop: 4,
-        }}>checking {topFilm?.streaming} · {topFilm?.runtime}</div>
+          width: 64,
+          height: 96,
+          flexShrink: 0,
+          borderRadius: 6,
+          border: `1.5px solid ${C.ink}`,
+          overflow: 'hidden',
+          background: stripeBg,
+          boxShadow: `2px 2px 0 ${C.ink}`,
+        }}>
+          {topFilm?.posterPath && !posterError && (
+            <img
+              data-testid="img-poster-loading"
+              src={`/api/image/poster?url=${encodeURIComponent(`https://image.tmdb.org/t/p/w200${topFilm.posterPath}`)}&title=${encodeURIComponent(topFilm.title)}`}
+              alt={topFilm.title}
+              onError={() => setPosterError(true)}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          )}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: "'Space Mono', monospace",
+            fontSize: 9,
+            letterSpacing: '.12em',
+            color: C.inkLight,
+            textTransform: 'uppercase',
+            marginBottom: 4,
+          }}>best match</div>
+          <div style={{
+            fontFamily: 'Nunito, sans-serif',
+            fontWeight: 700,
+            fontSize: 20,
+            color: C.ink,
+            lineHeight: 1.05,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>{topFilm?.title || 'Loading…'}</div>
+          <div style={{
+            fontFamily: 'Nunito, sans-serif',
+            fontSize: 12,
+            color: C.inkSoft,
+            marginTop: 4,
+          }}>checking {topFilm?.streaming} · {topFilm?.runtime}</div>
+        </div>
       </div>
     </div>
   );

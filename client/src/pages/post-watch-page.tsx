@@ -16,6 +16,7 @@ function MoodCardDrop({ film, rating, onDone }: { film: CatalogueFilm; rating: n
   const [revealed, setRevealed] = useState(false);
   const [cardData, setCardData] = useState<MoodCardData | null>(null);
   const [cardStatus, setCardStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading');
+  const [posterErrors, setPosterErrors] = useState<Record<number, boolean>>({});
   const now = new Date();
   const monthName = now.toLocaleDateString('en-GB', { month: 'long' });
 
@@ -184,13 +185,25 @@ function MoodCardDrop({ film, rating, onDone }: { film: CatalogueFilm; rating: n
               <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
                 {CATALOGUE_FILMS.slice(0, 3).map((f, i) => {
                   const [c1, c2, c3] = f.colors;
+                  const stripeBg = `repeating-linear-gradient(180deg,${c1} 0 8px,${c2} 8px 16px,${c3} 16px 24px)`;
                   return (
                     <div key={i} style={{
                       width: 42, height: 62, flexShrink: 0, borderRadius: 4,
-                      background: `repeating-linear-gradient(180deg,${c1} 0 8px,${c2} 8px 16px,${c3} 16px 24px)`,
+                      background: stripeBg,
                       border: `1.5px solid ${C.ink}`, boxShadow: `1.5px 1.5px 0 ${C.ink}`,
                       transform: `rotate(${(i - 1) * 5}deg)`,
-                    }} />
+                      overflow: 'hidden',
+                    }}>
+                      {f.posterPath && !posterErrors[f.id] && (
+                        <img
+                          data-testid={`img-poster-mood-${f.id}`}
+                          src={`/api/image/poster?url=${encodeURIComponent(`https://image.tmdb.org/t/p/w200${f.posterPath}`)}&title=${encodeURIComponent(f.title)}`}
+                          alt={f.title}
+                          onError={() => setPosterErrors(e => ({ ...e, [f.id]: true }))}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -244,11 +257,15 @@ export default function PostWatchPage() {
   const [hover, setHover] = useState<number | null>(null);
   const [rated, setRated] = useState<number | null>(null);
   const [showDrop, setShowDrop] = useState(false);
+  const [posterError, setPosterError] = useState(false);
 
   const film: CatalogueFilm = (() => {
     try { return JSON.parse(localStorage.getItem('cinematch_watched_film') || 'null') || CATALOGUE_FILMS[0]; }
     catch { return CATALOGUE_FILMS[0]; }
   })();
+
+  const [c1, c2, c3] = film.colors;
+  const stripeBg = `repeating-linear-gradient(180deg,${c1} 0 8px,${c2} 8px 16px,${c3} 16px 24px)`;
 
   async function handleRate(s: number) {
     setRated(s);
@@ -281,9 +298,31 @@ export default function PostWatchPage() {
       padding: '0 22px',
     }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, justifyContent: 'center' }}>
-        <div>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.15em', color: C.inkSoft, textTransform: 'uppercase' }}>how was it?</div>
-          <h1 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: 36, lineHeight: 1, marginTop: 4, color: C.ink, margin: '4px 0 0' }}>{film.title}</h1>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-end' }}>
+          <div style={{
+            width: 90,
+            height: 135,
+            flexShrink: 0,
+            borderRadius: 8,
+            border: `2px solid ${C.ink}`,
+            overflow: 'hidden',
+            background: stripeBg,
+            boxShadow: `3px 3px 0 ${C.ink}`,
+          }}>
+            {film.posterPath && !posterError && (
+              <img
+                data-testid="img-poster-watched"
+                src={`/api/image/poster?url=${encodeURIComponent(`https://image.tmdb.org/t/p/w300${film.posterPath}`)}&title=${encodeURIComponent(film.title)}`}
+                alt={film.title}
+                onError={() => setPosterError(true)}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            )}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.15em', color: C.inkSoft, textTransform: 'uppercase' }}>how was it?</div>
+            <h1 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: 32, lineHeight: 1, marginTop: 4, color: C.ink, margin: '4px 0 0' }}>{film.title}</h1>
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
