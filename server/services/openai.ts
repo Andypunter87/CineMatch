@@ -32,7 +32,28 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
     hasViewingParty: !!viewingParty,
     friendCount: viewingParty?.length || 0,
     hasUserRatings: !!userRatedFilms?.length,
-    userRatingsCount: userRatedFilms?.length || 0
+    userRatingsCount: userRatedFilms?.length || 0,
+    fingerprintTopTags: cacheablePreferences.fingerprintProfile?.topTags?.slice().sort() || [],
+    // Include top weighted tags (sorted by name for stability) so users with same topTags
+    // but different weight distributions are not served the same cached result
+    fingerprintWeightedTags: cacheablePreferences.fingerprintProfile?.tagWeights
+      ? Object.entries(cacheablePreferences.fingerprintProfile.tagWeights)
+          .filter(([, w]) => typeof w === 'number' && w > 0)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([tag, w]) => `${tag}:${w.toFixed(1)}`)
+      : [],
+    fingerprintGenres: cacheablePreferences.fingerprintProfile?.genres?.slice().sort() || [],
+    fingerprintVibeTraits: cacheablePreferences.fingerprintProfile?.vibeTraits
+      ? `${cacheablePreferences.fingerprintProfile.vibeTraits.tone}|${cacheablePreferences.fingerprintProfile.vibeTraits.style}|${cacheablePreferences.fingerprintProfile.vibeTraits.pace}`
+      : '',
+    fingerprintVibeProfile: cacheablePreferences.fingerprintProfile?.vibeProfile
+      ? Object.entries(cacheablePreferences.fingerprintProfile.vibeProfile)
+          .filter(([, v]) => typeof v === 'number' && isFinite(v) && v > 0)
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([k, v]) => `${k}:${v.toFixed(1)}`)
+          .join(',')
+      : '',
   });
 
   const now = Date.now();
@@ -82,6 +103,15 @@ IMPORTANT ABOUT USER RATINGS:
 4. For poorly rated films (1-2 stars), avoid recommending similar films
 5. Pay special attention to the genres and film types (mainstream vs indie) that the user has rated highly
 6. If the user has rated both indie and mainstream films, ensure a balanced mix in recommendations
+
+IMPORTANT ABOUT CINEMATIC FINGERPRINT:
+1. If the user provides a cinematic fingerprint (taste profile from an onboarding taste-test), treat it as a strong personalisation signal
+2. The fingerprint's top tags describe the film styles and genres the user gravitates towards — weight your recommendations heavily toward these
+3. The fingerprint genres represent the user's preferred genre categories — prioritise films within these genres
+4. The fingerprint vibe traits (tone, style, pace) describe the user's cinematic personality — match recommendations to this aesthetic
+5. The fingerprint vibe profile shows relative affinities (e.g. cosy, thinky, funny, tense, romantic) — balance recommendations to reflect these
+6. When both a fingerprint AND rated films are present, use rated films as the primary signal and the fingerprint as a secondary refinement
+7. When only a fingerprint is present (new user with no rated films), rely on it as the primary personalisation source
 
 IMPORTANT ABOUT AUDIENCES:
 1. If audience is "solo", focus purely on the user's personal taste based on other preferences
@@ -152,6 +182,35 @@ ${preferences.userRatedFilms && preferences.userRatedFilms.length > 0
 ${preferences.userRatedFilms.map(film => 
   `  * "${film.title}" (${film.filmType}) - Genres: [${film.genres.join(", ")}] - User rating: ${film.rating}/5`
 ).join("\n")}`
+  : ""
+}
+${preferences.fingerprintProfile && (preferences.fingerprintProfile.topTags?.length || preferences.fingerprintProfile.genres?.length || preferences.fingerprintProfile.tagWeights)
+  ? (() => {
+      const fp = preferences.fingerprintProfile!;
+      // Build a ranked list of taste tags with their weights so Claude can gauge relative importance
+      const weightedTags = fp.tagWeights
+        ? Object.entries(fp.tagWeights)
+            .filter(([, w]) => typeof w === 'number' && isFinite(w) && w > 0)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8)
+            .map(([tag, w]) => `${tag} (${w.toFixed(2)})`)
+        : [];
+      const topVibes = fp.vibeProfile
+        ? Object.entries(fp.vibeProfile)
+            .filter(([, v]) => typeof v === 'number' && isFinite(v) && v > 0)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 4)
+            .map(([k, v]) => `${k} (${v.toFixed(1)})`)
+        : [];
+      return `- IMPORTANT: User has a cinematic fingerprint from their taste-test. Use this to personalise recommendations:
+${fp.nickname ? `  * Taste profile nickname: "${fp.nickname}"` : ""}
+${fp.genres?.length ? `  * Preferred genres: [${fp.genres.join(", ")}]` : ""}
+${fp.vibeTraits ? `  * Cinematic personality — Tone: ${fp.vibeTraits.tone}, Style: ${fp.vibeTraits.style}, Pace: ${fp.vibeTraits.pace}` : ""}
+${topVibes.length ? `  * Vibe affinities (highest first): ${topVibes.join(", ")}` : ""}
+${fp.topTags?.length ? `  * Top taste tags (ordered by strength): [${fp.topTags.slice(0, 6).join(", ")}]` : ""}
+${weightedTags.length ? `  * Weighted taste signals (tag name with score — higher score = stronger preference): ${weightedTags.join(", ")}` : ""}
+  * ${preferences.userRatedFilms?.length ? "Use the fingerprint as a secondary signal alongside the rated films above." : "The user is new with no rating history — rely on this fingerprint as the primary personalisation source."}`;
+    })()
   : ""
 }
 

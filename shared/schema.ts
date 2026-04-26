@@ -55,7 +55,19 @@ export const recommendationRequestSchema = z.object({
   personalizationSummary: z.string().optional(), // Summary of personalization reasoning (e.g., shared interests)
   _bypassStreamingFilter: z.boolean().optional(), // Special flag used for "Show More" to bypass streaming service constraints
   _disableMoodFilter: z.boolean().optional(), // Special flag to disable mood filtering for more diverse recommendations
-  _disableRuntimeFilter: z.boolean().optional() // Special flag to disable runtime filtering for more diverse recommendations
+  _disableRuntimeFilter: z.boolean().optional(), // Special flag to disable runtime filtering for more diverse recommendations
+  fingerprintProfile: z.object({
+    topTags: z.array(z.string()).optional(),
+    tagWeights: z.record(z.string(), z.number()).optional(),
+    vibeProfile: z.record(z.string(), z.number()).optional(),
+    vibeTraits: z.object({
+      tone: z.string(),
+      style: z.string(),
+      pace: z.string(),
+    }).optional(),
+    genres: z.array(z.string()).optional(),
+    nickname: z.string().optional(),
+  }).optional(), // Cinematic fingerprint from onboarding taste-test, used to personalise first-run recommendations
 });
 
 export type RecommendationRequest = z.infer<typeof recommendationRequestSchema>;

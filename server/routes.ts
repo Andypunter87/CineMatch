@@ -230,6 +230,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Extract requestedBatchSize if present
       const requestedBatchSize = req.body.requestedBatchSize;
+
+      // Extract cinematic fingerprint from the user's onboarding state (if available)
+      let fingerprintProfile: {
+        topTags?: string[];
+        tagWeights?: Record<string, number>;
+        vibeProfile?: Record<string, number>;
+        vibeTraits?: { tone: string; style: string; pace: string };
+        genres?: string[];
+        nickname?: string;
+      } | undefined;
+
+      if (req.isAuthenticated() && req.user) {
+        try {
+          const rawOnboardingState: unknown = req.user.onboardingState;
+          if (
+            rawOnboardingState !== null &&
+            typeof rawOnboardingState === 'object' &&
+            'fingerprint' in rawOnboardingState
+          ) {
+            const fp = (rawOnboardingState as { fingerprint?: Record<string, unknown> }).fingerprint;
+            const hasTopTags = Array.isArray(fp?.topTags) && (fp.topTags as unknown[]).length > 0;
+            const hasTagWeights = fp?.tagWeights !== null && typeof fp?.tagWeights === 'object';
+            if (fp && (hasTopTags || hasTagWeights)) {
+              fingerprintProfile = {
+                topTags: hasTopTags ? (fp.topTags as string[]) : undefined,
+                tagWeights: hasTagWeights
+                  ? Object.fromEntries(
+                      Object.entries(fp.tagWeights as Record<string, unknown>)
+                        .filter(([, v]) => typeof v === 'number' && isFinite(v as number))
+                        .map(([k, v]) => [k, v as number])
+                    )
+                  : undefined,
+                vibeProfile: (fp.vibeProfile && typeof fp.vibeProfile === 'object')
+                  ? Object.fromEntries(
+                      Object.entries(fp.vibeProfile as Record<string, unknown>)
+                        .filter(([, v]) => typeof v === 'number' && isFinite(v as number))
+                        .map(([k, v]) => [k, v as number])
+                    )
+                  : undefined,
+                vibeTraits: (
+                  fp.vibeTraits &&
+                  typeof fp.vibeTraits === 'object' &&
+                  typeof (fp.vibeTraits as Record<string, unknown>).tone === 'string' &&
+                  typeof (fp.vibeTraits as Record<string, unknown>).style === 'string' &&
+                  typeof (fp.vibeTraits as Record<string, unknown>).pace === 'string'
+                )
+                  ? (fp.vibeTraits as { tone: string; style: string; pace: string })
+                  : undefined,
+                genres: Array.isArray(fp.genres) ? (fp.genres as string[]) : undefined,
+                nickname: typeof fp.nickname === 'string' ? fp.nickname : undefined,
+              };
+              console.log(`Using cinematic fingerprint for user ${req.user.id}: topTags=[${(fp.topTags as string[] | undefined)?.join(', ')}]`);
+            }
+          }
+        } catch (err) {
+          console.error("Error reading fingerprint from onboarding state:", err);
+        }
+      }
       
       // Validate input
       const preferences = recommendationRequestSchema.parse({
@@ -239,7 +297,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userRatedFilms, // Add user rated films to the preferences
         requestedBatchSize, // Pass through the requested batch size
         // Add the film IDs to exclude - combine any existing excludeFilmIds with rated film IDs
-        excludeFilmIds: [...(req.body.excludeFilmIds || []), ...ratedFilmIds]
+        excludeFilmIds: [...(req.body.excludeFilmIds || []), ...ratedFilmIds],
+        fingerprintProfile, // Cinematic fingerprint for first-run personalisation
       });
       
       // Check if this is a request for more recommendations (has requestedBatchSize)
