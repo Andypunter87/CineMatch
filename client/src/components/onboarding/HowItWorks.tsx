@@ -16,7 +16,7 @@ export function HowItWorks({ onStart }: HowItWorksProps) {
 
         {/* Step indicator */}
         <p className="font-spaceMono text-[10px] tracking-[0.15em] text-inkSoft uppercase mb-1">
-          step 2 of 2
+          step 1 of 3
         </p>
 
         {/* Headline */}

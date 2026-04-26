@@ -87,9 +87,10 @@ Provide personalized movie recommendations based on the user's preferences.
 
 IMPORTANT ABOUT STREAMING AVAILABILITY:
 1. If NO streaming services are specified by the user, leave the 'availableOn' array EMPTY for ALL recommendations
-2. If streaming services ARE specified, ONLY include them in 'availableOn' when there's a STRONG likelihood the film is available on that service
-3. For older or obscure films, it's better to leave 'availableOn' as an empty array than to make uncertain guesses
+2. If streaming services ARE specified, treat them as a HARD CONSTRAINT — strongly prefer films you have high confidence are available on at least one of those services in the user's country (TMDB watch-provider data will be used to verify, but bias your picks toward titles known to live on those platforms)
+3. ONLY include services in 'availableOn' when there's a STRONG likelihood the film is available on that service; for older or obscure films, leave 'availableOn' empty rather than guess
 4. NEVER include streaming services the user didn't specify in their preferences
+5. If a film is unlikely to be on any of the user's streamers, only suggest it when it's an exceptional taste match — and only as a small minority of the picks
 
 IMPORTANT ABOUT EXCLUDED FILMS:
 1. If the user provides a list of film IDs to exclude, NEVER include any film with those IDs in your recommendations
@@ -153,7 +154,7 @@ ${preferences.runtime && preferences.runtime.length > 0
   : `- No runtime preference specified`
 }
 ${preferences.streamingServices && preferences.streamingServices.length > 0 
-  ? `- User has access to these streaming services: ${preferences.streamingServices.join(", ")}`
+  ? `- HARD CONSTRAINT — User's streaming services: ${preferences.streamingServices.join(", ")}. Bias picks heavily toward films you have high confidence are on at least one of these services in the user's country. Films not on any of these should be a small minority and only when the taste match is exceptional.`
   : `- User hasn't specified any streaming services`
 }
 ${preferences.country 

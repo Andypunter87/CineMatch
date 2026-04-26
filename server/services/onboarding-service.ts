@@ -101,11 +101,12 @@ export class OnboardingService {
         throw new Error(`Invalid country code: ${country}`);
       }
       
-      if (!Array.isArray(streamingServices) || streamingServices.length === 0) {
-        console.warn(`Empty or invalid streaming services array: ${JSON.stringify(streamingServices)}`);
-        // Providing a default instead of failing
-        streamingServices = ['netflix'];
+      if (!Array.isArray(streamingServices)) {
+        console.warn(`Invalid streaming services value: ${JSON.stringify(streamingServices)}`);
+        streamingServices = [];
       }
+      // An empty array is a valid intentional choice — user has no
+      // subscribed streamers (or cleared them on a retake). Persist it.
       
       console.log(`Calling storage.updateUserCountry - userId: ${userId}, country: ${country}`);
       const user = await storage.updateUserCountry(userId, country);

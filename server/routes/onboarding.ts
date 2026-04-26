@@ -119,14 +119,19 @@ router.post("/preferences", isAuthenticated, async (req, res) => {
 
     let updatedUser: User = user as User;
 
-    // Save country/streaming preferences if provided
-    if (country && streamingServices && streamingServices.length > 0) {
-      console.log(`Valid preferences: country=${country}, streamingServices=${streamingServices.join(",")}`);
+    // Save country/streaming preferences if either is provided.
+    // An empty streamingServices array is a valid intentional choice
+    // (user skipped streamers or cleared them on a retake) and should
+    // be persisted so we stop biasing recommendations to old picks.
+    if (country || Array.isArray(streamingServices)) {
+      const services = Array.isArray(streamingServices) ? streamingServices : [];
+      const countryToSave = country ?? user.country ?? "gb";
+      console.log(`Valid preferences: country=${countryToSave}, streamingServices=${services.join(",")}`);
       console.log("Calling onboardingService.saveUserPreferences for user:", user.id);
       updatedUser = await onboardingService.saveUserPreferences(
         user.id,
-        country,
-        streamingServices
+        countryToSave,
+        services
       );
       console.log("User preferences saved successfully, user:", updatedUser.id);
     }

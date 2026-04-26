@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { C } from "@/lib/cinema-catalogue";
 import { CINEMATCH_TAG_MAP } from "@/lib/films";
+import { STREAMER_LABELS } from "@/components/onboarding/StreamersStep";
 
 type FingerprintSummary = {
   nickname: string;
@@ -32,6 +33,14 @@ export default function Home() {
     () => getFingerprintSummary(user?.onboardingState),
     [user],
   );
+
+  const streamerLabels = useMemo<string[]>(() => {
+    const services = user?.streamingServices;
+    if (!Array.isArray(services) || services.length === 0) return [];
+    return services
+      .map((code) => STREAMER_LABELS[code] ?? code)
+      .filter(Boolean);
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -129,6 +138,55 @@ export default function Home() {
             marginTop: 8,
             marginBottom: 0,
           }}>your answer changes everything about how i pick.</p>
+
+          {streamerLabels.length > 0 && (
+            <div
+              data-testid="text-streamer-pill"
+              style={{
+                marginTop: 10,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px',
+                background: 'rgba(250,246,238,0.7)',
+                border: `1.5px dashed ${C.ink}`,
+                borderRadius: 999,
+                fontFamily: "'Space Mono', monospace",
+                fontSize: 9,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: C.inkSoft,
+                maxWidth: '100%',
+              }}
+            >
+              <span aria-hidden style={{ fontSize: 11 }}>📺</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                tailored to: {streamerLabels.slice(0, 3).join(' · ')}
+                {streamerLabels.length > 3 ? ` +${streamerLabels.length - 3}` : ''}
+              </span>
+              <button
+                type="button"
+                data-testid="button-change-streamers"
+                onClick={() => setLocation('/onboarding?retake=1')}
+                style={{
+                  marginLeft: 4,
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: 9,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: C.ink,
+                  textDecoration: 'underline',
+                }}
+                aria-label="Change your streaming services"
+              >
+                change
+              </button>
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

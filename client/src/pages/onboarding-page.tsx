@@ -4,13 +4,14 @@ import { useAuth } from '@/hooks/use-auth';
 import { User } from '@shared/schema';
 import { HowItWorks } from '../components/onboarding/HowItWorks';
 import { TasteTest, FilmPick } from '../components/onboarding/TasteTest';
+import { StreamersStep } from '../components/onboarding/StreamersStep';
 import { FingerprintScreen } from '../components/onboarding/FingerprintScreen';
 
 interface AuthUser extends User {
   needsOnboarding?: boolean;
 }
 
-type OnboardingStep = 'how-it-works' | 'taste-test' | 'fingerprint';
+type OnboardingStep = 'how-it-works' | 'taste-test' | 'streamers' | 'fingerprint';
 
 const OnboardingPage = () => {
   const [, setLocation] = useLocation();
@@ -39,6 +40,12 @@ const OnboardingPage = () => {
 
   const handleTasteTestComplete = (filmPicks: FilmPick[]) => {
     setPicks(filmPicks);
+    // Streamers step runs in both first-run and retake modes so users
+    // can update their selections (or clear them) any time.
+    setStep('streamers');
+  };
+
+  const handleStreamersDone = () => {
     setStep('fingerprint');
   };
 
@@ -56,6 +63,15 @@ const OnboardingPage = () => {
 
   if (step === 'taste-test') {
     return <TasteTest onComplete={handleTasteTestComplete} />;
+  }
+
+  if (step === 'streamers') {
+    return (
+      <StreamersStep
+        onComplete={handleStreamersDone}
+        onSkip={handleStreamersDone}
+      />
+    );
   }
 
   return (

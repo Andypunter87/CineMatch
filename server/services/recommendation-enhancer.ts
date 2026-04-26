@@ -492,9 +492,11 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
             'prime video': ['amazonprime', 'amazon', 'amazon prime'],
             'disney+': ['disneyplus', 'disney'],
             'disney plus': ['disneyplus', 'disney'],
-            'apple tv+': ['appletv', 'apple'],
-            'apple tv': ['appletv', 'apple'],
-            'hbo max': ['hbomax', 'hbo'],
+            'apple tv+': ['appletvplus', 'appletv', 'apple'],
+            'apple tv': ['appletvplus', 'appletv', 'apple'],
+            'apple tv plus': ['appletvplus', 'appletv', 'apple'],
+            'hbo max': ['hbomax', 'hbo', 'max'],
+            'max': ['hbomax', 'hbo', 'max'],
             'paramount+': ['paramountplus', 'paramount'],
             'paramount plus': ['paramountplus', 'paramount'],
             'peacock': ['peacock'],
@@ -514,13 +516,13 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
             'hayu': ['hayu'],
             'britbox': ['britbox'],
             // Digital rental/purchase platforms - match to ANY user services (since they're widely available)
-            'rakuten tv': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple', 'netflix', 'disneyplus', 'disney'],
-            'google play movies': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple', 'netflix', 'disneyplus', 'disney'],
-            'youtube': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple', 'netflix', 'disneyplus', 'disney'],
-            'microsoft store': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple', 'netflix', 'disneyplus', 'disney'],
+            'rakuten tv': ['amazonprime', 'amazon', 'amazon prime', 'appletvplus', 'appletv', 'apple', 'netflix', 'disneyplus', 'disney'],
+            'google play movies': ['amazonprime', 'amazon', 'amazon prime', 'appletvplus', 'appletv', 'apple', 'netflix', 'disneyplus', 'disney'],
+            'youtube': ['amazonprime', 'amazon', 'amazon prime', 'appletvplus', 'appletv', 'apple', 'netflix', 'disneyplus', 'disney'],
+            'microsoft store': ['amazonprime', 'amazon', 'amazon prime', 'appletvplus', 'appletv', 'apple', 'netflix', 'disneyplus', 'disney'],
             'sky store': ['sky', 'skystore', 'nowtv', 'now', 'amazonprime', 'amazon', 'amazon prime'],
-            'vudu': ['amazonprime', 'amazon', 'amazon prime', 'appletv', 'apple'],
-            'itunes': ['appletv', 'apple', 'amazonprime', 'amazon', 'amazon prime']
+            'vudu': ['amazonprime', 'amazon', 'amazon prime', 'appletvplus', 'appletv', 'apple'],
+            'itunes': ['appletvplus', 'appletv', 'apple', 'amazonprime', 'amazon', 'amazon prime']
           };
           
           // Check for matches using the mapping
@@ -569,6 +571,30 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
       preferences.runtime as Array<"short" | "medium" | "long">
     );
     console.log(`Filtered ${streamingProcessedRecommendations.length} recommendations to ${filteredRecommendations.length} based on runtime preferences`);
+  }
+
+  // Streamer enforcement: when the user has selected streamers, only surface
+  // films available on at least one of those streamers. Every recommendation
+  // card the user sees will then have a matching streamer badge — no off-platform
+  // surprises, no "unknown availability" filler. If this returns zero films the
+  // caller / UI can prompt the user to broaden criteria.
+  const userStreamers = preferences.streamingServices || [];
+  const bypassStreamerFilter = preferences._bypassStreamingFilter === true;
+
+  if (userStreamers.length > 0 && !bypassStreamerFilter) {
+    const before = filteredRecommendations.length;
+    const sortByMatch = (a: Film, b: Film) =>
+      (b.matchPercentage || 0) - (a.matchPercentage || 0);
+
+    const onStreamerFilms = filteredRecommendations
+      .filter(f => (f.availableOn?.length || 0) > 0)
+      .sort(sortByMatch);
+
+    console.log(
+      `🎬 STREAMER FILTER (strict): ${before} films → ${onStreamerFilms.length} ` +
+        `on user streamers (${userStreamers.join(", ")})`,
+    );
+    filteredRecommendations = onStreamerFilms;
   }
   
   // Report how long this took (for performance monitoring)
