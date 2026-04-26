@@ -13,6 +13,9 @@ declare global {
 }
 
 export function setupAuth(app: Express) {
+  const isProduction = process.env.NODE_ENV === "production";
+  const isHttps = !!process.env.REPLIT_DEV_DOMAIN || isProduction;
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "supersecretkey",
     resave: false,
@@ -20,6 +23,9 @@ export function setupAuth(app: Express) {
     store: storage.sessionStore,
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+      secure: isHttps,
+      sameSite: isHttps ? "none" : "lax",
+      httpOnly: true,
     },
   };
 
