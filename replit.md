@@ -33,7 +33,7 @@ CineMatch is a sophisticated film recommendation platform that uses AI to provid
 ### Authentication & User Management
 - Session-based authentication with Passport.js
 - Google OAuth 2.0 (SSO) via Passport-Google-OAuth20
-- User onboarding flow: How It Works explainer → 12-film swipeable taste test → Cinematic Fingerprint card
+- User onboarding flow: How It Works explainer → 12-film swipeable taste test (real TMDB poster art baked into `client/src/lib/films.ts` as `posterUrl`) → Cinematic Fingerprint card
 - Social features including friend requests and shared recommendations
 
 ### AI-Powered Recommendation Engine

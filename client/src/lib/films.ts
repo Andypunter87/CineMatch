@@ -11,6 +11,7 @@ export interface CinematchFilm {
   rating: string;
   colors: [string, string, string];
   stripe: 'horizontal' | 'diagonal' | 'vertical' | 'burst' | 'flame' | 'splash' | 'neon';
+  posterUrl: string;
 }
 
 export const CINEMATCH_FILMS: CinematchFilm[] = [
@@ -27,6 +28,7 @@ export const CINEMATCH_FILMS: CinematchFilm[] = [
     rating: 'PG-13',
     colors: ['#E8A4C4', '#F0C8A8', '#C8A0B4'],
     stripe: 'horizontal',
+    posterUrl: 'https://image.tmdb.org/t/p/w500/eWdyYQreja6JGCzqHWXpWHDrrPo.jpg',
   },
   {
     id: 2,
@@ -41,6 +43,7 @@ export const CINEMATCH_FILMS: CinematchFilm[] = [
     rating: 'R',
     colors: ['#1A3A5C', '#4A6B8C', '#2C4C6D'],
     stripe: 'diagonal',
+    posterUrl: 'https://image.tmdb.org/t/p/w500/qLnfEmPrDjJfPyyddLJPkXmshkp.jpg',
   },
   {
     id: 3,
@@ -55,6 +58,7 @@ export const CINEMATCH_FILMS: CinematchFilm[] = [
     rating: 'R',
     colors: ['#FF6B9D', '#FFB84D', '#4DBFB8'],
     stripe: 'burst',
+    posterUrl: 'https://image.tmdb.org/t/p/w500/u68AjlvlutfEIcpmbYpKcdi09ut.jpg',
   },
   {
     id: 4,
@@ -69,6 +73,7 @@ export const CINEMATCH_FILMS: CinematchFilm[] = [
     rating: 'PG-13',
     colors: ['#2E3B4E', '#7B8FA6', '#C9B8A8'],
     stripe: 'vertical',
+    posterUrl: 'https://image.tmdb.org/t/p/w500/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg',
   },
   {
     id: 5,
@@ -83,6 +88,7 @@ export const CINEMATCH_FILMS: CinematchFilm[] = [
     rating: 'R',
     colors: ['#3A3A3A', '#C4A876', '#8B6F47'],
     stripe: 'horizontal',
+    posterUrl: 'https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg',
   },
   {
     id: 6,
@@ -97,6 +103,7 @@ export const CINEMATCH_FILMS: CinematchFilm[] = [
     rating: 'NR',
     colors: ['#6B4226', '#E8C896', '#8B5A3C'],
     stripe: 'flame',
+    posterUrl: 'https://image.tmdb.org/t/p/w500/2LquGwEhbg3soxSCs9VNyh5VJd9.jpg',
   },
   {
     id: 7,
@@ -111,6 +118,7 @@ export const CINEMATCH_FILMS: CinematchFilm[] = [
     rating: 'R',
     colors: ['#D64545', '#4A6B2F', '#8B9467'],
     stripe: 'splash',
+    posterUrl: 'https://image.tmdb.org/t/p/w500/zPib4ukTSdXvHP9pxGkFCe34f3y.jpg',
   },
   {
     id: 8,
@@ -125,6 +133,7 @@ export const CINEMATCH_FILMS: CinematchFilm[] = [
     rating: 'PG',
     colors: ['#8B1E3F', '#D4A574', '#3A2416'],
     stripe: 'diagonal',
+    posterUrl: 'https://image.tmdb.org/t/p/w500/iYypPT4bhqXfq1b6EnmxvRt6b2Y.jpg',
   },
   {
     id: 9,
@@ -139,6 +148,7 @@ export const CINEMATCH_FILMS: CinematchFilm[] = [
     rating: 'NR',
     colors: ['#E8E4D8', '#7A8B7F', '#4A5856'],
     stripe: 'vertical',
+    posterUrl: 'https://image.tmdb.org/t/p/w500/6tk0xmn9k5HjUeXsnhxIa94sFXP.jpg',
   },
   {
     id: 10,
@@ -153,6 +163,7 @@ export const CINEMATCH_FILMS: CinematchFilm[] = [
     rating: 'R',
     colors: ['#E85D75', '#F4C2C2', '#A8455C'],
     stripe: 'horizontal',
+    posterUrl: 'https://image.tmdb.org/t/p/w500/1NxGNQchGBTHXJ6RShLY1IlZqWn.jpg',
   },
   {
     id: 11,
@@ -167,6 +178,7 @@ export const CINEMATCH_FILMS: CinematchFilm[] = [
     rating: 'R',
     colors: ['#E91E63', '#1A1A2E', '#16213E'],
     stripe: 'neon',
+    posterUrl: 'https://image.tmdb.org/t/p/w500/602vevIURmpDfzbnv5Ubi6wIkQm.jpg',
   },
   {
     id: 12,
@@ -181,6 +193,7 @@ export const CINEMATCH_FILMS: CinematchFilm[] = [
     rating: 'PG',
     colors: ['#2A5D8F', '#E8B547', '#7FB3D3'],
     stripe: 'splash',
+    posterUrl: 'https://image.tmdb.org/t/p/w500/1OJ9vkD5xPt3skC6KguyXAgagRZ.jpg',
   },
 ];
 

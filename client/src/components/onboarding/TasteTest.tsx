@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { CINEMATCH_FILMS, CinematchFilm } from '@/lib/films';
-import gbhPoster from '@assets/image_1777210152260.png';
+import { CINEMATCH_FILMS, CinematchFilm, getStripeGradient } from '@/lib/films';
 
 export interface FilmPick {
   filmId: number;
@@ -12,7 +11,9 @@ interface TasteTestProps {
 }
 
 function SwipeCard({ film }: { film: CinematchFilm }) {
-  const posterUrl = film.title === 'The Grand Budapest Hotel' ? gbhPoster : undefined;
+  const [imgFailed, setImgFailed] = useState(false);
+  const posterUrl = film.posterUrl;
+  const showImage = posterUrl && !imgFailed;
   return (
     <div
       className="bg-paper rounded-[18px] p-3"
@@ -27,14 +28,17 @@ function SwipeCard({ film }: { film: CinematchFilm }) {
         className="rounded-[12px] relative overflow-hidden"
         style={{
           height: 460,
-          background: '#E8D9C8',
+          background: showImage ? '#E8D9C8' : getStripeGradient(film),
           border: '1.5px solid #1A1A1A',
         }}
       >
-        {posterUrl ? (
+        {showImage ? (
           <img
             src={posterUrl}
             alt={film.title}
+            loading="lazy"
+            decoding="async"
+            onError={() => setImgFailed(true)}
             className="absolute inset-0 h-full w-full object-cover"
             data-testid={`img-poster-${film.id}`}
           />
