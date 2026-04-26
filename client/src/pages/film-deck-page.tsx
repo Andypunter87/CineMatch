@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { C, CATALOGUE_FILMS, getPosterBackground, getStreamingUrl, WHY_TEXT, FEEL_MAP, FLAVOUR_MAP, matchFilmsGroup, type CatalogueFilm } from "@/lib/cinema-catalogue";
+import { useTmdbPoster, fetchTmdbPoster } from "@/hooks/use-tmdb-poster";
 
 function Chip({ text, color }: { text: string; color?: string }) {
   return (
@@ -117,6 +118,15 @@ export default function FilmDeckPage() {
   const nextFilm = films[idx + 1];
   const whyFn = WHY_TEXT[feel] || ((t: string) => `${t} hits the vibe you're after.`);
   const why = whyFn(film.title);
+
+  const livePosterUrl = useTmdbPoster(film.title, film.year, film.posterPath);
+
+  useEffect(() => {
+    const upcoming = films.slice(idx + 1, idx + 4);
+    upcoming.forEach(f => {
+      if (f?.title) fetchTmdbPoster(f.title, f.year);
+    });
+  }, [idx, films]);
 
   function handleDown(e: React.MouseEvent | React.TouchEvent) {
     const p = 'touches' in e ? e.touches[0] : e;
@@ -274,10 +284,10 @@ export default function FilmDeckPage() {
             }}>SKIP</div>
 
             <div style={{ flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', position: 'relative', border: `1.5px solid ${C.ink}` }}>
-              {film.posterPath && !posterErrors[film.id] ? (
+              {livePosterUrl && !posterErrors[film.id] ? (
                 <img
                   data-testid={`img-poster-${film.id}`}
-                  src={`/api/image/poster?url=${encodeURIComponent(`https://image.tmdb.org/t/p/w500${film.posterPath}`)}&title=${encodeURIComponent(film.title)}`}
+                  src={`/api/image/poster?url=${encodeURIComponent(livePosterUrl)}&title=${encodeURIComponent(film.title)}`}
                   alt={film.title}
                   onError={() => setPosterErrors(e => ({ ...e, [film.id]: true }))}
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}

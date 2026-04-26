@@ -48,7 +48,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register image proxy routes
   app.use('/api/image', imageProxyRoutes);
   console.log('Image proxy routes registered at /api/image');
-  
+
+  // TMDB poster lookup — searches TMDB by title (and optional year) and returns
+  // the canonical poster_path and full image URL. Used so client poster paths
+  // self-correct over time instead of relying on hardcoded values.
+  const TMDB_POSTER_CACHE_MAX = 2000;
+  const tmdbPosterCache = new Map<string, { posterPath: string | null; posterUrl: string | null; tmdbId: number | null }>();
+  app.get('/api/tmdb/poster', async (req: Request, res: Response) => {
+    try {
+      const title = (req.query.title as string | undefined)?.trim();
+      const yearRaw = req.query.year as string | undefined;
+      if (!title) {
+        return res.status(400).json({ error: 'title query parameter is required' });
+      }
+      const year = yearRaw && /^\d+$/.test(yearRaw) ? parseInt(yearRaw, 10) : undefined;
+      const cacheKey = `${title.toLowerCase()}::${year ?? ''}`;
+      const cached = tmdbPosterCache.get(cacheKey);
+      if (cached) {
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.json(cached);
+      }
+
+      const { searchMovies } = await import('./services/tmdb');
+      const results = await searchMovies(title, 1, year);
+      let best = results[0];
+      if (year && results.length > 1) {
+        const exact = results.find(r => r.release_date?.startsWith(String(year)));
+        if (exact) best = exact;
+      }
+      const posterPath = best?.poster_path || null;
+      const tmdbId = best?.id ?? null;
+      const payload = {
+        posterPath,
+        posterUrl: posterPath ? `https://image.tmdb.org/t/p/w500${posterPath}` : null,
+        tmdbId,
+      };
+      // Simple FIFO cap so the cache can't grow unbounded.
+      if (tmdbPosterCache.size >= TMDB_POSTER_CACHE_MAX) {
+        const oldestKey = tmdbPosterCache.keys().next().value;
+        if (oldestKey !== undefined) tmdbPosterCache.delete(oldestKey);
+      }
+      tmdbPosterCache.set(cacheKey, payload);
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.json(payload);
+    } catch (err) {
+      console.error('TMDB poster lookup error:', err);
+      return res.status(500).json({ posterPath: null, posterUrl: null, tmdbId: null });
+    }
+  });
+  console.log('TMDB poster lookup registered at /api/tmdb/poster');
+
   // Register test API routes
   app.use('/api/test', testApiRoutes);
   
