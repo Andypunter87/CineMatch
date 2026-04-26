@@ -14,22 +14,38 @@ import { createUserRecommendationsTable } from "./migrations/create-user-recomme
 import { setupOnboardingTables } from "./migrations/onboarding-migration";
 import { createRecommenderTables } from "./migrations/create-recommender-tables";
 
-// Create postgres connection with proper error handling
-export const client = process.env.DATABASE_URL 
-  ? postgres(process.env.DATABASE_URL, { ssl: { rejectUnauthorized: false } }) 
+// Create postgres connection — Replit's internal DB uses sslmode=disable (same-host)
+// Do NOT pass ssl:{} here; let the connection string sslmode param govern behaviour.
+export const client = process.env.DATABASE_URL
+  ? postgres(process.env.DATABASE_URL)
   : postgres({
       host: process.env.PGHOST || 'localhost',
       port: Number(process.env.PGPORT) || 5432,
       database: process.env.PGDATABASE || 'postgres',
       username: process.env.PGUSER || 'postgres',
-      password: process.env.PGPASSWORD || 'postgres'
+      password: process.env.PGPASSWORD || 'postgres',
     });
 
 // Create drizzle instance
 export const db = drizzle(client, { schema });
 
-// Initialize database
-export async function initializeDatabase() {
+// Initialize database (with retry for Replit startup timing issues)
+export async function initializeDatabase(retries = 3, delayMs = 1500) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await _initializeDatabase();
+    } catch (error: any) {
+      if (attempt < retries && (error?.code === 'ECONNRESET' || error?.code === 'ECONNREFUSED')) {
+        console.log(`DB init attempt ${attempt} failed (${error.code}), retrying in ${delayMs}ms...`);
+        await new Promise(r => setTimeout(r, delayMs));
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
+async function _initializeDatabase() {
   try {
     // Check if tables exist and create them if they don't
     const result = await client`

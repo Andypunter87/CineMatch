@@ -166,12 +166,13 @@ export class DatabaseStorage implements IStorage {
     this.films = films;
     
     // Initialize session store with PostgreSQL
+    // Replit's internal Postgres uses sslmode=disable — no ssl option needed
     this.sessionStore = new PostgresSessionStore({
       conObject: {
         connectionString: process.env.DATABASE_URL,
-        ssl: false
       },
-      createTableIfMissing: true
+      createTableIfMissing: true,
+      tableName: "session",
     });
   }
   
