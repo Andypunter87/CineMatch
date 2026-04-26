@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
-import { CINEMATCH_FILMS, getStripeGradient, CinematchFilm } from '@/lib/films';
+import { CINEMATCH_FILMS, CinematchFilm } from '@/lib/films';
+import gbhPoster from '@assets/image_1777210152260.png';
 
 export interface FilmPick {
   filmId: number;
@@ -11,11 +12,12 @@ interface TasteTestProps {
 }
 
 function SwipeCard({ film }: { film: CinematchFilm }) {
+  const posterUrl = film.title === 'The Grand Budapest Hotel' ? gbhPoster : undefined;
   return (
     <div
       className="bg-paper rounded-[18px] p-3"
       style={{
-        width: 270,
+        width: 330,
         border: '2px solid #1A1A1A',
         boxShadow: '5px 5px 0 #1A1A1A',
       }}
@@ -24,11 +26,19 @@ function SwipeCard({ film }: { film: CinematchFilm }) {
       <div
         className="rounded-[12px] relative overflow-hidden"
         style={{
-          height: 320,
-          background: getStripeGradient(film),
+          height: 460,
+          background: '#E8D9C8',
           border: '1.5px solid #1A1A1A',
         }}
       >
+        {posterUrl ? (
+          <img
+            src={posterUrl}
+            alt={film.title}
+            className="absolute inset-0 h-full w-full object-cover"
+            data-testid={`img-poster-${film.id}`}
+          />
+        ) : null}
         {/* Title overlay */}
         <div
           className="absolute left-2.5 right-2.5 bottom-2.5 rounded-[8px] px-2.5 py-2"
@@ -167,12 +177,12 @@ export function TasteTest({ onComplete }: TasteTestProps) {
         </div>
 
         {/* Card area */}
-        <div className="flex-1 flex items-center justify-center relative overflow-hidden">
+        <div className="flex-1 flex items-end justify-center relative overflow-hidden pb-1">
           {/* Back card */}
           {next && !exiting && (
             <div
               className="absolute pointer-events-none"
-              style={{ transform: 'translateY(10px) scale(0.94)', opacity: 0.5 }}
+              style={{ transform: 'translateY(18px) scale(0.92)', opacity: 0.5 }}
             >
               <SwipeCard film={next} />
             </div>
@@ -196,7 +206,7 @@ export function TasteTest({ onComplete }: TasteTestProps) {
           >
             {/* SKIP stamp — left side (drag left) */}
             <div
-              className="absolute top-6 left-4 z-10 font-nunito font-extrabold text-[24px] text-inkSoft leading-none pointer-events-none"
+              className="absolute top-7 left-5 z-10 font-nunito font-extrabold text-[28px] text-inkSoft leading-none pointer-events-none"
               style={{
                 opacity: skipOpacity,
                 transform: 'rotate(-14deg)',
@@ -210,7 +220,7 @@ export function TasteTest({ onComplete }: TasteTestProps) {
             </div>
             {/* LOVE stamp — right side (drag right) */}
             <div
-              className="absolute top-6 right-4 z-10 font-nunito font-extrabold text-[24px] text-pink leading-none pointer-events-none"
+              className="absolute top-7 right-5 z-10 font-nunito font-extrabold text-[28px] text-pink leading-none pointer-events-none"
               style={{
                 opacity: loveOpacity,
                 transform: 'rotate(14deg)',
