@@ -1,489 +1,60 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import { FilmRatingGrid } from '../components/onboarding/FilmRatingGrid';
-import { SingleFilmRating } from '../components/onboarding/SingleFilmRating';
-import OnboardingStepIndicator from '../components/onboarding/OnboardingStepIndicator';
-import WelcomeComplete from '../components/onboarding/WelcomeComplete';
-import UserPreferencesForm from '../components/onboarding/UserPreferencesForm';
-import { SmilePlus, Award, Users, ChevronRight, X, Loader2 } from 'lucide-react';
+import { User } from '@shared/schema';
+import { HowItWorks } from '../components/onboarding/HowItWorks';
+import { TasteTest, FilmPick } from '../components/onboarding/TasteTest';
+import { FingerprintScreen } from '../components/onboarding/FingerprintScreen';
 
-interface ExplainerScreenData {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
+interface AuthUser extends User {
+  needsOnboarding?: boolean;
 }
 
-// Make sure the Film interface matches the one in SingleFilmRating.tsx
-interface Film {
-  id: number;
-  title: string;
-  posterUrl: string;
-  year: number;
-  genres: string[];
-  type: 'mainstream' | 'indie';
-  director: string;
-  synopsis: string;
-  actors?: string[];
-}
-
-// Make sure the FilmRating interface matches the one in SingleFilmRating.tsx and server schema
-interface FilmRating {
-  filmId: number;
-  filmTitle: string;
-  filmPosterUrl: string;
-  rating: number | null;
-  status: string;
-}
+type OnboardingStep = 'how-it-works' | 'taste-test' | 'fingerprint';
 
 const OnboardingPage = () => {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [filmsRated, setFilmsRated] = useState<FilmRating[]>([]);
-  const [showMoreFilms, setShowMoreFilms] = useState(false);
-  
-  // Define step labels for the onboarding process
-  const onboardingSteps = [
-    'Welcome',
-    'Preferences',
-    'Rate Films',  
-    'Recommendations'
-  ];
-  
-  // Map the current step to our onboarding progress (0-3 explainer, 4 preferences, 5-6 ratings)
-  const getProgressStep = () => {
-    if (currentStep <= 2) return 0; // Welcome screens
-    if (currentStep === 3) return 1; // Preferences
-    if (currentStep === 4 || currentStep === 5) return 2; // Ratings
-    return 3; // Complete/Recommendations
-  };
+  const [step, setStep] = useState<OnboardingStep>('how-it-works');
+  const [picks, setPicks] = useState<FilmPick[]>([]);
 
-  // Redirect to home if user is not logged in
   useEffect(() => {
     if (!user) {
       setLocation('/auth');
+      return;
+    }
+    // Returning users who have already completed onboarding go straight to home
+    if ((user as AuthUser).needsOnboarding === false) {
+      setLocation('/');
     }
   }, [user, setLocation]);
 
-  // Track onboarding progress
-  const trackProgressMutation = useMutation({
-    mutationFn: async (step: string) => {
-      await apiRequest('POST', '/api/onboarding/track-progress', { step });
-    }
-  });
-
-  // Save ratings
-  const saveRatingsMutation = useMutation({
-    mutationFn: async (ratings: FilmRating[]) => {
-      // Use the proper endpoint - 'rate-batch' instead of 'save-ratings'
-      console.log('Saving batch of ratings:', ratings.length);
-      const response = await apiRequest('POST', '/api/onboarding/rate-batch', { 
-        ratings,
-        batchNumber: batchOffset > 0 ? 2 : 1 // Use batchNumber to track which set this is
-      });
-      return await response.json();
-    },
-    onSuccess: (data) => {
-      console.log('Ratings saved successfully:', data);
-      toast({
-        title: 'Preferences saved',
-        description: "We'll use these to find great films for you",
-      });
-    },
-    onError: (error) => {
-      console.error('Error saving ratings:', error);
-      // Log more details about the error to help debugging
-      if (error instanceof Error) {
-        console.error('Error details:', error.message, error.stack);
-      }
-      toast({
-        title: 'Failed to save preferences',
-        description: 'Please try again',
-        variant: 'destructive',
-      });
-    }
-  });
-
-  // Define state variables for different stages within the onboarding flow
-  const [isRatingMore, setIsRatingMore] = useState(false);
-  
-  // Track which film IDs we've already shown to the user
-  const [shownFilmIds, setShownFilmIds] = useState<number[]>([]);
-  
-  // Track how many batches we've seen
-  const [batchOffset, setBatchOffset] = useState(0);
-
-  // Fetch a large batch of films once
-  const { data: allPopularFilms, isLoading: isLoadingAllFilms } = useQuery<Film[]>({
-    queryKey: ['/api/onboarding/films'],
-    queryFn: async ({ signal }) => {
-      // Request a large batch (100) of films that we can filter on the client side
-      // We'll avoid using offset on server-side since it's not working as expected
-      const url = `/api/onboarding/films?count=100&seed=${Date.now()}`;
-      console.log(`Fetching large batch of films`);
-      
-      const response = await fetch(url, { signal });
-      if (!response.ok) throw new Error('Failed to fetch popular films');
-      const data = await response.json();
-      return data.films; // The API returns { films: [...] } so we need to extract the films
-    },
-    enabled: currentStep === 4, // Only fetch once when we reach the rating step
-    staleTime: Infinity, // Cache permanently for this session
-  });
-  
-  // Process films to get only the ones we haven't shown yet
-  const [currentBatchFilms, setCurrentBatchFilms] = useState<Film[]>([]);
-  const [isLoadingFilms, setIsLoadingFilms] = useState(true);
-  
-  // Ref to track if we've already processed this batch
-  const processedBatchRef = React.useRef<number | null>(null);
-  
-  // Effect to process films when available or when batch offset changes
-  useEffect(() => {
-    // If we don't have films yet, wait for them
-    if (!allPopularFilms || allPopularFilms.length === 0) {
-      return;
-    }
-    
-    // Skip if we've already processed this batch (prevents loop)
-    if (processedBatchRef.current === batchOffset) {
-      return;
-    }
-    
-    // Mark this batch as being processed
-    processedBatchRef.current = batchOffset;
-    
-    setIsLoadingFilms(true);
-    
-    // Create a function to select the next batch
-    const selectNextBatch = () => {
-      // More thorough validation of poster URLs
-      function isValidPosterUrl(url: string): boolean {
-        if (!url || url.trim() === '' || url.length < 10) return false;
-        return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//');
-      }
-      
-      // Filter out any films we've already shown AND any films without proper poster images
-      const unseenFilms = allPopularFilms.filter(film => 
-        !shownFilmIds.includes(film.id) && 
-        !!film.posterUrl && 
-        isValidPosterUrl(film.posterUrl) // Ensure the film has a valid poster URL
-      );
-      console.log(`Found ${unseenFilms.length} unseen films with valid posters out of ${allPopularFilms.length} total`);
-      
-      // Take the next batch (up to 12 films)
-      const batchSize = 12;
-      const nextBatch = unseenFilms.slice(0, batchSize);
-      
-      if (nextBatch.length > 0) {
-        console.log(`Selected ${nextBatch.length} films for this batch. First film: ${nextBatch[0].title}`);
-        
-        // Update the list of shown film IDs (outside of render)
-        const newShownIds = [...shownFilmIds, ...nextBatch.map(film => film.id)];
-        setShownFilmIds(newShownIds);
-        
-        // Set the current batch
-        return nextBatch;
-      } else {
-        console.warn("No more unseen films available!");
-        // If we've shown all films, reset and start from the beginning
-        // But still filter for films with poster images
-        setShownFilmIds([]);
-        const filmsWithPosters = allPopularFilms.filter(film => !!film.posterUrl);
-        return filmsWithPosters.slice(0, batchSize);
-      }
-    };
-    
-    // Execute the batch selection
-    const selectedBatch = selectNextBatch();
-    setCurrentBatchFilms(selectedBatch);
-    
-    // Complete the loading process
-    setIsLoadingFilms(false);
-  }, [allPopularFilms, batchOffset]);
-
-  // Explainer screens data
-  const explainerScreens: ExplainerScreenData[] = [
-    {
-      title: 'Mood-based magic',
-      description: "Get great movie recommendations that match how you're feeling - right now.",
-      icon: <SmilePlus className="h-16 w-16 text-primary" />
-    },
-    {
-      title: 'Hidden gems, uncovered',
-      description: "Discover brilliant films you might have missed - from cult classics to indie darlings.",
-      icon: <Award className="h-16 w-16 text-primary" />
-    },
-    {
-      title: 'Harmony for group nights',
-      description: "Watching together? We'll suggest films that work for everyone in the room.",
-      icon: <Users className="h-16 w-16 text-primary" />
-    }
-  ];
-
-  // Handle skip button
-  const handleSkip = () => {
-    // If we're on the film rating step, still save any ratings the user has made
-    if (currentStep === 4 && filmsRated.length > 0) {
-      saveRatingsMutation.mutate(filmsRated);
-    }
-    
-    // Skip to completion
-    setCurrentStep(5);
-    trackProgressMutation.mutate('skipped');
+  const handleTasteTestComplete = (filmPicks: FilmPick[]) => {
+    setPicks(filmPicks);
+    setStep('fingerprint');
   };
 
-  // Handle next button
-  const handleNext = () => {
-    const nextStep = currentStep + 1;
-    setCurrentStep(nextStep);
-    
-    // Track progress for analytics
-    trackProgressMutation.mutate(`step_${nextStep}`);
+  const handleRestart = () => {
+    setPicks([]);
+    setStep('how-it-works');
   };
 
-  // Track how many batches of films the user has rated
-  const [batchesRated, setBatchesRated] = useState(0);
-  
-  // Handle rating completion
-  const handleRatingComplete = (ratings: FilmRating[]) => {
-    setFilmsRated([...filmsRated, ...ratings]);
-    
-    // Add save ratings mutation
-    saveRatingsMutation.mutate(ratings, {
-      onSuccess: () => {
-        // Increment the number of batches rated
-        const newBatchCount = batchesRated + 1;
-        setBatchesRated(newBatchCount);
-        
-        console.log("Rating batch completed:", newBatchCount);
-        
-        // Always show the "want to rate more" screen between batches, regardless of current stage
-        // This ensures the user always gets a choice after completing a batch
-        setIsRatingMore(false); // Reset this flag to show choice screen
-        setShowMoreFilms(true); // Show the "want to rate more?" screen
-      }
-    });
-  };
+  if (!user) return null;
+  if ((user as AuthUser).needsOnboarding === false) return null;
 
-  // Handle completion
-  const completeOnboardingMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/onboarding/complete');
-      return await response.json();
-    },
-    onSuccess: (data) => {
-      // Update the user data in the cache to reflect onboarding completion
-      if (data.user) {
-        // Directly update the cache with the user data from the response
-        queryClient.setQueryData(['/api/user'], data.user);
-      } else {
-        // Fall back to invalidating the cache if user data isn't provided
-        queryClient.invalidateQueries({ queryKey: ['/api/user'] });
-      }
-      
-      // Go to home page with a flag to indicate onboarding completion
-      // Add show_questionnaire=true to ensure the questionnaire appears immediately
-      // This gives users a chance to pick their current mood right away
-      window.location.href = '/?just_completed_onboarding=true&show_questionnaire=true';
-      
-      // Don't need toast here as the redirect will cause a page refresh
-      // and we'll lose the toast notification anyway
-    },
-    onError: (error) => {
-      console.error('Error completing onboarding:', error);
-      
-      // Even if the API call fails, consider onboarding complete
-      // Create a modified user object with needsOnboarding set to false
-      if (user) {
-        const updatedUser = {
-          ...user,
-          needsOnboarding: false
-        };
-        queryClient.setQueryData(['/api/user'], updatedUser);
-      }
-      
-      // Still redirect the user to the main page with flag even if there's an error
-      // Use the same consistent approach as in the success handler
-      window.location.href = '/?just_completed_onboarding=true&show_questionnaire=true';
-    }
-  });
+  if (step === 'how-it-works') {
+    return <HowItWorks onStart={() => setStep('taste-test')} />;
+  }
 
-  const handleComplete = () => {
-    // Mark onboarding as complete in the database
-    completeOnboardingMutation.mutate();
-  };
+  if (step === 'taste-test') {
+    return <TasteTest onComplete={handleTasteTestComplete} />;
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md mx-auto">
-        <CardContent className="p-6 relative">
-          {/* Explainer Screens */}
-          {currentStep < 3 && (
-            <>
-              <div className="absolute top-2 right-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={handleSkip}
-                  className="h-8 w-8"
-                >
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Skip</span>
-                </Button>
-              </div>
-              
-              <div className="flex flex-col items-center text-center py-6">
-                <div className="mb-6 bg-primary/10 p-4 rounded-full">
-                  {explainerScreens[currentStep].icon}
-                </div>
-                <h2 className="text-2xl font-bold mb-3">
-                  {explainerScreens[currentStep].title}
-                </h2>
-                <p className="text-muted-foreground mb-10">
-                  {explainerScreens[currentStep].description}
-                </p>
-                
-                <OnboardingStepIndicator 
-                  currentStep={getProgressStep()} 
-                  totalSteps={4}
-                  stepLabels={onboardingSteps}
-                />
-                
-                <div className="w-full space-y-3 mt-6">
-                  <Button 
-                    className="w-full"
-                    onClick={handleNext}
-                    size="lg"
-                  >
-                    Next
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={handleSkip}
-                  >
-                    Skip
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* User Preferences Form */}
-          {currentStep === 3 && (
-            <div className="py-4">
-              <div className="container max-w-md mx-auto">
-                <OnboardingStepIndicator 
-                  currentStep={getProgressStep()} 
-                  totalSteps={4}
-                  stepLabels={onboardingSteps}
-                />
-              </div>
-              <UserPreferencesForm 
-                onComplete={handleNext}
-              />
-            </div>
-          )}
-
-          {/* Single Film Rating (cards one at a time) */}
-          {currentStep === 4 && !showMoreFilms && (
-            <div className="py-4">
-              <div className="container max-w-md mx-auto">
-                <OnboardingStepIndicator 
-                  currentStep={getProgressStep()} 
-                  totalSteps={4}
-                  stepLabels={onboardingSteps}
-                />
-              </div>
-              <SingleFilmRating
-                films={currentBatchFilms || []}
-                onRatingComplete={handleRatingComplete}
-                isLoading={isLoadingFilms || isLoadingAllFilms}
-                onSkip={handleSkip}
-              />
-            </div>
-          )}
-
-          {/* Ask for More Ratings - Now using SingleFilmRating */}
-          {currentStep === 4 && showMoreFilms && isRatingMore && !isLoadingFilms && !saveRatingsMutation.isPending && currentBatchFilms && currentBatchFilms.length > 0 ? (
-            // When films are loaded and user chose to rate more, show the single film rating
-            <div className="py-4">
-              <SingleFilmRating 
-                films={currentBatchFilms}
-                onRatingComplete={handleRatingComplete}
-                isLoading={isLoadingFilms || isLoadingAllFilms}
-                onSkip={handleSkip}
-              />
-            </div>
-          ) : currentStep === 4 && showMoreFilms && (saveRatingsMutation.isPending || isLoadingFilms || isLoadingAllFilms) ? (
-            // Show loading state when rating more films
-            <div className="py-8 text-center">
-              <div className="flex flex-col items-center justify-center gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p>Loading more films to rate...</p>
-              </div>
-            </div>
-          ) : currentStep === 4 && showMoreFilms ? (
-            // Show the option to rate more films after completing first batch
-            <div className="py-6 text-center">
-              <h2 className="text-xl font-bold mb-4">
-                Want even better recommendations?
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                Rate 10 more films to further improve your personalized picks
-              </p>
-              
-              <div className="space-y-3">
-                <Button 
-                  className="w-full"
-                  onClick={() => {
-                    // Clear current ratings for the next batch
-                    setFilmsRated([]);
-                    
-                    // Increment the batch offset to get different films
-                    // Each batch has 12 films, so offset increases by 12 each time
-                    const newOffset = (batchOffset || 0) + 12;
-                    setBatchOffset(newOffset);
-                    
-                    // Set flag to indicate we're rating more films, 
-                    // which enables fetching new films
-                    setIsRatingMore(true);
-                    
-                    console.log("Requesting more films with offset:", newOffset);
-                  }}
-                >
-                  Yes, rate more films
-                </Button>
-                <Button 
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setCurrentStep(5)}
-                >
-                  No, I'm done
-                </Button>
-              </div>
-            </div>
-          ) : null}
-
-          {/* Completion Screen */}
-          {currentStep === 5 && (
-            <WelcomeComplete 
-              userName={user?.name || 'there'} 
-              onComplete={handleComplete} 
-            />
-          )}
-        </CardContent>
-      </Card>
-    </div>
+    <FingerprintScreen
+      picks={picks}
+      onRestart={handleRestart}
+    />
   );
 };
 

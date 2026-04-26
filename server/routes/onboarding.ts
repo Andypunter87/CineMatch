@@ -1,6 +1,7 @@
 import express from "express";
 import { onboardingService } from "../services/onboarding-service";
 import { z } from "zod";
+import { User } from "@shared/schema";
 
 const router = express.Router();
 
@@ -14,8 +15,20 @@ const isAuthenticated = (req: express.Request, res: express.Response, next: expr
 
 // Schema for user preferences
 const preferencesSchema = z.object({
-  country: z.string().min(2).max(2),
-  streamingServices: z.array(z.string()).min(1),
+  country: z.string().min(2).max(2).optional(),
+  streamingServices: z.array(z.string()).optional(),
+  // Optional fingerprint fields from taste-test onboarding
+  genres: z.array(z.string()).optional(),
+  vibeTraits: z.object({
+    tone: z.string(),
+    style: z.string(),
+    pace: z.string(),
+  }).optional(),
+  topTags: z.array(z.string()).optional(),
+  topFilmIds: z.array(z.number()).optional(),
+  nickname: z.string().optional(),
+  tagWeights: z.record(z.string(), z.number()).optional(),
+  vibeProfile: z.record(z.string(), z.number()).optional(),
 });
 
 // Schema for film rating
@@ -102,17 +115,28 @@ router.post("/preferences", isAuthenticated, async (req, res) => {
       });
     }
     
-    const { country, streamingServices } = validation.data;
-    console.log(`Valid preferences: country=${country}, streamingServices=${streamingServices.join(",")}`);
-    
-    // Save preferences and update onboarding state
-    console.log("Calling onboardingService.saveUserPreferences for user:", user.id);
-    const updatedUser = await onboardingService.saveUserPreferences(
-      user.id, 
-      country, 
-      streamingServices
-    );
-    console.log("User preferences saved successfully, user:", updatedUser.id);
+    const { country, streamingServices, genres, vibeTraits, topTags, topFilmIds, nickname, tagWeights, vibeProfile } = validation.data;
+
+    let updatedUser: User = user as User;
+
+    // Save country/streaming preferences if provided
+    if (country && streamingServices && streamingServices.length > 0) {
+      console.log(`Valid preferences: country=${country}, streamingServices=${streamingServices.join(",")}`);
+      console.log("Calling onboardingService.saveUserPreferences for user:", user.id);
+      updatedUser = await onboardingService.saveUserPreferences(
+        user.id,
+        country,
+        streamingServices
+      );
+      console.log("User preferences saved successfully, user:", updatedUser.id);
+    }
+
+    // Store fingerprint data in onboarding state if provided
+    if (topTags || topFilmIds || nickname || genres || vibeTraits || tagWeights || vibeProfile) {
+      await onboardingService.updateOnboardingState(user.id, {
+        fingerprint: { nickname, topTags, topFilmIds, genres, vibeTraits, tagWeights, vibeProfile },
+      });
+    }
     
     // Create response with updated onboarding state
     const response = { 

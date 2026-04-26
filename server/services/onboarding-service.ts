@@ -20,6 +20,16 @@ export class OnboardingService {
       completed?: boolean;
       currentStep?: "intro" | "preferences" | "ratings" | "completed";
       progress?: number;
+      fingerprint?: {
+        nickname?: string;
+        topTags?: string[];
+        topFilmIds?: number[];
+        genres?: string[];
+        vibeTraits?: { tone: string; style: string; pace: string };
+        tagWeights?: Record<string, number>;
+        vibeProfile?: Record<string, number>;
+        [key: string]: unknown;
+      };
     }
   ) {
     try {
