@@ -55,6 +55,7 @@ export default function FilmDeckPage() {
   const [idx, setIdx] = useState(0);
   const [saved, setSaved] = useState<Record<number, boolean>>({});
   const [watching, setWatching] = useState(false);
+  const [posterErrors, setPosterErrors] = useState<Record<number, boolean>>({});
   const dragRef = useRef({ x: 0, active: false });
   const [dragX, setDragX] = useState(0);
   const [flying, setFlying] = useState<'left' | 'right' | null>(null);
@@ -220,7 +221,17 @@ export default function FilmDeckPage() {
             }}>SKIP</div>
 
             <div style={{ flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', position: 'relative', border: `1.5px solid ${C.ink}` }}>
-              <div style={{ width: '100%', height: '100%', background: posterBg }} />
+              {film.posterPath && !posterErrors[film.id] ? (
+                <img
+                  data-testid={`img-poster-${film.id}`}
+                  src={`/api/image/poster?url=${encodeURIComponent(`https://image.tmdb.org/t/p/w500${film.posterPath}`)}&title=${encodeURIComponent(film.title)}`}
+                  alt={film.title}
+                  onError={() => setPosterErrors(e => ({ ...e, [film.id]: true }))}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+              ) : (
+                <div style={{ width: '100%', height: '100%', background: posterBg }} />
+              )}
               <div style={{
                 position: 'absolute', left: 10, right: 10, bottom: 10,
                 background: 'rgba(250,246,238,.93)', border: `1.5px solid ${C.ink}`,
