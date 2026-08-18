@@ -131,6 +131,54 @@ export const CATALOGUE_FILMS: CatalogueFilm[] = [
     streaming: 'MUBI', runtime: '122 min', rating: 'NR',
     colors: ['#6B4226', '#E8C896', '#8B5A3C'], stripe: 'flame',
     posterPath: '/3xRn7e8TkDL1fU1hNzLhNIGRBg6.jpg' },
+  { id: 13, title: 'Frances Ha', year: 2012, director: 'Noah Baumbach',
+    tags: ['funny', 'bittersweet', 'scrappy', 'charming'],
+    blurb: 'A dancer who doesn\'t really dance, figuring it out.',
+    why: { cosy: 60, thinky: 45, funny: 75, tense: 10, romantic: 35 },
+    streaming: 'MUBI', runtime: '86 min', rating: 'R',
+    colors: ['#2B2B2B', '#D8D8D8', '#8C8C8C'], stripe: 'vertical' },
+  { id: 14, title: 'Before Sunset', year: 2004, director: 'Richard Linklater',
+    tags: ['romantic', 'talky', 'real-time', 'bittersweet'],
+    blurb: 'Nine years later. One afternoon in Paris. Just talking.',
+    why: { cosy: 45, thinky: 65, funny: 30, tense: 15, romantic: 95 },
+    streaming: 'Prime', runtime: '80 min', rating: 'R',
+    colors: ['#D9A66C', '#8C6B4F', '#EFD9B4'], stripe: 'horizontal' },
+  { id: 15, title: 'Run Lola Run', year: 1998, director: 'Tom Tykwer',
+    tags: ['fast', 'wild', 'kinetic', 'tense'],
+    blurb: 'Twenty minutes. Three chances. Run.',
+    why: { cosy: 5, thinky: 50, funny: 25, tense: 90, romantic: 35 },
+    streaming: 'Prime', runtime: '80 min', rating: 'R',
+    colors: ['#D64545', '#F0A030', '#3A3A3A'], stripe: 'flame' },
+  { id: 16, title: 'Stand by Me', year: 1986, director: 'Rob Reiner',
+    tags: ['nostalgic', 'bittersweet', 'warm', 'coming-of-age'],
+    blurb: 'Four boys, one summer, a walk that changes everything.',
+    why: { cosy: 75, thinky: 50, funny: 45, tense: 30, romantic: 15 },
+    streaming: 'Netflix', runtime: '89 min', rating: 'R',
+    colors: ['#4A6B2F', '#C4A876', '#7B8FA6'], stripe: 'horizontal' },
+  { id: 17, title: 'Petite Maman', year: 2021, director: 'Céline Sciamma',
+    tags: ['quiet', 'tender', 'magical', 'small'],
+    blurb: 'A girl meets her mother — at eight years old.',
+    why: { cosy: 80, thinky: 60, funny: 20, tense: 5, romantic: 30 },
+    streaming: 'MUBI', runtime: '72 min', rating: 'PG',
+    colors: ['#A8D8C4', '#EFD9B4', '#7B8FA6'], stripe: 'vertical' },
+  { id: 18, title: 'The Princess Bride', year: 1987, director: 'Rob Reiner',
+    tags: ['funny', 'romantic', 'adventure', 'quotable'],
+    blurb: 'Fencing, fighting, true love. As you wish.',
+    why: { cosy: 85, thinky: 25, funny: 85, tense: 35, romantic: 75 },
+    streaming: 'Disney+', runtime: '98 min', rating: 'PG',
+    colors: ['#C9A15A', '#7B4A2F', '#4A6B8C'], stripe: 'diagonal' },
+  { id: 19, title: '12 Angry Men', year: 1957, director: 'Sidney Lumet',
+    tags: ['tense', 'talky', 'sharp', 'classic'],
+    blurb: 'One room. Twelve men. One vote to change.',
+    why: { cosy: 10, thinky: 95, funny: 10, tense: 85, romantic: 5 },
+    streaming: 'Prime', runtime: '96 min', rating: 'NR',
+    colors: ['#3A3A3A', '#8C8C8C', '#D8D8D8'], stripe: 'vertical' },
+  { id: 20, title: 'Some Like It Hot', year: 1959, director: 'Billy Wilder',
+    tags: ['funny', 'screwball', 'classic', 'silly'],
+    blurb: 'Two musicians, one mob, zero good disguises.',
+    why: { cosy: 55, thinky: 20, funny: 95, tense: 30, romantic: 55 },
+    streaming: 'Prime', runtime: '121 min', rating: 'NR',
+    colors: ['#D8D8D8', '#2B2B2B', '#C9A15A'], stripe: 'horizontal' },
   { id: 12, title: 'Columbus', year: 2017, director: 'Kogonada',
     tags: ['quiet', 'architectural', 'slow', 'intimate'],
     blurb: 'A town of modernist buildings. Two strangers.',
@@ -190,65 +238,88 @@ function parseRuntime(runtime: string): number {
   return m ? parseInt(m[1], 10) : 120;
 }
 
-function runtimeBonus(runtime: string, lengthChoice: string): number {
+function runtimeFits(runtime: string, lengthChoice: string): boolean {
   const mins = parseRuntime(runtime);
-  if (lengthChoice === 'under 90m') return mins < 90 ? 20 : mins <= 105 ? 5 : -10;
-  if (lengthChoice === '~2 hrs')    return mins >= 90 && mins <= 130 ? 20 : mins < 90 ? 0 : -5;
+  if (lengthChoice === 'under 90m') return mins < 90;
+  if (lengthChoice === '~2 hrs')    return mins >= 90 && mins <= 140;
+  return true; // 'epic ok' — any length is fine
+}
+
+function eraFits(year: number, eraChoice: string): boolean {
+  const range = ERA_RANGES[eraChoice];
+  if (!range) return true;
+  return year >= range[0] && year <= range[1];
+}
+
+function runtimeCloseness(runtime: string, lengthChoice: string): number {
+  // Small tiebreak bonus for near-misses used when constraints are relaxed.
+  const mins = parseRuntime(runtime);
+  if (lengthChoice === 'under 90m') return mins < 90 ? 20 : Math.max(0, 15 - (mins - 90) / 2);
+  if (lengthChoice === '~2 hrs')    return mins >= 90 && mins <= 140 ? 20 : 10;
   return 5;
 }
 
-function eraBonus(year: number, eraChoice: string): number {
-  const range = ERA_RANGES[eraChoice];
-  if (!range) return 0;
-  return year >= range[0] && year <= range[1] ? 18 : 0;
+function selectFive(
+  reels: ReelState[],
+  scoreFilm: (f: CatalogueFilm) => number,
+): CatalogueFilm[] {
+  const length = reels[2]?.opts[reels[2].i] ?? '~2 hrs';
+  const era    = reels[3]?.opts[reels[3].i] ?? 'today';
+
+  const ranked = CATALOGUE_FILMS
+    .map(f => ({ film: f, score: scoreFilm(f) + runtimeCloseness(f.runtime, length) }))
+    .sort((a, b) => b.score - a.score);
+
+  // Hard-constraint tiers: honour LENGTH + ERA first, then relax ERA,
+  // then LENGTH, then anything — so selections match inputs whenever
+  // the catalogue allows, and we still always return 5 films.
+  const tiers: Array<(f: CatalogueFilm) => boolean> = [
+    f => runtimeFits(f.runtime, length) && eraFits(f.year, era),
+    f => runtimeFits(f.runtime, length),
+    f => eraFits(f.year, era),
+    () => true,
+  ];
+
+  const picked: CatalogueFilm[] = [];
+  for (const fits of tiers) {
+    for (const { film } of ranked) {
+      if (picked.length >= 5) return picked;
+      if (!picked.includes(film) && fits(film)) picked.push(film);
+    }
+  }
+  return picked;
 }
 
 export function matchFilms(reels: ReelState[]): CatalogueFilm[] {
   const feel    = reels[0]?.opts[reels[0].i] ?? 'thinky';
   const flavour = reels[1]?.opts[reels[1].i] ?? '';
-  const length  = reels[2]?.opts[reels[2].i] ?? '~2 hrs';
-  const era     = reels[3]?.opts[reels[3].i] ?? 'today';
   const feelWants    = FEEL_MAP[feel]       || { thinky: 1 };
   const flavourWants = FLAVOUR_MAP[flavour] || {};
-  return CATALOGUE_FILMS
-    .map(f => {
-      let score = 0;
-      Object.entries(feelWants).forEach(([k, w]) =>
-        score += (f.why[k as keyof typeof f.why] || 0) * (w || 0));
-      Object.entries(flavourWants).forEach(([k, w]) =>
-        score += (f.why[k as keyof typeof f.why] || 0) * ((w || 0) * 0.6));
-      score += runtimeBonus(f.runtime, length);
-      score += eraBonus(f.year, era);
-      return { film: f, score };
-    })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5)
-    .map(r => r.film);
+  return selectFive(reels, f => {
+    let score = 0;
+    Object.entries(feelWants).forEach(([k, w]) =>
+      score += (f.why[k as keyof typeof f.why] || 0) * (w || 0));
+    Object.entries(flavourWants).forEach(([k, w]) =>
+      score += (f.why[k as keyof typeof f.why] || 0) * ((w || 0) * 0.6));
+    return score;
+  });
 }
 
 export function matchFilmsGroup(reels: ReelState[], groupTaste: Record<string, number>): CatalogueFilm[] {
   const feel    = reels[0]?.opts[reels[0].i] ?? 'thinky';
   const flavour = reels[1]?.opts[reels[1].i] ?? '';
-  const length  = reels[2]?.opts[reels[2].i] ?? '~2 hrs';
-  const era     = reels[3]?.opts[reels[3].i] ?? 'today';
   const feelWants    = FEEL_MAP[feel]       || { thinky: 1 };
   const flavourWants = FLAVOUR_MAP[flavour] || {};
-  return CATALOGUE_FILMS
-    .map(f => {
-      let score = 0;
-      Object.entries(feelWants).forEach(([k, w]) =>
-        score += (f.why[k as keyof typeof f.why] || 0) * (w || 0) * 1.5);
-      Object.entries(flavourWants).forEach(([k, w]) =>
-        score += (f.why[k as keyof typeof f.why] || 0) * ((w || 0) * 0.9));
-      Object.entries(groupTaste).forEach(([k, v]) =>
-        score += (f.why[k as keyof typeof f.why] || 0) * (v / 100));
-      score += runtimeBonus(f.runtime, length);
-      score += eraBonus(f.year, era);
-      return { film: f, score };
-    })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5)
-    .map(r => r.film);
+  return selectFive(reels, f => {
+    let score = 0;
+    Object.entries(feelWants).forEach(([k, w]) =>
+      score += (f.why[k as keyof typeof f.why] || 0) * (w || 0) * 1.5);
+    Object.entries(flavourWants).forEach(([k, w]) =>
+      score += (f.why[k as keyof typeof f.why] || 0) * ((w || 0) * 0.9));
+    Object.entries(groupTaste).forEach(([k, v]) =>
+      score += (f.why[k as keyof typeof f.why] || 0) * (v / 100));
+    return score;
+  });
 }
 
 export function getPosterBackground(film: CatalogueFilm): string {
