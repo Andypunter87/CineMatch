@@ -73,7 +73,14 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
       filteredResults = filteredResults.slice(0, actualBatchSize);
     }
 
-    return filteredResults;
+    // If exclusions ate most of the cached batch (e.g. an explicit
+    // "see more picks" request), fall through and generate fresh films
+    // instead of returning dregs / nothing.
+    const minUseful = Math.min(actualBatchSize, 3);
+    if (filteredResults.length >= minUseful) {
+      return filteredResults;
+    }
+    console.log(`Cached batch exhausted after exclusions (${filteredResults.length} left) — generating fresh recommendations`);
   }
 
   const createTimeoutPromise = () => new Promise((_, reject) => {

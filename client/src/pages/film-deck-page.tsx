@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { C, CATALOGUE_FILMS, getPosterBackground, WHY_TEXT, FEEL_MAP, FLAVOUR_MAP, matchFilmsGroup, type CatalogueFilm } from "@/lib/cinema-catalogue";
 import { useTmdbPoster, fetchTmdbPoster } from "@/hooks/use-tmdb-poster";
 import { FONT_DISPLAY, FONT_BODY, FONT_MONO } from "@/components/daylight";
+import { fetchMoreSpinnerFilms } from "@/lib/spinner-recommendations";
 
 function Chip({ text, color }: { text: string; color?: string }) {
   return (
@@ -117,7 +118,8 @@ export default function FilmDeckPage() {
   const [dragX, setDragX] = useState(0);
   const [flying, setFlying] = useState<'left' | 'right' | null>(null);
 
-  const film = films[idx] || CATALOGUE_FILMS[0];
+  const atEnd = idx >= films.length;
+  const film = films[Math.min(idx, films.length - 1)] || CATALOGUE_FILMS[0];
   const nextFilm = films[idx + 1];
   const whyFn = WHY_TEXT[feel] || ((t: string) => `${t} hits the vibe you're after.`);
   const why = film.whyText || whyFn(film.title);
@@ -172,8 +174,45 @@ export default function FilmDeckPage() {
     setTimeout(() => {
       setFlying(null);
       setDragX(0);
-      setIdx(i => Math.min(i + 1, films.length - 1));
+      setIdx(i => Math.min(i + 1, films.length)); // films.length === end-of-deck screen
     }, 300);
+  }
+
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState(false);
+  const seenIdsRef = useRef<number[]>([]);
+
+  async function handleMorePicks() {
+    setLoadingMore(true);
+    setMoreError(false);
+    try {
+      const seenIds = Array.from(new Set([...seenIdsRef.current, ...films.map(f => f.id)]));
+      seenIdsRef.current = seenIds;
+      const seenKeys = new Set(films.map(f => `${f.title.toLowerCase()}|${f.year}`));
+      const more = await fetchMoreSpinnerFilms(reelsRaw, isGroup, seenIds, films.map(f => f.title));
+      const fresh: typeof films = [];
+      for (const f of more) {
+        const key = `${f.title.toLowerCase()}|${f.year}`;
+        if (seenIds.includes(f.id) || seenKeys.has(key)) continue;
+        seenKeys.add(key);
+        fresh.push(f);
+      }
+      if (!fresh.length) throw new Error('no new films');
+      const updated = [...films, ...fresh];
+      setFilms(updated);
+      localStorage.setItem('cinematch_films', JSON.stringify(updated));
+      setIdx(films.length); // first of the new batch
+    } catch {
+      setMoreError(true);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
+  function handleRestart() {
+    localStorage.removeItem('cinematch_films');
+    localStorage.removeItem('cinematch_source');
+    setLocation(isGroup ? '/group/slot' : '/slot');
   }
 
   async function handleWatch() {
@@ -219,7 +258,7 @@ export default function FilmDeckPage() {
           style={{ background: 'none', border: 'none', fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 15, color: C.inkSoft, padding: 0, cursor: 'pointer' }}
         >← back</button>
         <div data-testid="text-card-counter" style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '.1em', color: C.inkSoft, textTransform: 'uppercase' }}>
-          {idx + 1} of {films.length}
+          {atEnd ? 'all seen' : `${idx + 1} of ${films.length}`}
         </div>
         <button
           data-testid={`button-save-${film.id}`}
@@ -251,6 +290,56 @@ export default function FilmDeckPage() {
         ))}
       </div>
 
+      {atEnd ? (
+        <div style={{ flex: 1, padding: '0 28px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 18, textAlign: 'center' }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: '50%',
+            background: C.pink, border: `1px solid ${C.edge}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 30, boxShadow: C.shadowChip,
+          }}>🎬</div>
+          <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 26, lineHeight: 1.1, color: C.ink }}>
+            that's the lot
+          </div>
+          <div style={{ fontFamily: FONT_BODY, fontSize: 14, lineHeight: 1.45, color: C.inkSoft, maxWidth: 280 }}>
+            {moreError
+              ? "couldn't fetch more picks just now — try again, or spin a fresh vibe."
+              : 'nothing grabbed you? get another round of picks for the same vibe, or spin a new one.'}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 300, marginTop: 6 }}>
+            <button
+              data-testid="button-more-picks"
+              onClick={handleMorePicks}
+              disabled={loadingMore}
+              style={{
+                padding: '13px 20px',
+                border: `1px solid ${loadingMore ? 'rgba(36,31,29,.12)' : C.yellow}`, borderRadius: 100,
+                background: loadingMore ? C.paper2 : C.yellow,
+                color: loadingMore ? C.inkLight : C.onAccent,
+                fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 15,
+                boxShadow: loadingMore ? 'none' : C.shadowBtn,
+                cursor: loadingMore ? 'default' : 'pointer',
+              }}
+            >{loadingMore ? 'digging up more…' : 'see more picks'}</button>
+            <button
+              data-testid="button-restart"
+              onClick={handleRestart}
+              style={{
+                padding: '13px 20px',
+                border: `1px solid ${C.edgeStrong}`, borderRadius: 100,
+                background: 'transparent', color: C.ink,
+                fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 15,
+                cursor: 'pointer',
+              }}
+            >spin a new vibe</button>
+          </div>
+          {loadingMore && (
+            <div style={{ fontFamily: FONT_MONO, fontSize: 9, letterSpacing: '.1em', color: C.inkLight, textTransform: 'uppercase' }}>
+              this can take up to a minute
+            </div>
+          )}
+        </div>
+      ) : (
       <div style={{ flex: 1, padding: '0 18px', position: 'relative', display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
         {nextFilm && (
           <div style={{
@@ -334,7 +423,9 @@ export default function FilmDeckPage() {
           </div>
         </div>
       </div>
+      )}
 
+      {!atEnd && (
       <div style={{ padding: '14px 18px 28px' }}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
           <button
@@ -370,6 +461,7 @@ export default function FilmDeckPage() {
           swipe left to pass · right to keep it for later
         </div>
       </div>
+      )}
     </div>
   );
 }

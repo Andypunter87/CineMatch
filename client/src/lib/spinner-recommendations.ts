@@ -49,7 +49,12 @@ async function getViewingParty(): Promise<number[]> {
   }
 }
 
-export function reelsToRequest(reels: ReelData[], isGroup: boolean, viewingParty: number[] = []) {
+export function reelsToRequest(
+  reels: ReelData[],
+  isGroup: boolean,
+  viewingParty: number[] = [],
+  excludeFilmIds: number[] = [],
+) {
   const feel    = reels[0]?.opts[reels[0].i] ?? 'cosy';
   const flavour = reels[1]?.opts[reels[1].i] ?? '';
   const length  = reels[2]?.opts[reels[2].i] ?? '~2 hrs';
@@ -72,6 +77,7 @@ export function reelsToRequest(reels: ReelData[], isGroup: boolean, viewingParty
     mood,
     ...(runtime ? { runtime: [...runtime] } : {}),
     ...(isGroup && viewingParty.length ? { viewingParty } : {}),
+    ...(excludeFilmIds.length ? { excludeFilmIds } : {}),
     // Ask for more than we show — the server's runtime/streaming filters
     // can trim the batch, and the deck wants up to 5 films.
     requestedBatchSize: 8,
@@ -131,15 +137,26 @@ export function adaptAiFilms(films: AiFilm[], reels: ReelData[]): CatalogueFilm[
   });
 }
 
-async function requestSpinnerFilms(reels: ReelData[], isGroup: boolean): Promise<CatalogueFilm[]> {
+async function requestSpinnerFilms(
+  reels: ReelData[],
+  isGroup: boolean,
+  excludeFilmIds: number[] = [],
+  excludeTitles: string[] = [],
+): Promise<CatalogueFilm[]> {
   const viewingParty = isGroup ? await getViewingParty() : [];
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 90_000);
   try {
+    const request = reelsToRequest(reels, isGroup, viewingParty, excludeFilmIds);
+    if (excludeTitles.length) {
+      // AI film ids are not stable across batches, so exclusion by id
+      // alone can't stop repeats — name the seen films in the prompt.
+      request.mood += `. Do NOT recommend any of these (already seen): ${excludeTitles.slice(-15).join('; ')}`;
+    }
     const res = await fetch('/api/recommendations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(reelsToRequest(reels, isGroup, viewingParty)),
+      body: JSON.stringify(request),
       signal: controller.signal,
     });
     if (!res.ok) throw new Error(`recommendations failed: ${res.status}`);
@@ -165,4 +182,16 @@ export function fetchSpinnerFilms(reels: ReelData[], isGroup: boolean): Promise<
   });
   inflight = { key, promise };
   return promise;
+}
+
+// "See more picks" at the end of the deck: fresh batch from the same
+// reels, excluding everything already shown. No inflight cache — each
+// tap is an intentional new request.
+export function fetchMoreSpinnerFilms(
+  reels: ReelData[],
+  isGroup: boolean,
+  excludeFilmIds: number[],
+  excludeTitles: string[] = [],
+): Promise<CatalogueFilm[]> {
+  return requestSpinnerFilms(reels, isGroup, excludeFilmIds, excludeTitles);
 }
