@@ -13,7 +13,7 @@ const CACHE_TTL = 60 * 60 * 1000;
 const recommendationCache = new Map<string, {timestamp: number, data: Film[]}>();
 
 export async function getAIRecommendations(preferences: RecommendationRequest): Promise<Film[]> {
-  const TIMEOUT_MS = 20000;
+  const TIMEOUT_MS = 60000;
   const MAX_RETRIES = 2;
 
   const { excludeFilmIds, viewingParty, userRatedFilms, requestedBatchSize, ...cacheablePreferences } = preferences;
@@ -242,7 +242,7 @@ DO NOT include a posterUrl field in your response.`;
 
       const responsePromise = anthropic.messages.create({
         model: MODEL,
-        max_tokens: 1024,
+        max_tokens: 4096,
         system: systemPrompt,
         messages: [
           { role: "user", content: userQuery }

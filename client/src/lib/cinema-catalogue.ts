@@ -51,6 +51,7 @@ export interface CatalogueFilm {
   colors: string[];
   stripe: string;
   posterPath?: string;
+  whyText?: string; // AI-provided match reason (preferred over WHY_TEXT template)
 }
 
 export const CATALOGUE_FILMS: CatalogueFilm[] = [

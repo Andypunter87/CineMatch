@@ -562,13 +562,11 @@ export class DatabaseStorage implements IStorage {
         .sort((a, b) => b.score - a.score)
         .slice(0, 8);
 
-      // Process streaming availability for fallback recommendations too
-      const { processStreamingAvailability } = await import('./services/recommendation-enhancer');
-      const processedFilms = await processStreamingAvailability(topFilms, preferences);
-      
-      console.log(`🎬 FALLBACK STREAMING PROCESSED - First film: ${processedFilms[0]?.title}, availableOn: ${processedFilms[0]?.availableOn}, hasStreamingData: ${processedFilms[0]?.hasStreamingData}`);
-      
-      return processedFilms;
+      // Note: streaming availability is normally resolved inside the
+      // enhancer; this local fallback returns films as-is (no such
+      // exported helper exists — the previous dynamic import crashed).
+      console.log(`🎬 FALLBACK - Returning ${topFilms.length} locally scored films (no streaming processing)`);
+      return topFilms;
     }
   }
   

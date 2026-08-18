@@ -80,7 +80,9 @@ export default function FilmDeckPage() {
   const dragRef = useRef({ x: 0, active: false });
 
   useEffect(() => {
-    if (!isGroup) return;
+    // AI-sourced decks are already personalized server-side; the local
+    // catalogue re-blend only applies to the catalogue fallback.
+    if (!isGroup || localStorage.getItem('cinematch_source') === 'ai') return;
     let cancelled = false;
     let prevReelsSnapshot = '';
 
@@ -118,7 +120,7 @@ export default function FilmDeckPage() {
   const film = films[idx] || CATALOGUE_FILMS[0];
   const nextFilm = films[idx + 1];
   const whyFn = WHY_TEXT[feel] || ((t: string) => `${t} hits the vibe you're after.`);
-  const why = whyFn(film.title);
+  const why = film.whyText || whyFn(film.title);
 
   const livePosterUrl = useTmdbPoster(film.title, film.year, film.posterPath);
 

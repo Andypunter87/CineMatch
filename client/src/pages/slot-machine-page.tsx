@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { C, REELS, matchFilms, matchFilmsGroup } from "@/lib/cinema-catalogue";
+import { C, REELS } from "@/lib/cinema-catalogue";
 import { Cine, Btn, DaylightScreen, MicroLabel, FONT_DISPLAY, FONT_BODY, FONT_MONO } from "@/components/daylight";
 
 interface ReelState {
@@ -67,11 +67,12 @@ export default function SlotMachinePage({ isGroup = false }: SlotMachinePageProp
   }
 
   function handleFind() {
-    const blendedTaste = groupTaste || { cosy: 60, thinky: 55, funny: 65, tense: 40, romantic: 55 };
-    const films = isGroup ? matchFilmsGroup(reels, blendedTaste) : matchFilms(reels);
     const reelData = reels.map(r => ({ i: r.i, opts: r.opts }));
     localStorage.setItem('cinematch_reels', JSON.stringify(reelData));
-    localStorage.setItem('cinematch_films', JSON.stringify(films));
+    // Films are fetched from the AI recommender on the loading screen;
+    // clear any stale picks so the deck never shows the previous spin.
+    localStorage.removeItem('cinematch_films');
+    localStorage.removeItem('cinematch_source');
     localStorage.setItem('cinematch_is_group', isGroup ? '1' : '0');
     if (isGroup) {
       try {
