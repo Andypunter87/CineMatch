@@ -260,21 +260,30 @@ export default function FilmDeckPage() {
         <div data-testid="text-card-counter" style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '.1em', color: C.inkSoft, textTransform: 'uppercase' }}>
           {atEnd ? 'all seen' : `${idx + 1} of ${films.length}`}
         </div>
-        <button
+        {atEnd ? <div style={{ width: 36 }} /> : <button
           data-testid={`button-save-${film.id}`}
           aria-label={saved[film.id] ? 'remove from saved' : 'save for later'}
           onClick={() => setSaved(s => ({ ...s, [film.id]: !s[film.id] }))}
           style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
             background: saved[film.id] ? C.pink : 'transparent',
             color: C.onAccent,
-            border: `1px solid ${C.edge}`,
-            borderRadius: '50%',
-            width: 32, height: 32,
-            fontSize: 16,
+            border: `1px solid ${saved[film.id] ? C.pink : C.edgeStrong}`,
+            borderRadius: 999,
+            height: 36,
+            padding: '0 14px',
+            fontFamily: FONT_DISPLAY,
+            fontWeight: 600,
+            fontSize: 13,
             boxShadow: saved[film.id] ? C.shadowChip : 'none',
             cursor: 'pointer',
           }}
-        >{saved[film.id] ? '♥' : '♡'}</button>
+        >
+          <span style={{ fontSize: 17, lineHeight: 1, color: saved[film.id] ? C.onAccent : C.link }}>{saved[film.id] ? '♥' : '♡'}</span>
+          {saved[film.id] ? 'saved' : 'save'}
+        </button>}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginBottom: 8 }}>
