@@ -1,38 +1,39 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { C, CATALOGUE_FILMS, getPosterBackground, getStreamingUrl, WHY_TEXT, FEEL_MAP, FLAVOUR_MAP, matchFilmsGroup, type CatalogueFilm } from "@/lib/cinema-catalogue";
+import { C, CATALOGUE_FILMS, getPosterBackground, WHY_TEXT, FEEL_MAP, FLAVOUR_MAP, matchFilmsGroup, type CatalogueFilm } from "@/lib/cinema-catalogue";
 import { useTmdbPoster, fetchTmdbPoster } from "@/hooks/use-tmdb-poster";
+import { FONT_DISPLAY, FONT_BODY, FONT_MONO } from "@/components/daylight";
 
 function Chip({ text, color }: { text: string; color?: string }) {
   return (
     <div style={{
       padding: '3px 10px',
-      background: color || '#FAF6EE',
-      border: `1.5px solid ${C.ink}`,
+      background: color || 'transparent',
+      border: `1px solid ${C.edge}`,
       borderRadius: 100,
-      fontFamily: 'Nunito, sans-serif',
+      fontFamily: FONT_BODY,
       fontSize: 11,
-      color: C.ink,
+      color: C.onAccent,
     }}>{text}</div>
   );
 }
 
 function VibeBars({ film }: { film: CatalogueFilm }) {
   const bars = [
-    { l: 'cosy-ness', v: film.why.cosy,    c: C.yellow },
-    { l: 'funny',     v: film.why.funny,    c: C.pink },
-    { l: 'thinky',    v: film.why.thinky,   c: C.blue },
-    { l: 'tense',     v: film.why.tense,    c: C.coral },
+    { l: 'cosy-ness', v: film.why.cosy,   c: C.barCosy },
+    { l: 'funny',     v: film.why.funny,  c: C.barFunny },
+    { l: 'thinky',    v: film.why.thinky, c: C.barThinky },
+    { l: 'tense',     v: film.why.tense,  c: C.barTense },
   ];
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
       {bars.map((b, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ fontFamily: 'Nunito, sans-serif', fontSize: 11, color: C.inkSoft, width: 68, flexShrink: 0 }}>{b.l}</div>
-          <div style={{ flex: 1, height: 7, background: '#FAF6EE', border: `1.5px solid ${C.ink}`, borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ fontFamily: FONT_BODY, fontSize: 11, color: C.inkSoft, width: 56, flexShrink: 0 }}>{b.l}</div>
+          <div style={{ flex: 1, height: 8, background: C.barTrack, border: `1px solid ${C.barTrackEdge}`, borderRadius: 6, overflow: 'hidden' }}>
             <div style={{ width: `${b.v}%`, height: '100%', background: b.c, transition: 'width .6s ease' }} />
           </div>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: C.inkLight, width: 26, textAlign: 'right' }}>{b.v}</div>
+          <div style={{ fontFamily: FONT_MONO, fontSize: 9, color: C.inkLight, width: 22, textAlign: 'right' }}>{b.v}</div>
         </div>
       ))}
     </div>
@@ -203,8 +204,9 @@ export default function FilmDeckPage() {
   return (
     <div style={{
       minHeight: '100dvh',
-      background: '#F3ECDA',
-      fontFamily: 'Nunito, sans-serif',
+      background: C.paper,
+      backgroundImage: C.wash,
+      fontFamily: FONT_BODY,
       display: 'flex',
       flexDirection: 'column',
     }}>
@@ -212,22 +214,23 @@ export default function FilmDeckPage() {
         <button
           data-testid="button-back"
           onClick={() => setLocation(isGroup ? '/group/slot' : '/slot')}
-          style={{ background: 'none', border: 'none', fontFamily: 'Nunito, sans-serif', fontWeight: 600, fontSize: 16, color: C.inkSoft, padding: 0, cursor: 'pointer' }}
+          style={{ background: 'none', border: 'none', fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 15, color: C.inkSoft, padding: 0, cursor: 'pointer' }}
         >← back</button>
-        <div data-testid="text-card-counter" style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.1em', color: C.inkSoft, textTransform: 'uppercase' }}>
+        <div data-testid="text-card-counter" style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '.1em', color: C.inkSoft, textTransform: 'uppercase' }}>
           {idx + 1} of {films.length}
         </div>
         <button
           data-testid={`button-save-${film.id}`}
+          aria-label={saved[film.id] ? 'remove from saved' : 'save for later'}
           onClick={() => setSaved(s => ({ ...s, [film.id]: !s[film.id] }))}
           style={{
-            background: saved[film.id] ? C.pink : '#FAF6EE',
-            color: saved[film.id] ? 'white' : C.ink,
-            border: `1.5px solid ${C.ink}`,
+            background: saved[film.id] ? C.pink : 'transparent',
+            color: C.onAccent,
+            border: `1px solid ${C.edge}`,
             borderRadius: '50%',
             width: 32, height: 32,
             fontSize: 16,
-            boxShadow: saved[film.id] ? `2px 2px 0 ${C.ink}` : 'none',
+            boxShadow: saved[film.id] ? C.shadowChip : 'none',
             cursor: 'pointer',
           }}
         >{saved[film.id] ? '♥' : '♡'}</button>
@@ -250,8 +253,8 @@ export default function FilmDeckPage() {
         {nextFilm && (
           <div style={{
             position: 'absolute', top: 6, left: 28, right: 28, bottom: 0,
-            border: `2px solid ${C.ink}`, borderRadius: 16,
-            background: '#FAF6EE', opacity: .45, transform: 'rotate(2deg) translateY(8px)', zIndex: 0,
+            border: `1px solid ${C.edgeCard}`, borderRadius: 20,
+            background: C.paper2, opacity: .45, transform: 'rotate(2deg) translateY(6px)', zIndex: 0,
           }} />
         )}
 
@@ -266,24 +269,24 @@ export default function FilmDeckPage() {
           }}
         >
           <div style={{
-            border: `2px solid ${C.ink}`, borderRadius: 16,
-            background: '#FAF6EE', boxShadow: `5px 5px 0 ${C.ink}`,
-            padding: 14, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            border: `1px solid ${C.edgeCard}`, borderRadius: 20,
+            background: C.paper2, boxShadow: C.shadowCard,
+            padding: 18, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}>
             <div style={{
-              position: 'absolute', top: 20, right: 16, transform: 'rotate(14deg)',
-              padding: '5px 12px', border: `3px solid ${C.pink}`, color: C.pink,
-              fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 24, borderRadius: 6,
-              opacity: likeOpacity, background: 'rgba(255,77,143,.08)', pointerEvents: 'none', zIndex: 10,
+              position: 'absolute', top: 24, right: 20, transform: 'rotate(14deg)',
+              padding: '4px 12px', border: `3px solid ${C.pink}`, color: C.pink,
+              fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 18, borderRadius: 6,
+              opacity: likeOpacity, background: 'rgba(242,164,136,.10)', pointerEvents: 'none', zIndex: 10,
             }}>LOVE ♥</div>
             <div style={{
-              position: 'absolute', top: 20, left: 16, transform: 'rotate(-14deg)',
-              padding: '5px 12px', border: `3px solid ${C.inkSoft}`, color: C.inkSoft,
-              fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 24, borderRadius: 6,
-              opacity: skipOpacity, background: 'rgba(74,74,74,.06)', pointerEvents: 'none', zIndex: 10,
+              position: 'absolute', top: 24, left: 20, transform: 'rotate(-14deg)',
+              padding: '4px 12px', border: `3px solid ${C.inkSoft}`, color: C.inkSoft,
+              fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 18, borderRadius: 6,
+              opacity: skipOpacity, background: 'rgba(107,98,92,.06)', pointerEvents: 'none', zIndex: 10,
             }}>SKIP</div>
 
-            <div style={{ flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', position: 'relative', border: `1.5px solid ${C.ink}` }}>
+            <div style={{ flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', position: 'relative', border: `1px solid ${C.edge}` }}>
               {livePosterUrl && !posterErrors[film.id] ? (
                 <img
                   data-testid={`img-poster-${film.id}`}
@@ -297,68 +300,72 @@ export default function FilmDeckPage() {
               )}
               <div style={{
                 position: 'absolute', left: 10, right: 10, bottom: 10,
-                background: 'rgba(250,246,238,.93)', border: `1.5px solid ${C.ink}`,
+                background: 'rgba(255,252,250,.93)', backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(36,31,29,.14)',
                 borderRadius: 8, padding: '8px 10px',
               }}>
-                <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 24, lineHeight: 1, color: C.ink }}>{film.title}</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: '.1em', color: C.inkSoft, marginTop: 3, textTransform: 'uppercase' }}>
+                <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 20, lineHeight: 1.05, color: C.ink }}>{film.title}</div>
+                <div style={{ fontFamily: FONT_MONO, fontSize: 8, letterSpacing: '.1em', color: C.inkSoft, marginTop: 3, textTransform: 'uppercase' }}>
                   {film.year} · {film.director}
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
-              <Chip color={C.blue} text={film.streaming} />
+            <div style={{ display: 'flex', gap: 7, marginTop: 14, flexWrap: 'wrap' }}>
+              <Chip color={C.mint} text={film.streaming} />
               <Chip text={film.runtime} />
               <Chip text={film.rating} />
             </div>
 
             <div style={{
-              marginTop: 8, padding: '8px 10px',
-              background: C.yellow, border: `1.5px solid ${C.ink}`, borderRadius: 10,
+              marginTop: 14, padding: '11px 13px',
+              background: C.yellow, border: `1px solid ${C.edge}`, borderRadius: 10,
             }}>
-              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: '.12em', color: C.ink, textTransform: 'uppercase', marginBottom: 3 }}>cine says ✦</div>
-              <div style={{ fontFamily: 'Nunito, sans-serif', fontSize: 12, lineHeight: 1.35, color: C.ink }}>"{why}"</div>
+              <div style={{ fontFamily: FONT_MONO, fontSize: 8, letterSpacing: '.12em', color: C.onAccent, textTransform: 'uppercase', marginBottom: 4 }}>cine says ✦</div>
+              <div style={{ fontFamily: FONT_BODY, fontSize: 12, lineHeight: 1.35, color: C.onAccent }}>"{why}"</div>
             </div>
 
-            <div style={{ background: '#F3ECDA', border: `1.5px solid ${C.ink}`, borderRadius: 10, padding: '8px 10px', marginTop: 8 }}>
-              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: '.1em', color: C.inkLight, textTransform: 'uppercase', marginBottom: 6 }}>what you're in for</div>
+            <div style={{ background: C.paper2, border: `1px solid ${C.edge}`, borderRadius: 12, padding: '12px 13px', marginTop: 12 }}>
+              <div style={{ fontFamily: FONT_MONO, fontSize: 8, letterSpacing: '.1em', color: C.inkLight, textTransform: 'uppercase', marginBottom: 8 }}>what you're in for</div>
               <VibeBars film={film} />
             </div>
           </div>
         </div>
       </div>
 
-      <div style={{ padding: '10px 18px 32px' }}>
+      <div style={{ padding: '14px 18px 28px' }}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
           <button
             data-testid="button-next-pick"
             onClick={() => flyCard('left')}
             style={{
-              flex: 1, padding: '10px',
-              border: `2px solid ${C.ink}`, borderRadius: 100,
-              background: '#FAF6EE',
-              fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 16,
-              boxShadow: `3px 3px 0 ${C.ink}`, cursor: 'pointer',
+              flex: 1, padding: '11px',
+              border: `1px solid ${C.edgeStrong}`, borderRadius: 100,
+              background: 'transparent', color: C.ink,
+              fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 14,
+              whiteSpace: 'nowrap', cursor: 'pointer',
+              transition: 'transform .22s cubic-bezier(.2,1.5,.4,1)',
             }}
-          >← next pick</button>
+          >not tonight</button>
           <button
             data-testid="button-watch"
             onClick={handleWatch}
             disabled={watching}
             style={{
-              flex: 2, padding: '10px 20px',
-              border: `2px solid ${C.ink}`, borderRadius: 100,
-              background: watching ? '#F3ECDA' : C.ink,
-              color: watching ? C.inkLight : 'white',
-              fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 18,
-              boxShadow: watching ? 'none' : `3px 3px 0 ${C.ink}`,
+              flex: 2, padding: '11px 20px',
+              border: `1px solid ${watching ? 'rgba(36,31,29,.12)' : C.yellow}`, borderRadius: 100,
+              background: watching ? C.paper2 : C.yellow,
+              color: watching ? C.inkLight : C.onAccent,
+              fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 15,
+              boxShadow: watching ? 'none' : C.shadowBtn,
+              whiteSpace: 'nowrap',
               cursor: watching ? 'default' : 'pointer',
+              transition: 'transform .22s cubic-bezier(.2,1.5,.4,1)',
             }}
-          >{watching ? 'opening…' : '▶ watch it'}</button>
+          >{watching ? 'rolling credits…' : "this one, let's go"}</button>
         </div>
-        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, letterSpacing: '.1em', color: C.inkLight, textTransform: 'uppercase', textAlign: 'center' }}>
-          swipe ← to skip · swipe → to save · tap watch to go
+        <div style={{ fontFamily: FONT_MONO, fontSize: 8, letterSpacing: '.1em', color: C.inkLight, textTransform: 'uppercase', textAlign: 'center' }}>
+          swipe left to pass · right to keep it for later
         </div>
       </div>
     </div>

@@ -1,15 +1,40 @@
+// ── Daylight (v3) design tokens ────────────────────────────────
 export const C = {
-  paper: '#FAF6EE',
-  paper2: '#F3ECDA',
-  ink: '#1A1A1A',
-  inkSoft: '#4A4A4A',
-  inkLight: '#8A8478',
-  pink: '#FF4D8F',
-  yellow: '#FFC93C',
-  blue: '#4D6EFF',
-  mint: '#5FD4A8',
-  lilac: '#C9A7FF',
-  coral: '#FF8C5A',
+  paper: '#FBF4F0',
+  paper2: '#FFFCFA',
+  ink: '#241F1D',
+  inkSoft: '#6B625C',
+  inkLight: '#9A9089',
+  onAccent: '#241F1D',
+  pink: '#F2A488',
+  yellow: '#F6C85A',
+  blue: '#8FC7D4',
+  mint: '#A8D8C4',
+  lilac: '#C7B6EC',
+  coral: '#F0B27A',
+  // hairline borders
+  edge: 'rgba(36,31,29,.13)',
+  edgeCard: 'rgba(36,31,29,.10)',
+  edgeStrong: 'rgba(36,31,29,.18)',
+  edgeDash: 'rgba(36,31,29,.2)',
+  // links
+  link: '#C2603F',
+  // vibe-bar fills (deeper saturated values)
+  barCosy: '#E8A72C',
+  barFunny: '#E8734A',
+  barThinky: '#3E93A8',
+  barTense: '#C2603F',
+  barTrack: 'rgba(36,31,29,.07)',
+  barTrackEdge: 'rgba(36,31,29,.08)',
+  // shadows (warm, soft)
+  shadowChip: '0 5px 14px rgba(74,52,40,.09)',
+  shadowBtn: '0 7px 20px rgba(74,52,40,.10)',
+  shadowPanel: '0 10px 26px rgba(74,52,40,.11)',
+  shadowCard: '0 16px 36px rgba(74,52,40,.13)',
+  // page wash (soft tinted backdrop)
+  wash: `radial-gradient(circle at 12% 12%, rgba(246,200,90,.28) 0%, transparent 46%),
+    radial-gradient(circle at 88% 78%, rgba(168,216,196,.34) 0%, transparent 48%),
+    radial-gradient(circle at 60% 40%, rgba(242,164,136,.16) 0%, transparent 55%)`,
 };
 
 export interface CatalogueFilm {

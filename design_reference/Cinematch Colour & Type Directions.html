@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="design_doc_mode" content="canvas"/>
+<title>Cinematch — Colour &amp; Type Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Archivo:wght@400;500;600;700&family=Archivo+Black&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&family=Schibsted+Grotesk:wght@400;500;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Outfit:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:'DM Sans',sans-serif}
+a{color:#3a3a3a}a:hover{color:#000}
+.frame{position:absolute;width:500px;padding:0;display:flex;flex-direction:column;gap:22px}
+.meta{font-family:'DM Sans',sans-serif;color:#2b2b2b}
+.meta .kicker{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8b8b8b}
+.meta h2{font-size:26px;margin:6px 0 4px;font-weight:700;letter-spacing:-.01em}
+.meta p{margin:0;font-size:13px;line-height:1.5;color:#5c5c5c;max-width:44ch}
+.meta .pair{margin-top:10px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.06em;color:#8b8b8b;text-transform:uppercase}
+.sw{display:flex;gap:7px;margin-top:14px}
+.sw i{width:30px;height:30px;border-radius:4px;display:block;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+
+/* ── shared screen shell, all values come from theme vars ── */
+.t{--bw:1px;--rad:14px;--sh:none}
+.phone{width:100%;background:var(--bg);border-radius:34px;padding:12px;box-shadow:0 24px 60px rgba(20,16,10,.18);position:relative;overflow:hidden}
+.phone::after{content:'';position:absolute;left:50%;transform:translateX(-50%);bottom:8px;width:110px;height:4px;border-radius:99px;background:var(--ink);opacity:.22}
+.scr{background:var(--bg);border-radius:24px;padding:16px 16px 30px;display:flex;flex-direction:column;gap:12px;color:var(--ink)}
+.statusrow{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--ink-soft);text-transform:uppercase}
+.navrow{display:flex;justify-content:space-between;align-items:center}
+.navrow .back{font-family:var(--body);font-size:13px;color:var(--ink-soft)}
+.navrow .heart{width:30px;height:30px;border-radius:99px;border:var(--bw) solid var(--edge);background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-size:14px}
+.poster{aspect-ratio:16/13;border-radius:var(--rad);border:var(--bw) solid var(--edge);position:relative;overflow:hidden;box-shadow:var(--sh)}
+.poster .art{position:absolute;inset:0;background:var(--poster)}
+.poster .plate{position:absolute;left:10px;right:10px;bottom:10px;background:var(--plate);border:var(--bw) solid var(--edge);border-radius:calc(var(--rad) - 5px);padding:9px 11px}
+.poster .plate h3{margin:0;font-family:var(--display);font-weight:var(--display-w);font-size:var(--title-size);line-height:1;letter-spacing:var(--display-ls);color:var(--ink);text-transform:var(--display-tt)}
+.poster .plate .sub{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-top:5px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:var(--body);font-size:11px;padding:5px 11px;border-radius:99px;border:var(--bw) solid var(--edge);color:var(--ink)}
+.chip.on{background:var(--accent2);color:var(--on-accent2);border-color:var(--accent2)}
+.note{background:var(--note);border:var(--bw) solid var(--note-edge);border-radius:var(--rad);padding:11px 12px;color:var(--note-ink)}
+.note .lab{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;opacity:.72}
+.note .txt{font-family:var(--body);font-size:13px;line-height:1.45;margin-top:5px}
+.bars{border:var(--bw) solid var(--edge);border-radius:var(--rad);padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--panel)}
+.bars .lab{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+.bar{display:flex;align-items:center;gap:10px}
+.bar span{font-family:var(--body);font-size:11px;color:var(--ink-soft);width:56px;flex-shrink:0}
+.bar .track{flex:1;height:6px;border-radius:99px;background:var(--track);overflow:hidden}
+.bar .fill{height:100%;border-radius:99px}
+.bar em{font-family:var(--mono);font-size:9px;color:var(--ink-soft);font-style:normal;width:22px;text-align:right}
+.acts{display:flex;gap:8px}
+.btn{font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--btn-ls);text-transform:var(--display-tt);font-size:var(--btn-size);padding:12px 18px;border-radius:var(--btn-rad);border:var(--bw) solid var(--edge);background:var(--bg);color:var(--ink);text-align:center;flex:1}
+.btn.pri{background:var(--accent);color:var(--on-accent);border-color:var(--accent);flex:2;box-shadow:var(--sh)}
+.hint{font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);text-align:center}
+.spec{background:var(--bg);border-radius:16px;padding:18px 18px 20px;color:var(--ink);border:1px solid var(--edge)}
+.spec .big{font-family:var(--display);font-weight:var(--display-w);font-size:34px;line-height:1;letter-spacing:var(--display-ls);text-transform:var(--display-tt)}
+.spec .body{font-family:var(--body);font-size:13px;line-height:1.5;color:var(--ink-soft);margin-top:10px}
+.spec .mono{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);margin-top:12px}
+
+/* ── A · Reel Room ── */
+.t-a{--bg:#151210;--panel:#1E1A17;--plate:rgba(21,18,16,.9);--ink:#F3EADA;--ink-soft:#A2988A;--edge:rgba(243,234,218,.2);--accent:#D99A3C;--on-accent:#181410;--accent2:#B24F35;--on-accent2:#FBF3E6;--note:rgba(217,154,60,.1);--note-edge:rgba(217,154,60,.4);--note-ink:#F3EADA;--track:rgba(243,234,218,.12);--display:'Instrument Serif',serif;--display-w:400;--display-ls:-.01em;--display-tt:none;--body:'DM Sans',sans-serif;--mono:'Space Mono',monospace;--rad:8px;--bw:1px;--sh:none;--btn-rad:6px;--btn-size:20px;--btn-ls:0;--title-size:28px;--poster:linear-gradient(170deg,#2A3547 0%,#4C5F76 55%,#B79C7E 100%)}
+/* ── B · Kodak Stock ── */
+.t-b{--bg:#F5F0E5;--panel:#EDE5D5;--plate:rgba(245,240,229,.94);--ink:#181510;--ink-soft:#6B6355;--edge:#181510;--accent:#DC4B26;--on-accent:#FFF6EC;--accent2:#1D5B49;--on-accent2:#F5F0E5;--note:#F2C230;--note-edge:#181510;--note-ink:#181510;--track:#E1D7C4;--display:'Archivo Black',sans-serif;--display-w:400;--display-ls:-.02em;--display-tt:uppercase;--body:'Archivo',sans-serif;--mono:'Space Mono',monospace;--rad:4px;--bw:2px;--sh:4px 4px 0 #181510;--btn-rad:4px;--btn-size:15px;--btn-ls:.02em;--title-size:20px;--poster:linear-gradient(90deg,#DC4B26 0 33%,#F2C230 33% 66%,#1D5B49 66% 100%)}
+/* ── C · Matinee ── */
+.t-c{--bg:#EFEDE4;--panel:#FBFAF5;--plate:rgba(251,250,245,.94);--ink:#1F2523;--ink-soft:#6E7873;--edge:rgba(31,37,35,.16);--accent:#2E6B5A;--on-accent:#F4F7F3;--accent2:#CE6446;--on-accent2:#FFF6F1;--note:#FBFAF5;--note-edge:rgba(46,107,90,.35);--note-ink:#1F2523;--track:#DCD9CD;--display:'Newsreader',serif;--display-w:400;--display-ls:-.015em;--display-tt:none;--body:'Schibsted Grotesk',sans-serif;--mono:'Space Mono',monospace;--rad:12px;--bw:1px;--sh:none;--btn-rad:99px;--btn-size:19px;--btn-ls:0;--title-size:26px;--poster:linear-gradient(155deg,#2E6B5A 0%,#8FA79A 48%,#E4D9C6 100%)}
+/* ── D · Afterdark ── */
+.t-d{--bg:#100C22;--panel:#1A1436;--plate:rgba(16,12,34,.88);--ink:#EFEBFF;--ink-soft:#9A92C4;--edge:rgba(239,235,255,.16);--accent:#C2FF4D;--on-accent:#14102A;--accent2:#8B6BFF;--on-accent2:#F4F1FF;--note:rgba(139,107,255,.16);--note-edge:rgba(139,107,255,.5);--note-ink:#EFEBFF;--track:rgba(239,235,255,.12);--display:'Bricolage Grotesque',sans-serif;--display-w:800;--display-ls:-.03em;--display-tt:none;--body:'Outfit',sans-serif;--mono:'Space Mono',monospace;--rad:18px;--bw:1px;--sh:0 0 28px rgba(194,255,77,.28);--btn-rad:99px;--btn-size:17px;--btn-ls:-.01em;--title-size:24px;--poster:radial-gradient(ellipse at 30% 25%,#8B6BFF 0%,#3B2A7A 45%,#100C22 100%)}
+</style>
+</head>
+<body>
+
+<div class="frame t t-a" style="left:60px;top:60px" data-screen-label="A · Reel Room">
+<div class="meta"><div class="kicker">Direction A</div><h2>Reel Room</h2><p>The projection booth. Warm brass on near-black, hairline rules, no cartoon shadows — the personality moves from "sketchbook" to "film-buff cinema". Handwriting is retired; the serif does the charm.</p><div class="pair">Instrument Serif · DM Sans · Space Mono</div><div class="sw"><i style="background:#151210"></i><i style="background:#1E1A17"></i><i style="background:#D99A3C"></i><i style="background:#B24F35"></i><i style="background:#F3EADA"></i></div></div>
+<div class="spec"><div class="big">spin your mood</div><div class="body">Two neighbours, twenty years apart. Cine reads the room and hands you one film — not forty-one rows of them.</div><div class="mono">best match · 106 min · mubi</div></div>
+<div class="phone"><div class="scr">
+<div class="statusrow"><span>9:41</span><span>2 of 5</span></div>
+<div class="navrow"><div class="back">← back</div><div class="heart">♥</div></div>
+<div class="poster"><div class="art"></div><div class="plate"><h3>Past Lives</h3><div class="sub">2023 · Celine Song</div></div></div>
+<div class="chips"><div class="chip on">MUBI</div><div class="chip">106 min</div><div class="chip">PG-13</div></div>
+<div class="note"><div class="lab">Cine says</div><div class="txt">Not a romcom. Something better — it trusts you to feel it.</div></div>
+<div class="bars"><div class="lab">what you're in for</div>
+<div class="bar"><span>cosy</span><div class="track"><div class="fill" style="width:50%;background:#D99A3C"></div></div><em>50</em></div>
+<div class="bar"><span>thinky</span><div class="track"><div class="fill" style="width:70%;background:#7C93AE"></div></div><em>70</em></div>
+<div class="bar"><span>romantic</span><div class="track"><div class="fill" style="width:95%;background:#B24F35"></div></div><em>95</em></div>
+<div class="bar"><span>tense</span><div class="track"><div class="fill" style="width:25%;background:#8E7F6B"></div></div><em>25</em></div></div>
+<div class="acts"><div class="btn">next pick</div><div class="btn pri">Watch it</div></div>
+<div class="hint">swipe ← skip · → save</div>
+</div></div>
+</div>
+
+<div class="frame t t-b" style="left:620px;top:60px" data-screen-label="B · Kodak Stock">
+<div class="meta"><div class="kicker">Direction B</div><h2>Kodak Stock</h2><p>Film-carton graphics: process orange, safety green, hard 2px rules and offset blocks. Keeps the confident, printed energy of the current build but swaps handwriting for tight uppercase.</p><div class="pair">Archivo Black · Archivo · Space Mono</div><div class="sw"><i style="background:#F5F0E5"></i><i style="background:#DC4B26"></i><i style="background:#F2C230"></i><i style="background:#1D5B49"></i><i style="background:#181510"></i></div></div>
+<div class="spec"><div class="big">spin your mood</div><div class="body">Two neighbours, twenty years apart. Cine reads the room and hands you one film — not forty-one rows of them.</div><div class="mono">best match · 106 min · mubi</div></div>
+<div class="phone"><div class="scr">
+<div class="statusrow"><span>9:41</span><span>2 of 5</span></div>
+<div class="navrow"><div class="back">← back</div><div class="heart">♥</div></div>
+<div class="poster"><div class="art"></div><div class="plate"><h3>Past Lives</h3><div class="sub">2023 · Celine Song</div></div></div>
+<div class="chips"><div class="chip on">MUBI</div><div class="chip">106 min</div><div class="chip">PG-13</div></div>
+<div class="note"><div class="lab">Cine says</div><div class="txt">Not a romcom. Something better — it trusts you to feel it.</div></div>
+<div class="bars"><div class="lab">what you're in for</div>
+<div class="bar"><span>cosy</span><div class="track"><div class="fill" style="width:50%;background:#F2C230"></div></div><em>50</em></div>
+<div class="bar"><span>thinky</span><div class="track"><div class="fill" style="width:70%;background:#1D5B49"></div></div><em>70</em></div>
+<div class="bar"><span>romantic</span><div class="track"><div class="fill" style="width:95%;background:#DC4B26"></div></div><em>95</em></div>
+<div class="bar"><span>tense</span><div class="track"><div class="fill" style="width:25%;background:#6B6355"></div></div><em>25</em></div></div>
+<div class="acts"><div class="btn">next pick</div><div class="btn pri">Watch it</div></div>
+<div class="hint">swipe ← skip · → save</div>
+</div></div>
+</div>
+
+<div class="frame t t-c" style="left:1180px;top:60px" data-screen-label="C · Matinee">
+<div class="meta"><div class="kicker">Direction C</div><h2>Matinee</h2><p>Calm and grown-up: sage paper, one deep teal, terracotta only where it earns attention. Soft radii, no strokes shouting. Reads as a trusted curator rather than a game.</p><div class="pair">Newsreader · Schibsted Grotesk · Space Mono</div><div class="sw"><i style="background:#EFEDE4"></i><i style="background:#2E6B5A"></i><i style="background:#CE6446"></i><i style="background:#E4D9C6"></i><i style="background:#1F2523"></i></div></div>
+<div class="spec"><div class="big">spin your mood</div><div class="body">Two neighbours, twenty years apart. Cine reads the room and hands you one film — not forty-one rows of them.</div><div class="mono">best match · 106 min · mubi</div></div>
+<div class="phone"><div class="scr">
+<div class="statusrow"><span>9:41</span><span>2 of 5</span></div>
+<div class="navrow"><div class="back">← back</div><div class="heart">♥</div></div>
+<div class="poster"><div class="art"></div><div class="plate"><h3>Past Lives</h3><div class="sub">2023 · Celine Song</div></div></div>
+<div class="chips"><div class="chip on">MUBI</div><div class="chip">106 min</div><div class="chip">PG-13</div></div>
+<div class="note"><div class="lab">Cine says</div><div class="txt">Not a romcom. Something better — it trusts you to feel it.</div></div>
+<div class="bars"><div class="lab">what you're in for</div>
+<div class="bar"><span>cosy</span><div class="track"><div class="fill" style="width:50%;background:#C9A24B"></div></div><em>50</em></div>
+<div class="bar"><span>thinky</span><div class="track"><div class="fill" style="width:70%;background:#2E6B5A"></div></div><em>70</em></div>
+<div class="bar"><span>romantic</span><div class="track"><div class="fill" style="width:95%;background:#CE6446"></div></div><em>95</em></div>
+<div class="bar"><span>tense</span><div class="track"><div class="fill" style="width:25%;background:#8FA79A"></div></div><em>25</em></div></div>
+<div class="acts"><div class="btn">next pick</div><div class="btn pri">Watch it</div></div>
+<div class="hint">swipe ← skip · → save</div>
+</div></div>
+</div>
+
+<div class="frame t t-d" style="left:1740px;top:60px" data-screen-label="D · Afterdark">
+<div class="meta"><div class="kicker">Direction D</div><h2>Afterdark</h2><p>Late-night streaming energy: deep indigo, violet posters, one acid-lime action colour that only ever means "go". Big soft radii, glow instead of drop shadow.</p><div class="pair">Bricolage Grotesque · Outfit · Space Mono</div><div class="sw"><i style="background:#100C22"></i><i style="background:#1A1436"></i><i style="background:#8B6BFF"></i><i style="background:#C2FF4D"></i><i style="background:#EFEBFF"></i></div></div>
+<div class="spec"><div class="big">spin your mood</div><div class="body">Two neighbours, twenty years apart. Cine reads the room and hands you one film — not forty-one rows of them.</div><div class="mono">best match · 106 min · mubi</div></div>
+<div class="phone"><div class="scr">
+<div class="statusrow"><span>9:41</span><span>2 of 5</span></div>
+<div class="navrow"><div class="back">← back</div><div class="heart">♥</div></div>
+<div class="poster"><div class="art"></div><div class="plate"><h3>Past Lives</h3><div class="sub">2023 · Celine Song</div></div></div>
+<div class="chips"><div class="chip on">MUBI</div><div class="chip">106 min</div><div class="chip">PG-13</div></div>
+<div class="note"><div class="lab">Cine says</div><div class="txt">Not a romcom. Something better — it trusts you to feel it.</div></div>
+<div class="bars"><div class="lab">what you're in for</div>
+<div class="bar"><span>cosy</span><div class="track"><div class="fill" style="width:50%;background:#C2FF4D"></div></div><em>50</em></div>
+<div class="bar"><span>thinky</span><div class="track"><div class="fill" style="width:70%;background:#8B6BFF"></div></div><em>70</em></div>
+<div class="bar"><span>romantic</span><div class="track"><div class="fill" style="width:95%;background:#FF6FB1"></div></div><em>95</em></div>
+<div class="bar"><span>tense</span><div class="track"><div class="fill" style="width:25%;background:#5B558A"></div></div><em>25</em></div></div>
+<div class="acts"><div class="btn">next pick</div><div class="btn pri">Watch it</div></div>
+<div class="hint">swipe ← skip · → save</div>
+</div></div>
+</div>
+
+</body>
+</html>

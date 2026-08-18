@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { C } from "@/lib/cinema-catalogue";
+import { DaylightScreen, MicroLabel, FONT_DISPLAY, FONT_BODY, FONT_MONO } from "@/components/daylight";
 
 interface SessionMemberData {
   id: number;
@@ -30,7 +31,7 @@ interface Member {
   ready: boolean;
 }
 
-const MEMBER_COLORS = [C.pink, C.blue, C.mint, C.yellow];
+const MEMBER_COLORS = [C.pink, C.blue, C.mint, C.lilac];
 
 export default function GroupInvitePage() {
   const [, setLocation] = useLocation();
@@ -100,37 +101,31 @@ export default function GroupInvitePage() {
   }
 
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: '#FAF6EE',
-      fontFamily: 'Nunito, sans-serif',
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
+    <DaylightScreen>
       <div style={{ padding: '16px 20px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <button
           data-testid="button-back"
           onClick={() => setLocation('/')}
-          style={{ background: 'none', border: 'none', fontFamily: 'Nunito, sans-serif', fontWeight: 600, fontSize: 16, color: C.inkSoft, padding: 0, cursor: 'pointer' }}
+          style={{ background: 'none', border: 'none', fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 15, color: C.inkSoft, padding: 0, cursor: 'pointer' }}
         >← back</button>
-        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.1em', color: C.inkSoft, textTransform: 'uppercase' }}>step 1/2</div>
+        <div style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '.1em', color: C.inkSoft, textTransform: 'uppercase' }}>step 1/2</div>
       </div>
 
       {sessionError && (
-        <div style={{ padding: '16px 20px', background: '#FFF0F0', border: `1px solid ${C.coral}`, margin: '0 20px', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: 'Nunito, sans-serif', fontSize: 14, color: C.ink }}>couldn't create session.</span>
+        <div style={{ padding: '12px 14px', background: C.paper2, border: `1px solid ${C.edgeStrong}`, margin: '0 20px', borderRadius: 12, boxShadow: C.shadowChip, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontFamily: FONT_BODY, fontSize: 13, color: C.ink }}>couldn't create session.</span>
           <button
             data-testid="button-retry-session"
             onClick={createSession}
-            style={{ background: C.pink, border: 'none', borderRadius: 6, color: 'white', fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 13, padding: '6px 14px', cursor: 'pointer' }}
+            style={{ background: C.yellow, border: `1px solid ${C.yellow}`, borderRadius: 100, color: C.onAccent, fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 13, padding: '6px 14px', cursor: 'pointer', boxShadow: C.shadowChip }}
           >retry</button>
         </div>
       )}
 
-      <div style={{ padding: '0 20px', flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ padding: '0 20px 28px', flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <h1 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: 36, lineHeight: 1, color: C.ink, margin: 0 }}>who's in?</h1>
-          <p style={{ fontFamily: 'Nunito, sans-serif', fontSize: 13, color: C.inkSoft, marginTop: 6, marginBottom: 0 }}>
+          <h1 style={{ fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 27, lineHeight: 1.05, color: C.ink, margin: 0 }}>who's in?</h1>
+          <p style={{ fontFamily: FONT_BODY, fontSize: 13, lineHeight: 1.35, color: C.inkSoft, marginTop: 6, marginBottom: 0 }}>
             send the link — when everyone's ready, we spin together.
           </p>
         </div>
@@ -139,24 +134,25 @@ export default function GroupInvitePage() {
           {members.map((m) => (
             <div key={m.id} style={{ textAlign: 'center' }}>
               <div style={{
-                width: 52, height: 52, borderRadius: '50%', border: `2px solid ${C.ink}`,
-                background: m.color, color: 'white',
+                width: 52, height: 52, borderRadius: '50%', border: '1px solid rgba(36,31,29,.16)',
+                background: m.color, color: C.onAccent,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 22,
-                boxShadow: m.ready ? `2px 2px 0 ${C.ink}` : 'none',
+                fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 22,
+                boxShadow: m.ready ? C.shadowChip : 'none',
                 position: 'relative', margin: '0 auto', transition: 'box-shadow .3s',
               }}>
                 {m.name[0].toUpperCase()}
                 <div style={{
                   position: 'absolute', right: -4, bottom: -4, width: 20, height: 20,
-                  background: m.ready ? C.yellow : '#F3ECDA',
-                  border: `1.5px solid ${C.ink}`, borderRadius: '50%',
-                  fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: m.ready ? C.yellow : C.paper2,
+                  border: '1px solid rgba(36,31,29,.16)', borderRadius: '50%',
+                  fontSize: 11, color: C.onAccent,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'background .4s',
                 }}>{m.ready ? '✓' : '…'}</div>
               </div>
-              <div style={{ fontFamily: 'Nunito, sans-serif', fontSize: 11, marginTop: 6, color: C.ink }}>{m.name}</div>
-              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: m.ready ? C.ink : C.inkLight, transition: 'color .4s' }}>
+              <div style={{ fontFamily: FONT_BODY, fontSize: 11, marginTop: 6, color: C.ink }}>{m.name}</div>
+              <div style={{ fontFamily: FONT_MONO, fontSize: 8, color: m.ready ? C.ink : C.inkLight, transition: 'color .4s' }}>
                 {m.ready ? 'ready' : 'waiting'}
               </div>
             </div>
@@ -164,11 +160,11 @@ export default function GroupInvitePage() {
         </div>
 
         <div style={{
-          background: allReady ? C.yellow : '#F3ECDA',
-          border: `1.5px solid ${C.ink}`, borderRadius: 12,
-          padding: '10px 12px', transition: 'background .5s',
+          background: allReady ? C.yellow : C.paper2,
+          border: `1px solid ${C.edge}`, borderRadius: 12,
+          padding: '10px 12px', boxShadow: C.shadowChip, transition: 'background .5s',
         }}>
-          <div style={{ fontFamily: 'Nunito, sans-serif', fontSize: 13, color: C.ink }}>
+          <div style={{ fontFamily: FONT_BODY, fontSize: 13, color: C.onAccent }}>
             {allReady
               ? "🎉 everyone's here — ready to pick!"
               : members.length < 2
@@ -178,10 +174,10 @@ export default function GroupInvitePage() {
         </div>
 
         {sessionCode && (
-          <div style={{ background: '#F3ECDA', border: `1.5px dashed ${C.ink}`, borderRadius: 12, padding: '10px 12px' }}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: C.inkLight, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>session link</div>
-            <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 16, color: C.ink }}>
-              cinematch.co/g/<span style={{ color: C.pink }}>{sessionCode}</span>
+          <div style={{ background: C.paper, border: `1px dashed ${C.edgeDash}`, borderRadius: 12, padding: '10px 12px' }}>
+            <MicroLabel color={C.inkLight} style={{ marginBottom: 4 }}>session link</MicroLabel>
+            <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 16, color: C.ink }}>
+              cinematch.co/g/<span style={{ color: C.link }}>{sessionCode}</span>
             </div>
           </div>
         )}
@@ -192,9 +188,10 @@ export default function GroupInvitePage() {
               data-testid="button-invite"
               onClick={handleInvite}
               style={{
-                flex: 1, padding: '10px', border: `2px solid ${C.ink}`, borderRadius: 100,
-                background: '#FAF6EE', fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 16,
-                boxShadow: `3px 3px 0 ${C.ink}`, cursor: 'pointer',
+                flex: 1, padding: '13px', border: `1px solid ${C.yellow}`, borderRadius: 100,
+                background: C.yellow, color: C.onAccent, fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 15,
+                whiteSpace: 'nowrap', boxShadow: C.shadowBtn, cursor: 'pointer',
+                transition: 'transform .22s cubic-bezier(.2,1.5,.4,1)',
               }}
             >↗ invite</button>
             <button
@@ -202,13 +199,14 @@ export default function GroupInvitePage() {
               onClick={handlePickTogether}
               disabled={!allReady}
               style={{
-                flex: 2, padding: '10px 20px',
-                border: `2px solid ${allReady ? C.ink : C.inkLight}`,
+                flex: 2, padding: '13px 20px',
+                border: `1px solid ${allReady ? C.yellow : 'rgba(36,31,29,.12)'}`,
                 borderRadius: 100,
-                fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 18,
-                background: allReady ? C.ink : '#F3ECDA',
-                color: allReady ? 'white' : C.inkLight,
-                boxShadow: allReady ? `3px 3px 0 ${C.ink}` : 'none',
+                fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 15,
+                background: allReady ? C.yellow : C.paper2,
+                color: allReady ? C.onAccent : C.inkLight,
+                boxShadow: allReady ? C.shadowBtn : 'none',
+                whiteSpace: 'nowrap',
                 cursor: allReady ? 'pointer' : 'default',
                 transition: 'all .4s',
               }}
@@ -218,13 +216,13 @@ export default function GroupInvitePage() {
             data-testid="button-skip-wait"
             onClick={handlePickTogether}
             style={{
-              width: '100%', padding: '8px', background: 'transparent',
-              border: `1.5px dashed ${C.ink}`, borderRadius: 100,
-              fontFamily: 'Nunito, sans-serif', fontSize: 12, color: C.inkSoft, cursor: 'pointer',
+              width: '100%', padding: '9px', background: 'transparent',
+              border: `1px dashed ${C.edgeDash}`, borderRadius: 100,
+              fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 12, color: C.inkSoft, cursor: 'pointer',
             }}
           >continue solo →</button>
         </div>
       </div>
-    </div>
+    </DaylightScreen>
   );
 }

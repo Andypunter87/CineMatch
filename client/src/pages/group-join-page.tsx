@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, useParams } from "wouter";
 import { C } from "@/lib/cinema-catalogue";
+import { Cine, CineBubble, DaylightScreen, MicroLabel, FONT_DISPLAY, FONT_BODY, FONT_MONO } from "@/components/daylight";
 
 interface SessionMemberData {
   id: number;
@@ -65,7 +66,7 @@ export default function GroupJoinPage() {
         }
       })
       .catch(() => {
-        setLookupError('Session not found. Check the link and try again.');
+        setLookupError('session not found. check the link and try again.');
       });
   }, [code]);
 
@@ -73,7 +74,7 @@ export default function GroupJoinPage() {
 
   async function handleJoin() {
     if (resolvedSessionId === null) {
-      setJoinError('Session is still loading. Please wait.');
+      setJoinError('session is still loading. hang on a sec.');
       return;
     }
     localStorage.setItem('cinematch_guest_name', trimmedName);
@@ -99,87 +100,75 @@ export default function GroupJoinPage() {
         setLocation('/group/slot');
       }, 900);
     } catch {
-      setJoinError('Could not join session. Please try again.');
+      setJoinError("couldn't join the session. try again?");
       setJoining(false);
     }
   }
 
   if (lookupError) {
     return (
-      <div style={{
-        minHeight: '100dvh', background: '#FAF6EE', fontFamily: 'Nunito, sans-serif',
-        display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 16, padding: '0 22px',
-      }}>
-        <div style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: 28, color: C.ink, textAlign: 'center' }}>session not found</div>
-        <div style={{ fontFamily: 'Nunito, sans-serif', fontSize: 14, color: C.inkSoft, textAlign: 'center' }}>{lookupError}</div>
+      <DaylightScreen style={{ justifyContent: 'center', alignItems: 'center', gap: 16, padding: '0 22px' }}>
+        <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 27, color: C.ink, textAlign: 'center' }}>session not found</div>
+        <div style={{ fontFamily: FONT_BODY, fontSize: 14, color: C.inkSoft, textAlign: 'center' }}>{lookupError}</div>
         <button
           data-testid="button-go-home"
           onClick={() => setLocation('/')}
           style={{
-            padding: '12px 24px', border: `2px solid ${C.ink}`, borderRadius: 100,
-            background: C.ink, color: 'white', fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 18, cursor: 'pointer',
+            padding: '13px 24px', border: `1px solid ${C.yellow}`, borderRadius: 100,
+            background: C.yellow, color: C.onAccent, fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 15,
+            whiteSpace: 'nowrap', cursor: 'pointer', boxShadow: C.shadowBtn,
           }}
         >go home →</button>
-      </div>
+      </DaylightScreen>
     );
   }
 
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: '#FAF6EE',
-      fontFamily: 'Nunito, sans-serif',
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
-      <div style={{ padding: '16px 22px', flex: 1, display: 'flex', flexDirection: 'column', gap: 16, justifyContent: 'center' }}>
+    <DaylightScreen>
+      <div style={{ padding: '16px 22px 28px', flex: 1, display: 'flex', flexDirection: 'column', gap: 16, justifyContent: 'center' }}>
         <div>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.15em', color: C.inkSoft, textTransform: 'uppercase' }}>you're invited</div>
-          <h1 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: 40, lineHeight: 1, marginTop: 4, color: C.ink, margin: '4px 0 0' }}>film night 🎬</h1>
+          <MicroLabel style={{ fontSize: 10, letterSpacing: '.15em' }}>you're invited</MicroLabel>
+          <h1 style={{ fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 30, lineHeight: 1.05, color: C.ink, margin: '4px 0 0' }}>film night 🎬</h1>
         </div>
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <div style={{
-            width: 36, height: 36, borderRadius: '50%', background: C.pink, border: `2px solid ${C.ink}`,
+            width: 36, height: 36, borderRadius: '50%', background: C.pink, border: '1px solid rgba(36,31,29,.16)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 18, color: 'white', flexShrink: 0,
+            fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 18, color: C.onAccent,
+            boxShadow: C.shadowChip, flexShrink: 0,
           }}>H</div>
-          <div style={{
-            background: '#F3ECDA', border: `1.5px solid ${C.ink}`,
-            borderRadius: '4px 14px 14px 14px', padding: '8px 12px',
-            fontFamily: 'Nunito, sans-serif', fontSize: 13, lineHeight: 1.35, color: C.ink,
-            flex: 1, boxShadow: `2px 2px 0 ${C.ink}`,
-          }}>"fancy a film tonight? pick together — join us!"</div>
+          <CineBubble>"fancy a film tonight? pick together — join us!"</CineBubble>
         </div>
 
         <div style={{
-          background: '#F3ECDA', border: `2px solid ${C.ink}`, borderRadius: 14,
-          padding: '12px 14px', boxShadow: `3px 3px 0 ${C.ink}`,
+          background: C.paper2, border: `1px solid ${C.edgeCard}`, borderRadius: 14,
+          padding: '12px 14px', boxShadow: C.shadowPanel,
         }}>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: '.12em', color: C.inkLight, textTransform: 'uppercase', marginBottom: 10 }}>who's in</div>
+          <MicroLabel color={C.inkLight} style={{ marginBottom: 10 }}>who's in</MicroLabel>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             {members.map((m, i) => (
               <div key={i} style={{ textAlign: 'center', flex: 1 }}>
                 <div style={{
-                  width: 44, height: 44, borderRadius: '50%', border: `2px solid ${C.ink}`,
-                  background: m.color, color: m.isMe ? C.ink : 'white',
+                  width: 44, height: 44, borderRadius: '50%', border: '1px solid rgba(36,31,29,.16)',
+                  background: m.color, color: C.onAccent,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 20,
+                  fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 20,
                   position: 'relative', margin: '0 auto',
                 }}>
                   {m.name[0].toUpperCase()}
                   {(m.ready || (m.isMe && joined)) && (
                     <div style={{
                       position: 'absolute', right: -3, bottom: -3, width: 16, height: 16,
-                      background: C.yellow, border: `1.5px solid ${C.ink}`, borderRadius: '50%',
-                      fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: C.yellow, border: '1px solid rgba(36,31,29,.16)', borderRadius: '50%',
+                      fontSize: 9, color: C.onAccent, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>✓</div>
                   )}
                 </div>
-                <div style={{ fontFamily: 'Nunito, sans-serif', fontSize: 11, marginTop: 3, color: C.ink }}>
+                <div style={{ fontFamily: FONT_BODY, fontSize: 11, marginTop: 3, color: C.ink }}>
                   {m.name}{m.isMe ? ' (you)' : ''}
                 </div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: C.inkLight }}>
+                <div style={{ fontFamily: FONT_MONO, fontSize: 8, color: C.inkLight }}>
                   {m.ready ? 'ready' : (joining && m.isMe) ? 'joining…' : 'waiting'}
                 </div>
               </div>
@@ -188,7 +177,7 @@ export default function GroupJoinPage() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, letterSpacing: '.12em', color: C.inkLight, textTransform: 'uppercase' }}>
+          <label style={{ fontFamily: FONT_MONO, fontSize: 9, letterSpacing: '.12em', color: C.inkLight, textTransform: 'uppercase' }}>
             your name
           </label>
           <input
@@ -200,29 +189,21 @@ export default function GroupJoinPage() {
             disabled={joined}
             placeholder="your name…"
             style={{
-              padding: '10px 14px', border: `2px solid ${C.ink}`, borderRadius: 10,
-              fontFamily: 'Nunito, sans-serif', fontSize: 16, color: C.ink, background: '#FAF6EE',
+              padding: '10px 14px', border: `1px solid ${C.edge}`, borderRadius: 12,
+              fontFamily: FONT_BODY, fontSize: 16, color: C.ink, background: C.paper2,
+              boxShadow: C.shadowChip,
               outline: 'none', width: '100%', boxSizing: 'border-box',
             }}
           />
         </div>
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: '50%', background: C.yellow, border: `2px solid ${C.ink}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: 14, color: C.ink, flexShrink: 0,
-          }}>C</div>
-          <div style={{
-            background: '#FAF6EE', border: `1.5px solid ${C.ink}`,
-            borderRadius: '4px 14px 14px 14px', padding: '8px 12px',
-            fontFamily: 'Nunito, sans-serif', fontSize: 13, lineHeight: 1.35, color: C.ink,
-            flex: 1, boxShadow: `2px 2px 0 ${C.ink}`,
-          }}>once everyone's in, we'll all spin the vibe together and i'll find something for the group 🍿</div>
+          <Cine size={28} />
+          <CineBubble>once everyone's in, we'll all spin the vibe together and i'll find something for the group 🍿</CineBubble>
         </div>
 
         {joinError && (
-          <div style={{ color: '#e53e3e', fontFamily: 'Nunito, sans-serif', fontSize: 13, textAlign: 'center' }}>{joinError}</div>
+          <div style={{ color: C.link, fontFamily: FONT_BODY, fontSize: 13, textAlign: 'center' }}>{joinError}</div>
         )}
 
         <button
@@ -231,15 +212,18 @@ export default function GroupJoinPage() {
           disabled={joining || resolvedSessionId === null || joined}
           style={{
             width: '100%', padding: '14px',
-            border: `2px solid ${C.ink}`, borderRadius: 100,
-            fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 22,
-            background: (joining || resolvedSessionId === null || joined) ? '#F3ECDA' : C.ink,
-            color: (joining || resolvedSessionId === null || joined) ? C.inkLight : 'white',
-            boxShadow: (joining || resolvedSessionId === null || joined) ? 'none' : `3px 3px 0 ${C.ink}`,
+            border: `1px solid ${(joining || resolvedSessionId === null || joined) ? 'rgba(36,31,29,.12)' : C.yellow}`,
+            borderRadius: 100,
+            fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 17,
+            background: (joining || resolvedSessionId === null || joined) ? C.paper2 : C.yellow,
+            color: (joining || resolvedSessionId === null || joined) ? C.inkLight : C.onAccent,
+            boxShadow: (joining || resolvedSessionId === null || joined) ? 'none' : C.shadowBtn,
+            whiteSpace: 'nowrap',
             cursor: (joining || resolvedSessionId === null || joined) ? 'default' : 'pointer',
+            transition: 'transform .22s cubic-bezier(.2,1.5,.4,1)',
           }}
-        >{joining ? 'joining…' : joined ? 'you\'re in! 🎉' : resolvedSessionId === null ? 'loading…' : "i'm in! 🙌"}</button>
+        >{joining ? 'joining…' : joined ? "you're in! 🎉" : resolvedSessionId === null ? 'loading…' : "i'm in! 🙌"}</button>
       </div>
-    </div>
+    </DaylightScreen>
   );
 }

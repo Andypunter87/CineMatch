@@ -20,14 +20,14 @@ export function PillBtn({
 
   const base: React.CSSProperties = {
     padding: pad,
-    fontFamily: "Caveat, cursive",
+    fontFamily: "Nunito, sans-serif",
     fontWeight: 700,
-    fontSize,
+    fontSize: Math.round(fontSize * 0.75),
     borderRadius: 100,
     cursor: disabled ? "default" : "pointer",
     lineHeight: 1,
     letterSpacing: 0.2,
-    transition: "transform 0.08s, box-shadow 0.08s",
+    transition: "transform .22s cubic-bezier(.2,1.5,.4,1), box-shadow .22s",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -38,20 +38,20 @@ export function PillBtn({
 
   const variants: Record<string, React.CSSProperties> = {
     primary: {
-      background: disabled ? "#F3ECDA" : "#1A1A1A",
-      color: disabled ? "#8A8478" : "#FAF6EE",
-      border: `2px solid ${disabled ? "#8A8478" : "#1A1A1A"}`,
-      boxShadow: disabled ? "none" : "3px 3px 0 #1A1A1A",
+      background: disabled ? "#FFFCFA" : "#F6C85A",
+      color: disabled ? "#9A9089" : "#241F1D",
+      border: `1px solid ${disabled ? "rgba(36,31,29,.12)" : "#F6C85A"}`,
+      boxShadow: disabled ? "none" : "0 4px 14px rgba(36,31,29,.12)",
     },
     outline: {
-      background: "#FAF6EE",
-      color: "#1A1A1A",
-      border: "1.5px dashed #1A1A1A",
+      background: "transparent",
+      color: "#241F1D",
+      border: "1px dashed rgba(36,31,29,.2)",
       boxShadow: "none",
     },
     ghost: {
       background: "transparent",
-      color: "#4A4A4A",
+      color: "#6B625C",
       border: "none",
       boxShadow: "none",
     },
@@ -63,14 +63,14 @@ export function PillBtn({
 
   function press(e: React.MouseEvent<HTMLButtonElement>) {
     if (!isPressable) return;
-    e.currentTarget.style.transform = "translate(2px,2px)";
-    e.currentTarget.style.boxShadow = "1px 1px 0 #1A1A1A";
+    e.currentTarget.style.transform = "scale(.96)";
+    e.currentTarget.style.boxShadow = "0 2px 8px rgba(36,31,29,.10)";
   }
 
   function release(e: React.MouseEvent<HTMLButtonElement>) {
     if (!isPressable) return;
     e.currentTarget.style.transform = "";
-    e.currentTarget.style.boxShadow = "3px 3px 0 #1A1A1A";
+    e.currentTarget.style.boxShadow = "0 4px 14px rgba(36,31,29,.12)";
   }
 
   return (

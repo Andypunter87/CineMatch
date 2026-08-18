@@ -108,9 +108,9 @@ export default function AuthPage() {
         <div
           className="bg-paper2 rounded-2xl"
           style={{
-            border: "2px solid #1A1A1A",
+            border: "1px solid rgba(36,31,29,.13)",
             padding: "12px 14px",
-            boxShadow: "3px 3px 0 #1A1A1A",
+            boxShadow: "0 8px 22px rgba(36,31,29,.08)",
           }}
         >
           <div className="flex gap-2.5 items-start">
@@ -148,22 +148,22 @@ export default function AuthPage() {
             className="w-full flex items-center gap-3.5 bg-paper text-ink rounded-full"
             style={{
               padding: "13px 18px",
-              border: "2px solid #1A1A1A",
-              boxShadow: "3px 3px 0 #1A1A1A",
+              border: "1px solid rgba(36,31,29,.18)",
+              boxShadow: "0 4px 14px rgba(36,31,29,.10)",
               cursor: "pointer",
-              transition: "transform 0.08s, box-shadow 0.08s",
+              transition: "transform .22s cubic-bezier(.2,1.5,.4,1), box-shadow .22s",
             }}
             onMouseDown={(e) => {
-              e.currentTarget.style.transform = "translate(2px,2px)";
-              e.currentTarget.style.boxShadow = "1px 1px 0 #1A1A1A";
+              e.currentTarget.style.transform = "scale(.96)";
+              e.currentTarget.style.boxShadow = "0 2px 8px rgba(36,31,29,.10)";
             }}
             onMouseUp={(e) => {
               e.currentTarget.style.transform = "";
-              e.currentTarget.style.boxShadow = "3px 3px 0 #1A1A1A";
+              e.currentTarget.style.boxShadow = "0 4px 14px rgba(36,31,29,.10)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "";
-              e.currentTarget.style.boxShadow = "3px 3px 0 #1A1A1A";
+              e.currentTarget.style.boxShadow = "0 4px 14px rgba(36,31,29,.10)";
             }}
           >
             <div

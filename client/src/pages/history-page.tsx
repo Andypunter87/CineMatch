@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { C, CATALOGUE_FILMS, getPosterBackground, type CatalogueFilm } from "@/lib/cinema-catalogue";
+import { Cine, CineBubble, DaylightScreen, FONT_DISPLAY, FONT_BODY, FONT_MONO } from "@/components/daylight";
 
 interface WatchChoice {
   id: number;
@@ -35,10 +36,10 @@ function HistoryCard({ choice, film, posterError, onPosterError }: {
     <div
       data-testid={`card-history-${choice.id}`}
       style={{
-        border: `2px solid ${C.ink}`,
+        border: `1px solid ${C.edgeCard}`,
         borderRadius: 14,
-        background: "#FAF6EE",
-        boxShadow: `3px 3px 0 ${C.ink}`,
+        background: C.paper2,
+        boxShadow: C.shadowBtn,
         overflow: "hidden",
         display: "flex",
         gap: 0,
@@ -63,9 +64,9 @@ function HistoryCard({ choice, film, posterError, onPosterError }: {
           <div
             data-testid={`text-history-title-${choice.id}`}
             style={{
-              fontFamily: "Nunito, sans-serif",
+              fontFamily: FONT_DISPLAY,
               fontWeight: 700,
-              fontSize: 16,
+              fontSize: 17,
               lineHeight: 1.15,
               color: C.ink,
             }}
@@ -75,7 +76,7 @@ function HistoryCard({ choice, film, posterError, onPosterError }: {
           <div
             data-testid={`text-history-date-${choice.id}`}
             style={{
-              fontFamily: "'Space Mono', monospace",
+              fontFamily: FONT_MONO,
               fontSize: 9,
               color: C.inkLight,
               textTransform: "uppercase",
@@ -89,7 +90,7 @@ function HistoryCard({ choice, film, posterError, onPosterError }: {
         </div>
 
         <div style={{
-          fontFamily: "'Space Mono', monospace",
+          fontFamily: FONT_MONO,
           fontSize: 8,
           letterSpacing: ".1em",
           color: C.inkSoft,
@@ -98,37 +99,37 @@ function HistoryCard({ choice, film, posterError, onPosterError }: {
           {film.year} · {film.director}
         </div>
 
-        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 2 }}>
+        <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginTop: 2 }}>
           {choice.vibe && (
             <div style={{
               padding: "2px 8px",
               background: C.yellow,
-              border: `1.5px solid ${C.ink}`,
+              border: `1px solid ${C.edge}`,
               borderRadius: 100,
-              fontFamily: "Nunito, sans-serif",
+              fontFamily: FONT_BODY,
               fontSize: 10,
-              color: C.ink,
+              color: C.onAccent,
             }}>
               {choice.vibe}
             </div>
           )}
           <div style={{
             padding: "2px 8px",
-            background: "#FAF6EE",
-            border: `1.5px solid ${C.ink}`,
+            background: C.mint,
+            border: `1px solid ${C.edge}`,
             borderRadius: 100,
-            fontFamily: "Nunito, sans-serif",
+            fontFamily: FONT_BODY,
             fontSize: 10,
-            color: C.inkSoft,
+            color: C.onAccent,
           }}>
             {film.streaming}
           </div>
           <div style={{
             padding: "2px 8px",
-            background: "#FAF6EE",
-            border: `1.5px solid ${C.ink}`,
+            background: "transparent",
+            border: `1px solid ${C.edge}`,
             borderRadius: 100,
-            fontFamily: "Nunito, sans-serif",
+            fontFamily: FONT_BODY,
             fontSize: 10,
             color: C.inkSoft,
           }}>
@@ -160,39 +161,29 @@ export default function HistoryPage() {
   })).filter((e) => e.film !== null) as { choice: WatchChoice; film: CatalogueFilm }[];
 
   return (
-    <div style={{
-      minHeight: "100dvh",
-      background: "#E8DDC8",
-      backgroundImage: `
-        radial-gradient(circle at 15% 20%, rgba(255,201,60,.12) 0%, transparent 40%),
-        radial-gradient(circle at 85% 70%, rgba(255,77,143,.08) 0%, transparent 45%)
-      `,
-      fontFamily: "Nunito, sans-serif",
-      display: "flex",
-      flexDirection: "column",
-    }}>
+    <DaylightScreen>
       <div style={{ padding: "16px 20px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <button
           data-testid="button-back"
           onClick={() => setLocation("/")}
-          style={{ background: "none", border: "none", fontFamily: "Nunito, sans-serif", fontWeight: 600, fontSize: 16, color: C.inkSoft, padding: 0, cursor: "pointer" }}
+          style={{ background: "none", border: "none", fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 15, color: C.inkSoft, padding: 0, cursor: "pointer" }}
         >← back</button>
-        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: ".1em", color: C.inkSoft, textTransform: "uppercase" }}>
+        <div style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: ".1em", color: C.inkSoft, textTransform: "uppercase" }}>
           recent picks
         </div>
       </div>
 
       <div style={{ padding: "0 20px 16px" }}>
         <h1 style={{
-          fontFamily: "Nunito, sans-serif",
+          fontFamily: FONT_DISPLAY,
           fontWeight: 800,
-          fontSize: 36,
-          lineHeight: 1,
+          fontSize: 27,
+          lineHeight: 1.05,
           margin: 0,
           color: C.ink,
         }}>your history</h1>
         <p style={{
-          fontFamily: "Nunito, sans-serif",
+          fontFamily: FONT_BODY,
           fontSize: 13,
           color: C.inkSoft,
           marginTop: 6,
@@ -201,15 +192,15 @@ export default function HistoryPage() {
         }}>films you chose to watch</p>
       </div>
 
-      <div style={{ flex: 1, padding: "0 20px 32px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ flex: 1, padding: "0 20px 28px", display: "flex", flexDirection: "column", gap: 10 }}>
         {isLoading && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {[1, 2, 3].map((i) => (
               <div key={i} data-testid={`skeleton-history-${i}`} style={{
                 height: 90,
                 borderRadius: 14,
-                border: `2px solid ${C.ink}`,
-                background: "#FAF6EE",
+                border: `1px solid ${C.edgeCard}`,
+                background: C.paper2,
                 opacity: 0.5,
               }} />
             ))}
@@ -220,12 +211,13 @@ export default function HistoryPage() {
           <div
             data-testid="error-history"
             style={{
-              border: `1.5px solid ${C.ink}`,
+              border: `1px solid ${C.edgeCard}`,
               borderRadius: 14,
               padding: "16px 20px",
-              background: "#FAF6EE",
+              background: C.paper2,
+              boxShadow: C.shadowChip,
               textAlign: "center",
-              fontFamily: "Nunito, sans-serif",
+              fontFamily: FONT_BODY,
               fontSize: 13,
               color: C.inkSoft,
             }}
@@ -236,33 +228,34 @@ export default function HistoryPage() {
 
         {!isLoading && !isError && enriched.length === 0 && (
           <div style={{
-            border: `1.5px dashed ${C.ink}`,
+            border: `1px dashed ${C.edgeDash}`,
             borderRadius: 14,
             padding: "24px 20px",
             textAlign: "center",
-            background: "#FAF6EE",
+            background: C.paper2,
           }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>🎬</div>
-            <div style={{ fontFamily: "Nunito, sans-serif", fontWeight: 700, fontSize: 18, color: C.ink, marginBottom: 6 }}>
+            <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 18, color: C.ink, marginBottom: 6 }}>
               no picks yet
             </div>
-            <div style={{ fontFamily: "Nunito, sans-serif", fontSize: 13, color: C.inkSoft, lineHeight: 1.4, marginBottom: 16 }}>
+            <div style={{ fontFamily: FONT_BODY, fontSize: 13, color: C.inkSoft, lineHeight: 1.4, marginBottom: 16 }}>
               once you spin the slot machine and pick something to watch, it'll show up here.
             </div>
             <button
               data-testid="button-go-pick"
               onClick={() => setLocation("/slot")}
               style={{
-                padding: "10px 20px",
-                border: `2px solid ${C.ink}`,
+                padding: "12px 20px",
+                border: `1px solid ${C.yellow}`,
                 borderRadius: 100,
-                background: C.ink,
-                color: "white",
-                fontFamily: "Nunito, sans-serif",
+                background: C.yellow,
+                color: C.onAccent,
+                fontFamily: FONT_DISPLAY,
                 fontWeight: 700,
                 fontSize: 15,
+                whiteSpace: "nowrap",
                 cursor: "pointer",
-                boxShadow: `3px 3px 0 rgba(0,0,0,.2)`,
+                boxShadow: C.shadowBtn,
               }}
             >spin the slot machine →</button>
           </div>
@@ -285,30 +278,13 @@ export default function HistoryPage() {
             alignItems: "flex-start",
             marginTop: 4,
           }}>
-            <div style={{
-              width: 26, height: 26, borderRadius: "50%",
-              background: C.yellow, border: `2px solid ${C.ink}`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontFamily: "Nunito, sans-serif", fontWeight: 800, fontSize: 13,
-              color: C.ink, flexShrink: 0, boxShadow: `2px 2px 0 ${C.ink}`,
-            }}>C</div>
-            <div style={{
-              background: "#FAF6EE",
-              border: `1.5px solid ${C.ink}`,
-              borderRadius: "4px 14px 14px 14px",
-              padding: "8px 12px",
-              fontFamily: "Nunito, sans-serif",
-              fontSize: 12,
-              lineHeight: 1.35,
-              color: C.ink,
-              flex: 1,
-              boxShadow: `2px 2px 0 ${C.ink}`,
-            }}>
+            <Cine size={26} />
+            <CineBubble style={{ fontSize: 12 }}>
               {enriched.length} pick{enriched.length !== 1 ? "s" : ""} so far — i'm learning what you love 🎬
-            </div>
+            </CineBubble>
           </div>
         )}
       </div>
-    </div>
+    </DaylightScreen>
   );
 }

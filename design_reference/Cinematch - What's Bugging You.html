@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="design_doc_mode" content="canvas"/>
+<title>Cinematch — what's bugging you?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,300;7..72,400;7..72,500;7..72,600;7..72,700&family=Figtree:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:'Figtree',sans-serif}
+a{color:#4E8C79}a:hover{color:#161413}
+.frame{position:absolute;width:440px;display:flex;flex-direction:column;gap:18px}
+.meta .kicker{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#9b9b9b}
+.meta h2{font-size:22px;margin:6px 0 4px;font-weight:600;letter-spacing:-.01em;color:#222}
+.meta p{margin:0;font-size:12.5px;line-height:1.5;color:#5c5c5c}
+.meta .q{margin-top:8px;font-size:12.5px;line-height:1.5;color:#161413;background:#EDE9DE;border-radius:8px;padding:8px 10px}
+/* base = as-built Nocturne */
+.t{--bg:#161413;--panel:#1E1F1C;--plate:rgba(22,20,19,.8);--ink:#EFEBE2;--ink-soft:#9D9A90;--edge:rgba(239,235,226,.15);--accent:#CFE86B;--on-accent:#161413;--accent2:#4E8C79;--on-accent2:#EFEBE2;--note:rgba(78,140,121,.13);--note-edge:rgba(78,140,121,.38);--track:rgba(239,235,226,.11);--display:'Literata',serif;--display-w:600;--body:'Figtree',sans-serif;--mono:'Space Mono',monospace;--rad:12px;--title:20px;--h:25px;--tilt:none;--poster:linear-gradient(155deg,#3F5E6B 0%,#7C7F72 50%,#D8C6A4 100%)}
+.phone{width:100%;background:var(--bg);border-radius:32px;padding:11px;box-shadow:0 20px 50px rgba(20,16,10,.25);border:1px solid rgba(0,0,0,.2)}
+.scr{background:var(--bg);border-radius:22px;padding:14px 14px 24px;display:flex;flex-direction:column;gap:11px;color:var(--ink)}
+.top{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:var(--ink-soft);text-transform:uppercase}
+.nav{display:flex;justify-content:space-between;align-items:center}
+.nav .b{font-family:var(--body);font-size:12.5px;color:var(--ink-soft)}
+.nav .h{width:28px;height:28px;border-radius:99px;border:1px solid var(--edge);display:grid;place-items:center;font-size:13px;color:var(--ink)}
+.hd{font-family:var(--display);font-weight:var(--display-w);font-size:var(--h);line-height:1.05;letter-spacing:-.015em;transform:var(--tilt)}
+.poster{aspect-ratio:16/12;border-radius:var(--rad);border:1px solid var(--edge);position:relative;overflow:hidden}
+.poster .art{position:absolute;inset:0;background:var(--poster)}
+.poster .plate{position:absolute;left:9px;right:9px;bottom:9px;background:var(--plate);border:1px solid var(--edge);border-radius:8px;padding:8px 10px;backdrop-filter:blur(6px)}
+.poster .plate h3{margin:0;font-family:var(--display);font-weight:var(--display-w);font-size:var(--title);line-height:1.05;letter-spacing:-.015em;color:var(--ink)}
+.poster .plate .sub{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-top:4px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:var(--body);font-size:10.5px;padding:4px 10px;border-radius:99px;border:1px solid var(--edge);color:var(--ink)}
+.chip.on{background:var(--accent2);color:var(--on-accent2);border-color:var(--accent2)}
+.cine{display:flex;gap:9px;align-items:flex-start}
+.cine .av{width:28px;height:28px;border-radius:99px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:13px;flex-shrink:0}
+.note{background:var(--note);border:1px solid var(--note-edge);border-radius:var(--rad);padding:10px 11px;flex:1;transform:var(--tilt)}
+.note .lab{font-family:var(--mono);font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+.note .txt{font-family:var(--display);font-size:14px;line-height:1.4;margin-top:4px;color:var(--ink)}
+.bars{border:1px solid var(--edge);border-radius:var(--rad);padding:11px;display:flex;flex-direction:column;gap:7px;background:var(--panel)}
+.bars .lab{font-family:var(--mono);font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+.bar{display:flex;align-items:center;gap:9px}
+.bar span{font-family:var(--body);font-size:10.5px;color:var(--ink-soft);width:52px;flex-shrink:0}
+.bar .track{flex:1;height:6px;border-radius:99px;background:var(--track);overflow:hidden}
+.bar .fill{height:100%;border-radius:99px}
+.bar em{font-family:var(--mono);font-size:8.5px;color:var(--ink-soft);font-style:normal;width:20px;text-align:right}
+.acts{display:flex;gap:8px}
+.btn{font-family:var(--display);font-weight:var(--display-w);font-size:14px;padding:11px 8px;border-radius:99px;border:1px solid var(--edge);background:transparent;color:var(--ink);text-align:center;flex:1;white-space:nowrap}
+.btn.pri{background:var(--accent);color:var(--on-accent);border-color:var(--accent);flex:2}
+
+/* B · warmer, lifted ground */
+.t-b{--bg:#1F1B18;--panel:#2A2521;--plate:rgba(31,27,24,.8);--ink:#F4EDE1;--ink-soft:#AEA396;--edge:rgba(244,237,225,.17)}
+/* C · amber accent instead of citrus */
+.t-c{--accent:#E0A33E;--accent2:#4E8C79}
+/* D · personality back: bigger type, tilt, Cine speaking */
+.t-d{--h:29px;--title:23px;--tilt:rotate(-.7deg);--display-w:700}
+/* E · no serif — sans throughout */
+.t-e{--display:'Figtree',sans-serif;--display-w:700;--title:19px;--h:24px}
+</style>
+</head>
+<body>
+
+<div class="frame t" style="left:60px;top:60px" data-screen-label="A · as built">
+<div class="meta"><div class="kicker">Control</div><h2>A · As built</h2><p>Exactly what's in the prototype now.</p></div>
+<div class="phone"><div class="scr">
+<div class="top"><span>9:41</span><span>2 of 5</span></div>
+<div class="nav"><div class="b">← back</div><div class="h">♡</div></div>
+<div class="hd">tonight's pick</div>
+<div class="poster"><div class="art"></div><div class="plate"><h3>Past Lives</h3><div class="sub">2023 · Celine Song</div></div></div>
+<div class="chips"><div class="chip on">MUBI</div><div class="chip">106 min</div><div class="chip">PG-13</div></div>
+<div class="cine"><div class="av">C</div><div class="note"><div class="lab">Cine says</div><div class="txt">Not a romcom. Something better — it trusts you to feel it.</div></div></div>
+<div class="bars"><div class="lab">what you're in for</div>
+<div class="bar"><span>cosy</span><div class="track"><div class="fill" style="width:50%;background:#C7A96B"></div></div><em>50</em></div>
+<div class="bar"><span>thinky</span><div class="track"><div class="fill" style="width:70%;background:#4E8C79"></div></div><em>70</em></div>
+<div class="bar"><span>romantic</span><div class="track"><div class="fill" style="width:95%;background:#D0876A"></div></div><em>95</em></div></div>
+<div class="acts"><div class="btn">next pick</div><div class="btn pri">Watch it</div></div>
+</div></div>
+</div>
+
+<div class="frame t t-b" style="left:560px;top:60px" data-screen-label="B · warmer ground">
+<div class="meta"><div class="kicker">One change</div><h2>B · Warmer, lifted ground</h2><p>Same everything, but the background moves off near-black to a warm charcoal-brown and the text warms with it.</p><div class="q">Is the problem that it feels cold and flat?</div></div>
+<div class="phone"><div class="scr">
+<div class="top"><span>9:41</span><span>2 of 5</span></div>
+<div class="nav"><div class="b">← back</div><div class="h">♡</div></div>
+<div class="hd">tonight's pick</div>
+<div class="poster"><div class="art"></div><div class="plate"><h3>Past Lives</h3><div class="sub">2023 · Celine Song</div></div></div>
+<div class="chips"><div class="chip on">MUBI</div><div class="chip">106 min</div><div class="chip">PG-13</div></div>
+<div class="cine"><div class="av">C</div><div class="note"><div class="lab">Cine says</div><div class="txt">Not a romcom. Something better — it trusts you to feel it.</div></div></div>
+<div class="bars"><div class="lab">what you're in for</div>
+<div class="bar"><span>cosy</span><div class="track"><div class="fill" style="width:50%;background:#C7A96B"></div></div><em>50</em></div>
+<div class="bar"><span>thinky</span><div class="track"><div class="fill" style="width:70%;background:#4E8C79"></div></div><em>70</em></div>
+<div class="bar"><span>romantic</span><div class="track"><div class="fill" style="width:95%;background:#D0876A"></div></div><em>95</em></div></div>
+<div class="acts"><div class="btn">next pick</div><div class="btn pri">Watch it</div></div>
+</div></div>
+</div>
+
+<div class="frame t t-c" style="left:1060px;top:60px" data-screen-label="C · amber accent">
+<div class="meta"><div class="kicker">One change</div><h2>C · Amber, not citrus</h2><p>The acid lime is replaced by a warm brass. Nothing else moves.</p><div class="q">Is the problem the green?</div></div>
+<div class="phone"><div class="scr">
+<div class="top"><span>9:41</span><span>2 of 5</span></div>
+<div class="nav"><div class="b">← back</div><div class="h">♡</div></div>
+<div class="hd">tonight's pick</div>
+<div class="poster"><div class="art"></div><div class="plate"><h3>Past Lives</h3><div class="sub">2023 · Celine Song</div></div></div>
+<div class="chips"><div class="chip on">MUBI</div><div class="chip">106 min</div><div class="chip">PG-13</div></div>
+<div class="cine"><div class="av">C</div><div class="note"><div class="lab">Cine says</div><div class="txt">Not a romcom. Something better — it trusts you to feel it.</div></div></div>
+<div class="bars"><div class="lab">what you're in for</div>
+<div class="bar"><span>cosy</span><div class="track"><div class="fill" style="width:50%;background:#C7A96B"></div></div><em>50</em></div>
+<div class="bar"><span>thinky</span><div class="track"><div class="fill" style="width:70%;background:#4E8C79"></div></div><em>70</em></div>
+<div class="bar"><span>romantic</span><div class="track"><div class="fill" style="width:95%;background:#D0876A"></div></div><em>95</em></div></div>
+<div class="acts"><div class="btn">next pick</div><div class="btn pri">Watch it</div></div>
+</div></div>
+</div>
+
+<div class="frame t t-d" style="left:1560px;top:60px" data-screen-label="D · personality back">
+<div class="meta"><div class="kicker">One change</div><h2>D · Personality back</h2><p>Bigger, bolder titles and the slight tilt on Cine's note returned — the charm the old sketchy version had, kept inside the new palette.</p><div class="q">Is the problem that it lost its warmth and humour?</div></div>
+<div class="phone"><div class="scr">
+<div class="top"><span>9:41</span><span>2 of 5</span></div>
+<div class="nav"><div class="b">← back</div><div class="h">♡</div></div>
+<div class="hd">tonight's pick</div>
+<div class="poster"><div class="art"></div><div class="plate"><h3>Past Lives</h3><div class="sub">2023 · Celine Song</div></div></div>
+<div class="chips"><div class="chip on">MUBI</div><div class="chip">106 min</div><div class="chip">PG-13</div></div>
+<div class="cine"><div class="av">C</div><div class="note"><div class="lab">Cine says</div><div class="txt">Not a romcom. Something better — it trusts you to feel it.</div></div></div>
+<div class="bars"><div class="lab">what you're in for</div>
+<div class="bar"><span>cosy</span><div class="track"><div class="fill" style="width:50%;background:#C7A96B"></div></div><em>50</em></div>
+<div class="bar"><span>thinky</span><div class="track"><div class="fill" style="width:70%;background:#4E8C79"></div></div><em>70</em></div>
+<div class="bar"><span>romantic</span><div class="track"><div class="fill" style="width:95%;background:#D0876A"></div></div><em>95</em></div></div>
+<div class="acts"><div class="btn">next pick</div><div class="btn pri">Watch it</div></div>
+</div></div>
+</div>
+
+<div class="frame t t-e" style="left:2060px;top:60px" data-screen-label="E · no serif">
+<div class="meta"><div class="kicker">One change</div><h2>E · No serif at all</h2><p>Figtree does the titles too. Same colours, same layout.</p><div class="q">Is the problem that the serif feels stuffy on a phone?</div></div>
+<div class="phone"><div class="scr">
+<div class="top"><span>9:41</span><span>2 of 5</span></div>
+<div class="nav"><div class="b">← back</div><div class="h">♡</div></div>
+<div class="hd">tonight's pick</div>
+<div class="poster"><div class="art"></div><div class="plate"><h3>Past Lives</h3><div class="sub">2023 · Celine Song</div></div></div>
+<div class="chips"><div class="chip on">MUBI</div><div class="chip">106 min</div><div class="chip">PG-13</div></div>
+<div class="cine"><div class="av">C</div><div class="note"><div class="lab">Cine says</div><div class="txt">Not a romcom. Something better — it trusts you to feel it.</div></div></div>
+<div class="bars"><div class="lab">what you're in for</div>
+<div class="bar"><span>cosy</span><div class="track"><div class="fill" style="width:50%;background:#C7A96B"></div></div><em>50</em></div>
+<div class="bar"><span>thinky</span><div class="track"><div class="fill" style="width:70%;background:#4E8C79"></div></div><em>70</em></div>
+<div class="bar"><span>romantic</span><div class="track"><div class="fill" style="width:95%;background:#D0876A"></div></div><em>95</em></div></div>
+<div class="acts"><div class="btn">next pick</div><div class="btn pri">Watch it</div></div>
+</div></div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1 @@
+- [Daylight design system](daylight-design-system.md) — v3 spec in design_reference/; tokens duplicated in cinema-catalogue C object AND tailwind.config.ts, keep in sync; hairlines + onAccent text only.

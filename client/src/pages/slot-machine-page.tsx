@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { C, REELS, matchFilms, matchFilmsGroup } from "@/lib/cinema-catalogue";
+import { Cine, Btn, DaylightScreen, MicroLabel, FONT_DISPLAY, FONT_BODY, FONT_MONO } from "@/components/daylight";
 
 interface ReelState {
   opts: string[];
@@ -90,65 +91,57 @@ export default function SlotMachinePage({ isGroup = false }: SlotMachinePageProp
     setLocation('/loading');
   }
 
-  const readback = `feeling ${reels[0].opts[reels[0].i]}, ${reels[1].opts[reels[1].i]}, ${reels[2].opts[reels[2].i]}, era: ${reels[3].opts[reels[3].i]}`;
-
   return (
-    <div style={{
-      minHeight: '100dvh',
-      background: '#E8DDC8',
-      fontFamily: 'Nunito, sans-serif',
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
+    <DaylightScreen>
       <div style={{ padding: '16px 20px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <button
           data-testid="button-back"
           onClick={() => setLocation('/')}
-          style={{ background: 'none', border: 'none', fontFamily: 'Nunito, sans-serif', fontWeight: 600, fontSize: 16, color: C.inkSoft, padding: 0, cursor: 'pointer' }}
+          style={{ background: 'none', border: 'none', fontFamily: FONT_DISPLAY, fontWeight: 600, fontSize: 15, color: C.inkSoft, padding: 0, cursor: 'pointer', whiteSpace: 'nowrap' }}
         >← back</button>
-        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: '.1em', color: C.inkSoft, textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: FONT_MONO, fontSize: 10, letterSpacing: '.1em', color: C.inkSoft, textTransform: 'uppercase' }}>
           {isGroup ? 'group' : 'just me'}
         </div>
       </div>
 
       <div style={{ padding: '0 20px 12px' }}>
         <h1 style={{
-          fontFamily: 'Nunito, sans-serif',
+          fontFamily: FONT_DISPLAY,
           fontWeight: 800,
-          fontSize: 34,
-          lineHeight: 1,
+          fontSize: 25,
+          lineHeight: 1.05,
           color: C.ink,
           margin: 0,
         }}>{isGroup ? "what's the group vibe?" : 'spin your mood'}</h1>
         <p style={{
-          fontFamily: 'Nunito, sans-serif',
+          fontFamily: FONT_BODY,
           fontSize: 13,
           color: C.inkSoft,
           marginTop: 4,
           marginBottom: 0,
         }}>
           {isGroup
-            ? "set tonight's vibe — i'll blend everyone's taste"
-            : 'swipe ↔  ·  tap 🔒 to keep  ·  ROLL spins the rest'}
+            ? "set tonight's vibe — i'll blend everyone's taste to find the best match"
+            : 'swipe ↔  ·  tap 🔒 to keep  ·  surprise me spins the rest'}
         </p>
       </div>
 
       <div style={{ padding: '0 20px', flex: 1, overflowY: 'auto' }}>
         {isGroup && groupTaste && (
           <div style={{
-            padding: '8px 12px', borderRadius: 10, border: `1.5px solid ${C.ink}`,
-            background: C.paper2, marginBottom: 10,
+            padding: '8px 12px', borderRadius: 12, border: `1px solid ${C.edgeCard}`,
+            background: C.paper2, marginBottom: 10, boxShadow: C.shadowChip,
             display: 'flex', gap: 6, flexWrap: 'wrap',
           }}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: C.inkLight, textTransform: 'uppercase', letterSpacing: '.1em', width: '100%', marginBottom: 4 }}>
+            <MicroLabel color={C.inkLight} style={{ fontSize: 8, width: '100%', marginBottom: 4 }}>
               group taste (from your history)
-            </div>
+            </MicroLabel>
             {Object.entries(groupTaste).map(([k, v]) => (
               <div key={k} style={{
                 padding: '2px 8px', borderRadius: 100,
-                background: v > 70 ? C.pink : v > 40 ? C.yellow : '#FAF6EE',
-                border: `1.5px solid ${C.ink}`,
-                fontFamily: 'Nunito, sans-serif', fontSize: 11, color: C.ink,
+                background: v > 70 ? C.pink : v > 40 ? C.yellow : 'transparent',
+                border: `1px solid ${C.edge}`,
+                fontFamily: FONT_BODY, fontSize: 11, color: C.onAccent,
               }}>{k} {v}</div>
             ))}
           </div>
@@ -162,12 +155,12 @@ export default function SlotMachinePage({ isGroup = false }: SlotMachinePageProp
             <div
               key={ri}
               style={{
-                border: `2px solid ${C.ink}`,
+                border: '1px solid rgba(36,31,29,.16)',
                 borderRadius: 14,
                 marginTop: ri ? 10 : 0,
                 background: C.paper2,
                 overflow: 'hidden',
-                boxShadow: r.locked ? `3px 3px 0 ${C.ink}` : 'none',
+                boxShadow: r.locked ? C.shadowBtn : 'none',
                 opacity: rolling && !r.locked ? .7 : 1,
                 transition: 'opacity .1s',
               }}
@@ -183,53 +176,56 @@ export default function SlotMachinePage({ isGroup = false }: SlotMachinePageProp
                 alignItems: 'center',
                 padding: '5px 10px',
                 background: r.col,
-                color: ri === 2 ? C.ink : 'white',
-                fontFamily: "'Space Mono', monospace",
+                color: C.onAccent,
+                fontFamily: FONT_MONO,
                 fontSize: 10,
                 letterSpacing: '.1em',
-                borderBottom: `2px solid ${C.ink}`,
+                textTransform: 'uppercase',
+                borderBottom: '1px solid rgba(36,31,29,.16)',
               }}>
                 <span>{r.label}</span>
-                <button
-                  data-testid={`button-lock-${ri}`}
-                  onClick={() => toggleLock(ri)}
-                  style={{
-                    width: 28, height: 28, borderRadius: '50%',
-                    border: `1.5px solid ${ri === 2 ? C.ink : 'rgba(255,255,255,.5)'}`,
-                    background: r.locked ? C.yellow : 'transparent',
-                    color: r.locked ? C.ink : (ri === 2 ? C.ink : 'white'),
-                    fontSize: 14, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >🔒</button>
+                <span style={{ opacity: .8 }}>{r.i + 1}/{r.opts.length}</span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', padding: '6px 10px', gap: 8 }}>
+              <div style={{ padding: '10px 8px 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <button
-                  data-testid={`button-prev-${ri}`}
-                  onClick={() => setReelIdx(ri, r.i - 1)}
-                  style={{ border: 'none', background: 'none', fontSize: 20, color: C.inkSoft, cursor: 'pointer', padding: '0 4px' }}
-                >‹</button>
-                <div style={{ flex: 1, textAlign: 'center' }}>
-                  <div style={{ fontFamily: 'Nunito, sans-serif', fontSize: 11, color: C.inkLight, opacity: .5, marginBottom: 2 }}>{prev}</div>
-                  <div style={{
-                    fontFamily: 'Nunito, sans-serif',
-                    fontWeight: 700,
-                    fontSize: 24,
-                    color: C.ink,
-                    lineHeight: 1.2,
-                  }}>{curr}</div>
-                  <div style={{ fontFamily: 'Nunito, sans-serif', fontSize: 11, color: C.inkLight, opacity: .5, marginTop: 2 }}>{next}</div>
+                  data-testid={`button-lock-${ri}`}
+                  aria-label={r.locked ? `unlock ${r.label}` : `lock ${r.label}`}
+                  onClick={() => toggleLock(ri)}
+                  style={{
+                    width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                    border: '1px solid rgba(36,31,29,.14)', fontSize: 14,
+                    background: r.locked ? C.yellow : 'transparent',
+                    boxShadow: r.locked ? C.shadowChip : 'none',
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >{r.locked ? '🔒' : '🔓'}</button>
+
+                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ fontFamily: FONT_DISPLAY, fontSize: 14, fontWeight: 700, opacity: .25, whiteSpace: 'nowrap', color: C.ink }}>{prev}</div>
+                  <div style={{ fontFamily: FONT_BODY, fontSize: 20, fontWeight: 600, color: C.ink, whiteSpace: 'nowrap', flex: 1, textAlign: 'center' }}>{curr}</div>
+                  <div style={{ fontFamily: FONT_DISPLAY, fontSize: 14, fontWeight: 700, opacity: .25, whiteSpace: 'nowrap', color: C.ink }}>{next}</div>
                 </div>
-                <button
-                  data-testid={`button-next-${ri}`}
-                  onClick={() => setReelIdx(ri, r.i + 1)}
-                  style={{ border: 'none', background: 'none', fontSize: 20, color: C.inkSoft, cursor: 'pointer', padding: '0 4px' }}
-                >›</button>
+
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button
+                    data-testid={`button-prev-${ri}`}
+                    aria-label={`previous ${r.label} option`}
+                    onClick={() => setReelIdx(ri, r.i - 1)}
+                    style={{ width: 24, height: 24, border: '1px solid rgba(36,31,29,.14)', borderRadius: 6, background: C.paper, fontSize: 12, cursor: 'pointer', color: C.ink }}
+                  >‹</button>
+                  <button
+                    data-testid={`button-next-${ri}`}
+                    aria-label={`next ${r.label} option`}
+                    onClick={() => setReelIdx(ri, r.i + 1)}
+                    style={{ width: 24, height: 24, border: '1px solid rgba(36,31,29,.14)', borderRadius: 6, background: C.paper, fontSize: 12, cursor: 'pointer', color: C.ink }}
+                  >›</button>
+                </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 10px 8px', alignItems: 'center' }}>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: C.inkLight }}>‹ swipe ›</div>
+                <div style={{ fontFamily: FONT_MONO, fontSize: 8, color: C.inkLight }}>‹ swipe ›</div>
                 <div style={{ display: 'flex', gap: 3 }}>
                   {r.opts.map((_, oi) => (
                     <div key={oi} style={{
@@ -250,64 +246,32 @@ export default function SlotMachinePage({ isGroup = false }: SlotMachinePageProp
         <div style={{
           margin: '12px 0 0',
           padding: '10px 12px',
-          border: `1.5px dashed ${C.ink}`,
+          border: `1px dashed ${C.edgeDash}`,
           borderRadius: 12,
           background: C.paper,
           display: 'flex',
           gap: 8,
           alignItems: 'flex-start',
         }}>
-          <div style={{
-            width: 26, height: 26, borderRadius: '50%',
-            background: C.yellow, border: `2px solid ${C.ink}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: 14,
-            color: C.ink, flexShrink: 0,
-          }}>C</div>
-          <div style={{ fontFamily: 'Nunito, sans-serif', fontSize: 12, lineHeight: 1.35, color: C.ink, flex: 1 }}>
-            reading: <strong>{readback}</strong>
+          <Cine size={26} />
+          <div style={{ fontFamily: FONT_BODY, fontSize: 12, lineHeight: 1.35, color: C.ink, flex: 1 }}>
+            reading: <b style={{ fontFamily: FONT_DISPLAY, fontSize: 13 }}>{reels[0].opts[reels[0].i]}</b>
+            {' '}· <b style={{ fontFamily: FONT_DISPLAY, fontSize: 13 }}>{reels[1].opts[reels[1].i]}</b>
+            {' '}· <b style={{ fontFamily: FONT_DISPLAY, fontSize: 13 }}>{reels[2].opts[reels[2].i]}</b>
           </div>
         </div>
       </div>
 
-      <div style={{ padding: '10px 20px 32px', display: 'flex', gap: 10 }}>
-        <button
-          data-testid="button-roll"
-          onClick={roll}
-          disabled={rolling}
-          style={{
-            flex: 1,
-            padding: '12px 18px',
-            border: `1.5px dashed ${C.ink}`,
-            borderRadius: 100,
-            background: 'transparent',
-            fontFamily: 'Nunito, sans-serif',
-            fontWeight: 700,
-            fontSize: 18,
-            color: C.ink,
-            cursor: rolling ? 'default' : 'pointer',
-            opacity: rolling ? .6 : 1,
-          }}
-        >🎲 ROLL</button>
-        <button
-          data-testid="button-find"
+      <div style={{ padding: '14px 18px 28px', display: 'flex', gap: 10 }}>
+        <Btn testId="button-roll" onClick={roll} small outline disabled={rolling} style={{ flex: 1 }}>surprise me</Btn>
+        <Btn
+          testId="button-find"
           onClick={handleFind}
+          primary
           disabled={isGroup && groupTaste === null}
-          style={{
-            flex: 2,
-            padding: '12px 24px',
-            border: `2px solid ${C.ink}`,
-            borderRadius: 100,
-            background: (isGroup && groupTaste === null) ? '#F3ECDA' : C.ink,
-            color: (isGroup && groupTaste === null) ? C.inkLight : 'white',
-            fontFamily: 'Nunito, sans-serif',
-            fontWeight: 700,
-            fontSize: 18,
-            cursor: (isGroup && groupTaste === null) ? 'default' : 'pointer',
-            boxShadow: `3px 3px 0 rgba(0,0,0,.2)`,
-          }}
-        >{(isGroup && groupTaste === null) ? '⏳ loading taste…' : '🎬 find it →'}</button>
+          style={{ flex: 2 }}
+        >{(isGroup && groupTaste === null) ? 'loading taste…' : 'find me something'}</Btn>
       </div>
-    </div>
+    </DaylightScreen>
   );
 }

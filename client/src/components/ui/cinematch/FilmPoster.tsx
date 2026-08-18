@@ -58,8 +58,8 @@ export function FilmPoster({
         borderRadius: 14,
         position: "relative",
         overflow: "hidden",
-        border: "1.5px solid #1A1A1A",
-        boxShadow: "2px 2px 0 #1A1A1A",
+        border: "1px solid rgba(36,31,29,.13)",
+        boxShadow: "0 6px 18px rgba(36,31,29,.10)",
         flexShrink: 0,
         ...style,
       }}
@@ -71,20 +71,20 @@ export function FilmPoster({
             left: small ? 6 : 12,
             right: small ? 6 : 12,
             bottom: small ? 6 : 10,
-            background: "rgba(250,246,238,0.94)",
-            border: "1.5px solid #1A1A1A",
+            background: "rgba(255,252,250,0.93)",
+            border: "1px solid rgba(36,31,29,.13)",
             borderRadius: 7,
             padding: small ? "4px 6px" : "8px 10px",
-            backdropFilter: "blur(4px)",
+            backdropFilter: "blur(8px)",
           }}
         >
           <div
             style={{
-              fontFamily: "Caveat, cursive",
+              fontFamily: "Nunito, sans-serif",
               fontWeight: 700,
-              fontSize: small ? 11 : width < 200 ? 16 : 22,
+              fontSize: small ? 10 : width < 200 ? 14 : 19,
               lineHeight: 1,
-              color: "#1A1A1A",
+              color: "#241F1D",
             }}
           >
             {title}
