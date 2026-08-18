@@ -8,7 +8,7 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = "claude-sonnet-4-5";
 
 interface AIRecommendationResponse {
-  recommendations: Film[];
+  recommendations: (Film & { personalizationNote?: string })[];
 }
 
 const CACHE_TTL = 60 * 60 * 1000;
@@ -91,6 +91,13 @@ export async function getAIRecommendations(preferences: RecommendationRequest): 
 
   const timeOfDayString = preferences.timeOfDay.join(", ");
 
+  // A fingerprint is "active" when it carries at least one meaningful signal
+  const fingerprintActive = !!(preferences.fingerprintProfile && (
+    preferences.fingerprintProfile.topTags?.length ||
+    preferences.fingerprintProfile.genres?.length ||
+    preferences.fingerprintProfile.tagWeights
+  ));
+
   const systemPrompt = `You are a film recommendation expert with deep knowledge of global cinema. 
 Provide personalized movie recommendations based on the user's preferences.
 
@@ -122,6 +129,7 @@ IMPORTANT ABOUT CINEMATIC FINGERPRINT:
 5. The fingerprint vibe profile shows relative affinities (e.g. cosy, thinky, funny, tense, romantic) — balance recommendations to reflect these
 6. When both a fingerprint AND rated films are present, use rated films as the primary signal and the fingerprint as a secondary refinement
 7. When only a fingerprint is present (new user with no rated films), rely on it as the primary personalisation source
+8. When a fingerprint is present, include a 'personalizationNote' for every film: a short, specific sentence tying the pick to the fingerprint's actual tags, genres, or vibe traits (e.g. "Picked for your love of melancholic, slow-burn cinema"). Never write a generic note.
 
 IMPORTANT ABOUT AUDIENCES:
 1. If audience is "solo", focus purely on the user's personal taste based on other preferences
@@ -234,6 +242,10 @@ Each recommendation must include ONLY these fields (keep output compact — syno
 - matchPercentage (number between 80-98)
 - matchReason (string, 10-15 words)
 - availableOn (array of strings)
+${preferences.fingerprintProfile && (preferences.fingerprintProfile.topTags?.length || preferences.fingerprintProfile.genres?.length || preferences.fingerprintProfile.tagWeights)
+  ? `- personalizationNote (string, max 12 words): a warm, specific note explaining how this pick reflects the user's cinematic fingerprint, phrased like "Picked for your love of melancholic, slow-burn cinema". Reference the actual taste tags, genres, or vibe traits from the fingerprint above — never generic praise. Every film must include this field.`
+  : ""
+}
 
 IMPORTANT ABOUT AVAILABILITY:
 - If the user hasn't specified any streaming services, the availableOn array should be EMPTY for all films
@@ -312,6 +324,10 @@ DO NOT include a posterUrl field in your response.`;
           posterUrl: "",
           matchPercentage: typeof film.matchPercentage === 'number' ? film.matchPercentage : 85,
           matchReason: film.matchReason || `Great match for ${preferences.mood} mood`,
+          // Only surface the personalisation note when a fingerprint was actually active for this request
+          ...(fingerprintActive && typeof film.personalizationNote === 'string' && film.personalizationNote.trim()
+            ? { personalizationNote: film.personalizationNote.trim() }
+            : {}),
           availableOn: Array.isArray(film.availableOn) ? film.availableOn : []
         };
       });

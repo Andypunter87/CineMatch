@@ -16,6 +16,7 @@ export type Film = {
   posterUrl: string;
   matchPercentage?: number;
   matchReason?: string;
+  personalizationNote?: string; // Short "picked for your taste" note — only set when a cinematic fingerprint was active for the request
   availableOn?: string[]; // Streaming services where this film is available in the user's country
   source?: 'onboarding' | 'friend' | 'feedback' | 'fallback'; // Where the recommendation came from
   

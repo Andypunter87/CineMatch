@@ -577,6 +577,17 @@ export default function FilmCard({ film, recommendationContext, onDisliked, swip
               </p>
             </div>
 
+            {/* Taste-profile personalisation note (only when a fingerprint was active) */}
+            {film.personalizationNote && (
+              <div
+                data-testid={`text-personalization-note-${film.id}`}
+                className="flex items-start gap-1.5 rounded-md bg-purple-50 border border-purple-100 px-2.5 py-2"
+              >
+                <Star className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-purple-800">{film.personalizationNote}</p>
+              </div>
+            )}
+
             {/* Cast */}
             <p className="text-xs text-gray-500">
               <span className="font-medium text-gray-600">Cast:</span>{' '}
@@ -941,6 +952,17 @@ export default function FilmCard({ film, recommendationContext, onDisliked, swip
             <span className="text-primary font-medium">Why it matches:</span> {' '}
             <span className="text-gray-600">{film.matchReason || 'Matches your preferences'}</span>
           </p>
+
+          {/* Taste-profile personalisation note (only when a fingerprint was active) */}
+          {film.personalizationNote && (
+            <div
+              data-testid={`text-personalization-note-${film.id}`}
+              className="flex items-start gap-1.5 rounded-md bg-purple-50 border border-purple-100 px-2.5 py-2"
+            >
+              <Star className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-purple-800">{film.personalizationNote}</p>
+            </div>
+          )}
           
           {/* Streaming services availability - always show availability section */}
           <div className="text-sm">
