@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { C } from "@/lib/cinema-catalogue";
@@ -29,6 +30,13 @@ function getFingerprintSummary(onboardingState: unknown): FingerprintSummary | n
 export default function Home() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+
+  const { data: watchChoices } = useQuery<unknown[]>({
+    queryKey: ["/api/watch-choices"],
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+  const recentPicksCount = watchChoices?.length ?? null;
 
   const fingerprint = useMemo(
     () => getFingerprintSummary(user?.onboardingState),
@@ -259,13 +267,34 @@ export default function Home() {
           }}
         >
           <div style={{ textAlign: 'left' }}>
-            <div style={{
-              fontFamily: FONT_DISPLAY,
-              fontWeight: 700,
-              fontSize: 15,
-              lineHeight: 1,
-              color: C.ink,
-            }}>recent picks</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{
+                fontFamily: FONT_DISPLAY,
+                fontWeight: 700,
+                fontSize: 15,
+                lineHeight: 1,
+                color: C.ink,
+              }}>recent picks</span>
+              {recentPicksCount !== null && recentPicksCount > 0 && (
+                <span
+                  data-testid="badge-recent-picks-count"
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                    color: C.onAccent,
+                    background: C.yellow,
+                    border: '1px solid rgba(36,31,29,.16)',
+                    borderRadius: 100,
+                    padding: '1px 7px',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {recentPicksCount}
+                </span>
+              )}
+            </div>
             <div style={{
               fontFamily: FONT_BODY,
               fontSize: 11,
