@@ -856,6 +856,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recommendationContext: recommendationContext || null,
       });
 
+      // Keep the taste profile fresh (non-blocking, non-fatal)
+      import('./services/fingerprint-refresh')
+        .then(({ refreshFingerprintFromFeedback }) => refreshFingerprintFromFeedback(userId))
+        .catch(err => console.error('Fingerprint refresh failed (non-fatal):', err));
+
       // Track analytics (non-fatal)
       try {
         await storage.trackEvent({
