@@ -374,6 +374,12 @@ export async function getEnhancedRecommendations(preferences: RecommendationRequ
         const enhancedFilm: Film = {
           ...film,
           tmdbId: tmdbMovie.id,
+          // Backfill synopsis/cast from TMDB — the AI no longer generates
+          // these (keeps its output small and fast).
+          synopsis: film.synopsis || tmdbMovie.overview || 'No synopsis available',
+          actors: (film.actors && film.actors.length)
+            ? film.actors
+            : ((tmdbFilm as Film & { cast?: string[] }).cast || []).slice(0, 4),
           // Fix 1: Always use string for poster URL (empty string fallback)
           posterUrl: tmdbMovie.poster_path ? getPosterUrl(tmdbMovie.poster_path) : (film.posterUrl || ''),
           // Include streaming availability
@@ -618,17 +624,38 @@ function filterRecommendationsByRuntime(recommendations: Film[], runtimePrefs: A
     return recommendations;
   }
   
-  return recommendations.filter(film => {
+  const fits = (film: Film) => {
     // If we don't have runtime data, include it anyway
     if (!film.runtime) return true;
-    
-    // Match runtime categories
     const runtime = film.runtime;
-    
     if (runtime < 90 && runtimePrefs.includes("short")) return true;
     if (runtime >= 90 && runtime <= 120 && runtimePrefs.includes("medium")) return true;
     if (runtime > 120 && runtimePrefs.includes("long")) return true;
-    
     return false;
-  });
+  };
+
+  const matching = recommendations.filter(fits);
+
+  // Never strand the user with an empty/tiny deck: if strict filtering
+  // leaves fewer than 5 films, top up with the nearest-runtime misses
+  // (closest to the preferred band first).
+  const MIN_FILMS = 5;
+  if (matching.length >= MIN_FILMS) return matching;
+
+  const bandDistance = (runtime: number) =>
+    Math.min(...runtimePrefs.map(p =>
+      p === "short" ? Math.max(0, runtime - 89) :
+      p === "medium" ? Math.max(0, 90 - runtime, runtime - 120) :
+      Math.max(0, 121 - runtime)
+    ));
+
+  const nearMisses = recommendations
+    .filter(f => !fits(f) && typeof f.runtime === 'number')
+    .sort((a, b) => bandDistance(a.runtime!) - bandDistance(b.runtime!));
+
+  const topUp = nearMisses.slice(0, MIN_FILMS - matching.length);
+  if (topUp.length) {
+    console.log(`Runtime filter left ${matching.length} films — topping up with ${topUp.length} nearest-runtime picks`);
+  }
+  return [...matching, ...topUp];
 }

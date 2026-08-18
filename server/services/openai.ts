@@ -3,7 +3,9 @@ import { RecommendationRequest, Film } from "@shared/schema";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const MODEL = "claude-opus-4-5";
+// Sonnet: same recommendation quality for structured list output as Opus,
+// at roughly 2-4x lower latency (this endpoint is user-facing and blocking).
+const MODEL = "claude-sonnet-4-5";
 
 interface AIRecommendationResponse {
   recommendations: Film[];
@@ -154,10 +156,10 @@ Respond with a JSON object with a 'recommendations' array and nothing else.`;
 - Mood: ${preferences.mood}
 - Number of films to return: ${preferences.requestedBatchSize || 6}
 ${preferences.runtime && preferences.runtime.length > 0
-  ? `- Runtime preferences: ${preferences.runtime.map(r => 
-    r === "short" ? "Under 90 minutes" : 
-    r === "medium" ? "90-120 minutes" : 
-    "Over 120 minutes").join(", ")}`
+  ? `- Runtime: HARD CONSTRAINT — every film MUST be ${preferences.runtime.map(r =>
+    r === "short" ? "under 90 minutes" :
+    r === "medium" ? "90-120 minutes" :
+    "over 120 minutes").join(" or ")}. Double-check each film's actual runtime before including it; do not include films outside this range.`
   : `- No runtime preference specified`
 }
 ${preferences.streamingServices && preferences.streamingServices.length > 0 
@@ -222,13 +224,11 @@ ${weightedTags.length ? `  * Weighted taste signals (tag name with score — hig
   : ""
 }
 
-Each recommendation must include:
+Each recommendation must include ONLY these fields (keep output compact — synopsis and cast are filled in from a film database afterwards, do NOT include them):
 - id (number)
 - title (string)
 - year (number, between 1920-2023)
 - director (string)
-- actors (array of strings, 3-4 names maximum)
-- synopsis (string, 1-2 sentences only)
 - genres (array of strings, 2-3 genres maximum)
 - type ("mainstream" or "indie" only)
 - matchPercentage (number between 80-98)
@@ -305,8 +305,8 @@ DO NOT include a posterUrl field in your response.`;
           title: film.title,
           year: typeof film.year === 'number' ? film.year : 2000,
           director: film.director || "Unknown",
-          actors: Array.isArray(film.actors) ? film.actors.slice(0, 4) : ["Unknown"],
-          synopsis: film.synopsis || "No synopsis available",
+          actors: Array.isArray(film.actors) ? film.actors.slice(0, 4) : [],
+          synopsis: film.synopsis || "", // backfilled from TMDB in the enhancer
           genres: Array.isArray(film.genres) ? film.genres.slice(0, 3) : ["Drama"],
           type: (film.type === "mainstream" || film.type === "indie") ? film.type : "mainstream",
           posterUrl: "",
